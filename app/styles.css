@@ -1,0 +1,350 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@plugin '@tailwindcss/typography';
+@plugin 'tailwind-scrollbar';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Light mode colors - #f2f0e3 background, #f76f52 primary */
+  --background: #f2f0e3;
+  --foreground: #1a1a1a;
+  --card: #f2f0e3;
+  --card-foreground: #1a1a1a;
+  --popover: #f2f0e3;
+  --popover-foreground: #1a1a1a;
+  --primary: #f76f52;
+  --primary-foreground: #ffffff;
+  --secondary: #ebe9dc;
+  --secondary-foreground: #1a1a1a;
+  --muted: #ebe9dc;
+  --muted-foreground: #6b7280;
+  --accent: #ebe9dc;
+  --accent-foreground: #1a1a1a;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #d6d3c6;
+  --input: #f2f0e3;
+  --ring: #f76f52;
+  --chart-1: #f76f52;
+  --chart-2: #fb923c;
+  --chart-3: #fbbf24;
+  --chart-4: #a3e635;
+  --chart-5: #34d399;
+  --sidebar: #f2f0e3;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-primary: #f76f52;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #c5c3bd;
+  --sidebar-accent-foreground: #1a1a1a;
+  --sidebar-border: #d6d3c6;
+  --sidebar-ring: #f76f52;
+  --font-sans: Geist, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --font-mono: Geist Mono, monospace;
+  --radius: 0.625rem;
+  --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1),
+    0 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1),
+    0 2px 4px -1px hsl(0 0% 0% / 0.1);
+  --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1),
+    0 4px 6px -1px hsl(0 0% 0% / 0.1);
+  --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1),
+    0 8px 10px -1px hsl(0 0% 0% / 0.1);
+  --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+}
+
+.dark {
+  /* Dark mode colors - #202020 background, #f76f52 primary */
+  --background: #202020;
+  --foreground: #ffffff;
+  --card: #2a2a2a;
+  --card-foreground: #ffffff;
+  --popover: #2a2a2a;
+  --popover-foreground: #ffffff;
+  --primary: #f76f52;
+  --primary-foreground: #ffffff;
+  --secondary: #2f2f2f;
+  --secondary-foreground: #ffffff;
+  --muted: #2f2f2f;
+  --muted-foreground: #9ca3af;
+  --accent: #2f2f2f;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #3a3a3a;
+  --input: #2a2a2a;
+  --ring: #f76f52;
+  --chart-1: #f76f52;
+  --chart-2: #fb923c;
+  --chart-3: #fbbf24;
+  --chart-4: #a3e635;
+  --chart-5: #34d399;
+  --sidebar: #2a2a2a;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #f76f52;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2f2f2f;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #3a3a3a;
+  --sidebar-ring: #f76f52;
+  --font-sans: Geist, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --font-mono: Geist Mono, monospace;
+  --radius: 0.625rem;
+  --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1),
+    0 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1),
+    0 2px 4px -1px hsl(0 0% 0% / 0.1);
+  --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1),
+    0 4px 6px -1px hsl(0 0% 0% / 0.1);
+  --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1),
+    0 8px 10px -1px hsl(0 0% 0% / 0.1);
+  --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-serif: var(--font-serif);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Mobile-first responsive utilities */
+  .mobile-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  .mobile-text {
+    @apply text-sm sm:text-base;
+  }
+
+  .mobile-container {
+    @apply w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-4xl mx-auto;
+  }
+
+  /* Enhanced focus states for accessibility */
+  .focus-enhanced {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background;
+  }
+
+  /* Mobile-specific improvements */
+  .mobile-input {
+    @apply text-base; /* Prevents zoom on iOS */
+  }
+
+  /* Better mobile touch targets */
+  .mobile-touch {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Code block responsive styling */
+  .code-block-mobile {
+    @apply text-xs sm:text-sm overflow-x-auto;
+  }
+}
+
+.shiki {
+  @apply !rounded-none;
+}
+
+/* Override Shiki theme colors to match website theme */
+.shiki,
+.shiki span {
+  background-color: transparent !important;
+}
+
+/* Light mode code block styling */
+:root .shiki {
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+}
+
+/* Dark mode code block styling - improved visibility */
+.dark .shiki {
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+}
+
+/* Ensure code block container uses theme colors */
+.code-block-container {
+  background-color: var(--background) !important;
+  border-color: var(--border) !important;
+}
+
+.code-block-header {
+  background-color: var(--secondary) !important;
+  color: var(--muted-foreground) !important;
+  border-color: var(--border) !important;
+}
+
+/* Additional Shiki overrides for better theme integration */
+.shiki pre {
+  background-color: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.shiki code {
+  background-color: transparent !important;
+}
+
+/* Fix: Improve dark mode syntax highlighting with higher specificity */
+/* These rules take precedence to ensure visibility in dark mode */
+.dark .shiki {
+  color: #e1e5e9 !important;
+}
+
+/* Make sure these selectors have higher specificity than any default styles */
+html.dark .shiki .token.comment,
+html.dark .shiki .token.prolog,
+html.dark .shiki .token.doctype,
+html.dark .shiki .token.cdata {
+  color: #8b949e !important;
+}
+
+html.dark .shiki .token.keyword,
+html.dark .shiki .token.operator,
+html.dark .shiki .token.boolean,
+html.dark .shiki .token.number {
+  color: #ff7b72 !important;
+}
+
+html.dark .shiki .token.string,
+html.dark .shiki .token.char,
+html.dark .shiki .token.attr-value {
+  color: #a5d6ff !important;
+}
+
+html.dark .shiki .token.function,
+html.dark .shiki .token.class-name {
+  color: #d2a8ff !important;
+}
+
+html.dark .shiki .token.variable,
+html.dark .shiki .token.parameter {
+  color: #ffa657 !important;
+}
+
+html.dark .shiki .token.punctuation,
+html.dark .shiki .token.bracket {
+  color: #c9d1d9 !important;
+}
+
+html.dark .shiki .token.tag,
+html.dark .shiki .token.attr-name {
+  color: #7ee787 !important;
+}
+
+/* Additional fix for Shiki spans in dark mode */
+html.dark .shiki span[style*="color:#"] {
+  color: inherit !important; /* First reset all colors */
+}
+
+html.dark .shiki span[style*="color:#ff7b72"] {
+  color: #ff7b72 !important; /* Keywords */
+}
+
+html.dark .shiki span[style*="color:#79c0ff"] {
+  color: #79c0ff !important; /* Functions/types */
+}
+
+html.dark .shiki span[style*="color:#a5d6ff"] {
+  color: #a5d6ff !important; /* Strings */
+}
+
+html.dark .shiki span[style*="color:#ffa657"] {
+  color: #ffa657 !important; /* Numbers/constants */
+}
+
+html.dark .shiki span[style*="color:#8b949e"] {
+  color: #8b949e !important; /* Comments */
+}
+
+html.dark .shiki span[style*="color:#f85149"] {
+  color: #f85149 !important; /* Operators */
+}
+
+/* Fix inline code in dark mode */
+.dark code:not(.shiki code) {
+  background-color: var(--secondary) !important;
+  color: var(--foreground) !important;
+}
+
+/* Keep light mode colors as they are - no changes needed */
+:root .shiki .token.comment,
+:root .shiki .token.prolog,
+:root .shiki .token.doctype,
+:root .shiki .token.cdata {
+  color: var(--muted-foreground) !important;
+}
