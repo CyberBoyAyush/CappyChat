@@ -22,10 +22,7 @@ export default function SettingsPage() {
         <div className="mobile-container mobile-padding flex h-16 items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
-              to={{
-                pathname: "/chat",
-                search: chatId ? `/${chatId}` : ""
-              }}
+              to={chatId ? `/chat/${chatId}` : "/chat"}
               className={buttonVariants({
                 variant: 'outline',
                 size: 'sm',

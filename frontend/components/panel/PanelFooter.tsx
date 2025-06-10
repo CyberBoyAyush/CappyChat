@@ -7,12 +7,11 @@
  */
 
 import { memo } from 'react';
-import { Link, useParams } from 'react-router';
-import { SidebarFooter } from '@/frontend/components/ui/sidebar';
+import { Link, useParams } from 'react-router-dom'; // Changed from 'react-router'
 import { buttonVariants } from '../ui/button';
 
 // Settings link component
-const SettingsLink = () => {
+const SettingsLink = memo(() => {
   const { id: activeSessionId } = useParams();
   
   const buildSettingsPath = () => {
@@ -22,22 +21,31 @@ const SettingsLink = () => {
     return "/settings";
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    console.log('Settings button clicked, navigating to:', buildSettingsPath());
+    console.log('Click event:', e);
+    console.log('Current activeSessionId:', activeSessionId);
+  };
+
   return (
     <Link
       to={buildSettingsPath()}
-      className={buttonVariants({ variant: "default" })}
+      className={`${buttonVariants({ variant: "default" })} cursor-pointer pointer-events-auto`}
+      onClick={handleClick}
     >
       Settings
     </Link>
   );
-};
+});
+
+SettingsLink.displayName = 'SettingsLink';
 
 // Main panel footer component
 const PanelFooterComponent = () => {
   return (
-    <SidebarFooter>
+    <div className="flex flex-col gap-2 p-2">
       <SettingsLink />
-    </SidebarFooter>
+    </div>
   );
 };
 

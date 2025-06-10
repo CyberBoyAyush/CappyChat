@@ -1,4 +1,3 @@
-// Option 1: Using panel structure
 /**
  * ChatSidebarPanel Component
  *
@@ -9,13 +8,6 @@
 
 import { ConversationPanel } from './panel';
 
-// Option 2: Using drawer structure
-// import { SidebarContainer } from './drawer';
-
 export default function ChatSidebarPanel() {
-  // Option 1: Panel-based structure
   return <ConversationPanel />;
-
-  // Option 2: Drawer-based structure (uncomment to use)
-  // return <SidebarContainer />;
 }

@@ -9,6 +9,7 @@
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
@@ -52,7 +53,9 @@ const ConversationPanel = () => {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <PanelFooter />
+        <SidebarFooter>
+          <PanelFooter />
+        </SidebarFooter>
       </div>
     </Sidebar>
   );
