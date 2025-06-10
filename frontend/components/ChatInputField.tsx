@@ -7,41 +7,44 @@
  * Creates new threads when needed and manages chat state.
  */
 
-import { ChevronDown, Check, ArrowUpIcon } from 'lucide-react';
-import { memo, useCallback, useMemo } from 'react';
-import { Textarea } from '@/frontend/components/ui/textarea';
-import { cn } from '@/lib/utils';
-import { Button } from '@/frontend/components/ui/button';
+import { ChevronDown, Check, ArrowUpIcon } from "lucide-react";
+import { memo, useCallback, useMemo } from "react";
+import { Textarea } from "@/frontend/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { Button } from "@/frontend/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/frontend/components/ui/dropdown-menu';
-import useTextAreaAutoResize from '@/hooks/useTextAreaAutoResize';
-import { UseChatHelpers } from '@ai-sdk/react';
-import { useParams } from 'react-router';
-import { useNavigate } from 'react-router';
-import { createMessage, createThread } from '@/frontend/database/chatQueries';
-import { useModelStore } from '@/frontend/stores/ChatModelStore';
-import { AI_MODELS, AIModel, getModelConfig } from '@/lib/models';
-import { ModelBadge, getModelIcon } from '@/frontend/components/ui/ModelComponents';
-import { UIMessage } from 'ai';
-import { v4 as uuidv4 } from 'uuid';
-import { StopIcon } from './ui/UIComponents';
-import { useChatMessageSummary } from '../hooks/useChatMessageSummary';
+} from "@/frontend/components/ui/dropdown-menu";
+import useTextAreaAutoResize from "@/hooks/useTextAreaAutoResize";
+import { UseChatHelpers } from "@ai-sdk/react";
+import { useParams } from "react-router";
+import { useNavigate } from "react-router";
+import { createMessage, createThread } from "@/frontend/database/chatQueries";
+import { useModelStore } from "@/frontend/stores/ChatModelStore";
+import { AI_MODELS, AIModel, getModelConfig } from "@/lib/models";
+import {
+  ModelBadge,
+  getModelIcon,
+} from "@/frontend/components/ui/ModelComponents";
+import { UIMessage } from "ai";
+import { v4 as uuidv4 } from "uuid";
+import { StopIcon } from "./ui/UIComponents";
+import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 
 interface InputFieldProps {
   threadId: string;
-  input: UseChatHelpers['input'];
-  status: UseChatHelpers['status'];
-  setInput: UseChatHelpers['setInput'];
-  append: UseChatHelpers['append'];
-  stop: UseChatHelpers['stop'];
+  input: UseChatHelpers["input"];
+  status: UseChatHelpers["status"];
+  setInput: UseChatHelpers["setInput"];
+  append: UseChatHelpers["append"];
+  stop: UseChatHelpers["stop"];
 }
 
 interface StopButtonProps {
-  stop: UseChatHelpers['stop'];
+  stop: UseChatHelpers["stop"];
 }
 
 interface SendButtonProps {
@@ -51,8 +54,8 @@ interface SendButtonProps {
 
 const createUserMessage = (id: string, text: string): UIMessage => ({
   id,
-  parts: [{ type: 'text', text }],
-  role: 'user',
+  parts: [{ type: "text", text }],
+  role: "user",
   content: text,
   createdAt: new Date(),
 });
@@ -65,7 +68,6 @@ function PureInputField({
   append,
   stop,
 }: InputFieldProps) {
-
   const { textareaRef, adjustHeight } = useTextAreaAutoResize({
     minHeight: 72,
     maxHeight: 200,
@@ -75,7 +77,7 @@ function PureInputField({
   const { id } = useParams();
 
   const isDisabled = useMemo(
-    () => !input.trim() || status === 'streaming' || status === 'submitted',
+    () => !input.trim() || status === "streaming" || status === "submitted",
     [input, status]
   );
 
@@ -86,8 +88,8 @@ function PureInputField({
 
     if (
       !currentInput.trim() ||
-      status === 'streaming' ||
-      status === 'submitted'
+      status === "streaming" ||
+      status === "submitted"
     )
       return;
 
@@ -107,7 +109,7 @@ function PureInputField({
     await createMessage(threadId, userMessage);
 
     append(userMessage);
-    setInput('');
+    setInput("");
     adjustHeight(true);
   }, [
     input,
@@ -124,7 +126,7 @@ function PureInputField({
   // Removed API key check since we now use environment variables
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
@@ -136,9 +138,9 @@ function PureInputField({
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40">
-      <div className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-card border border-border rounded-t-2xl shadow-lg p-3 pb-2 w-full backdrop-blur-sm mx-auto">
+    <div className="fixed bottom-0 z-40 w-auto mx-auto left-1/2 transform -translate-x-1/2">
+      <div className="w-full max-w-sm sm:min-w-md md:min-w-lg lg:min-w-2xl xl:min-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-card border border-border rounded-t-2xl shadow-lg p-2 md:p-3 pb-2 w-full backdrop-blur-sm mx-auto">
           <div className="relative">
             <div className="flex flex-col">
               <div className="bg-transparent overflow-y-auto max-h-[300px] rounded-lg">
@@ -147,16 +149,16 @@ function PureInputField({
                   value={input}
                   placeholder="What can I do for you?"
                   className={cn(
-                    'w-full px-4 py-3 border-none shadow-none bg-transparent',
-                    'placeholder:text-muted-foreground resize-none text-foreground',
-                    'focus-visible:ring-0 focus-visible:ring-offset-0',
-                    'scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/30',
-                    'scrollbar-thumb-rounded-full',
-                    'min-h-[72px] text-sm sm:text-base',
+                    "w-full px-4 py-1.5 md:py-3 border-none shadow-none bg-transparent",
+                    "placeholder:text-muted-foreground resize-none text-foreground",
+                    "focus-visible:ring-0 focus-visible:ring-offset-0",
+                    "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/30",
+                    "scrollbar-thumb-rounded-full",
+                    "min-h-[10px] text-sm sm:text-base",
                     // Better light mode styling and mobile optimization
-                    'selection:bg-primary selection:text-primary-foreground',
+                    "selection:bg-primary selection:text-primary-foreground",
                     // Mobile-specific improvements
-                    'mobile-input leading-relaxed'
+                    "mobile-input leading-relaxed"
                   )}
                   ref={textareaRef}
                   onKeyDown={handleKeyDown}
@@ -173,7 +175,7 @@ function PureInputField({
                 <div className="flex items-center justify-between w-full">
                   <ModelDropdown />
 
-                  {status === 'submitted' || status === 'streaming' ? (
+                  {status === "submitted" || status === "streaming" ? (
                     <StopButton stop={stop} />
                   ) : (
                     <SendButton onSubmit={handleSubmit} disabled={isDisabled} />
@@ -198,13 +200,10 @@ const PureModelDropdown = () => {
   const { selectedModel, setModel } = useModelStore();
   const selectedModelConfig = getModelConfig(selectedModel);
 
-  const isModelEnabled = useCallback(
-    (_model: AIModel) => {
-      // All models are enabled since we use environment API key
-      return true;
-    },
-    []
-  );
+  const isModelEnabled = useCallback((_model: AIModel) => {
+    // All models are enabled since we use environment API key
+    return true;
+  }, []);
 
   return (
     <div className="flex items-center gap-2">
@@ -215,19 +214,34 @@ const PureModelDropdown = () => {
             className="flex items-center gap-2 h-8 pl-2 pr-2 text-xs rounded-md text-foreground hover:bg-accent hover:text-accent-foreground focus-enhanced"
             aria-label={`Selected model: ${selectedModel}`}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex max-w-[180px] md:max-w-sm items-center gap-2">
               {getModelIcon(selectedModelConfig.iconType, 16)}
-              <span className="mobile-text truncate max-w-[120px]">{selectedModelConfig.displayName}</span>
+              <span className="mobile-text truncate max-w-sm">
+                {selectedModelConfig.displayName}
+              </span>
               <div className="flex items-center gap-1">
                 {selectedModelConfig.isPremium && <ModelBadge type="premium" />}
-                {selectedModelConfig.hasReasoning && <ModelBadge type="reasoning" />}
+                {selectedModelConfig.hasReasoning && (
+                  <ModelBadge type="reasoning" />
+                )}
               </div>
               <ChevronDown className="w-3 h-3 opacity-50" />
             </div>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className={cn('min-w-[20rem]', 'border-border', 'bg-popover')}
+          className={cn(
+            "max-w-[300px] sm:max-w-[400px] lg:max-w-[500px]",
+            "mx-4",
+            "border-border",
+            "bg-popover",
+            "max-h-[60vh] overflow-y-auto",
+            "sm:max-h-[70vh]",
+            "lg:max-h-[80vh]",
+            "scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent scrollbar-thumb-rounded-full"
+          )}
+          align="end"
+          sideOffset={8}
         >
           {AI_MODELS.map((model) => {
             const isEnabled = isModelEnabled(model);
@@ -238,22 +252,30 @@ const PureModelDropdown = () => {
                 onSelect={() => isEnabled && setModel(model)}
                 disabled={!isEnabled}
                 className={cn(
-                  'flex items-center justify-between gap-3 p-3',
-                  'cursor-pointer'
+                  "flex items-center justify-between gap-3 p-3",
+                  "cursor-pointer"
                 )}
               >
                 <div className="flex items-center gap-3 flex-1">
                   {getModelIcon(modelConfig.iconType, 20)}
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">{modelConfig.displayName}</span>
+                      <span className="font-medium text-sm">
+                        {modelConfig.displayName}
+                      </span>
                       <div className="flex items-center gap-1">
                         {modelConfig.isPremium && <ModelBadge type="premium" />}
-                        {modelConfig.hasReasoning && <ModelBadge type="reasoning" />}
+                        {modelConfig.hasReasoning && (
+                          <ModelBadge type="reasoning" />
+                        )}
                       </div>
                     </div>
-                    <span className="text-xs text-muted-foreground">{modelConfig.description}</span>
-                    <span className="text-xs text-muted-foreground font-medium">{modelConfig.company}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {modelConfig.description}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-medium">
+                      {modelConfig.company}
+                    </span>
                   </div>
                 </div>
                 {selectedModel === model && (

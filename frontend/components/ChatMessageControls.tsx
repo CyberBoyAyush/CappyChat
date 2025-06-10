@@ -6,22 +6,22 @@
  * Appears below each message to allow user interaction with message content.
  */
 
-import { Dispatch, SetStateAction, useState } from 'react';
-import { Button } from './ui/button';
-import { cn } from '@/lib/utils';
-import { Check, Copy, RefreshCcw, SquarePen } from 'lucide-react';
-import { UIMessage } from 'ai';
-import { UseChatHelpers } from '@ai-sdk/react';
-import { deleteTrailingMessages } from '@/frontend/database/chatQueries';
+import { Dispatch, SetStateAction, useState } from "react";
+import { Button } from "./ui/button";
+import { cn } from "@/lib/utils";
+import { Check, Copy, RefreshCcw, SquarePen } from "lucide-react";
+import { UIMessage } from "ai";
+import { UseChatHelpers } from "@ai-sdk/react";
+import { deleteTrailingMessages } from "@/frontend/database/chatQueries";
 
 interface MessageControlsProps {
   threadId: string;
   message: UIMessage;
-  setMessages: UseChatHelpers['setMessages'];
+  setMessages: UseChatHelpers["setMessages"];
   content: string;
-  setMode?: Dispatch<SetStateAction<'view' | 'edit'>>;
-  reload: UseChatHelpers['reload'];
-  stop: UseChatHelpers['stop'];
+  setMode?: Dispatch<SetStateAction<"view" | "edit">>;
+  reload: UseChatHelpers["reload"];
+  stop: UseChatHelpers["stop"];
 }
 
 export default function MessageControls({
@@ -47,7 +47,7 @@ export default function MessageControls({
     // stop the current request
     stop();
 
-    if (message.role === 'user') {
+    if (message.role === "user") {
       await deleteTrailingMessages(threadId, message.createdAt as Date, false);
 
       setMessages((messages) => {
@@ -81,9 +81,9 @@ export default function MessageControls({
   return (
     <div
       className={cn(
-        'opacity-0 group-hover:opacity-100 transition-opacity duration-100 flex gap-1',
+        "opacity-55 group-hover:opacity-100 transition-opacity duration-100 flex gap-1",
         {
-          'absolute mt-5 right-2': message.role === 'user',
+          "absolute mt-5 right-2": message.role === "user",
         }
       )}
     >
@@ -91,7 +91,7 @@ export default function MessageControls({
         {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
       </Button>
       {setMode && (
-        <Button variant="ghost" size="icon" onClick={() => setMode('edit')}>
+        <Button variant="ghost" size="icon" onClick={() => setMode("edit")}>
           <SquarePen className="w-4 h-4" />
         </Button>
       )}

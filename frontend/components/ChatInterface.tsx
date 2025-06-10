@@ -6,26 +6,29 @@
  * Manages chat state, message flow, API communication, and integrates all chat-related components.
  */
 
-import { useChat } from '@ai-sdk/react';
-import ChatMessageDisplay from './ChatMessageDisplay';
-import ChatInputField from './ChatInputField';
-import ChatMessageBrowser from './ChatMessageBrowser';
-import { UIMessage } from 'ai';
-import { v4 as uuidv4 } from 'uuid';
-import { createMessage } from '@/frontend/database/chatQueries';
-import { useModelStore } from '@/frontend/stores/ChatModelStore';
-import ThemeToggleButton from './ui/ThemeComponents';
-import { SidebarTrigger, useSidebar } from './ui/sidebar';
-import { Button } from './ui/button';
-import { MessageSquareMore, PanelLeftIcon } from 'lucide-react';
-import { useChatMessageNavigator } from '@/frontend/hooks/useChatMessageNavigator';
+import { useChat } from "@ai-sdk/react";
+import ChatMessageDisplay from "./ChatMessageDisplay";
+import ChatInputField from "./ChatInputField";
+import ChatMessageBrowser from "./ChatMessageBrowser";
+import { UIMessage } from "ai";
+import { v4 as uuidv4 } from "uuid";
+import { createMessage } from "@/frontend/database/chatQueries";
+import { useModelStore } from "@/frontend/stores/ChatModelStore";
+import ThemeToggleButton from "./ui/ThemeComponents";
+import { SidebarTrigger, useSidebar } from "./ui/sidebar";
+import { Button } from "./ui/button";
+import { MessageSquareMore, PanelLeftIcon } from "lucide-react";
+import { useChatMessageNavigator } from "@/frontend/hooks/useChatMessageNavigator";
 
 interface ChatInterfaceProps {
   threadId: string;
   initialMessages: UIMessage[];
 }
 
-export default function ChatInterface({ threadId, initialMessages }: ChatInterfaceProps) {
+export default function ChatInterface({
+  threadId,
+  initialMessages,
+}: ChatInterfaceProps) {
   const selectedModel = useModelStore((state) => state.selectedModel);
 
   const {
@@ -47,16 +50,16 @@ export default function ChatInterface({ threadId, initialMessages }: ChatInterfa
     reload,
     error,
   } = useChat({
-    api: '/api/chat-messaging',
+    api: "/api/chat-messaging",
     id: threadId,
     initialMessages,
     experimental_throttle: 50,
     onFinish: async ({ parts }) => {
       const aiMessage: UIMessage = {
         id: uuidv4(),
-        parts: parts as UIMessage['parts'],
-        role: 'assistant',
-        content: '',
+        parts: parts as UIMessage["parts"],
+        role: "assistant",
+        content: "",
         createdAt: new Date(),
       };
 
@@ -76,7 +79,7 @@ export default function ChatInterface({ threadId, initialMessages }: ChatInterfa
     <div className="relative w-full min-h-screen bg-background">
       <AppPanelTrigger />
       <main
-        className={`flex flex-col w-full mobile-container mobile-padding pt-6 sm:pt-10 pb-32 sm:pb-44 transition-all duration-300 ease-in-out`}
+        className={`flex flex-col w-full mobile-container mobile-padding pt-20 sm:pt-10 pb-32 sm:pb-44 transition-all duration-300 ease-in-out`}
       >
         <ChatMessageDisplay
           threadId={threadId}
@@ -106,9 +109,7 @@ export default function ChatInterface({ threadId, initialMessages }: ChatInterfa
           size="icon"
           className="focus-enhanced"
           aria-label={
-            isNavigatorVisible
-              ? 'Hide message browser'
-              : 'Show message browser'
+            isNavigatorVisible ? "Hide message browser" : "Show message browser"
           }
         >
           <MessageSquareMore className="h-5 w-5" />
@@ -130,7 +131,7 @@ const AppPanelTrigger = () => {
   const { state, isMobile, toggleSidebar } = useSidebar();
 
   // Show trigger on mobile or when sidebar is collapsed on desktop
-  if (isMobile || state === 'collapsed') {
+  if (isMobile || state === "collapsed") {
     return (
       <Button
         variant="outline"

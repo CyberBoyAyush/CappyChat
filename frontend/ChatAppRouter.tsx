@@ -6,12 +6,12 @@
  * Sets up routing for home, chat threads, settings, and handles 404 pages.
  */
 
-import { BrowserRouter, Route, Routes } from 'react-router';
-import ChatLayoutWrapper from './ChatLayoutWrapper';
-import ChatHomePage from './routes/ChatHomePage';
-import LandingPage from './routes/LandingPage';
-import ChatThreadPage from './routes/ChatThreadPage';
-import SettingsPage from './routes/SettingsPage';
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import ChatLayoutWrapper from "./ChatLayoutWrapper";
+import ChatHomePage from "./routes/ChatHomePage";
+import LandingPage from "./routes/LandingPage";
+import ChatThreadPage from "./routes/ChatThreadPage";
+import SettingsPage from "./routes/SettingsPage";
 
 export default function ChatAppRouter() {
   return (

@@ -6,27 +6,35 @@
  * Provides access to theme settings and other configuration options.
  */
 
-import { Link, useSearchParams } from 'react-router';
-import { buttonVariants } from '../components/ui/button';
-import { ArrowLeftIcon, Settings as SettingsIcon } from 'lucide-react';
-import ThemeToggleButton from '../components/ui/ThemeComponents';
+import { Link, useSearchParams } from "react-router";
+import { buttonVariants } from "../components/ui/button";
+import {
+  ArrowLeftIcon,
+  Settings as SettingsIcon,
+  Moon,
+  Sun,
+  Laptop,
+} from "lucide-react";
+import ThemeToggleButton from "../components/ui/ThemeComponents";
+import { useTheme } from "next-themes";
 
 export default function SettingsPage() {
   const [searchParams] = useSearchParams();
   const chatId = searchParams.get("from");
+  const { setTheme, theme } = useTheme();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col align-middle justify-center">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mobile-container mobile-padding flex h-16 items-center justify-between">
+        <div className="container px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
               to={chatId ? `/chat/${chatId}` : "/chat"}
               className={buttonVariants({
-                variant: 'outline',
-                size: 'sm',
-                className: 'gap-2',
+                variant: "outline",
+                size: "sm",
+                className: "gap-2",
               })}
             >
               <ArrowLeftIcon className="w-4 h-4" />
@@ -41,38 +49,104 @@ export default function SettingsPage() {
       </header>
 
       {/* Main Content */}
-      <main className="mobile-container mobile-padding py-8">
-        <div className="space-y-8">
+      <main className="container self-center px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8 max-w-4xl mx-auto">
           {/* Page Title and Description */}
-          <div className="text-center space-y-2">
+          <div className="space-y-2">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
               Application Settings
             </h2>
-            <p className="text-muted-foreground mobile-text max-w-2xl mx-auto">
-              Configure your application preferences and settings.
+            <p className="text-muted-foreground text-sm sm:text-base">
+              Configure your preferences and customize your AT Chat experience.
             </p>
+            <div className="h-px bg-border mt-4"></div>
           </div>
 
           {/* Settings Content */}
-          <div className="flex justify-center">
-            <div className="w-full max-w-2xl mx-auto space-y-6">
-              <div className="p-6 border rounded-lg bg-card">
-                <h3 className="text-lg font-semibold mb-4">Theme Settings</h3>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Switch between light and dark themes
-                  </span>
-                  <ThemeToggleButton variant="inline" />
+          <div className="grid gap-6">
+            {/* Theme Settings Card */}
+            <div className="p-6 border rounded-xl bg-card shadow-sm transition-shadow hover:shadow-md">
+              <div className="flex items-center justify-between mb-4">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-medium">Theme Settings</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Customize the visual appearance of AT Chat
+                  </p>
+                </div>
+                <ThemeToggleButton variant="inline" />
+              </div>
+
+              <div className="flex justify-center">
+                <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 mt-6 max-w-md">
+                  <div
+                    onClick={() => setTheme("light")}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-lg border ${
+                      theme === "light" ? "border-primary" : ""
+                    } bg-background/50 cursor-pointer hover:bg-background/80 transition-colors`}
+                  >
+                    <Sun className="h-6 w-6 text-amber-500" />
+                    <span className="text-sm font-medium">Light</span>
+                    <span className="text-xs text-muted-foreground">
+                      For bright environments
+                    </span>
+                  </div>
+                  <div
+                    onClick={() => setTheme("dark")}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-lg border ${
+                      theme === "dark" ? "border-primary" : ""
+                    } bg-background/50 cursor-pointer hover:bg-background/80 transition-colors`}
+                  >
+                    <Moon className="h-6 w-6 text-indigo-500" />
+                    <span className="text-sm font-medium">Dark</span>
+                    <span className="text-xs text-muted-foreground">
+                      Reduce eye strain
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* API Configuration Card */}
+            <div className="p-6 border rounded-xl bg-card shadow-sm transition-shadow hover:shadow-md">
+              <div className="space-y-1 mb-4">
+                <h3 className="text-lg font-medium">API Configuration</h3>
+                <p className="text-sm text-muted-foreground">
+                  Language model access and authentication settings
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-muted/50 p-4 mt-2">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 rounded-full bg-muted">
+                    <SettingsIcon className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-sm">
+                      For security purposes, API keys are managed via
+                      environment variables. This approach ensures your
+                      credentials remain protected and are never exposed
+                      client-side.
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      If you need access to additional language models or have
+                      questions about API configuration, please contact your
+                      system administrator.
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="p-6 border rounded-lg bg-card">
-                <h3 className="text-lg font-semibold mb-2">API Configuration</h3>
-                <p className="text-sm text-muted-foreground">
-                  API keys are configured via environment variables for security.
-                  Contact your administrator if you need access to different models.
+              <div className="flex items-center mt-6 pt-4 border-t text-sm text-muted-foreground">
+                <p>
+                  Current model configuration is managed by your administrator
                 </p>
               </div>
+            </div>
+
+            {/* Additional Information */}
+            <div className="mt-8 text-center text-sm text-muted-foreground">
+              <p>AT Chat • Version 1.0.0</p>
+              <p className="mt-1">© 2023 AT Chat. All rights reserved.</p>
             </div>
           </div>
         </div>
