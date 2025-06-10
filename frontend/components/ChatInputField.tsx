@@ -23,10 +23,10 @@ import { UseChatHelpers } from '@ai-sdk/react';
 import { useParams } from 'react-router';
 import { useNavigate } from 'react-router';
 import { createMessage, createThread } from '@/frontend/database/chatQueries';
-import { useAPIKeyStore } from '@/frontend/stores/ApiKeyStore';
 import { useModelStore } from '@/frontend/stores/ChatModelStore';
 import { AI_MODELS, AIModel, getModelConfig } from '@/lib/models';
-import ApiKeyPrompt from '@/frontend/components/ApiKeyPrompt';
+import { ModelBadge } from '@/frontend/components/ui/ModelBadge';
+import { ModelIconMap } from '@/frontend/components/ui/ModelIcons';
 import { UIMessage } from 'ai';
 import { v4 as uuidv4 } from 'uuid';
 import { StopIcon } from './ui/icons';
@@ -66,7 +66,6 @@ function PureInputField({
   append,
   stop,
 }: InputFieldProps) {
-  const canChat = useAPIKeyStore((state) => state.hasRequiredKeys());
 
   const { textareaRef, adjustHeight } = useTextAreaAutoResize({
     minHeight: 72,
@@ -123,9 +122,7 @@ function PureInputField({
     complete,
   ]);
 
-  if (!canChat) {
-    return <ApiKeyPrompt />;
-  }
+  // Removed API key check since we now use environment variables
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -199,16 +196,16 @@ const InputField = memo(PureInputField, (prevProps, nextProps) => {
 });
 
 const PureModelDropdown = () => {
-  const getKey = useAPIKeyStore((state) => state.getKey);
   const { selectedModel, setModel } = useModelStore();
+  const selectedModelConfig = getModelConfig(selectedModel);
+  const SelectedIcon = ModelIconMap[selectedModelConfig.iconType];
 
   const isModelEnabled = useCallback(
-    (model: AIModel) => {
-      const modelConfig = getModelConfig(model);
-      const apiKey = getKey(modelConfig.provider);
-      return !!apiKey;
+    (_model: AIModel) => {
+      // All models are enabled since we use environment API key
+      return true;
     },
-    [getKey]
+    []
   );
 
   return (
@@ -217,31 +214,51 @@ const PureModelDropdown = () => {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="flex items-center gap-1 h-8 pl-2 pr-2 text-xs rounded-md text-foreground hover:bg-accent hover:text-accent-foreground focus-enhanced"
+            className="flex items-center gap-2 h-8 pl-2 pr-2 text-xs rounded-md text-foreground hover:bg-accent hover:text-accent-foreground focus-enhanced"
             aria-label={`Selected model: ${selectedModel}`}
           >
-            <div className="flex items-center gap-1">
-              <span className="mobile-text">{selectedModel}</span>
+            <div className="flex items-center gap-2">
+              <SelectedIcon size={16} />
+              <span className="mobile-text truncate max-w-[120px]">{selectedModelConfig.displayName}</span>
+              <div className="flex items-center gap-1">
+                {selectedModelConfig.isPremium && <ModelBadge type="premium" />}
+                {selectedModelConfig.hasReasoning && <ModelBadge type="reasoning" />}
+              </div>
               <ChevronDown className="w-3 h-3 opacity-50" />
             </div>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className={cn('min-w-[10rem]', 'border-border', 'bg-popover')}
+          className={cn('min-w-[20rem]', 'border-border', 'bg-popover')}
         >
           {AI_MODELS.map((model) => {
             const isEnabled = isModelEnabled(model);
+            const modelConfig = getModelConfig(model);
+            const IconComponent = ModelIconMap[modelConfig.iconType];
             return (
               <DropdownMenuItem
                 key={model}
                 onSelect={() => isEnabled && setModel(model)}
                 disabled={!isEnabled}
                 className={cn(
-                  'flex items-center justify-between gap-2',
+                  'flex items-center justify-between gap-3 p-3',
                   'cursor-pointer'
                 )}
               >
-                <span>{model}</span>
+                <div className="flex items-center gap-3 flex-1">
+                  <IconComponent size={20} />
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm">{modelConfig.displayName}</span>
+                      <div className="flex items-center gap-1">
+                        {modelConfig.isPremium && <ModelBadge type="premium" />}
+                        {modelConfig.hasReasoning && <ModelBadge type="reasoning" />}
+                      </div>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{modelConfig.description}</span>
+                    <span className="text-xs text-muted-foreground font-medium">{modelConfig.company}</span>
+                  </div>
+                </div>
                 {selectedModel === model && (
                   <Check
                     className="w-4 h-4 text-primary"

@@ -18,7 +18,6 @@ import { Dispatch, SetStateAction } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
-import { useAPIKeyStore } from '@/frontend/stores/ApiKeyStore';
 import { toast } from 'sonner';
 
 export default function MessageEditor({
@@ -39,13 +38,9 @@ export default function MessageEditor({
   stop: UseChatHelpers['stop'];
 }) {
   const [draftContent, setDraftContent] = useState(content);
-  const getKey = useAPIKeyStore((state) => state.getKey);
 
   const { complete } = useCompletion({
-    api: '/api/text-generation',
-    ...(getKey('google') && {
-      headers: { 'X-Google-API-Key': getKey('google')! },
-    }),
+    api: '/api/ai-text-generation',
     onResponse: async (response) => {
       try {
         const payload = await response.json();

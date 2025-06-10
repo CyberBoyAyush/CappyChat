@@ -1,8 +1,5 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText, smoothStream } from 'ai';
-import { headers } from 'next/headers';
 import { getModelConfig, AIModel } from '@/lib/models';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -10,39 +7,65 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, model } = await req.json();
-    const headersList = await headers();
+    const body = await req.json();
+    const { messages, model } = body;
+
+    // Validate required fields
+    if (!messages || !Array.isArray(messages)) {
+      return new Response(
+        JSON.stringify({ error: 'Messages array is required' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    if (!model || typeof model !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'Model is required' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
     const modelConfig = getModelConfig(model as AIModel);
 
-    const apiKey = headersList.get(modelConfig.headerKey) as string;
-
-    let aiModel;
-    switch (modelConfig.provider) {
-      case 'google':
-        const google = createGoogleGenerativeAI({ apiKey });
-        aiModel = google(modelConfig.modelId);
-        break;
-
-      case 'openai':
-        const openai = createOpenAI({ apiKey });
-        aiModel = openai(modelConfig.modelId);
-        break;
-
-      case 'openrouter':
-        const openrouter = createOpenRouter({ apiKey });
-        aiModel = openrouter(modelConfig.modelId);
-        break;
-
-      default:
-        return new Response(
-          JSON.stringify({ error: 'Unsupported model provider' }),
-          {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' },
-          }
-        );
+    if (!modelConfig) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid model specified' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
+
+    // Get OpenRouter API key from environment variable
+    const apiKey = process.env.OPENROUTER_API_KEY;
+
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: 'OpenRouter API key not configured' }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // All models now use OpenRouter with app identification headers
+    const openrouter = createOpenRouter({
+      apiKey,
+      headers: {
+        'HTTP-Referer': 'https://atchat.app',
+        'X-Title': 'ATChat - AI Chat Application',
+        'User-Agent': 'ATChat/1.0.0'
+      }
+    });
+    const aiModel = openrouter(modelConfig.modelId);
 
     const result = streamText({
       model: aiModel,

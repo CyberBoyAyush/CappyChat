@@ -13,7 +13,6 @@ import ChatMessageBrowser from './ChatMessageBrowser';
 import { UIMessage } from 'ai';
 import { v4 as uuidv4 } from 'uuid';
 import { createMessage } from '@/frontend/database/chatQueries';
-import { useAPIKeyStore } from '@/frontend/stores/ApiKeyStore';
 import { useModelStore } from '@/frontend/stores/ChatModelStore';
 import ThemeToggleButton from './ui/ThemeToggleButton';
 import { SidebarTrigger, useSidebar } from './ui/sidebar';
@@ -27,9 +26,7 @@ interface ChatInterfaceProps {
 }
 
 export default function ChatInterface({ threadId, initialMessages }: ChatInterfaceProps) {
-  const { getKey } = useAPIKeyStore();
   const selectedModel = useModelStore((state) => state.selectedModel);
-  const modelConfig = useModelStore((state) => state.getModelConfig());
 
   const {
     isNavigatorVisible,
@@ -69,9 +66,7 @@ export default function ChatInterface({ threadId, initialMessages }: ChatInterfa
         console.error(error);
       }
     },
-    headers: {
-      [modelConfig.headerKey]: getKey(modelConfig.provider) || '',
-    },
+    headers: {},
     body: {
       model: selectedModel,
     },

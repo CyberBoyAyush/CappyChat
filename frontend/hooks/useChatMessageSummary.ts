@@ -1,5 +1,4 @@
 import { useCompletion } from '@ai-sdk/react';
-import { useAPIKeyStore } from '@/frontend/stores/ApiKeyStore';
 import { toast } from 'sonner';
 import { createMessageSummary, updateThread } from '@/frontend/database/chatQueries';
 
@@ -11,13 +10,8 @@ interface MessageSummaryPayload {
 }
 
 export const useChatMessageSummary = () => {
-  const getKey = useAPIKeyStore((state) => state.getKey);
-
   const { complete, isLoading } = useCompletion({
     api: '/api/ai-text-generation',
-    ...(getKey('google') && {
-      headers: { 'X-Google-API-Key': getKey('google')! },
-    }),
     onResponse: async (response) => {
       try {
         const payload: MessageSummaryPayload = await response.json();

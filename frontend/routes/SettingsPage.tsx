@@ -2,11 +2,10 @@
  * SettingsPage Route Component
  *
  * Used in: frontend/ChatAppRouter.tsx (as "/settings" route)
- * Purpose: Settings page for configuring API keys and application preferences.
- * Provides access to API key management and other configuration options.
+ * Purpose: Settings page for application preferences and configuration.
+ * Provides access to theme settings and other configuration options.
  */
 
-import ApiKeyConfigForm from '@/frontend/components/ApiKeyConfigForm';
 import { Link, useSearchParams } from 'react-router';
 import { buttonVariants } from '../components/ui/button';
 import { ArrowLeftIcon, Settings as SettingsIcon } from 'lucide-react';
@@ -41,7 +40,6 @@ export default function SettingsPage() {
               <h1 className="text-lg font-semibold">Settings</h1>
             </div>
           </div>
-          <ThemeToggleButton variant="inline" />
         </div>
       </header>
 
@@ -51,16 +49,34 @@ export default function SettingsPage() {
           {/* Page Title and Description */}
           <div className="text-center space-y-2">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              Configure Your API Keys
+              Application Settings
             </h2>
             <p className="text-muted-foreground mobile-text max-w-2xl mx-auto">
-              Add your API keys to start chatting with AI models. All keys are stored securely in your browser's local storage.
+              Configure your application preferences and settings.
             </p>
           </div>
 
-          {/* API Key Form */}
+          {/* Settings Content */}
           <div className="flex justify-center">
-            <ApiKeyConfigForm />
+            <div className="w-full max-w-2xl mx-auto space-y-6">
+              <div className="p-6 border rounded-lg bg-card">
+                <h3 className="text-lg font-semibold mb-4">Theme Settings</h3>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Switch between light and dark themes
+                  </span>
+                  <ThemeToggleButton variant="inline" />
+                </div>
+              </div>
+
+              <div className="p-6 border rounded-lg bg-card">
+                <h3 className="text-lg font-semibold mb-2">API Configuration</h3>
+                <p className="text-sm text-muted-foreground">
+                  API keys are configured via environment variables for security.
+                  Contact your administrator if you need access to different models.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </main>
