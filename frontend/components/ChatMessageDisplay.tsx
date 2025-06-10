@@ -11,8 +11,8 @@ import PreviewMessage from './Message';
 import { UIMessage } from 'ai';
 import { UseChatHelpers } from '@ai-sdk/react';
 import equal from 'fast-deep-equal';
-import ChatMessageLoading from './ui/ChatMessageLoading';
-import Error from './Error';
+import ChatMessageLoading from './ui/UIComponents';
+import { Error } from './ui/UIComponents';
 
 function PureMessageDisplay({
   threadId,

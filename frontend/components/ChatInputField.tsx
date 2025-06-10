@@ -25,11 +25,10 @@ import { useNavigate } from 'react-router';
 import { createMessage, createThread } from '@/frontend/database/chatQueries';
 import { useModelStore } from '@/frontend/stores/ChatModelStore';
 import { AI_MODELS, AIModel, getModelConfig } from '@/lib/models';
-import { ModelBadge } from '@/frontend/components/ui/ModelBadge';
-import { ModelIconMap } from '@/frontend/components/ui/ModelIcons';
+import { ModelBadge, getModelIcon } from '@/frontend/components/ui/ModelComponents';
 import { UIMessage } from 'ai';
 import { v4 as uuidv4 } from 'uuid';
-import { StopIcon } from './ui/icons';
+import { StopIcon } from './ui/UIComponents';
 import { useChatMessageSummary } from '../hooks/useChatMessageSummary';
 
 interface InputFieldProps {
@@ -198,7 +197,6 @@ const InputField = memo(PureInputField, (prevProps, nextProps) => {
 const PureModelDropdown = () => {
   const { selectedModel, setModel } = useModelStore();
   const selectedModelConfig = getModelConfig(selectedModel);
-  const SelectedIcon = ModelIconMap[selectedModelConfig.iconType];
 
   const isModelEnabled = useCallback(
     (_model: AIModel) => {
@@ -218,7 +216,7 @@ const PureModelDropdown = () => {
             aria-label={`Selected model: ${selectedModel}`}
           >
             <div className="flex items-center gap-2">
-              <SelectedIcon size={16} />
+              {getModelIcon(selectedModelConfig.iconType, 16)}
               <span className="mobile-text truncate max-w-[120px]">{selectedModelConfig.displayName}</span>
               <div className="flex items-center gap-1">
                 {selectedModelConfig.isPremium && <ModelBadge type="premium" />}
@@ -234,7 +232,6 @@ const PureModelDropdown = () => {
           {AI_MODELS.map((model) => {
             const isEnabled = isModelEnabled(model);
             const modelConfig = getModelConfig(model);
-            const IconComponent = ModelIconMap[modelConfig.iconType];
             return (
               <DropdownMenuItem
                 key={model}
@@ -246,7 +243,7 @@ const PureModelDropdown = () => {
                 )}
               >
                 <div className="flex items-center gap-3 flex-1">
-                  <IconComponent size={20} />
+                  {getModelIcon(modelConfig.iconType, 20)}
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm">{modelConfig.displayName}</span>

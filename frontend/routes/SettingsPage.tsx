@@ -9,7 +9,7 @@
 import { Link, useSearchParams } from 'react-router';
 import { buttonVariants } from '../components/ui/button';
 import { ArrowLeftIcon, Settings as SettingsIcon } from 'lucide-react';
-import ThemeToggleButton from '../components/ui/ThemeToggleButton';
+import ThemeToggleButton from '../components/ui/ThemeComponents';
 
 export default function SettingsPage() {
   const [searchParams] = useSearchParams();

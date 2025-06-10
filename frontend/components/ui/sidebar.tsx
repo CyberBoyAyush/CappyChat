@@ -15,7 +15,7 @@ import { useIsMobile } from '@/hooks/useMobileDetection';
 import { cn } from '@/lib/utils';
 import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
-import { Separator } from '@/frontend/components/ui/separator';
+import { Separator, Skeleton } from '@/frontend/components/ui/BasicComponents';
 import {
   Sheet,
   SheetContent,
@@ -23,7 +23,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/frontend/components/ui/sheet';
-import { Skeleton } from '@/frontend/components/ui/skeleton';
 import {
   Tooltip,
   TooltipContent,

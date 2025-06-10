@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './styles.css';
 import 'katex/dist/katex.min.css';
-import { Toaster } from '@/frontend/components/ui/sonner';
-import { ThemeProvider } from '@/frontend/components/ui/AppThemeProvider';
+import { Toaster } from '@/frontend/components/ui/BasicComponents';
+import { ThemeProvider } from '@/frontend/components/ui/ThemeComponents';
 import { Analytics } from '@vercel/analytics/react';
 
 const geistSans = Geist({
