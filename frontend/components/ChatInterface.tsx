@@ -13,6 +13,7 @@ import ChatMessageBrowser from "./ChatMessageBrowser";
 import { UIMessage } from "ai";
 import { v4 as uuidv4 } from "uuid";
 import { createMessage } from "@/frontend/database/chatQueries";
+import { useAuth } from "@/frontend/contexts/AuthContext";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import ThemeToggleButton from "./ui/ThemeComponents";
 import { SidebarTrigger, useSidebar } from "./ui/sidebar";

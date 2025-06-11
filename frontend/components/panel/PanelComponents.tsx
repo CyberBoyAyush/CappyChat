@@ -14,6 +14,7 @@ import { SidebarHeader, SidebarTrigger } from '@/frontend/components/ui/sidebar'
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThreadData, ThreadOperations } from './ThreadManager';
+import UserProfileDropdown from '../UserProfileDropdown';
 
 // ===============================================
 // Panel Header Components
@@ -67,7 +68,7 @@ const AppTitle = memo(() => (
     {/* Logo Text */}
     <div className="flex items-baseline">
       <span className="text-xl font-bold text-sidebar-foreground tracking-tight">
-        AT
+        AV
       </span>
       <span className="text-xl font-bold text-primary tracking-tight">
         Chat
@@ -77,7 +78,7 @@ const AppTitle = memo(() => (
   </div>
 ));
 
-AppTitle.displayName = 'ATChatAppTitle';
+AppTitle.displayName = 'AVChatAppTitle';
 
 /**
  * New Chat Button Component
@@ -121,51 +122,16 @@ export const PanelHeader = memo(PanelHeaderComponent);
 // ===============================================
 
 /**
- * Settings Link Component
- *
- * Used in: PanelFooter
- * Purpose: Provides navigation to the settings page with session context.
- */
-const SettingsLink = memo(() => {
-  const { id: activeSessionId } = useParams();
-  
-  const buildSettingsPath = () => {
-    if (activeSessionId) {
-      return `/settings?from=${encodeURIComponent(activeSessionId)}`;
-    }
-    return "/settings";
-  };
-
-  const handleClick = (e: React.MouseEvent) => {
-    console.log('Settings button clicked, navigating to:', buildSettingsPath());
-    console.log('Click event:', e);
-    console.log('Current activeSessionId:', activeSessionId);
-  };
-
-  return (
-    <Link
-      to={buildSettingsPath()}
-      className={`${buttonVariants({ variant: "default" })} cursor-pointer pointer-events-auto`}
-      onClick={handleClick}
-    >
-      Settings
-    </Link>
-  );
-});
-
-SettingsLink.displayName = 'SettingsLink';
-
-/**
  * Panel Footer Component
  *
  * Used in: frontend/components/ChatSidebarPanel.tsx
- * Purpose: Footer section of the conversation panel containing settings link and theme toggle.
- * Provides access to application settings and theme switching functionality.
+ * Purpose: Footer section of the conversation panel containing user profile dropdown.
+ * Provides access to user account, settings, and logout functionality.
  */
 const PanelFooterComponent = () => {
   return (
     <div className="flex flex-col gap-2 p-2">
-      <SettingsLink />
+      <UserProfileDropdown />
     </div>
   );
 };

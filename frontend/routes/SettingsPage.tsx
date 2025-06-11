@@ -6,7 +6,7 @@
  * Provides access to theme settings and other configuration options.
  */
 
-import { Link, useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router-dom";
 import { buttonVariants } from "../components/ui/button";
 import {
   ArrowLeftIcon,

@@ -21,6 +21,7 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "@vercel/analytics": "^1.5.0",
     "ai": "^4.3.16",
+    "appwrite": "^18.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dexie": "^4.0.11",

@@ -19,8 +19,8 @@ export async function POST(req: Request) {
     apiKey,
     headers: {
       'HTTP-Referer': 'https://atchat.ayush-sharma.in',
-      'X-Title': 'ATChat - AI Chat Application',
-      'User-Agent': 'ATChat/1.0.0'
+      'X-Title': 'AVChat - AI Chat Application',
+      'User-Agent': 'AVChat/1.0.0'
     }
   });
 

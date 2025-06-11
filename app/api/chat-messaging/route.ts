@@ -61,8 +61,8 @@ export async function POST(req: NextRequest) {
       apiKey,
       headers: {
         'HTTP-Referer': 'https://atchat.app',
-        'X-Title': 'ATChat - AI Chat Application',
-        'User-Agent': 'ATChat/1.0.0'
+        'X-Title': 'AVChat - AI Chat Application',
+        'User-Agent': 'AVChat/1.0.0'
       }
     });
     const aiModel = openrouter(modelConfig.modelId);
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
         console.log('error', error);
       },
       system: `
-      You are ATChat, an ai assistant that can answer questions and help with tasks.
+      You are AVChat, an ai assistant that can answer questions and help with tasks.
       Be helpful and provide relevant information
       Be respectful and polite in all interactions.
       Be engaging and maintain a conversational tone.
