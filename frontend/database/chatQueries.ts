@@ -125,3 +125,22 @@ export const getMessageSummaries = async (threadId: string) => {
     .between([threadId, Dexie.minKey], [threadId, Dexie.maxKey])
     .toArray();
 };
+
+export const getMessageSummariesWithRole = async (threadId: string) => {
+  const summaries = await db.messageSummaries
+    .where('[threadId+createdAt]')
+    .between([threadId, Dexie.minKey], [threadId, Dexie.maxKey])
+    .toArray();
+
+  const summariesWithRole = await Promise.all(
+    summaries.map(async (summary) => {
+      const message = await db.messages.get(summary.messageId);
+      return {
+        ...summary,
+        role: message?.role || 'user',
+      };
+    })
+  );
+
+  return summariesWithRole;
+};
