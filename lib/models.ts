@@ -1,5 +1,5 @@
 export const AI_MODELS = [
-  'Gemini 2.5 Flash (Our Primary Model)',
+  'Gemini 2.5 Flash',
   'Gemini 2.5 Pro',
   'OpenAI 4.1',
   'OpenAI 4.1 Mini',
@@ -19,18 +19,20 @@ export type ModelConfig = {
   iconType: 'google' | 'openai' | 'anthropic' | 'deepseek' | 'huggingface';
   company: string;
   isPremium: boolean;
+  isSuperPremium: boolean;
   hasReasoning: boolean;
   description: string;
 };
 
 export const MODEL_CONFIGS = {
-  'Gemini 2.5 Flash (Our Primary Model)': {
+  'Gemini 2.5 Flash': {
     modelId: 'google/gemini-2.5-flash-preview-05-20',
     provider: 'openrouter',
-    displayName: 'Gemini 2.5 Flash (Our Primary Model)',
+    displayName: 'Gemini 2.5 Flash',
     iconType: 'google',
     company: 'Google',
     isPremium: false,
+    isSuperPremium: false,
     hasReasoning: true,
     description: 'Fast and efficient model with reasoning capabilities',
   },
@@ -40,7 +42,8 @@ export const MODEL_CONFIGS = {
     displayName: 'Gemini 2.5 Pro',
     iconType: 'google',
     company: 'Google',
-    isPremium: true,
+    isPremium: false,
+    isSuperPremium: true,
     hasReasoning: true,
     description: 'Advanced reasoning and complex problem solving',
   },
@@ -51,6 +54,7 @@ export const MODEL_CONFIGS = {
     iconType: 'openai',
     company: 'OpenAI',
     isPremium: true,
+    isSuperPremium: false,
     hasReasoning: false,
     description: 'Latest OpenAI flagship model',
   },
@@ -61,6 +65,7 @@ export const MODEL_CONFIGS = {
     iconType: 'openai',
     company: 'OpenAI',
     isPremium: false,
+    isSuperPremium: false,
     hasReasoning: false,
     description: 'Efficient and cost-effective model',
   },
@@ -70,7 +75,8 @@ export const MODEL_CONFIGS = {
     displayName: 'Claude Sonnet 4',
     iconType: 'anthropic',
     company: 'Anthropic',
-    isPremium: true,
+    isPremium: false,
+    isSuperPremium: true,
     hasReasoning: true,
     description: 'Advanced coding and reasoning capabilities',
   },
@@ -81,6 +87,7 @@ export const MODEL_CONFIGS = {
     iconType: 'anthropic',
     company: 'Anthropic',
     isPremium: true,
+    isSuperPremium: false,
     hasReasoning: false,
     description: 'Balanced performance and capability',
   },
@@ -91,6 +98,7 @@ export const MODEL_CONFIGS = {
     iconType: 'deepseek',
     company: 'DeepSeek',
     isPremium: false,
+    isSuperPremium: false,
     hasReasoning: true,
     description: 'Free reasoning model with chain-of-thought',
   },
@@ -101,6 +109,7 @@ export const MODEL_CONFIGS = {
     iconType: 'deepseek',
     company: 'DeepSeek',
     isPremium: false,
+    isSuperPremium: false,
     hasReasoning: false,
     description: 'Free general-purpose chat model',
   },
@@ -111,11 +120,18 @@ export const MODEL_CONFIGS = {
     iconType: 'huggingface',
     company: 'Sarvam',
     isPremium: false,
+    isSuperPremium: false,
     hasReasoning: true,
     description: 'Free general-purpose chat model',
   },
 } as const satisfies Record<AIModel, ModelConfig>;
 
 export const getModelConfig = (modelName: AIModel): ModelConfig => {
-  return MODEL_CONFIGS[modelName];
+  const config = MODEL_CONFIGS[modelName];
+  if (!config) {
+    console.error(`Model config not found for: ${modelName}. Available models:`, Object.keys(MODEL_CONFIGS));
+    // Return a fallback config for the first available model
+    return MODEL_CONFIGS['Gemini 2.5 Flash'];
+  }
+  return config;
 };

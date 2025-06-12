@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 // ===============================================
 
 interface ModelBadgeProps {
-  type: "premium" | "reasoning";
+  type: "premium" | "super-premium" | "reasoning";
   size?: number;
   className?: string;
 }
@@ -65,6 +65,7 @@ export const ModelBadge: React.FC<ModelBadgeProps> = ({
     {
       "text-orange-700": type === "premium",
       "text-blue-700": type === "reasoning",
+      "text-purple-700": type === "super-premium",
     },
     className
   );
@@ -75,6 +76,14 @@ export const ModelBadge: React.FC<ModelBadgeProps> = ({
         return <DiamondIcon size={size} />;
       case "reasoning":
         return <BrainIcon size={size} />;
+      case "super-premium":
+        return (
+          <>
+        <DiamondIcon size={size} />
+        <span className="w-1"></span>
+        <DiamondIcon size={size} />
+          </>
+        );
       default:
         return null;
     }

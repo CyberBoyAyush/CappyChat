@@ -220,7 +220,8 @@ const PureModelDropdown = () => {
                 {selectedModelConfig.displayName}
               </span>
               <div className="flex items-center gap-1">
-                {selectedModelConfig.isPremium && <ModelBadge type="premium" />}
+                {selectedModelConfig.isSuperPremium && <ModelBadge type="super-premium" />}
+                {selectedModelConfig.isPremium && !selectedModelConfig.isSuperPremium && <ModelBadge type="premium" />}
                 {selectedModelConfig.hasReasoning && (
                   <ModelBadge type="reasoning" />
                 )}
@@ -264,7 +265,8 @@ const PureModelDropdown = () => {
                         {modelConfig.displayName}
                       </span>
                       <div className="flex items-center gap-1">
-                        {modelConfig.isPremium && <ModelBadge type="premium" />}
+                        {modelConfig.isSuperPremium && <ModelBadge type="super-premium" />}
+                        {modelConfig.isPremium && !modelConfig.isSuperPremium && <ModelBadge type="premium" />}
                         {modelConfig.hasReasoning && (
                           <ModelBadge type="reasoning" />
                         )}
