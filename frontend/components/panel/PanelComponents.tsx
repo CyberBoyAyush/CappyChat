@@ -6,15 +6,18 @@
  * Contains app branding, navigation buttons, thread display, and settings access.
  */
 
-import { memo } from 'react';
-import { Link, useParams } from 'react-router';
-import { Button } from '../ui/button';
-import { buttonVariants } from '../ui/button';
-import { SidebarHeader, SidebarTrigger } from '@/frontend/components/ui/sidebar';
-import { X } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { ThreadData, ThreadOperations } from './ThreadManager';
-import UserProfileDropdown from '../UserProfileDropdown';
+import { memo } from "react";
+import { Link, useParams } from "react-router";
+import { Button } from "../ui/button";
+import { buttonVariants } from "../ui/button";
+import {
+  SidebarHeader,
+  SidebarTrigger,
+} from "@/frontend/components/ui/sidebar";
+import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ThreadData, ThreadOperations } from "./ThreadManager";
+import UserProfileDropdown from "../UserProfileDropdown";
 
 // ===============================================
 // Panel Header Components
@@ -30,38 +33,13 @@ const AppTitle = memo(() => (
   <div className="flex items-center gap-2">
     {/* Logo Icon */}
     <div className="relative">
-      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm">
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          className="text-primary-foreground"
-        >
-          <path
-            d="M12 2L2 7L12 12L22 7L12 2Z"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M2 17L12 22L22 17"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M2 12L12 17L22 12"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
+      <div className="w-9 h-9 rounded-sm bg-primary opacity-20 animate-pulse flex items-center justify-center shadow-sm"></div>
       {/* Subtle glow effect */}
+      <img
+        src="/logo.png"
+        alt="Logo"
+        className="absolute inset-0 w-8 h-8 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg"
+      />
       <div className="absolute inset-0 w-8 h-8 rounded-lg bg-primary/20 blur-sm -z-10"></div>
     </div>
 
@@ -78,7 +56,7 @@ const AppTitle = memo(() => (
   </div>
 ));
 
-AppTitle.displayName = 'AVChatAppTitle';
+AppTitle.displayName = "AVChatAppTitle";
 
 /**
  * New Chat Button Component
@@ -90,8 +68,8 @@ const NewChatButton = () => (
   <Link
     to="/chat"
     className={buttonVariants({
-      variant: 'default',
-      className: 'w-full',
+      variant: "default",
+      className: "w-full",
     })}
   >
     New Chat
@@ -184,11 +162,16 @@ interface ThreadListItemProps extends ThreadOperations {
   threadData: ThreadData;
 }
 
-const ThreadListItem = ({ threadData, onNavigate, onDelete, isActive }: ThreadListItemProps) => {
+const ThreadListItem = ({
+  threadData,
+  onNavigate,
+  onDelete,
+  isActive,
+}: ThreadListItemProps) => {
   const containerStyles = cn(
-    'cursor-pointer group/thread h-9 flex items-center px-2 py-1 rounded-lg overflow-hidden w-full transition-colors',
-    'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-    isActive && 'bg-sidebar-accent text-sidebar-accent-foreground'
+    "cursor-pointer group/thread h-9 flex items-center px-2 py-1 rounded-lg overflow-hidden w-full transition-colors",
+    "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+    isActive && "bg-sidebar-accent text-sidebar-accent-foreground"
   );
 
   const handleItemClick = () => {

@@ -8,6 +8,7 @@
 
 import { Link, useSearchParams } from "react-router-dom";
 import { buttonVariants } from "../components/ui/button";
+
 import {
   ArrowLeftIcon,
   Settings as SettingsIcon,
@@ -17,6 +18,8 @@ import {
 } from "lucide-react";
 import ThemeToggleButton from "../components/ui/ThemeComponents";
 import { useTheme } from "next-themes";
+import { Button } from "../components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 export default function SettingsPage() {
   const [searchParams] = useSearchParams();
@@ -27,24 +30,21 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-background flex flex-col align-middle justify-center">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
+        <div className=" w-full px-4 sm:px-6 lg:px-14 flex h-16 items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
               to={chatId ? `/chat/${chatId}` : "/chat"}
-              className={buttonVariants({
-                variant: "outline",
-                size: "sm",
-                className: "gap-2",
-              })}
+              className="flex items-center justify-center h-9 w-9 rounded-full border border-border bg-background hover:bg-muted transition-colors"
             >
-              <ArrowLeftIcon className="w-4 h-4" />
-              <span className="hidden sm:inline">Back to Chat</span>
+              <ArrowLeft className="w-4 h-4" />
+              <span className="sr-only">Back</span>
             </Link>
             <div className="flex items-center gap-2">
               <SettingsIcon className="w-5 h-5 text-primary" />
               <h1 className="text-lg font-semibold">Settings</h1>
             </div>
           </div>
+          <ThemeToggleButton variant="inline" />
         </div>
       </header>
 
@@ -143,11 +143,32 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* Additional Information */}
-            <div className="mt-8 text-center text-sm text-muted-foreground">
-              <p>AT Chat • Version 1.0.0</p>
-              <p className="mt-1">© 2023 AT Chat. All rights reserved.</p>
-            </div>
+            {/* Minimal Footer */}
+            <footer className="w-full flex justify-center border-t border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4">
+              <div className="container max-w-4xl flex flex-col sm:flex-row justify-between items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <img src="/logo.png" alt="AtChat Logo" className="h-5 w-5" />
+                  <span>© 2025 AtChat. All rights reserved.</span>
+                </div>
+                <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
+                  <Link
+                    to="/profile"
+                    className="hover:text-primary transition-colors"
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    to="/privacy"
+                    className="hover:text-primary transition-colors"
+                  >
+                    Privacy
+                  </Link>
+                  <Link to="/settings" className=" text-primary font-medium">
+                    Settings
+                  </Link>
+                </div>
+              </div>
+            </footer>
           </div>
         </div>
       </main>
