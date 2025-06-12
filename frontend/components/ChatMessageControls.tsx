@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { Check, Copy, RefreshCcw, SquarePen } from "lucide-react";
 import { UIMessage } from "ai";
 import { UseChatHelpers } from "@ai-sdk/react";
-import { deleteTrailingMessages } from "@/frontend/database/chatQueries";
+import { AppwriteDB } from "@/lib/appwriteDB";
 
 interface MessageControlsProps {
   threadId: string;
@@ -48,7 +48,7 @@ export default function MessageControls({
     stop();
 
     if (message.role === "user") {
-      await deleteTrailingMessages(threadId, message.createdAt as Date, false);
+      await AppwriteDB.deleteTrailingMessages(threadId, message.createdAt as Date, false);
 
       setMessages((messages) => {
         const index = messages.findIndex((m) => m.id === message.id);
@@ -60,7 +60,7 @@ export default function MessageControls({
         return messages;
       });
     } else {
-      await deleteTrailingMessages(threadId, message.createdAt as Date);
+      await AppwriteDB.deleteTrailingMessages(threadId, message.createdAt as Date);
 
       setMessages((messages) => {
         const index = messages.findIndex((m) => m.id === message.id);

@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "setup-appwrite": "node scripts/setup-appwrite-db.js"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.2.19",

@@ -12,7 +12,8 @@ import ChatInputField from "./ChatInputField";
 import ChatMessageBrowser from "./ChatMessageBrowser";
 import { UIMessage } from "ai";
 import { v4 as uuidv4 } from "uuid";
-import { createMessage } from "@/frontend/database/chatQueries";
+import { AppwriteDB } from "@/lib/appwriteDB";
+import { HybridDB } from "@/lib/hybridDB";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import ThemeToggleButton from "./ui/ThemeComponents";
@@ -55,20 +56,17 @@ export default function ChatInterface({
     id: threadId,
     initialMessages,
     experimental_throttle: 50,
-    onFinish: async ({ parts }) => {
+    onFinish: async (message) => {
       const aiMessage: UIMessage = {
         id: uuidv4(),
-        parts: parts as UIMessage["parts"],
+        parts: message.parts as UIMessage["parts"],
         role: "assistant",
-        content: "",
+        content: message.content, // Use the actual content from the message
         createdAt: new Date(),
       };
 
-      try {
-        await createMessage(threadId, aiMessage);
-      } catch (error) {
-        console.error(error);
-      }
+      // Save AI message instantly with local update + async backend sync
+      HybridDB.createMessage(threadId, aiMessage);
     },
     headers: {},
     body: {

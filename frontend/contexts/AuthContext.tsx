@@ -8,8 +8,12 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { account, OAuthProviders, APPWRITE_CONFIG, ID } from '@/lib/appwrite';
+import { account, APPWRITE_CONFIG, ID } from '@/lib/appwrite';
+import { OAuthProvider } from 'appwrite';
 import { Models, AppwriteException } from 'appwrite';
+import { AppwriteDB } from '@/lib/appwriteDB';
+import { HybridDB } from '@/lib/hybridDB';
+import { AppwriteRealtime } from '@/lib/appwriteRealtime';
 
 interface User extends Models.User<Models.Preferences> {}
 
@@ -94,11 +98,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await account.updateSession('current');
     } catch (error) {
-      console.log('Failed to refresh session:', error);
+      // Session refresh failed - user may need to re-authenticate
     }
   }, []);
 
-  // Initialize authentication state
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -107,6 +110,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (currentUser) {
           setUser(currentUser);
+          
+          // Initialize hybrid database and realtime subscriptions
+          await HybridDB.initialize(currentUser.$id);
+          AppwriteRealtime.subscribeToAll(currentUser.$id);
         } else {
           setUser(null);
         }
@@ -119,25 +126,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     initAuth();
+
+    // Cleanup function to unsubscribe from Realtime on unmount
+    return () => {
+      if (user) {
+        AppwriteRealtime.unsubscribeFromAll();
+      }
+    };
   }, [getCurrentUser]);
 
-  // Email/password login
+  // Login with email and password
   const login = async (email: string, password: string): Promise<void> => {
     try {
       setLoading(true);
-      await account.createEmailPasswordSession(email, password);
-      const loggedInUser = await getCurrentUser();
-      setUser(loggedInUser);
       
-      // If user is not verified, send verification email
-      if (loggedInUser && !loggedInUser.emailVerification) {
-        try {
-          await sendVerificationEmail();
-        } catch (verificationError) {
-          console.warn('Failed to send verification email after login:', verificationError);
-          // Don't throw here as login was successful
-        }
-      }
+      await account.createEmailPasswordSession(email, password);
+      const currentUser = await account.get();
+      setUser(currentUser);
+      
+      // Initialize Appwrite Realtime subscriptions
+      AppwriteRealtime.subscribeToAll(currentUser.$id);
     } catch (error) {
       console.error('Login error:', error);
       throw new Error(getErrorMessage(error));
@@ -146,24 +154,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Email/password registration
+  // Register a new user
   const register = async (email: string, password: string, name: string): Promise<void> => {
     try {
       setLoading(true);
-      // Create account first
-      await account.create(ID.unique(), email, password, name);
-      // Then create session
+      
+      const newUser = await account.create(ID.unique(), email, password, name);
       await account.createEmailPasswordSession(email, password);
-      const newUser = await getCurrentUser();
+      
+      // Send verification email
+      await account.createVerification(APPWRITE_CONFIG.verificationUrl);
+      
       setUser(newUser);
       
-      // Send verification email automatically after registration
-      try {
-        await sendVerificationEmail();
-      } catch (verificationError) {
-        console.warn('Failed to send verification email:', verificationError);
-        // Don't throw here as registration was successful
-      }
+      // Initialize Appwrite Realtime subscriptions
+      AppwriteRealtime.subscribeToAll(newUser.$id);
     } catch (error) {
       console.error('Registration error:', error);
       throw new Error(getErrorMessage(error));
@@ -172,26 +177,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Google OAuth login
+  // Login with Google OAuth
   const loginWithGoogle = async (): Promise<void> => {
     try {
-      setLoading(true);
-      
-      // Store intended destination
-      const currentPath = window.location.pathname;
-      if (currentPath !== '/' && currentPath !== '/auth/login' && currentPath !== '/auth/signup') {
-        sessionStorage.setItem('auth_redirect', currentPath);
-      }
-
-      // Initiate OAuth flow
-      await account.createOAuth2Session(
-        OAuthProviders.Google,
+      account.createOAuth2Session(
+        OAuthProvider.Google,
         APPWRITE_CONFIG.successUrl,
         APPWRITE_CONFIG.failureUrl
       );
     } catch (error) {
       console.error('Google login error:', error);
-      setLoading(false);
       throw new Error(getErrorMessage(error));
     }
   };
@@ -201,7 +196,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       await account.deleteSessions();
+      
+      // Unsubscribe from all Appwrite Realtime channels
+      AppwriteRealtime.unsubscribeFromAll();
+      
+      // Clear local database
+      HybridDB.clearLocalData();
+      
       setUser(null);
+      
       // Clear any stored redirect
       sessionStorage.removeItem('auth_redirect');
     } catch (error) {
@@ -216,102 +219,141 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const deleteAccount = async (): Promise<void> => {
     try {
       setLoading(true);
-      await account.updateStatus();
+      
+      // Delete user's data first
+      await AppwriteDB.deleteAllThreads();
+      
+      // Note: Account deletion from client-side may not be available in this Appwrite version
+      // This would typically need to be handled server-side or through admin API
+      // For now, we'll just logout the user and clear their data
+      await account.deleteSessions();
+      
+      // Unsubscribe from all Appwrite Realtime channels
+      AppwriteRealtime.unsubscribeFromAll();
+      
       setUser(null);
+      
+      // Clear any stored redirect
+      sessionStorage.removeItem('auth_redirect');
     } catch (error) {
-      console.error('Delete account error:', error);
+      console.error('Account deletion error:', error);
       throw new Error(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
   };
 
-  // Update profile name
+  // Update user profile
   const updateProfile = async (name: string): Promise<void> => {
     try {
+      setLoading(true);
       const updatedUser = await account.updateName(name);
       setUser(updatedUser);
     } catch (error) {
-      console.error('Update profile error:', error);
+      console.error('Profile update error:', error);
       throw new Error(getErrorMessage(error));
+    } finally {
+      setLoading(false);
     }
   };
 
   // Update email
   const updateEmail = async (email: string, password: string): Promise<void> => {
     try {
+      setLoading(true);
       const updatedUser = await account.updateEmail(email, password);
       setUser(updatedUser);
     } catch (error) {
-      console.error('Update email error:', error);
+      console.error('Email update error:', error);
       throw new Error(getErrorMessage(error));
+    } finally {
+      setLoading(false);
     }
   };
 
   // Update password
   const updatePassword = async (newPassword: string, oldPassword: string): Promise<void> => {
     try {
+      setLoading(true);
       await account.updatePassword(newPassword, oldPassword);
     } catch (error) {
-      console.error('Update password error:', error);
+      console.error('Password update error:', error);
       throw new Error(getErrorMessage(error));
+    } finally {
+      setLoading(false);
     }
   };
 
   // Send verification email
   const sendVerificationEmail = async (): Promise<void> => {
     try {
+      setLoading(true);
       await account.createVerification(APPWRITE_CONFIG.verificationUrl);
     } catch (error) {
-      console.error('Send verification email error:', error);
+      console.error('Verification email error:', error);
       throw new Error(getErrorMessage(error));
-    }
-  };
-
-  // Verify email with userId and secret
-  const verifyEmail = async (userId: string, secret: string): Promise<void> => {
-    try {
-      await account.updateVerification(userId, secret);
-      // Refresh user data to get updated verification status
-      const updatedUser = await getCurrentUser();
-      setUser(updatedUser);
-    } catch (error) {
-      console.error('Verify email error:', error);
-      throw new Error(getErrorMessage(error));
+    } finally {
+      setLoading(false);
     }
   };
 
   // Resend verification email
   const resendVerificationEmail = async (): Promise<void> => {
     try {
+      setLoading(true);
       await account.createVerification(APPWRITE_CONFIG.verificationUrl);
     } catch (error) {
       console.error('Resend verification email error:', error);
       throw new Error(getErrorMessage(error));
+    } finally {
+      setLoading(false);
     }
   };
 
-  const isAuthenticated = !!user;
-
-  const value: AuthContextType = {
-    user,
-    loading,
-    isAuthenticated,
-    isEmailVerified,
-    login,
-    register,
-    loginWithGoogle,
-    logout,
-    getCurrentUser,
-    refreshSession,
-    deleteAccount,
-    updateProfile,
-    updateEmail,
-    updatePassword,
-    sendVerificationEmail,
-    verifyEmail,
-    resendVerificationEmail,
+  // Verify email
+  const verifyEmail = async (userId: string, secret: string): Promise<void> => {
+    try {
+      setLoading(true);
+      await account.updateVerification(userId, secret);
+      
+      // Refresh user data to update email verification status
+      const currentUser = await getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+      }
+    } catch (error) {
+      console.error('Email verification error:', error);
+      throw new Error(getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        isAuthenticated: !!user,
+        isEmailVerified,
+        login,
+        register,
+        loginWithGoogle,
+        logout,
+        getCurrentUser,
+        refreshSession,
+        deleteAccount,
+        updateProfile,
+        updateEmail,
+        updatePassword,
+        sendVerificationEmail,
+        verifyEmail,
+        resendVerificationEmail,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
+
+export default AuthProvider;

@@ -26,7 +26,7 @@ export const account = new Account(client);
 
 // OAuth provider configuration
 export const OAuthProviders = {
-  Google: OAuthProvider.Google,
+  Google: 'google', // Using string literal 'google' instead of OAuthProvider.Google to ensure correct casing
 } as const;
 
 // Helper for generating unique IDs

@@ -16,10 +16,11 @@ import useTextAreaAutoResize from "@/hooks/useTextAreaAutoResize";
 import { UseChatHelpers } from "@ai-sdk/react";
 import { useParams } from "react-router";
 import { useNavigate } from "react-router";
-import { createMessage, createThread } from "@/frontend/database/chatQueries";
 import { UIMessage } from "ai";
 import { v4 as uuidv4 } from "uuid";
 import { StopIcon } from "./ui/UIComponents";
+import { AppwriteDB } from "@/lib/appwriteDB";
+import { HybridDB } from "@/lib/hybridDB";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 import { ModelSelector } from "./ModelSelector";
 
@@ -83,20 +84,29 @@ function PureInputField({
       return;
 
     const messageId = uuidv4();
+    const userMessage = createUserMessage(messageId, currentInput.trim());
 
+    // Handle new vs existing conversations
     if (!id) {
+      // New conversation - navigate first
       navigate(`/chat/${threadId}`);
-      await createThread(threadId);
+      
+      // Create thread instantly with local update + async backend sync
+      HybridDB.createThread(threadId);
+      
+      // Start completion immediately for better UX
       complete(currentInput.trim(), {
         body: { threadId, messageId, isTitle: true },
       });
     } else {
+      // Existing conversation
       complete(currentInput.trim(), { body: { messageId, threadId } });
     }
 
-    const userMessage = createUserMessage(messageId, currentInput.trim());
-    await createMessage(threadId, userMessage);
+    // Create message instantly with local update + async backend sync
+    HybridDB.createMessage(threadId, userMessage);
 
+    // Update UI immediately for better responsiveness
     append(userMessage);
     setInput("");
     adjustHeight(true);
@@ -110,6 +120,7 @@ function PureInputField({
     textareaRef,
     threadId,
     complete,
+    navigate,
   ]);
 
   // Removed API key check since we now use environment variables

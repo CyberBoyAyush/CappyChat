@@ -1,6 +1,7 @@
 import { useCompletion } from '@ai-sdk/react';
 import { toast } from 'sonner';
-import { createMessageSummary, updateThread } from '@/frontend/database/chatQueries';
+import { AppwriteDB } from '@/lib/appwriteDB';
+import { HybridDB } from '@/lib/hybridDB';
 
 interface MessageSummaryPayload {
   title: string;
@@ -20,16 +21,18 @@ export const useChatMessageSummary = () => {
           const { title, isTitle, messageId, threadId } = payload;
 
           if (isTitle) {
-            await updateThread(threadId, title);
-            await createMessageSummary(threadId, messageId, title);
+            // Update thread title instantly with local update + async backend sync
+            HybridDB.updateThread(threadId, title);
+            HybridDB.createMessageSummary(threadId, messageId, title);
           } else {
-            await createMessageSummary(threadId, messageId, title);
+            // Create message summary instantly with local update + async backend sync
+            HybridDB.createMessageSummary(threadId, messageId, title);
           }
         } else {
           toast.error('Failed to generate a summary for the message');
         }
       } catch (error) {
-        console.error(error);
+        console.error('Error processing message summary:', error);
       }
     },
   });
