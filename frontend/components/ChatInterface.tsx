@@ -80,7 +80,7 @@ export default function ChatInterface({
     <div className="relative w-full min-h-screen bg-background">
       <AppPanelTrigger />
       <main
-        className={`flex flex-col w-full mobile-container mobile-padding pt-20 sm:pt-10 pb-32 sm:pb-44 transition-all duration-300 ease-in-out`}
+        className={`flex flex-col w-full mobile-container mobile-padding pt-20 sm:pt-10 pb-40 sm:pb-44 transition-all duration-300 ease-in-out`}
       >
         <ChatMessageDisplay
           threadId={threadId}
@@ -101,7 +101,7 @@ export default function ChatInterface({
           stop={stop}
         />
       </main>
-
+      
       {/* Fixed action buttons */}
       <div className="fixed top-4 right-4 z-50 flex gap-2">
         <Button

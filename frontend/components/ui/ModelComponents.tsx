@@ -33,7 +33,7 @@ const DiamondIcon: React.FC<{ size?: number; className?: string }> = ({
     style={{
       filter:
         "brightness(0) saturate(100%) invert(47%) sepia(69%) saturate(959%) hue-rotate(334deg) brightness(103%) contrast(97%)",
-    }} // Convert to orange #f76f52
+    }} // Convert to theme primary color #f76f52
   />
 );
 
@@ -51,7 +51,7 @@ const BrainIcon: React.FC<{ size?: number; className?: string }> = ({
     style={{
       filter:
         "brightness(0) saturate(100%) invert(47%) sepia(69%) saturate(959%) hue-rotate(334deg) brightness(103%) contrast(97%)",
-    }} // Convert to orange #f76f52
+    }} // Convert to theme primary color #f76f52
   />
 );
 
@@ -62,11 +62,7 @@ export const ModelBadge: React.FC<ModelBadgeProps> = ({
 }) => {
   const badgeStyles = cn(
     "inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors",
-    {
-      "text-orange-700": type === "premium",
-      "text-blue-700": type === "reasoning",
-      "text-purple-700": type === "super-premium",
-    },
+    "text-primary",
     className
   );
 
