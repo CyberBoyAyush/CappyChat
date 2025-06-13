@@ -79,11 +79,12 @@ const getErrorMessage = (error: any): string => {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
   // Check if user's email is verified
   const isEmailVerified = user?.emailVerification ?? false;
 
-  // Get current user session
+  // Cached user session to avoid repeated API calls
   const getCurrentUser = useCallback(async (): Promise<User | null> => {
     try {
       const currentUser = await account.get();
@@ -102,7 +103,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  // Initialize user services (DB and realtime) - optimized for performance
+  const initializeUserServices = useCallback(async (userId: string) => {
+    try {
+      // Only initialize HybridDB - realtime will be handled inside it
+      // This is now non-blocking and much faster
+      await HybridDB.initialize(userId);
+    } catch (error) {
+      console.error('Failed to initialize user services:', error);
+    }
+  }, []);
+
   useEffect(() => {
+    if (initialized) return; // Prevent multiple initializations
+
     const initAuth = async () => {
       try {
         setLoading(true);
@@ -110,10 +124,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (currentUser) {
           setUser(currentUser);
-          
-          // Initialize hybrid database and realtime subscriptions
-          await HybridDB.initialize(currentUser.$id);
-          AppwriteRealtime.subscribeToAll(currentUser.$id);
+          // Initialize services in background - don't await to avoid blocking UI
+          initializeUserServices(currentUser.$id).catch(err => 
+            console.error('Background service initialization failed:', err)
+          );
         } else {
           setUser(null);
         }
@@ -122,6 +136,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(null);
       } finally {
         setLoading(false);
+        setInitialized(true);
       }
     };
 
@@ -133,19 +148,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         AppwriteRealtime.unsubscribeFromAll();
       }
     };
-  }, [getCurrentUser]);
+  }, [getCurrentUser, initializeUserServices, initialized]);
 
   // Login with email and password
   const login = async (email: string, password: string): Promise<void> => {
     try {
       setLoading(true);
       
-      await account.createEmailPasswordSession(email, password);
-      const currentUser = await account.get();
+      // Create session and get user in one call - session creation returns user info
+      const session = await account.createEmailPasswordSession(email, password);
+      const currentUser = await account.get(); // Only one get call needed after session
       setUser(currentUser);
       
-      // Initialize Appwrite Realtime subscriptions
-      AppwriteRealtime.subscribeToAll(currentUser.$id);
+      // Initialize services in background - don't block login completion
+      initializeUserServices(currentUser.$id).catch(err => 
+        console.error('Background service initialization failed:', err)
+      );
     } catch (error) {
       console.error('Login error:', error);
       throw new Error(getErrorMessage(error));
@@ -159,16 +177,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       
+      // Create user account
       const newUser = await account.create(ID.unique(), email, password, name);
+      // Create session
       await account.createEmailPasswordSession(email, password);
       
-      // Send verification email
-      await account.createVerification(APPWRITE_CONFIG.verificationUrl);
+      // Send verification email in background
+      account.createVerification(APPWRITE_CONFIG.verificationUrl).catch(err => 
+        console.warn('Failed to send verification email:', err)
+      );
       
+      // Use the newUser object instead of making another API call
       setUser(newUser);
       
-      // Initialize Appwrite Realtime subscriptions
-      AppwriteRealtime.subscribeToAll(newUser.$id);
+      // Initialize services in background - don't block registration completion
+      initializeUserServices(newUser.$id).catch(err => 
+        console.error('Background service initialization failed:', err)
+      );
     } catch (error) {
       console.error('Registration error:', error);
       throw new Error(getErrorMessage(error));

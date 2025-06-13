@@ -17,6 +17,10 @@ const STORAGE_KEYS = {
 
 export class LocalDB {
   private static currentUserId: string | null = null;
+  private static threadsCache: Thread[] | null = null;
+  private static messagesCache: Map<string, DBMessage[]> = new Map();
+  private static lastCacheUpdate = 0;
+  private static CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
 
   // Set current user ID
   static setUserId(userId: string): void {
@@ -38,19 +42,33 @@ export class LocalDB {
       localStorage.removeItem(key);
     });
     this.currentUserId = null;
+    // Clear caches
+    this.threadsCache = null;
+    this.messagesCache.clear();
+    this.lastCacheUpdate = 0;
   }
 
   // ============ THREAD OPERATIONS ============
 
-  // Get all threads (instant from local storage)
+  // Get all threads (instant from local storage with caching)
   static getThreads(): Thread[] {
     try {
+      // Use cache if available and not expired
+      const now = Date.now();
+      if (this.threadsCache && (now - this.lastCacheUpdate) < this.CACHE_TTL) {
+        return [...this.threadsCache]; // Return a copy to prevent mutations
+      }
+
       const data = localStorage.getItem(STORAGE_KEYS.THREADS);
-      if (!data) return [];
+      if (!data) {
+        this.threadsCache = [];
+        this.lastCacheUpdate = now;
+        return [];
+      }
       
       const threads = JSON.parse(data);
       // Convert date strings back to Date objects and sort by lastMessageAt
-      return threads.map((thread: any) => ({
+      this.threadsCache = threads.map((thread: any) => ({
         ...thread,
         createdAt: new Date(thread.createdAt),
         updatedAt: new Date(thread.updatedAt),
@@ -58,13 +76,16 @@ export class LocalDB {
       })).sort((a: Thread, b: Thread) => 
         new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
       );
+      
+      this.lastCacheUpdate = now;
+      return this.threadsCache ? [...this.threadsCache] : [];
     } catch (error) {
       console.error('Error reading threads from local storage:', error);
       return [];
     }
   }
 
-  // Add or update thread (instant local update)
+  // Add or update thread (instant local update with cache invalidation)
   static upsertThread(thread: Thread): void {
     try {
       const threads = this.getThreads();
@@ -82,16 +103,24 @@ export class LocalDB {
       );
       
       localStorage.setItem(STORAGE_KEYS.THREADS, JSON.stringify(threads));
+      
+      // Update cache
+      this.threadsCache = threads;
+      this.lastCacheUpdate = Date.now();
     } catch (error) {
       console.error('Error saving thread to local storage:', error);
     }
   }
 
-  // Delete thread (instant local update)
+  // Delete thread (instant local update with cache invalidation)
   static deleteThread(threadId: string): void {
     try {
       const threads = this.getThreads().filter(t => t.id !== threadId);
       localStorage.setItem(STORAGE_KEYS.THREADS, JSON.stringify(threads));
+      
+      // Update cache
+      this.threadsCache = threads;
+      this.lastCacheUpdate = Date.now();
       
       // Also delete associated messages and summaries
       this.deleteMessagesByThread(threadId);
@@ -256,7 +285,16 @@ export class LocalDB {
   // Replace all threads (used during sync)
   static replaceAllThreads(threads: Thread[]): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.THREADS, JSON.stringify(threads));
+      // Sort before storing
+      const sortedThreads = threads.sort((a, b) => 
+        new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
+      );
+      
+      localStorage.setItem(STORAGE_KEYS.THREADS, JSON.stringify(sortedThreads));
+      
+      // Update cache
+      this.threadsCache = sortedThreads;
+      this.lastCacheUpdate = Date.now();
     } catch (error) {
       console.error('Error replacing threads in local storage:', error);
     }

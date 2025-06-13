@@ -10,38 +10,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Thread } from '@/lib/appwriteDB';
 import { HybridDB, dbEvents } from '@/lib/hybridDB';
+import { useOptimizedThreads } from '@/frontend/hooks/useOptimizedHybridDB';
 
 // Custom hook for managing thread operations
 export const useThreadManager = () => {
   const { id: currentThreadId } = useParams();
   const router = useNavigate();
-  const [threadCollection, setThreadCollection] = useState<Thread[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Load threads instantly from local storage
-  const loadThreads = useCallback(() => {
-    const threads = HybridDB.getThreads();
-    setThreadCollection(threads);
-    setIsLoading(false);
-  }, []);
-
-  // Handle thread updates from the hybrid database
-  const handleThreadsUpdated = useCallback((threads: Thread[]) => {
-    setThreadCollection(threads);
-    setIsLoading(false);
-  }, []);
-
-  useEffect(() => {
-    // Initial load from local storage (instant)
-    loadThreads();
-
-    // Listen for real-time updates
-    dbEvents.on('threads_updated', handleThreadsUpdated);
-
-    return () => {
-      dbEvents.off('threads_updated', handleThreadsUpdated);
-    };
-  }, [loadThreads, handleThreadsUpdated]);
+  
+  // Use optimized hook for better performance
+  const { threads: threadCollection, isLoading } = useOptimizedThreads();
 
   const navigateToThread = useCallback((threadId: string) => {
     if (currentThreadId === threadId) {

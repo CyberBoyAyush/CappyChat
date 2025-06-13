@@ -45,9 +45,20 @@ export class HybridDB {
   private static isOnline = true;
   private static syncQueue: Array<() => Promise<void>> = [];
   private static isSyncing = false;
+  private static initialized = false;
+  private static initializationPromise: Promise<void> | null = null;
+  private static pendingMessageSyncs = new Set<string>(); // Track ongoing message syncs
 
   // Initialize the hybrid database
   static async initialize(userId: string): Promise<void> {
+    if (this.initialized) return;
+    if (this.initializationPromise) return this.initializationPromise;
+
+    this.initializationPromise = this.doInitialize(userId);
+    return this.initializationPromise;
+  }
+
+  private static async doInitialize(userId: string): Promise<void> {
     LocalDB.setUserId(userId);
     
     // Set up realtime callbacks
@@ -59,35 +70,44 @@ export class HybridDB {
       onMessageSummaryCreated: this.handleRemoteMessageSummaryCreated.bind(this),
     });
 
-    // Initial sync from Appwrite to local storage
-    await this.performInitialSync();
+    // Subscribe to realtime updates immediately for better UX
+    AppwriteRealtime.subscribeToAll(userId);
+
+    // Non-blocking background sync - instant UI, sync in background
+    this.performInitialSyncInBackground();
+    this.initialized = true;
   }
 
-  // Perform initial sync from Appwrite
-  private static async performInitialSync(): Promise<void> {
-    try {
-      // Sync threads first
-      const threads = await AppwriteDB.getThreads();
-      LocalDB.replaceAllThreads(threads);
-      dbEvents.emit('threads_updated', threads);
+  // Perform initial sync from Appwrite - now async in background
+  private static performInitialSyncInBackground(): void {
+    // Use setTimeout to ensure this runs after the current call stack
+    setTimeout(async () => {
+      try {
+        // Load local data first for instant UI
+        const localThreads = LocalDB.getThreads();
+        if (localThreads.length > 0) {
+          dbEvents.emit('threads_updated', localThreads);
+        }
 
-      // Sync messages for all threads for cross-device compatibility
-      for (const thread of threads) {
-        try {
-          const messages = await AppwriteDB.getMessagesByThreadId(thread.id);
-          // Clear local messages for this thread and replace with remote
-          LocalDB.clearMessagesByThread(thread.id);
-          messages.forEach(message => {
-            LocalDB.addMessage(message);
-          });
-        } catch (error) {
-          console.warn(`Failed to sync messages for thread ${thread.id}:`, error);
+        // Sync threads from remote
+        const threads = await AppwriteDB.getThreads();
+        LocalDB.replaceAllThreads(threads);
+        dbEvents.emit('threads_updated', threads);
+
+        // For messages, only sync when actually needed (lazy loading)
+        // This prevents the massive network requests on startup
+        this.isOnline = true;
+      } catch (error) {
+        console.error('Background sync failed:', error);
+        this.isOnline = false;
+        
+        // Use local data if remote fails
+        const localThreads = LocalDB.getThreads();
+        if (localThreads.length > 0) {
+          dbEvents.emit('threads_updated', localThreads);
         }
       }
-    } catch (error) {
-      console.error('Initial sync failed:', error);
-      this.isOnline = false;
-    }
+    }, 0);
   }
 
   // ============ THREAD OPERATIONS ============
@@ -192,10 +212,20 @@ export class HybridDB {
     });
   }
 
-  // Load messages from remote and sync to local (for cross-device compatibility)
+  // Load messages from remote and sync to local (optimized for performance)
   static async loadMessagesFromRemote(threadId: string): Promise<DBMessage[]> {
+    // First check local cache for instant loading
+    const localMessages = LocalDB.getMessagesByThread(threadId);
+    
+    // If we have local messages, return them immediately for better UX
+    if (localMessages.length > 0) {
+      // Sync in background for next time, but don't block current request
+      this.syncMessagesInBackground(threadId);
+      return localMessages;
+    }
+
+    // If no local messages, fetch from remote
     try {
-      // Get messages from Appwrite
       const remoteMessages = await AppwriteDB.getMessagesByThreadId(threadId);
       
       // Clear local messages for this thread and replace with remote
@@ -212,9 +242,39 @@ export class HybridDB {
       return remoteMessages;
     } catch (error) {
       console.error('Failed to load messages from remote:', error);
-      // Return local messages as fallback
-      return LocalDB.getMessagesByThread(threadId);
+      // Return local messages as fallback (might be empty)
+      return localMessages;
     }
+  }
+
+  // Background sync for messages - non-blocking with deduplication
+  private static syncMessagesInBackground(threadId: string): void {
+    // Prevent duplicate syncs for the same thread
+    if (this.pendingMessageSyncs.has(threadId)) {
+      return;
+    }
+
+    this.pendingMessageSyncs.add(threadId);
+    
+    setTimeout(async () => {
+      try {
+        const remoteMessages = await AppwriteDB.getMessagesByThreadId(threadId);
+        const localMessages = LocalDB.getMessagesByThread(threadId);
+        
+        // Only update if there's a difference to avoid unnecessary events
+        if (remoteMessages.length !== localMessages.length) {
+          LocalDB.clearMessagesByThread(threadId);
+          remoteMessages.forEach(message => {
+            LocalDB.addMessage(message);
+          });
+          dbEvents.emit('messages_updated', threadId, remoteMessages);
+        }
+      } catch (error) {
+        console.warn('Background message sync failed:', error);
+      } finally {
+        this.pendingMessageSyncs.delete(threadId);
+      }
+    }, 100); // Small delay to not interfere with UI
   }
 
   // ============ MESSAGE SUMMARY OPERATIONS ============
@@ -269,6 +329,38 @@ export class HybridDB {
     });
 
     return summaryId;
+  }
+
+  // Delete trailing messages (instant local + async remote)
+  static async deleteTrailingMessages(
+    threadId: string,
+    createdAt: Date,
+    gte: boolean = true
+  ): Promise<void> {
+    // Instant local update for immediate UI feedback
+    const localMessages = LocalDB.getMessagesByThread(threadId);
+    const filteredMessages = localMessages.filter(message => {
+      const messageDate = new Date(message.createdAt);
+      return gte ? messageDate < createdAt : messageDate <= createdAt;
+    });
+    
+    // Update local storage immediately
+    LocalDB.clearMessagesByThread(threadId);
+    filteredMessages.forEach(message => {
+      LocalDB.addMessage(message);
+    });
+    
+    // Emit immediate update
+    dbEvents.emit('messages_updated', threadId, filteredMessages);
+
+    // Async remote update
+    this.queueSync(async () => {
+      try {
+        await AppwriteDB.deleteTrailingMessages(threadId, createdAt, gte);
+      } catch (error) {
+        console.error('Failed to sync trailing message deletion:', error);
+      }
+    });
   }
 
   // ============ REALTIME HANDLERS ============
@@ -373,19 +465,26 @@ export class HybridDB {
 
     this.isSyncing = true;
 
+    // Process operations in batches to reduce network congestion
+    const batchSize = 3;
     while (this.syncQueue.length > 0) {
-      const operation = this.syncQueue.shift();
-      if (operation) {
-        try {
-          await operation();
-          this.isOnline = true;
-        } catch (error) {
-          console.error('Sync operation failed:', error);
-          this.isOnline = false;
-          // Re-queue the operation for later retry
-          this.syncQueue.unshift(operation);
-          break;
-        }
+      const batch = this.syncQueue.splice(0, batchSize);
+      
+      try {
+        // Process batch operations in parallel for better performance
+        await Promise.all(batch.map(operation => operation()));
+        this.isOnline = true;
+      } catch (error) {
+        console.error('Batch sync operation failed:', error);
+        this.isOnline = false;
+        // Re-queue failed operations for later retry
+        this.syncQueue.unshift(...batch);
+        break;
+      }
+
+      // Small delay between batches to prevent overwhelming the server
+      if (this.syncQueue.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
     }
 
@@ -400,6 +499,10 @@ export class HybridDB {
   // Clear all local data
   static clearLocalData(): void {
     LocalDB.clear();
+    // Reset initialization state so it can be re-initialized
+    this.initialized = false;
+    this.initializationPromise = null;
+    this.pendingMessageSyncs.clear(); // Clear pending syncs
   }
 
   // Get online status
@@ -407,8 +510,15 @@ export class HybridDB {
     return this.isOnline;
   }
 
-  // Force sync messages for a specific thread (useful for ensuring latest state)
+  // Force sync messages for a specific thread (throttled to prevent abuse)
   static async forceSyncThread(threadId: string): Promise<void> {
+    // Prevent excessive force syncs
+    if (this.pendingMessageSyncs.has(`force_${threadId}`)) {
+      return;
+    }
+
+    this.pendingMessageSyncs.add(`force_${threadId}`);
+
     try {
       const remoteMessages = await AppwriteDB.getMessagesByThreadId(threadId);
       
@@ -424,6 +534,8 @@ export class HybridDB {
       dbEvents.emit('messages_updated', threadId, remoteMessages);
     } catch (error) {
       console.error('Failed to force sync thread:', error);
+    } finally {
+      this.pendingMessageSyncs.delete(`force_${threadId}`);
     }
   }
 }

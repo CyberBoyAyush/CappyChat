@@ -13,6 +13,7 @@ import { Check, Copy, RefreshCcw, SquarePen } from "lucide-react";
 import { UIMessage } from "ai";
 import { UseChatHelpers } from "@ai-sdk/react";
 import { AppwriteDB } from "@/lib/appwriteDB";
+import { HybridDB } from "@/lib/hybridDB";
 
 interface MessageControlsProps {
   threadId: string;
@@ -48,7 +49,7 @@ export default function MessageControls({
     stop();
 
     if (message.role === "user") {
-      await AppwriteDB.deleteTrailingMessages(threadId, message.createdAt as Date, false);
+      await HybridDB.deleteTrailingMessages(threadId, message.createdAt as Date, false);
 
       setMessages((messages) => {
         const index = messages.findIndex((m) => m.id === message.id);
@@ -60,7 +61,7 @@ export default function MessageControls({
         return messages;
       });
     } else {
-      await AppwriteDB.deleteTrailingMessages(threadId, message.createdAt as Date);
+      await HybridDB.deleteTrailingMessages(threadId, message.createdAt as Date);
 
       setMessages((messages) => {
         const index = messages.findIndex((m) => m.id === message.id);
