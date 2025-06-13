@@ -90,10 +90,10 @@ function PureInputField({
     if (!id) {
       // New conversation - navigate first
       navigate(`/chat/${threadId}`);
-      
+
       // Create thread instantly with local update + async backend sync
       HybridDB.createThread(threadId);
-      
+
       // Start completion immediately for better UX
       complete(currentInput.trim(), {
         body: { threadId, messageId, isTitle: true },
@@ -138,10 +138,10 @@ function PureInputField({
   };
 
   return (
-    <div className="fixed bottom-2 sm:bottom-0 z-40 w-auto mx-auto left-1/2 transform -translate-x-1/2">
-      <div className="w-full min-w-[340px] max-w-md sm:min-w-md md:min-w-lg lg:min-w-2xl xl:min-w-4xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="bg-card border border-border rounded-t-2xl shadow-lg p-3 md:p-3 pb-2 w-full backdrop-blur-sm mx-auto">
-          <div className="relative">
+    <div className="fixed bottom-0 w-[360px] sm:w-[400px] md:w-[800px] lg:w-[800px] xl:w-[800px] 2xl:w-[870px] ">
+      <div className="">
+        <div className="bg-card border border-border rounded-t-2xl shadow-lg  w-full backdrop-blur-sm">
+          <div className="">
             <div className="flex flex-col">
               <div className="bg-transparent overflow-y-auto max-h-[300px] rounded-lg">
                 <Textarea

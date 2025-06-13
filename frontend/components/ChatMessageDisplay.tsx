@@ -6,13 +6,13 @@
  * Handles message rendering, loading states, and error display.
  */
 
-import { memo } from 'react';
-import PreviewMessage from './Message';
-import { UIMessage } from 'ai';
-import { UseChatHelpers } from '@ai-sdk/react';
-import equal from 'fast-deep-equal';
-import ChatMessageLoading from './ui/UIComponents';
-import { Error } from './ui/UIComponents';
+import { memo } from "react";
+import PreviewMessage from "./Message";
+import { UIMessage } from "ai";
+import { UseChatHelpers } from "@ai-sdk/react";
+import equal from "fast-deep-equal";
+import ChatMessageLoading from "./ui/UIComponents";
+import { Error } from "./ui/UIComponents";
 
 function PureMessageDisplay({
   threadId,
@@ -26,11 +26,11 @@ function PureMessageDisplay({
 }: {
   threadId: string;
   messages: UIMessage[];
-  setMessages: UseChatHelpers['setMessages'];
-  reload: UseChatHelpers['reload'];
-  status: UseChatHelpers['status'];
-  error: UseChatHelpers['error'];
-  stop: UseChatHelpers['stop'];
+  setMessages: UseChatHelpers["setMessages"];
+  reload: UseChatHelpers["reload"];
+  status: UseChatHelpers["status"];
+  error: UseChatHelpers["error"];
+  stop: UseChatHelpers["stop"];
   registerRef: (id: string, ref: HTMLDivElement | null) => void;
 }) {
   return (
@@ -40,14 +40,14 @@ function PureMessageDisplay({
           key={message.id}
           threadId={threadId}
           message={message}
-          isStreaming={status === 'streaming' && messages.length - 1 === index}
+          isStreaming={status === "streaming" && messages.length - 1 === index}
           setMessages={setMessages}
           reload={reload}
           registerRef={registerRef}
           stop={stop}
         />
       ))}
-      {status === 'submitted' && <ChatMessageLoading />}
+      {status === "submitted" && <ChatMessageLoading />}
       {error && <Error message={error.message} />}
     </section>
   );
@@ -61,6 +61,6 @@ const MessageDisplay = memo(PureMessageDisplay, (prevProps, nextProps) => {
   return true;
 });
 
-MessageDisplay.displayName = 'MessageDisplay';
+MessageDisplay.displayName = "MessageDisplay";
 
 export default MessageDisplay;

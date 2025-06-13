@@ -6,9 +6,9 @@
  * Sets up the sidebar provider and renders the main chat interface structure.
  */
 
-import { SidebarProvider } from '@/frontend/components/ui/sidebar';
-import ChatSidebarPanel from '@/frontend/components/ChatSidebarPanel';
-import { Outlet } from 'react-router';
+import { SidebarProvider } from "@/frontend/components/ui/sidebar";
+import ChatSidebarPanel from "@/frontend/components/ChatSidebarPanel";
+import { Outlet } from "react-router";
 
 export default function ChatLayoutWrapper() {
   return (
