@@ -2,36 +2,23 @@
  * ChatInputField Component
  *
  * Used in: frontend/components/ChatInterface.tsx
- * Purpose: Main chat input fiel  ], [
-    input,
-    status,
-    setInput,
-    adjustHeight,
-    append,
-    id,
-    textareaRef,
-    threadId,
-    complete,
-    navigate,
-    pendingUserMessageRef,
-  ]); selection dropdown and send button.
+ * Purpose: Main chat input field with model selection dropdown and send button.
  * Handles message composition, auto-resize, model switching, and message submission.
  * Creates new threads when needed and manages chat state.
  */
 
 import { ArrowUpIcon } from "lucide-react";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo } from "react";
 import { Textarea } from "@/frontend/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
 import useTextAreaAutoResize from "@/hooks/useTextAreaAutoResize";
 import { UseChatHelpers } from "@ai-sdk/react";
 import { useParams } from "react-router";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { UIMessage } from "ai";
 import { v4 as uuidv4 } from "uuid";
 import { StopIcon } from "./ui/UIComponents";
-import { AppwriteDB } from "@/lib/appwriteDB";
 import { HybridDB } from "@/lib/hybridDB";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 import { ModelSelector } from "./ModelSelector";
@@ -79,8 +66,10 @@ function PureInputField({
   });
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const isMobile = useIsMobile();
+  const isHomePage = location.pathname === "/chat";
 
   const isDisabled = useMemo(
     () => !input.trim() || status === "streaming" || status === "submitted",
@@ -88,6 +77,20 @@ function PureInputField({
   );
 
   const { complete } = useChatMessageSummary();
+
+  // Focus textarea when input changes (especially for prompt selections)
+  useEffect(() => {
+    if (input && textareaRef.current && isHomePage) {
+      textareaRef.current.focus();
+
+      // Set cursor at the end of the text
+      const length = input.length;
+      textareaRef.current.setSelectionRange(length, length);
+
+      // Also adjust height for the new content
+      adjustHeight();
+    }
+  }, [input, textareaRef, isHomePage, adjustHeight]);
 
   const handleSubmit = useCallback(async () => {
     const currentInput = textareaRef.current?.value || input;
@@ -122,7 +125,7 @@ function PureInputField({
     // Update UI immediately for better responsiveness - useChat handles the state
     // Store the user message in ref so it can be persisted in ChatInterface's onFinish callback
     pendingUserMessageRef.current = userMessage;
-    
+
     // The message will be persisted to database in ChatInterface's onFinish callback
     append(userMessage);
     setInput("");
@@ -138,6 +141,7 @@ function PureInputField({
     threadId,
     complete,
     navigate,
+    pendingUserMessageRef,
   ]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -160,7 +164,9 @@ function PureInputField({
             <Textarea
               id="message-input"
               value={input}
-              placeholder="What can I do for you?"
+              placeholder={
+                isHomePage ? "Ask me anything..." : "What can I do for you?"
+              }
               className={cn(
                 "w-full px-3 sm:px-4 py-2 sm:py-1.5 md:py-3 border-none shadow-none bg-transparent",
                 "placeholder:text-muted-foreground resize-none text-foreground",

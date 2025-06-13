@@ -57,7 +57,7 @@ export default function ChatLayoutWrapper() {
       document.body.classList.remove("sidebar-open");
       document.body.style.overflow = "";
     }
-    
+
     // Cleanup on unmount
     return () => {
       document.body.classList.remove("sidebar-open");
@@ -110,7 +110,7 @@ export default function ChatLayoutWrapper() {
       <div className="flex h-screen w-full overflow-hidden relative">
         {/* Overlay for mobile when sidebar is open */}
         {isMobile && sidebarOpen && (
-          <div 
+          <div
             className="fixed inset-0 bg-black/50 z-40 md:hidden sidebar-mobile-overlay"
             onClick={() => setSidebarOpen(false)}
           />
@@ -120,13 +120,13 @@ export default function ChatLayoutWrapper() {
         <div
           className={cn(
             "h-screen bg-sidebar border-r border-border sidebar-transition",
-            isMobile ? (
-              // Mobile: Fixed position overlay
-              `fixed top-0 left-0 z-50 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
-            ) : (
-              // Desktop: Relative position in flex layout
-              `relative z-50 ${sidebarOpen ? 'block' : 'hidden'}`
-            )
+            isMobile
+              ? // Mobile: Fixed position overlay
+                `fixed top-0 left-0 z-50 ${
+                  sidebarOpen ? "translate-x-0" : "-translate-x-full"
+                }`
+              : // Desktop: Relative position in flex layout
+                `relative z-50 ${sidebarOpen ? "block" : "hidden"}`
           )}
           style={{
             width: isMobile ? "80%" : `${sidebarWidth}px`,
@@ -140,9 +140,7 @@ export default function ChatLayoutWrapper() {
             <div
               className="absolute top-0 flex justify-end right-0 w-5 h-full  cursor-col-resize z-50"
               onMouseDown={handleMouseDown}
-            >
-              <div className="w-[1px] h-full bg-border cursor-col-resize z-50"></div>
-            </div>
+            ></div>
           )}
         </div>
 
