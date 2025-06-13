@@ -180,7 +180,7 @@ export default function ChatInterface({
   return (
     <div
       className={cn(
-        "relative w-full h-screen border-primary/15 flex flex-col bg-background dark:bg-zinc-800 rounded-t-xl mt-1.5 mx-2"
+        "relative w-full h-screen border-primary/30 flex flex-col bg-background dark:bg-card  border-t-[1px] border-l-[1px] rounded-tl-xl mt-5"
       )}
     >
       <AppPanelTrigger />
@@ -279,18 +279,17 @@ export default function ChatInterface({
       </div>
 
       {/* Fixed action buttons */}
-      <div className={cn("fixed top-3 right-0 z-50")}>
-        <div className={cn("flex gap-2 pr-6 pl-3")}>
+      <div className={cn("fixed top-8 right-0 z-50")}>
+        <div
+          className={cn(
+            "flex gap-2 bg-background mr-6 ml-3 rounded-md px-2 py-2"
+          )}
+        >
           <Button
             onClick={handleToggleNavigator}
             variant={isDarkTheme ? "outline" : "secondary"}
             size="icon"
-            className={cn(
-              "focus-enhanced shadow-sm",
-              isNavigatorVisible
-                ? "bg-primary/10 text-primary border-primary/30"
-                : ""
-            )}
+            className={cn("focus-enhanced shadow-sm rounded-md ")}
             aria-label={
               isNavigatorVisible
                 ? "Hide message browser"
@@ -320,6 +319,8 @@ const AppPanelTrigger = () => {
     state: "open" | "collapsed";
     isMobile: boolean;
   }>();
+
+  const sidebarOpen = localStorage.getItem("sidebarOpen") === "true";
 
   // Enhanced toggle function for debugging
   const handleToggle = () => {

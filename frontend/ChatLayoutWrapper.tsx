@@ -119,7 +119,7 @@ export default function ChatLayoutWrapper() {
         {/* Sidebar section with dynamic width */}
         <div
           className={cn(
-            "h-screen bg-sidebar border-r border-border sidebar-transition",
+            "h-screen bg-gradient-to-t dark:from-zinc-900 dark:to-sidebar sidebar-transition",
             isMobile
               ? // Mobile: Fixed position overlay
                 `fixed top-0 left-0 z-50 ${
@@ -145,7 +145,7 @@ export default function ChatLayoutWrapper() {
         </div>
 
         {/* Main content area that flexes with sidebar width */}
-        <div className="flex-1 relative min-h-screen bg-background overflow-hidden">
+        <div className="flex-1 relative min-h-screen bg-gradient-to-t from-zinc-900 to-sidebar overflow-hidden">
           <Outlet
             context={{
               sidebarWidth,
