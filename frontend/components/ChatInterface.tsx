@@ -11,7 +11,6 @@ import ChatMessageDisplay from "./ChatMessageDisplay";
 import ChatInputField from "./ChatInputField";
 import ChatMessageBrowser from "./ChatMessageBrowser";
 import { UIMessage } from "ai";
-import { v4 as uuidv4 } from "uuid";
 import { AppwriteDB } from "@/lib/appwriteDB";
 import { HybridDB } from "@/lib/hybridDB";
 import { useAuth } from "@/frontend/contexts/AuthContext";
@@ -48,6 +47,7 @@ export default function ChatInterface({
   const isMobile = useIsMobile();
   const mainRef = useRef<HTMLElement>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const pendingUserMessageRef = useRef<UIMessage | null>(null);
 
   const {
     isNavigatorVisible,
@@ -72,16 +72,23 @@ export default function ChatInterface({
     id: threadId,
     initialMessages,
     experimental_throttle: 50,
-    onFinish: async (message) => {
+    onFinish: async (message, { usage, finishReason }) => {
+      // Save the pending user message if it exists
+      if (pendingUserMessageRef.current) {
+        HybridDB.createMessage(threadId, pendingUserMessageRef.current);
+        pendingUserMessageRef.current = null;
+      }
+      
+      // Save the AI message (useChat already handles adding it to the messages array)
+      // We just need to persist it to the database using the actual message ID from useChat
       const aiMessage: UIMessage = {
-        id: uuidv4(),
+        id: message.id,
         parts: message.parts as UIMessage["parts"],
         role: "assistant",
         content: message.content,
         createdAt: new Date(),
       };
 
-      // Save AI message instantly with local update + async backend sync
       HybridDB.createMessage(threadId, aiMessage);
 
       // Scroll to bottom when new message comes in
@@ -202,6 +209,7 @@ export default function ChatInterface({
               append={append}
               setInput={setInput}
               stop={stop}
+              pendingUserMessageRef={pendingUserMessageRef}
             />
           </div>
         </div>

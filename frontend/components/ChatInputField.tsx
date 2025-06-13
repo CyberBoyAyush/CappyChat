@@ -2,7 +2,19 @@
  * ChatInputField Component
  *
  * Used in: frontend/components/ChatInterface.tsx
- * Purpose: Main chat input field with model selection dropdown and send button.
+ * Purpose: Main chat input fiel  ], [
+    input,
+    status,
+    setInput,
+    adjustHeight,
+    append,
+    id,
+    textareaRef,
+    threadId,
+    complete,
+    navigate,
+    pendingUserMessageRef,
+  ]); selection dropdown and send button.
  * Handles message composition, auto-resize, model switching, and message submission.
  * Creates new threads when needed and manages chat state.
  */
@@ -32,6 +44,7 @@ interface InputFieldProps {
   setInput: UseChatHelpers["setInput"];
   append: UseChatHelpers["append"];
   stop: UseChatHelpers["stop"];
+  pendingUserMessageRef: React.RefObject<UIMessage | null>;
 }
 
 interface StopButtonProps {
@@ -58,6 +71,7 @@ function PureInputField({
   setInput,
   append,
   stop,
+  pendingUserMessageRef,
 }: InputFieldProps) {
   const { textareaRef, adjustHeight } = useTextAreaAutoResize({
     minHeight: 72,
@@ -105,10 +119,11 @@ function PureInputField({
       complete(currentInput.trim(), { body: { messageId, threadId } });
     }
 
-    // Create message instantly with local update + async backend sync
-    HybridDB.createMessage(threadId, userMessage);
-
-    // Update UI immediately for better responsiveness
+    // Update UI immediately for better responsiveness - useChat handles the state
+    // Store the user message in ref so it can be persisted in ChatInterface's onFinish callback
+    pendingUserMessageRef.current = userMessage;
+    
+    // The message will be persisted to database in ChatInterface's onFinish callback
     append(userMessage);
     setInput("");
     adjustHeight(true);
