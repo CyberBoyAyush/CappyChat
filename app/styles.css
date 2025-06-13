@@ -256,6 +256,59 @@
     outline: 2px solid var(--primary);
     outline-offset: 2px;
   }
+
+  /* Enhanced mobile interactions for thread list items */
+  @media (max-width: 768px) {
+    .group\/thread {
+      /* Ensure minimum touch target size */
+      min-height: 44px;
+
+      /* Better tap feedback on mobile */
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    .group\/thread:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease-in-out;
+    }
+
+    /* Improved delete button visibility on mobile */
+    .group\/thread [data-delete-button] {
+      opacity: 0.7;
+      transition: opacity 0.2s ease-in-out;
+    }
+
+    .group\/thread:hover [data-delete-button],
+    .group\/thread:focus-within [data-delete-button] {
+      opacity: 1;
+    }
+  }
+
+  /* Sidebar mobile overlay animations */
+  .sidebar-mobile-overlay {
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+
+  /* Smooth sidebar transitions */
+  .sidebar-transition {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
+
+  /* Better focus states for mobile accessibility */
+  @media (max-width: 768px) {
+    .focus-enhanced:focus-visible {
+      outline: 3px solid var(--primary);
+      outline-offset: 3px;
+    }
+  }
+
+  /* Prevent scrolling when mobile sidebar is open */
+  body.sidebar-open {
+    overflow: hidden;
+  }
 }
 
 .shiki {
@@ -436,4 +489,57 @@ html.dark .shiki span[style*="color:#f85149"] {
 .focus-enhanced:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
+}
+
+/* Enhanced mobile interactions for thread list items */
+@media (max-width: 768px) {
+  .group\/thread {
+    /* Ensure minimum touch target size */
+    min-height: 44px;
+
+    /* Better tap feedback on mobile */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .group\/thread:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease-in-out;
+  }
+
+  /* Improved delete button visibility on mobile */
+  .group\/thread [data-delete-button] {
+    opacity: 0.7;
+    transition: opacity 0.2s ease-in-out;
+  }
+
+  .group\/thread:hover [data-delete-button],
+  .group\/thread:focus-within [data-delete-button] {
+    opacity: 1;
+  }
+}
+
+/* Sidebar mobile overlay animations */
+.sidebar-mobile-overlay {
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* Smooth sidebar transitions */
+.sidebar-transition {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+/* Better focus states for mobile accessibility */
+@media (max-width: 768px) {
+  .focus-enhanced:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 3px;
+  }
+}
+
+/* Prevent scrolling when mobile sidebar is open */
+body.sidebar-open {
+  overflow: hidden;
 }

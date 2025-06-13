@@ -6,7 +6,7 @@
  * Contains app branding, navigation buttons, thread display, and settings access.
  */
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { Button } from "../ui/button";
 import { buttonVariants } from "../ui/button";
@@ -14,10 +14,11 @@ import {
   SidebarHeader,
   SidebarTrigger,
 } from "@/frontend/components/ui/sidebar";
-import { X } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThreadData, ThreadOperations } from "./ThreadManager";
 import UserProfileDropdown from "../UserProfileDropdown";
+import { DeleteThreadDialog } from "./DeleteThreadDialog";
 
 // ===============================================
 // Panel Header Components
@@ -124,17 +125,21 @@ const ThreadTitle = ({ title }: { title: string }) => (
  * Purpose: Provides delete functionality for individual threads.
  */
 interface DeleteButtonProps {
-  onDelete: (event: React.MouseEvent) => void;
+  onDelete: (event?: React.MouseEvent) => void;
 }
 
 const DeleteButton = ({ onDelete }: DeleteButtonProps) => (
   <Button
     variant="ghost"
     size="icon"
-    className="hidden group-hover/thread:flex ml-auto h-7 w-7"
-    onClick={onDelete}
+    className="ml-auto h-7 w-7 text-muted-foreground hover:text-destructive transition-all duration-200 focus:opacity-100 active:opacity-100 
+      md:opacity-0 md:group-hover/thread:opacity-100 
+      opacity-70 group-hover/thread:opacity-100"
+    onClick={(event: React.MouseEvent) => onDelete(event)}
+    aria-label="Delete thread"
+    data-delete-button
   >
-    <X size={16} />
+    <Trash2 size={14} />
   </Button>
 );
 
@@ -155,6 +160,9 @@ const ThreadListItem = ({
   onDelete,
   isActive,
 }: ThreadListItemProps) => {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const containerStyles = cn(
     "cursor-pointer group/thread h-9 flex items-center px-2 py-1 rounded-lg overflow-hidden w-full transition-colors",
     "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
@@ -165,15 +173,41 @@ const ThreadListItem = ({
     onNavigate(threadData.id);
   };
 
-  const handleDeleteClick = (event: React.MouseEvent) => {
-    onDelete(threadData.id, event);
+  const handleDeleteClick = (event?: React.MouseEvent) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await onDelete(threadData.id);
+    } catch (error) {
+      console.error('Error deleting thread:', error);
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+    }
   };
 
   return (
-    <div className={containerStyles} onClick={handleItemClick}>
-      <ThreadTitle title={threadData.title} />
-      <DeleteButton onDelete={handleDeleteClick} />
-    </div>
+    <>
+      <div className={containerStyles} onClick={handleItemClick}>
+        <ThreadTitle title={threadData.title} />
+        <DeleteButton onDelete={handleDeleteClick} />
+      </div>
+      
+      <DeleteThreadDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        threadTitle={threadData.title}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
+      />
+    </>
   );
 };
 

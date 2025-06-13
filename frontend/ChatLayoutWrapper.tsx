@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/useMobileDetection";
 import { Button } from "@/frontend/components/ui/button";
 import { PanelLeftIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function ChatLayoutWrapper() {
   const [sidebarWidth, setSidebarWidth] = useState(300); // Default width
@@ -46,6 +47,23 @@ export default function ChatLayoutWrapper() {
       }
     }
   }, [isMobile]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isMobile && sidebarOpen) {
+      document.body.classList.add("sidebar-open");
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.classList.remove("sidebar-open");
+      document.body.style.overflow = "";
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove("sidebar-open");
+      document.body.style.overflow = "";
+    };
+  }, [isMobile, sidebarOpen]);
 
   // Enhanced toggle function that also updates localStorage
   const toggleSidebar = () => {
@@ -89,14 +107,30 @@ export default function ChatLayoutWrapper() {
       open={sidebarOpen}
       onOpenChange={setSidebarOpen}
     >
-      <div className="flex h-screen w-full overflow-hidden">
+      <div className="flex h-screen w-full overflow-hidden relative">
+        {/* Overlay for mobile when sidebar is open */}
+        {isMobile && sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 md:hidden sidebar-mobile-overlay"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar section with dynamic width */}
         <div
-          className="relative z-50 h-screen bg-sidebar border-r border-border"
+          className={cn(
+            "h-screen bg-sidebar border-r border-border sidebar-transition",
+            isMobile ? (
+              // Mobile: Fixed position overlay
+              `fixed top-0 left-0 z-50 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+            ) : (
+              // Desktop: Relative position in flex layout
+              `relative z-50 ${sidebarOpen ? 'block' : 'hidden'}`
+            )
+          )}
           style={{
             width: isMobile ? "80%" : `${sidebarWidth}px`,
-            flexShrink: 0,
-            display: sidebarOpen ? "block" : "none",
+            flexShrink: isMobile ? undefined : 0,
           }}
         >
           <ChatSidebarPanel />
