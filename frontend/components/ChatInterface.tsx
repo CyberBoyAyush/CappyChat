@@ -128,8 +128,8 @@ export default function ChatInterface({
   return (
     <div className="relative w-full h-screen flex flex-col bg-background">
       <AppPanelTrigger />
-      <main ref={mainRef} className="flex-1 overflow-y-auto pt-6 pb-40">
-        <div className="container mx-auto px-4 max-w-4xl">
+      <main ref={mainRef} className="flex-1 overflow-y-auto pt-14 pb-40">
+        <div className=" mx-auto flex justify-center px-4  overflow-x-hidden">
           <ChatMessageDisplay
             threadId={threadId}
             messages={messages}
@@ -194,7 +194,7 @@ export default function ChatInterface({
               : 0,
           }}
         >
-          <div className="w-full max-w-4xl">
+          <div className="w-full max-w-3xl">
             <ChatInputField
               threadId={threadId}
               input={input}

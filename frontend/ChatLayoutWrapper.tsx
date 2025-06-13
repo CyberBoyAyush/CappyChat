@@ -24,7 +24,7 @@ export default function ChatLayoutWrapper() {
 
   // Define minimum and maximum sidebar width
   const minWidth = 260;
-  const maxWidth = 800;
+  const maxWidth = 1000;
 
   // Handle mouse down event to start dragging
   const handleMouseDown = () => {
@@ -92,7 +92,7 @@ export default function ChatLayoutWrapper() {
       <div className="flex h-screen w-full overflow-hidden">
         {/* Sidebar section with dynamic width */}
         <div
-          className="relative h-screen bg-sidebar border-r border-border"
+          className="relative z-50 h-screen bg-sidebar border-r border-border"
           style={{
             width: isMobile ? "80%" : `${sidebarWidth}px`,
             flexShrink: 0,
@@ -104,9 +104,11 @@ export default function ChatLayoutWrapper() {
           {/* Draggable resizer */}
           {!isMobile && (
             <div
-              className="absolute top-0 right-0 w-1 h-full bg-border hover:bg-primary/50 cursor-col-resize z-50"
+              className="absolute top-0 flex justify-end right-0 w-5 h-full  cursor-col-resize z-50"
               onMouseDown={handleMouseDown}
-            />
+            >
+              <div className="w-[1px] h-full bg-border cursor-col-resize z-50"></div>
+            </div>
           )}
         </div>
 
