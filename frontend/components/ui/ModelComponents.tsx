@@ -8,6 +8,7 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
+import qwen from "@/public/qwen-color.svg";
 
 // ===============================================
 // Model Badge Components
@@ -220,6 +221,19 @@ export const HuggingFaceIcon: React.FC<IconProps> = ({
   </svg>
 );
 
+export const QwenIcon: React.FC<IconProps> = ({
+  size = 16,
+  className = "",
+}) => (
+  <img
+    src="/qwen-color.svg"
+    alt="Qwen"
+    width={size}
+    height={size}
+    className={className}
+  />
+);
+
 // Model icon selector
 export const getModelIcon = (
   provider: string,
@@ -243,6 +257,9 @@ export const getModelIcon = (
     case "huggingface":
     case "hf":
       return <HuggingFaceIcon {...props} />;
+    case "qwen":
+    case "alibaba":
+      return <QwenIcon {...props} />;
     default:
       return null;
   }
