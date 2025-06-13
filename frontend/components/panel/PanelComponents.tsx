@@ -31,18 +31,6 @@ import UserProfileDropdown from "../UserProfileDropdown";
  */
 const AppTitle = memo(() => (
   <div className="flex items-center gap-2">
-    {/* Logo Icon */}
-    <div className="relative">
-      <div className="w-9 h-9 rounded-sm bg-primary opacity-20 animate-pulse flex items-center justify-center shadow-sm"></div>
-      {/* Subtle glow effect */}
-      <img
-        src="/logo.png"
-        alt="Logo"
-        className="absolute inset-0 w-8 h-8 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg"
-      />
-      <div className="absolute inset-0 w-8 h-8 rounded-lg bg-primary/20 blur-sm -z-10"></div>
-    </div>
-
     {/* Logo Text */}
     <div className="flex items-baseline">
       <span className="text-xl font-bold text-sidebar-foreground tracking-tight">
@@ -86,7 +74,6 @@ const NewChatButton = () => (
 const PanelHeaderComponent = () => {
   return (
     <SidebarHeader className="flex justify-between items-center gap-4 relative">
-      <SidebarTrigger className="absolute right-1 top-2.5" />
       <AppTitle />
       <NewChatButton />
     </SidebarHeader>

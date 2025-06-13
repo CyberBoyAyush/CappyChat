@@ -23,6 +23,7 @@ import { AppwriteDB } from "@/lib/appwriteDB";
 import { HybridDB } from "@/lib/hybridDB";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 import { ModelSelector } from "./ModelSelector";
+import { useIsMobile } from "@/hooks/useMobileDetection";
 
 interface InputFieldProps {
   threadId: string;
@@ -65,6 +66,7 @@ function PureInputField({
 
   const navigate = useNavigate();
   const { id } = useParams();
+  const isMobile = useIsMobile();
 
   const isDisabled = useMemo(
     () => !input.trim() || status === "streaming" || status === "submitted",
@@ -123,8 +125,6 @@ function PureInputField({
     navigate,
   ]);
 
-  // Removed API key check since we now use environment variables
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -138,50 +138,44 @@ function PureInputField({
   };
 
   return (
-    <div className="fixed bottom-0 w-[360px] sm:w-[400px] md:w-[800px] lg:w-[800px] xl:w-[800px] 2xl:w-[870px] ">
-      <div className="">
-        <div className="bg-card border border-border rounded-t-2xl shadow-lg  w-full backdrop-blur-sm">
-          <div className="">
-            <div className="flex flex-col">
-              <div className="bg-transparent overflow-y-auto max-h-[300px] rounded-lg">
-                <Textarea
-                  id="message-input"
-                  value={input}
-                  placeholder="What can I do for you?"
-                  className={cn(
-                    "w-full px-3 sm:px-4 py-2 sm:py-1.5 md:py-3 border-none shadow-none bg-transparent",
-                    "placeholder:text-muted-foreground resize-none text-foreground",
-                    "focus-visible:ring-0 focus-visible:ring-offset-0",
-                    "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/30",
-                    "scrollbar-thumb-rounded-full",
-                    "min-h-[40px] sm:min-h-[10px] text-sm sm:text-base",
-                    // Better light mode styling and mobile optimization
-                    "selection:bg-primary selection:text-primary-foreground",
-                    // Mobile-specific improvements
-                    "mobile-input leading-relaxed"
-                  )}
-                  ref={textareaRef}
-                  onKeyDown={handleKeyDown}
-                  onChange={handleInputChange}
-                  aria-label="Message input field"
-                  aria-describedby="input-field-description"
-                />
-                <span id="input-field-description" className="sr-only">
-                  Press Enter to send, Shift+Enter for new line
-                </span>
-              </div>
+    <div className="w-full">
+      <div className="bg-card border border-border rounded-t-3xl shadow-lg w-full backdrop-blur-sm">
+        <div className="flex flex-col">
+          <div className="bg-transparent overflow-y-auto max-h-[300px] rounded-lg">
+            <Textarea
+              id="message-input"
+              value={input}
+              placeholder="What can I do for you?"
+              className={cn(
+                "w-full px-3 sm:px-4 py-2 sm:py-1.5 md:py-3 border-none shadow-none bg-transparent",
+                "placeholder:text-muted-foreground resize-none text-foreground",
+                "focus-visible:ring-0 focus-visible:ring-offset-0",
+                "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/30",
+                "scrollbar-thumb-rounded-full",
+                "min-h-[40px] sm:min-h-[10px] text-sm sm:text-base",
+                "selection:bg-primary selection:text-primary-foreground",
+                "mobile-input leading-relaxed"
+              )}
+              ref={textareaRef}
+              onKeyDown={handleKeyDown}
+              onChange={handleInputChange}
+              aria-label="Message input field"
+              aria-describedby="input-field-description"
+            />
+            <span id="input-field-description" className="sr-only">
+              Press Enter to send, Shift+Enter for new line
+            </span>
+          </div>
 
-              <div className="h-16 sm:h-14 flex items-center px-3 sm:px-2 border-t border-border/50">
-                <div className="flex items-center justify-between w-full">
-                  <ModelSelector />
+          <div className="h-16 sm:h-14 flex items-center px-3 sm:px-2 border-t border-border/50">
+            <div className="flex items-center justify-between w-full">
+              <ModelSelector />
 
-                  {status === "submitted" || status === "streaming" ? (
-                    <StopButton stop={stop} />
-                  ) : (
-                    <SendButton onSubmit={handleSubmit} disabled={isDisabled} />
-                  )}
-                </div>
-              </div>
+              {status === "submitted" || status === "streaming" ? (
+                <StopButton stop={stop} />
+              ) : (
+                <SendButton onSubmit={handleSubmit} disabled={isDisabled} />
+              )}
             </div>
           </div>
         </div>

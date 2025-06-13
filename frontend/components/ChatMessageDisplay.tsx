@@ -13,6 +13,8 @@ import { UseChatHelpers } from "@ai-sdk/react";
 import equal from "fast-deep-equal";
 import ChatMessageLoading from "./ui/UIComponents";
 import { Error } from "./ui/UIComponents";
+import { useOutletContext } from "react-router-dom";
+import { useIsMobile } from "@/hooks/useMobileDetection";
 
 function PureMessageDisplay({
   threadId,
