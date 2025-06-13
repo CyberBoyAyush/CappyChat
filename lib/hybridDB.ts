@@ -149,9 +149,19 @@ export class HybridDB {
   static async updateThread(threadId: string, title: string): Promise<void> {
     const now = new Date();
     
+    console.log('[HybridDB] Updating thread title:', { threadId, title });
+    
     // Instant local update
     LocalDB.updateThread(threadId, { title, updatedAt: now });
-    dbEvents.emit('threads_updated', LocalDB.getThreads());
+    
+    // Get updated threads and emit event with a small delay to avoid batching issues
+    const updatedThreads = LocalDB.getThreads();
+    console.log('[HybridDB] Emitting threads_updated event with', updatedThreads.length, 'threads');
+    
+    // Use setTimeout to ensure this runs after any pending React updates
+    setTimeout(() => {
+      dbEvents.emit('threads_updated', updatedThreads);
+    }, 0);
 
     // Async remote update
     this.queueSync(async () => {

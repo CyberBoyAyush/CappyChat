@@ -133,11 +133,18 @@ export class LocalDB {
   // Update thread title and timestamp
   static updateThread(threadId: string, updates: Partial<Thread>): void {
     try {
+      console.log('[LocalDB] Updating thread:', { threadId, updates });
       const threads = this.getThreads();
+      console.log('[LocalDB] Current threads:', threads.map(t => ({ id: t.id, title: t.title })));
       const index = threads.findIndex(t => t.id === threadId);
       
       if (index >= 0) {
+        const oldThread = threads[index];
         threads[index] = { ...threads[index], ...updates };
+        console.log('[LocalDB] Thread updated:', { 
+          old: { id: oldThread.id, title: oldThread.title }, 
+          new: { id: threads[index].id, title: threads[index].title }
+        });
         
         // Sort by lastMessageAt if it was updated
         if (updates.lastMessageAt) {
@@ -147,6 +154,13 @@ export class LocalDB {
         }
         
         localStorage.setItem(STORAGE_KEYS.THREADS, JSON.stringify(threads));
+        
+        // Update cache for instant UI updates
+        this.threadsCache = threads;
+        this.lastCacheUpdate = Date.now();
+        console.log('[LocalDB] Cache updated with', threads.length, 'threads');
+      } else {
+        console.warn('[LocalDB] Thread not found:', threadId, 'Available threads:', threads.map(t => t.id));
       }
     } catch (error) {
       console.error('Error updating thread in local storage:', error);

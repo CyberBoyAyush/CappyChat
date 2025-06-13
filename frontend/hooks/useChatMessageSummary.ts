@@ -19,14 +19,16 @@ export const useChatMessageSummary = () => {
 
         if (response.ok) {
           const { title, isTitle, messageId, threadId } = payload;
+          console.log('[useChatMessageSummary] Received response:', { title, isTitle, messageId, threadId });
 
           if (isTitle) {
             // Update thread title instantly with local update + async backend sync
-            HybridDB.updateThread(threadId, title);
-            HybridDB.createMessageSummary(threadId, messageId, title);
+            console.log('[useChatMessageSummary] Updating thread title:', title);
+            await HybridDB.updateThread(threadId, title);
+            await HybridDB.createMessageSummary(threadId, messageId, title);
           } else {
             // Create message summary instantly with local update + async backend sync
-            HybridDB.createMessageSummary(threadId, messageId, title);
+            await HybridDB.createMessageSummary(threadId, messageId, title);
           }
         } else {
           toast.error('Failed to generate a summary for the message');
