@@ -1,7 +1,7 @@
 import { useCompletion } from '@ai-sdk/react';
-import { useAPIKeyStore } from '@/frontend/stores/ApiKeyStore';
 import { toast } from 'sonner';
-import { createMessageSummary, updateThread } from '@/frontend/database/chatQueries';
+import { AppwriteDB } from '@/lib/appwriteDB';
+import { HybridDB } from '@/lib/hybridDB';
 
 interface MessageSummaryPayload {
   title: string;
@@ -11,31 +11,30 @@ interface MessageSummaryPayload {
 }
 
 export const useChatMessageSummary = () => {
-  const getKey = useAPIKeyStore((state) => state.getKey);
-
   const { complete, isLoading } = useCompletion({
     api: '/api/ai-text-generation',
-    ...(getKey('google') && {
-      headers: { 'X-Google-API-Key': getKey('google')! },
-    }),
     onResponse: async (response) => {
       try {
         const payload: MessageSummaryPayload = await response.json();
 
         if (response.ok) {
           const { title, isTitle, messageId, threadId } = payload;
+          console.log('[useChatMessageSummary] Received response:', { title, isTitle, messageId, threadId });
 
           if (isTitle) {
-            await updateThread(threadId, title);
-            await createMessageSummary(threadId, messageId, title);
+            // Update thread title instantly with local update + async backend sync
+            console.log('[useChatMessageSummary] Updating thread title:', title);
+            await HybridDB.updateThread(threadId, title);
+            await HybridDB.createMessageSummary(threadId, messageId, title);
           } else {
-            await createMessageSummary(threadId, messageId, title);
+            // Create message summary instantly with local update + async backend sync
+            await HybridDB.createMessageSummary(threadId, messageId, title);
           }
         } else {
           toast.error('Failed to generate a summary for the message');
         }
       } catch (error) {
-        console.error(error);
+        console.error('Error processing message summary:', error);
       }
     },
   });

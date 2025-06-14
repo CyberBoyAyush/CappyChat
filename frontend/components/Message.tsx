@@ -6,15 +6,16 @@
  * Handles message controls, markdown rendering, and message editing functionality.
  */
 
-import { memo, useState } from 'react';
-import MarkdownRenderer from '@/frontend/components/MarkdownRenderer';
-import { cn } from '@/lib/utils';
-import { UIMessage } from 'ai';
-import equal from 'fast-deep-equal';
-import ChatMessageControls from './ChatMessageControls';
-import { UseChatHelpers } from '@ai-sdk/react';
-import ChatMessageEditor from './ChatMessageEditor';
-import ChatMessageReasoning from './ChatMessageReasoning';
+import { memo, useState } from "react";
+import MarkdownRenderer from "@/frontend/components/MarkdownRenderer";
+import { cn } from "@/lib/utils";
+import { UIMessage } from "ai";
+import equal from "fast-deep-equal";
+import ChatMessageControls from "./ChatMessageControls";
+import { UseChatHelpers } from "@ai-sdk/react";
+import ChatMessageEditor from "./ChatMessageEditor";
+import ChatMessageReasoning from "./ChatMessageReasoning";
+import WebSearchCitations from "./WebSearchCitations";
 
 function PureMessage({
   threadId,
@@ -27,27 +28,27 @@ function PureMessage({
 }: {
   threadId: string;
   message: UIMessage;
-  setMessages: UseChatHelpers['setMessages'];
-  reload: UseChatHelpers['reload'];
+  setMessages: UseChatHelpers["setMessages"];
+  reload: UseChatHelpers["reload"];
   isStreaming: boolean;
   registerRef: (id: string, ref: HTMLDivElement | null) => void;
-  stop: UseChatHelpers['stop'];
+  stop: UseChatHelpers["stop"];
 }) {
-  const [mode, setMode] = useState<'view' | 'edit'>('view');
+  const [mode, setMode] = useState<"view" | "edit">("view");
 
   return (
     <div
       role="article"
       className={cn(
-        'flex flex-col',
-        message.role === 'user' ? 'items-end' : 'items-start'
+        "flex flex-col w-full",
+        message.role === "user" ? "items-end" : "items-start"
       )}
     >
       {message.parts.map((part, index) => {
         const { type } = part;
         const key = `message-${message.id}-part-${index}`;
 
-        if (type === 'reasoning') {
+        if (type === "reasoning") {
           return (
             <ChatMessageReasoning
               key={key}
@@ -57,14 +58,14 @@ function PureMessage({
           );
         }
 
-        if (type === 'text') {
-          return message.role === 'user' ? (
+        if (type === "text") {
+          return message.role === "user" ? (
             <div
               key={key}
-              className="relative group px-4 py-3 rounded-xl bg-card border border-border shadow-sm max-w-[80%] sm:max-w-[70%] md:max-w-[60%]"
+              className="relative group px-2 py-1.5 rounded-xl bg-card border border-border shadow-sm max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%]"
               ref={(el) => registerRef(message.id, el)}
             >
-              {mode === 'edit' && (
+              {mode === "edit" && (
                 <ChatMessageEditor
                   threadId={threadId}
                   message={message}
@@ -75,9 +76,10 @@ function PureMessage({
                   stop={stop}
                 />
               )}
-              {mode === 'view' && <p>{part.text}</p>}
-
-              {mode === 'view' && (
+              {mode === "view" && (
+                <p className="break-words whitespace-pre-wrap">{part.text}</p>
+              )}
+              {mode === "view" && (
                 <ChatMessageControls
                   threadId={threadId}
                   content={part.text}
@@ -90,7 +92,10 @@ function PureMessage({
               )}
             </div>
           ) : (
-            <div key={key} className="group flex flex-col gap-2 w-full">
+            <div
+              key={key}
+              className="group flex flex-col gap-2 w-full max-w-3xl"
+            >
               <MarkdownRenderer content={part.text} id={message.id} />
               {!isStreaming && (
                 <ChatMessageControls
@@ -102,6 +107,22 @@ function PureMessage({
                   stop={stop}
                 />
               )}
+              {/* Show web search citations for assistant messages with search results */}
+              {message.role === "assistant" &&
+                (message as any).webSearchResults && (
+                  <>
+                    {console.log(
+                      "🎯 Rendering citations for message:",
+                      message.id,
+                      "Results:",
+                      (message as any).webSearchResults
+                    )}
+                    <WebSearchCitations
+                      results={(message as any).webSearchResults}
+                      searchQuery="web search"
+                    />
+                  </>
+                )}
             </div>
           );
         }
@@ -117,6 +138,6 @@ const PreviewMessage = memo(PureMessage, (prevProps, nextProps) => {
   return true;
 });
 
-PreviewMessage.displayName = 'PreviewMessage';
+PreviewMessage.displayName = "PreviewMessage";
 
 export default PreviewMessage;

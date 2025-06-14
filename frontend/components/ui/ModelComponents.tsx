@@ -1,0 +1,266 @@
+/**
+ * Model Components
+ *
+ * Used in: frontend/components/ChatInputField.tsx
+ * Purpose: Consolidated model-related components including badges and provider icons.
+ * Provides visual indicators for model capabilities, pricing, and provider branding.
+ */
+
+import React from "react";
+import { cn } from "@/lib/utils";
+import qwen from "@/public/qwen-color.svg";
+
+// ===============================================
+// Model Badge Components
+// ===============================================
+
+interface ModelBadgeProps {
+  type: "premium" | "super-premium" | "reasoning";
+  size?: number;
+  className?: string;
+}
+
+// Icons8 Diamond Icon for Premium
+const DiamondIcon: React.FC<{ size?: number; className?: string }> = ({
+  size = 16,
+  className = "",
+}) => (
+  <img
+    width={size}
+    height={size}
+    src="https://img.icons8.com/ios/50/diamond.png"
+    alt="premium"
+    className={className}
+    style={{
+      filter:
+        "brightness(0) saturate(100%) invert(47%) sepia(69%) saturate(959%) hue-rotate(334deg) brightness(103%) contrast(97%)",
+    }} // Convert to theme primary color #f76f52
+  />
+);
+
+// Icons8 Brain Icon for Reasoning
+const BrainIcon: React.FC<{ size?: number; className?: string }> = ({
+  size = 16,
+  className = "",
+}) => (
+  <img
+    width={size}
+    height={size}
+    src="https://img.icons8.com/ios/50/brain--v1.png"
+    alt="reasoning"
+    className={className}
+    style={{
+      filter:
+        "brightness(0) saturate(100%) invert(47%) sepia(69%) saturate(959%) hue-rotate(334deg) brightness(103%) contrast(97%)",
+    }} // Convert to theme primary color #f76f52
+  />
+);
+
+export const ModelBadge: React.FC<ModelBadgeProps> = ({
+  type,
+  size = 16,
+  className = "",
+}) => {
+  const badgeStyles = cn(
+    "inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors",
+    "text-primary",
+    className
+  );
+
+  const renderIcon = () => {
+    switch (type) {
+      case "premium":
+        return <DiamondIcon size={size} />;
+      case "reasoning":
+        return <BrainIcon size={size} />;
+      case "super-premium":
+        return (
+          <>
+        <DiamondIcon size={size} />
+        <span className="w-1"></span>
+        <DiamondIcon size={size} />
+          </>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const renderText = () => {
+    switch (type) {
+      case "premium":
+        return "Premium";
+      case "reasoning":
+        return "Reasoning";
+      default:
+        return "";
+    }
+  };
+
+  return (
+    <span className={badgeStyles}>
+      {renderIcon()}
+      {/* {renderText()} */}
+    </span>
+  );
+};
+
+// ===============================================
+// Model Provider Icons
+// ===============================================
+
+interface IconProps {
+  size?: number;
+  className?: string;
+}
+
+export const GoogleIcon: React.FC<IconProps> = ({
+  size = 16,
+  className = "",
+}) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    x="0px"
+    y="0px"
+    width={size}
+    height={size}
+    viewBox="0 0 48 48"
+  >
+    <path
+      fill="#2196f3"
+      d="M23.426,31.911l-1.719,3.936c-0.661,1.513-2.754,1.513-3.415,0l-1.719-3.936	c-1.529-3.503-4.282-6.291-7.716-7.815l-4.73-2.1c-1.504-0.668-1.504-2.855,0-3.523l4.583-2.034	c3.522-1.563,6.324-4.455,7.827-8.077l1.741-4.195c0.646-1.557,2.797-1.557,3.443,0l1.741,4.195	c1.503,3.622,4.305,6.514,7.827,8.077l4.583,2.034c1.504,0.668,1.504,2.855,0,3.523l-4.73,2.1	C27.708,25.62,24.955,28.409,23.426,31.911z"
+    ></path>
+    <path
+      fill="#7e57c2"
+      d="M38.423,43.248l-0.493,1.131c-0.361,0.828-1.507,0.828-1.868,0l-0.493-1.131	c-0.879-2.016-2.464-3.621-4.44-4.5l-1.52-0.675c-0.822-0.365-0.822-1.56,0-1.925l1.435-0.638c2.027-0.901,3.64-2.565,4.504-4.65	l0.507-1.222c0.353-0.852,1.531-0.852,1.884,0l0.507,1.222c0.864,2.085,2.477,3.749,4.504,4.65l1.435,0.638	c0.822,0.365,0.822,1.56,0,1.925l-1.52,0.675C40.887,39.627,39.303,41.232,38.423,43.248z"
+    ></path>
+  </svg>
+);
+
+export const OpenAIIcon: React.FC<IconProps> = ({
+  size = 16,
+  className = "",
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"
+      fill="#10A37F"
+    />
+  </svg>
+);
+
+export const AnthropicIcon: React.FC<IconProps> = ({
+  size = 16,
+  className = "",
+}) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    x="0px"
+    y="0px"
+    width={size}
+    height={size}
+    viewBox="0 0 48 48"
+  >
+    <path
+      fill="#d19b75"
+      d="M40,6H8C6.895,6,6,6.895,6,8v32c0,1.105,0.895,2,2,2h32c1.105,0,2-0.895,2-2V8	C42,6.895,41.105,6,40,6z"
+    ></path>
+    <path
+      fill="#252525"
+      d="M22.197,14.234h-4.404L10.037,33.67c0-0.096,4.452,0,4.452,0l1.484-4.069h8.234l1.58,4.069h4.261	L22.197,14.234z M17.362,26.059l2.729-6.894l2.633,6.894C22.723,26.059,17.266,26.059,17.362,26.059z"
+    ></path>
+    <path
+      fill="#252525"
+      d="M25.963,14.234L33.59,33.67h4.356l-7.803-19.436C30.144,14.234,25.963,14.186,25.963,14.234z"
+    ></path>
+  </svg>
+);
+
+export const DeepSeekIcon: React.FC<IconProps> = ({
+  size = 16,
+  className = "",
+}) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    x="0px"
+    y="0px"
+    width={size}
+    height={size}
+    viewBox="0 0 48 48"
+  >
+    <path
+      fill="#536dfe"
+      d="M47.496,10.074c-0.508-0.249-0.727,0.226-1.025,0.467c-0.102,0.078-0.188,0.179-0.274,0.272	c-0.743,0.794-1.611,1.315-2.746,1.253c-1.658-0.093-3.074,0.428-4.326,1.696c-0.266-1.564-1.15-2.498-2.495-3.097	c-0.704-0.311-1.416-0.623-1.909-1.3c-0.344-0.482-0.438-1.019-0.61-1.548c-0.11-0.319-0.219-0.646-0.587-0.7	c-0.399-0.062-0.555,0.272-0.712,0.553c-0.626,1.144-0.868,2.405-0.845,3.681c0.055,2.871,1.267,5.159,3.676,6.785	c0.274,0.187,0.344,0.373,0.258,0.646c-0.164,0.56-0.36,1.105-0.532,1.665c-0.11,0.358-0.274,0.436-0.657,0.28	c-1.322-0.552-2.464-1.369-3.473-2.358c-1.713-1.657-3.262-3.486-5.194-4.918c-0.454-0.335-0.907-0.646-1.377-0.942	c-1.971-1.914,0.258-3.486,0.774-3.673c0.54-0.195,0.188-0.864-1.557-0.856c-1.744,0.008-3.34,0.591-5.374,1.369	c-0.297,0.117-0.61,0.202-0.931,0.272c-1.846-0.35-3.763-0.428-5.765-0.202c-3.77,0.42-6.782,2.202-8.996,5.245	c-2.66,3.657-3.285,7.812-2.519,12.147c0.806,4.568,3.137,8.349,6.719,11.306c3.716,3.066,7.994,4.568,12.876,4.28	c2.965-0.171,6.266-0.568,9.989-3.719c0.939,0.467,1.924,0.654,3.559,0.794c1.259,0.117,2.472-0.062,3.411-0.257	c1.471-0.311,1.369-1.673,0.837-1.922C34,36,33.471,35.441,33.471,35.441c2.19-2.591,5.491-5.284,6.782-14.007	c0.102-0.692,0.016-1.128,0-1.689c-0.008-0.342,0.07-0.475,0.462-0.514c1.079-0.125,2.128-0.42,3.09-0.949	c2.793-1.525,3.919-4.031,4.185-7.034C48.028,10.79,47.981,10.315,47.496,10.074z M23.161,37.107	c-4.177-3.284-6.203-4.365-7.04-4.319c-0.782,0.047-0.641,0.942-0.469,1.525c0.18,0.576,0.415,0.973,0.743,1.478	c0.227,0.335,0.383,0.833-0.227,1.206c-1.345,0.833-3.684-0.28-3.794-0.335c-2.722-1.603-4.998-3.72-6.602-6.614	c-1.549-2.786-2.448-5.774-2.597-8.964c-0.039-0.77,0.188-1.043,0.954-1.183c1.009-0.187,2.049-0.226,3.059-0.078	c4.263,0.623,7.893,2.529,10.936,5.548c1.737,1.72,3.051,3.774,4.404,5.782c1.439,2.132,2.988,4.163,4.959,5.828	c0.696,0.584,1.252,1.027,1.783,1.354C27.667,38.515,24.991,38.554,23.161,37.107L23.161,37.107z M25.164,24.228	c0-0.342,0.274-0.615,0.618-0.615c0.078,0,0.149,0.015,0.211,0.039c0.086,0.031,0.164,0.078,0.227,0.148	c0.11,0.109,0.172,0.265,0.172,0.428c0,0.342-0.274,0.615-0.618,0.615S25.164,24.571,25.164,24.228L25.164,24.228z M31.382,27.419	c-0.399,0.163-0.798,0.303-1.181,0.319c-0.595,0.031-1.244-0.21-1.596-0.506c-0.548-0.459-0.939-0.716-1.103-1.517	c-0.07-0.342-0.031-0.872,0.031-1.175c0.141-0.654-0.016-1.074-0.477-1.455c-0.376-0.311-0.853-0.397-1.377-0.397	c-0.196,0-0.375-0.086-0.508-0.156c-0.219-0.109-0.399-0.381-0.227-0.716c0.055-0.109,0.321-0.373,0.383-0.42	c0.712-0.405,1.533-0.272,2.292,0.031c0.704,0.288,1.236,0.817,2.003,1.564c0.782,0.903,0.923,1.152,1.369,1.829	c0.352,0.529,0.673,1.074,0.892,1.696C32.016,26.905,31.844,27.224,31.382,27.419L31.382,27.419z"
+    ></path>
+  </svg>
+);
+
+export const HuggingFaceIcon: React.FC<IconProps> = ({
+  size = 16,
+  className = "",
+}) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    x="0px"
+    y="0px"
+    width={size}
+    height={size}
+    viewBox="0 0 48 48"
+  >
+    <path
+      fill="#ffd43b"
+      d="M37.6,33.8c-2.1,2.1-5.5,2.1-7.6,0L24,27.8l-6,6c-2.1,2.1-5.5,2.1-7.6,0c-2.1-2.1-2.1-5.5,0-7.6l6-6l-6-6c-2.1-2.1-2.1-5.5,0-7.6c2.1-2.1,5.5-2.1,7.6,0l6,6l6-6c2.1-2.1,5.5-2.1,7.6,0c2.1,2.1,2.1,5.5,0,7.6l-6,6l6,6C39.7,28.3,39.7,31.7,37.6,33.8z"
+    ></path>
+  </svg>
+);
+
+export const QwenIcon: React.FC<IconProps> = ({
+  size = 16,
+  className = "",
+}) => (
+  <img
+    src="/qwen-color.svg"
+    alt="Qwen"
+    width={size}
+    height={size}
+    className={className}
+  />
+);
+
+// Model icon selector
+export const getModelIcon = (
+  provider: string,
+  size?: number,
+  className?: string
+) => {
+  const props = { size, className };
+
+  switch (provider.toLowerCase()) {
+    case "google":
+    case "gemini":
+      return <GoogleIcon {...props} />;
+    case "openai":
+    case "gpt":
+      return <OpenAIIcon {...props} />;
+    case "anthropic":
+    case "claude":
+      return <AnthropicIcon {...props} />;
+    case "deepseek":
+      return <DeepSeekIcon {...props} />;
+    case "huggingface":
+    case "hf":
+      return <HuggingFaceIcon {...props} />;
+    case "qwen":
+    case "alibaba":
+      return <QwenIcon {...props} />;
+    default:
+      return null;
+  }
+};

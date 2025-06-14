@@ -6,13 +6,15 @@
  * Handles message rendering, loading states, and error display.
  */
 
-import { memo } from 'react';
-import PreviewMessage from './Message';
-import { UIMessage } from 'ai';
-import { UseChatHelpers } from '@ai-sdk/react';
-import equal from 'fast-deep-equal';
-import ChatMessageLoading from './ui/ChatMessageLoading';
-import Error from './Error';
+import { memo } from "react";
+import PreviewMessage from "./Message";
+import { UIMessage } from "ai";
+import { UseChatHelpers } from "@ai-sdk/react";
+import equal from "fast-deep-equal";
+import ChatMessageLoading from "./ui/UIComponents";
+import { Error } from "./ui/UIComponents";
+import { useOutletContext } from "react-router-dom";
+import { useIsMobile } from "@/hooks/useMobileDetection";
 
 function PureMessageDisplay({
   threadId,
@@ -26,28 +28,28 @@ function PureMessageDisplay({
 }: {
   threadId: string;
   messages: UIMessage[];
-  setMessages: UseChatHelpers['setMessages'];
-  reload: UseChatHelpers['reload'];
-  status: UseChatHelpers['status'];
-  error: UseChatHelpers['error'];
-  stop: UseChatHelpers['stop'];
+  setMessages: UseChatHelpers["setMessages"];
+  reload: UseChatHelpers["reload"];
+  status: UseChatHelpers["status"];
+  error: UseChatHelpers["error"];
+  stop: UseChatHelpers["stop"];
   registerRef: (id: string, ref: HTMLDivElement | null) => void;
 }) {
   return (
-    <section className="flex flex-col space-y-12">
+    <section className="flex flex-col w-full max-w-3xl space-y-12">
       {messages.map((message, index) => (
         <PreviewMessage
           key={message.id}
           threadId={threadId}
           message={message}
-          isStreaming={status === 'streaming' && messages.length - 1 === index}
+          isStreaming={status === "streaming" && messages.length - 1 === index}
           setMessages={setMessages}
           reload={reload}
           registerRef={registerRef}
           stop={stop}
         />
       ))}
-      {status === 'submitted' && <ChatMessageLoading />}
+      {status === "submitted" && <ChatMessageLoading />}
       {error && <Error message={error.message} />}
     </section>
   );
@@ -61,6 +63,6 @@ const MessageDisplay = memo(PureMessageDisplay, (prevProps, nextProps) => {
   return true;
 });
 
-MessageDisplay.displayName = 'MessageDisplay';
+MessageDisplay.displayName = "MessageDisplay";
 
 export default MessageDisplay;

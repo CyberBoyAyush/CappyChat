@@ -1,48 +1,77 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText, smoothStream } from 'ai';
-import { headers } from 'next/headers';
 import { getModelConfig, AIModel } from '@/lib/models';
+import { getConversationStyleConfig, ConversationStyle, DEFAULT_CONVERSATION_STYLE } from '@/lib/conversationStyles';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, model } = await req.json();
-    const headersList = await headers();
+    const body = await req.json();
+    const { messages, model, conversationStyle } = body;
+
+    // Validate required fields
+    if (!messages || !Array.isArray(messages)) {
+      return new Response(
+        JSON.stringify({ error: 'Messages array is required' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    if (!model || typeof model !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'Model is required' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
     const modelConfig = getModelConfig(model as AIModel);
 
-    const apiKey = headersList.get(modelConfig.headerKey) as string;
-
-    let aiModel;
-    switch (modelConfig.provider) {
-      case 'google':
-        const google = createGoogleGenerativeAI({ apiKey });
-        aiModel = google(modelConfig.modelId);
-        break;
-
-      case 'openai':
-        const openai = createOpenAI({ apiKey });
-        aiModel = openai(modelConfig.modelId);
-        break;
-
-      case 'openrouter':
-        const openrouter = createOpenRouter({ apiKey });
-        aiModel = openrouter(modelConfig.modelId);
-        break;
-
-      default:
-        return new Response(
-          JSON.stringify({ error: 'Unsupported model provider' }),
-          {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' },
-          }
-        );
+    if (!modelConfig) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid model specified' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
+
+    // Get OpenRouter API key from environment variable
+    const apiKey = process.env.OPENROUTER_API_KEY;
+
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: 'OpenRouter API key not configured' }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // All models now use OpenRouter with app identification headers
+    const openrouter = createOpenRouter({
+      apiKey,
+      headers: {
+        'HTTP-Referer': 'https://atchat.app',
+        'X-Title': 'AVChat - AI Chat Application',
+        'User-Agent': 'AVChat/1.0.0'
+      }
+    });
+    const aiModel = openrouter(modelConfig.modelId);
+
+    // Get conversation style configuration
+    const styleConfig = getConversationStyleConfig(
+      (conversationStyle as ConversationStyle) || DEFAULT_CONVERSATION_STYLE
+    );
 
     const result = streamText({
       model: aiModel,
@@ -51,10 +80,11 @@ export async function POST(req: NextRequest) {
         console.log('error', error);
       },
       system: `
-      You are ATChat, an ai assistant that can answer questions and help with tasks.
+      ${styleConfig.systemPrompt}
+
+      You are AVChat, an ai assistant that can answer questions and help with tasks.
       Be helpful and provide relevant information
       Be respectful and polite in all interactions.
-      Be engaging and maintain a conversational tone.
       Always use LaTeX for mathematical expressions -
       Inline math must be wrapped in single dollar signs: $content$
       Display math must be wrapped in double dollar signs: $$content$$

@@ -6,11 +6,8 @@
  * Allows users to edit their messages and regenerate AI responses from that point.
  */
 
-import {
-  createMessage,
-  deleteTrailingMessages,
-  createMessageSummary,
-} from '@/frontend/database/chatQueries';
+import { AppwriteDB } from '@/lib/appwriteDB';
+import { HybridDB } from '@/lib/hybridDB';
 import { UseChatHelpers, useCompletion } from '@ai-sdk/react';
 import { useState } from 'react';
 import { UIMessage } from 'ai';
@@ -18,7 +15,6 @@ import { Dispatch, SetStateAction } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
-import { useAPIKeyStore } from '@/frontend/stores/ApiKeyStore';
 import { toast } from 'sonner';
 
 export default function MessageEditor({
@@ -39,20 +35,16 @@ export default function MessageEditor({
   stop: UseChatHelpers['stop'];
 }) {
   const [draftContent, setDraftContent] = useState(content);
-  const getKey = useAPIKeyStore((state) => state.getKey);
 
   const { complete } = useCompletion({
-    api: '/api/text-generation',
-    ...(getKey('google') && {
-      headers: { 'X-Google-API-Key': getKey('google')! },
-    }),
+    api: '/api/ai-text-generation',
     onResponse: async (response) => {
       try {
         const payload = await response.json();
 
         if (response.ok) {
           const { title, messageId, threadId } = payload;
-          await createMessageSummary(threadId, messageId, title);
+          await HybridDB.createMessageSummary(threadId, messageId, title);
         } else {
           toast.error(
             payload.error || 'Failed to generate a summary for the message'
@@ -66,7 +58,7 @@ export default function MessageEditor({
 
   const handleSave = async () => {
     try {
-      await deleteTrailingMessages(threadId, message.createdAt as Date);
+      await HybridDB.deleteTrailingMessages(threadId, message.createdAt as Date);
 
       const updatedMessage = {
         ...message,
@@ -81,7 +73,7 @@ export default function MessageEditor({
         createdAt: new Date(),
       };
 
-      await createMessage(threadId, updatedMessage);
+      await HybridDB.createMessage(threadId, updatedMessage);
 
       setMessages((messages) => {
         const index = messages.findIndex((m) => m.id === message.id);

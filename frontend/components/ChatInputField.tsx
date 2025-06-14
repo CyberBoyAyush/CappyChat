@@ -7,42 +7,39 @@
  * Creates new threads when needed and manages chat state.
  */
 
-import { ChevronDown, Check, ArrowUpIcon } from 'lucide-react';
-import { memo, useCallback, useMemo } from 'react';
-import { Textarea } from '@/frontend/components/ui/textarea';
-import { cn } from '@/lib/utils';
-import { Button } from '@/frontend/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/frontend/components/ui/dropdown-menu';
-import useTextAreaAutoResize from '@/hooks/useTextAreaAutoResize';
-import { UseChatHelpers } from '@ai-sdk/react';
-import { useParams } from 'react-router';
-import { useNavigate } from 'react-router';
-import { createMessage, createThread } from '@/frontend/database/chatQueries';
-import { useAPIKeyStore } from '@/frontend/stores/ApiKeyStore';
-import { useModelStore } from '@/frontend/stores/ChatModelStore';
-import { AI_MODELS, AIModel, getModelConfig } from '@/lib/models';
-import ApiKeyPrompt from '@/frontend/components/ApiKeyPrompt';
-import { UIMessage } from 'ai';
-import { v4 as uuidv4 } from 'uuid';
-import { StopIcon } from './ui/icons';
-import { useChatMessageSummary } from '../hooks/useChatMessageSummary';
+import { ArrowUpIcon } from "lucide-react";
+import { memo, useCallback, useEffect, useMemo } from "react";
+import { Textarea } from "@/frontend/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { Button } from "@/frontend/components/ui/button";
+import useTextAreaAutoResize from "@/hooks/useTextAreaAutoResize";
+import { UseChatHelpers } from "@ai-sdk/react";
+import { useParams } from "react-router";
+import { useNavigate, useLocation } from "react-router";
+import { UIMessage } from "ai";
+import { v4 as uuidv4 } from "uuid";
+import { StopIcon, WebSearchToggle } from "./ui/UIComponents";
+import { HybridDB } from "@/lib/hybridDB";
+import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
+import { ModelSelector } from "./ModelSelector";
+import { ConversationStyleSelector } from "./ConversationStyleSelector";
+import { useIsMobile } from "@/hooks/useMobileDetection";
+import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
+import { useModelStore } from "@/frontend/stores/ChatModelStore";
 
 interface InputFieldProps {
   threadId: string;
-  input: UseChatHelpers['input'];
-  status: UseChatHelpers['status'];
-  setInput: UseChatHelpers['setInput'];
-  append: UseChatHelpers['append'];
-  stop: UseChatHelpers['stop'];
+  input: UseChatHelpers["input"];
+  status: UseChatHelpers["status"];
+  setInput: UseChatHelpers["setInput"];
+  append: UseChatHelpers["append"];
+  stop: UseChatHelpers["stop"];
+  pendingUserMessageRef: React.RefObject<UIMessage | null>;
+  onWebSearchMessage?: (messageId: string) => void;
 }
 
 interface StopButtonProps {
-  stop: UseChatHelpers['stop'];
+  stop: UseChatHelpers["stop"];
 }
 
 interface SendButtonProps {
@@ -52,8 +49,8 @@ interface SendButtonProps {
 
 const createUserMessage = (id: string, text: string): UIMessage => ({
   id,
-  parts: [{ type: 'text', text }],
-  role: 'user',
+  parts: [{ type: "text", text }],
+  role: "user",
   content: text,
   createdAt: new Date(),
 });
@@ -65,51 +62,90 @@ function PureInputField({
   setInput,
   append,
   stop,
+  pendingUserMessageRef,
+  onWebSearchMessage,
 }: InputFieldProps) {
-  const canChat = useAPIKeyStore((state) => state.hasRequiredKeys());
-
   const { textareaRef, adjustHeight } = useTextAreaAutoResize({
     minHeight: 72,
     maxHeight: 200,
   });
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
+  const isMobile = useIsMobile();
+  const isHomePage = location.pathname === "/chat";
 
   const isDisabled = useMemo(
-    () => !input.trim() || status === 'streaming' || status === 'submitted',
+    () => !input.trim() || status === "streaming" || status === "submitted",
     [input, status]
   );
 
   const { complete } = useChatMessageSummary();
+
+  // Web search state
+  const { isWebSearchEnabled, setWebSearchEnabled } = useWebSearchStore();
+  const { selectedModel } = useModelStore();
+
+  // Lock model selector when web search is enabled
+  const isModelLocked = isWebSearchEnabled;
+
+  // Focus textarea when input changes (especially for prompt selections)
+  useEffect(() => {
+    if (input && textareaRef.current && isHomePage) {
+      textareaRef.current.focus();
+
+      // Set cursor at the end of the text
+      const length = input.length;
+      textareaRef.current.setSelectionRange(length, length);
+
+      // Also adjust height for the new content
+      adjustHeight();
+    }
+  }, [input, textareaRef, isHomePage, adjustHeight]);
 
   const handleSubmit = useCallback(async () => {
     const currentInput = textareaRef.current?.value || input;
 
     if (
       !currentInput.trim() ||
-      status === 'streaming' ||
-      status === 'submitted'
+      status === "streaming" ||
+      status === "submitted"
     )
       return;
 
     const messageId = uuidv4();
+    const userMessage = createUserMessage(messageId, currentInput.trim());
 
+    // Handle new vs existing conversations
     if (!id) {
+      // New conversation - navigate first
       navigate(`/chat/${threadId}`);
-      await createThread(threadId);
+
+      // Create thread instantly with local update + async backend sync
+      HybridDB.createThread(threadId);
+
+      // Start completion immediately for better UX
       complete(currentInput.trim(), {
         body: { threadId, messageId, isTitle: true },
       });
     } else {
+      // Existing conversation
       complete(currentInput.trim(), { body: { messageId, threadId } });
     }
 
-    const userMessage = createUserMessage(messageId, currentInput.trim());
-    await createMessage(threadId, userMessage);
+    // Update UI immediately for better responsiveness - useChat handles the state
+    // Store the user message in ref so it can be persisted in ChatInterface's onFinish callback
+    pendingUserMessageRef.current = userMessage;
 
+    // Track if this message was sent with web search enabled
+    if (isWebSearchEnabled && onWebSearchMessage) {
+      onWebSearchMessage(messageId);
+    }
+
+    // The message will be persisted to database in ChatInterface's onFinish callback
     append(userMessage);
-    setInput('');
+    setInput("");
     adjustHeight(true);
   }, [
     input,
@@ -121,14 +157,12 @@ function PureInputField({
     textareaRef,
     threadId,
     complete,
+    navigate,
+    pendingUserMessageRef,
   ]);
 
-  if (!canChat) {
-    return <ApiKeyPrompt />;
-  }
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
@@ -140,49 +174,61 @@ function PureInputField({
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40">
-      <div className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-card border border-border rounded-t-2xl shadow-lg p-3 pb-2 w-full backdrop-blur-sm mx-auto">
-          <div className="relative">
-            <div className="flex flex-col">
-              <div className="bg-transparent overflow-y-auto max-h-[300px] rounded-lg">
-                <Textarea
-                  id="message-input"
-                  value={input}
-                  placeholder="What can I do for you?"
-                  className={cn(
-                    'w-full px-4 py-3 border-none shadow-none bg-transparent',
-                    'placeholder:text-muted-foreground resize-none text-foreground',
-                    'focus-visible:ring-0 focus-visible:ring-offset-0',
-                    'scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/30',
-                    'scrollbar-thumb-rounded-full',
-                    'min-h-[72px] text-sm sm:text-base',
-                    // Better light mode styling and mobile optimization
-                    'selection:bg-primary selection:text-primary-foreground',
-                    // Mobile-specific improvements
-                    'mobile-input leading-relaxed'
-                  )}
-                  ref={textareaRef}
-                  onKeyDown={handleKeyDown}
-                  onChange={handleInputChange}
-                  aria-label="Message input field"
-                  aria-describedby="input-field-description"
+    <div className="w-full">
+      <div className="border-t-[1px] border-x-[1px] border-primary/30 rounded-t-2xl shadow-lg w-full backdrop-blur-md">
+        <div className="flex flex-col bg-background/55 border-t-8 rounded-t-2xl border-x-8 border-zinc-900/50">
+          <div className="bg-transparent overflow-y-auto max-h-[300px] rounded-t-xl">
+            <Textarea
+              id="message-input"
+              value={input}
+              placeholder={
+                isHomePage ? "Ask me anything..." : "What can I do for you?"
+              }
+              className={cn(
+                "w-full px-3 sm:px-4 py-2 sm:py-1.5 md:pt-4 border-none shadow-none ",
+                "placeholder:text-muted-foreground resize-none text-foreground",
+                "focus-visible:ring-0 focus-visible:ring-offset-0",
+                "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/30",
+                "scrollbar-thumb-rounded-full",
+                "min-h-[40px] sm:min-h-[10px] text-sm sm:text-base",
+                "selection:bg-primary selection:text-primary-foreground",
+                "mobile-input leading-relaxed"
+              )}
+              ref={textareaRef}
+              onKeyDown={handleKeyDown}
+              onChange={handleInputChange}
+              aria-label="Message input field"
+              aria-describedby="input-field-description"
+            />
+            <span id="input-field-description" className="sr-only">
+              Press Enter to send, Shift+Enter for new line
+            </span>
+          </div>
+
+          <div className="h-16 sm:h-14 flex bg-transparent items-center px-3 sm:px-2 border-t border-border/50">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2">
+                <ModelSelector />
+                <ConversationStyleSelector className="hidden sm:flex" />
+                <WebSearchToggle
+                  isEnabled={isWebSearchEnabled}
+                  onToggle={setWebSearchEnabled}
+                  className="hidden sm:flex"
                 />
-                <span id="input-field-description" className="sr-only">
-                  Press Enter to send, Shift+Enter for new line
-                </span>
               </div>
 
-              <div className="h-14 flex items-center px-2 border-t border-border/50">
-                <div className="flex items-center justify-between w-full">
-                  <ModelDropdown />
-
-                  {status === 'submitted' || status === 'streaming' ? (
-                    <StopButton stop={stop} />
-                  ) : (
-                    <SendButton onSubmit={handleSubmit} disabled={isDisabled} />
-                  )}
-                </div>
+              <div className="flex items-center gap-2">
+                <ConversationStyleSelector className="flex sm:hidden" />
+                <WebSearchToggle
+                  isEnabled={isWebSearchEnabled}
+                  onToggle={setWebSearchEnabled}
+                  className="flex sm:hidden"
+                />
+                {status === "submitted" || status === "streaming" ? (
+                  <StopButton stop={stop} />
+                ) : (
+                  <SendButton onSubmit={handleSubmit} disabled={isDisabled} />
+                )}
               </div>
             </div>
           </div>
@@ -198,72 +244,12 @@ const InputField = memo(PureInputField, (prevProps, nextProps) => {
   return true;
 });
 
-const PureModelDropdown = () => {
-  const getKey = useAPIKeyStore((state) => state.getKey);
-  const { selectedModel, setModel } = useModelStore();
-
-  const isModelEnabled = useCallback(
-    (model: AIModel) => {
-      const modelConfig = getModelConfig(model);
-      const apiKey = getKey(modelConfig.provider);
-      return !!apiKey;
-    },
-    [getKey]
-  );
-
-  return (
-    <div className="flex items-center gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex items-center gap-1 h-8 pl-2 pr-2 text-xs rounded-md text-foreground hover:bg-accent hover:text-accent-foreground focus-enhanced"
-            aria-label={`Selected model: ${selectedModel}`}
-          >
-            <div className="flex items-center gap-1">
-              <span className="mobile-text">{selectedModel}</span>
-              <ChevronDown className="w-3 h-3 opacity-50" />
-            </div>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          className={cn('min-w-[10rem]', 'border-border', 'bg-popover')}
-        >
-          {AI_MODELS.map((model) => {
-            const isEnabled = isModelEnabled(model);
-            return (
-              <DropdownMenuItem
-                key={model}
-                onSelect={() => isEnabled && setModel(model)}
-                disabled={!isEnabled}
-                className={cn(
-                  'flex items-center justify-between gap-2',
-                  'cursor-pointer'
-                )}
-              >
-                <span>{model}</span>
-                {selectedModel === model && (
-                  <Check
-                    className="w-4 h-4 text-primary"
-                    aria-label="Selected"
-                  />
-                )}
-              </DropdownMenuItem>
-            );
-          })}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
-};
-
-const ModelDropdown = memo(PureModelDropdown);
-
 function PureStopButton({ stop }: StopButtonProps) {
   return (
     <Button
       variant="outline"
       size="icon"
+      className="h-9 w-9 sm:h-8 sm:w-8"
       onClick={stop}
       aria-label="Stop generating response"
     >
@@ -280,6 +266,7 @@ const PureSendButton = ({ onSubmit, disabled }: SendButtonProps) => {
       onClick={onSubmit}
       variant="default"
       size="icon"
+      className="h-9 w-9 sm:h-8 sm:w-8"
       disabled={disabled}
       aria-label="Send message"
     >

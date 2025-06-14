@@ -6,20 +6,21 @@
  * Loads messages from database and renders the chat interface for the specific thread.
  */
 
+import { useState, useEffect, useCallback } from 'react';
 import ChatInterface from '@/frontend/components/ChatInterface';
 import { useParams } from 'react-router';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { getMessagesByThreadId } from '../database/chatQueries';
-import { type DBMessage } from '../database/chatDatabase';
+import { HybridDB, dbEvents } from '@/lib/hybridDB';
+import { useOptimizedMessages } from '@/frontend/hooks/useOptimizedHybridDB';
 import { UIMessage } from 'ai';
 
 export default function ChatThreadPage() {
   const { id } = useParams();
   if (!id) throw new Error('Thread ID is required');
 
-  const messages = useLiveQuery(() => getMessagesByThreadId(id), [id]);
+  // Use optimized hook for better performance
+  const { messages, isLoading } = useOptimizedMessages(id);
 
-  const convertToUIMessages = (messages?: DBMessage[]) => {
+  const convertToUIMessages = useCallback((messages?: any[]) => {
     return messages?.map((message) => ({
       id: message.id,
       role: message.role,
@@ -27,7 +28,15 @@ export default function ChatThreadPage() {
       content: message.content || '',
       createdAt: message.createdAt,
     }));
-  };
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <ChatInterface

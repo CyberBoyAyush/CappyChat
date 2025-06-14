@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './styles.css';
 import 'katex/dist/katex.min.css';
-import { Toaster } from '@/frontend/components/ui/sonner';
-import { ThemeProvider } from '@/frontend/components/ui/AppThemeProvider';
+import { Toaster } from '@/frontend/components/ui/BasicComponents';
+import { ThemeProvider } from '@/frontend/components/ui/ThemeComponents';
 import { Analytics } from '@vercel/analytics/react';
+import PerformanceOptimizations from '@/frontend/components/PerformanceOptimizations';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -17,8 +18,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'ATChat',
+  title: 'AVChat - Fastest AI Chat App',
   description: 'Fastest AI Chat App',
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
+  other: {
+    // Performance optimization meta tags
+    'dns-prefetch': 'https://avchatbackend.ayush-sharma.in',
+    'preconnect': 'https://avchatbackend.ayush-sharma.in',
+    'viewport': 'width=device-width, initial-scale=1, maximum-scale=1',
+  },
 };
 
 export default function RootLayout({
@@ -37,6 +49,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <PerformanceOptimizations />
           {children}
           <Toaster richColors position="top-right" />
         </ThemeProvider>

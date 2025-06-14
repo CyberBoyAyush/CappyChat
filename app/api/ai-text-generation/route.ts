@@ -1,30 +1,57 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateText } from 'ai';
-import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
-  const headersList = await headers();
-  const googleApiKey = headersList.get('X-Google-API-Key');
+  // Get OpenRouter API key from environment variable
+  const apiKey = process.env.OPENROUTER_API_KEY;
 
-  if (!googleApiKey) {
+  if (!apiKey) {
     return NextResponse.json(
       {
-        error: 'Google API key is required to enable chat title generation.',
+        error: 'OpenRouter API key not configured.',
       },
+      { status: 500 }
+    );
+  }
+
+  const openrouter = createOpenRouter({
+    apiKey,
+    headers: {
+      'HTTP-Referer': 'https://atchat.ayush-sharma.in',
+      'X-Title': 'AVChat - AI Chat Application',
+      'User-Agent': 'AVChat/1.0.0'
+    }
+  });
+
+  const body = await req.json();
+  const { prompt, isTitle, messageId, threadId } = body;
+
+  // Validate required fields
+  if (!prompt || typeof prompt !== 'string') {
+    return NextResponse.json(
+      { error: 'Prompt is required' },
       { status: 400 }
     );
   }
 
-  const google = createGoogleGenerativeAI({
-    apiKey: googleApiKey,
-  });
+  if (!messageId || typeof messageId !== 'string') {
+    return NextResponse.json(
+      { error: 'Message ID is required' },
+      { status: 400 }
+    );
+  }
 
-  const { prompt, isTitle, messageId, threadId } = await req.json();
+  if (!threadId || typeof threadId !== 'string') {
+    return NextResponse.json(
+      { error: 'Thread ID is required' },
+      { status: 400 }
+    );
+  }
 
   try {
     const { text: title } = await generateText({
-      model: google('gemini-2.5-flash-preview-04-17'),
+      model: openrouter('openai/gpt-4.1-nano'),
       system: `\n
       - you will generate a short title based on the first message a user begins a conversation with
       - ensure it is not more than 80 characters long
