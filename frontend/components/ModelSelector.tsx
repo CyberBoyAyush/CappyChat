@@ -205,7 +205,7 @@ const PureModelSelector = () => {
         <DropdownMenuContent
           className={cn(
             "w-[320px] sm:w-[480px] max-w-[95vw] p-3 sm:p-4",
-            "border-border bg-zinc-900/50 backdrop-blur-3xl",
+            "border-border dark:bg-zinc-900/50 backdrop-blur-3xl",
             "max-h-[70vh] overflow-y-auto",
             "scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent scrollbar-thumb-rounded-full",
             "shadow-lg"
