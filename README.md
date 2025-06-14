@@ -80,6 +80,7 @@ A realtime chat application with AI capabilities, IndexedDB local storage, and A
 | title           | String    | ✅       |
 | updatedAt       | Datetime  | ✅       |
 | lastMessageAt   | Datetime  | ✅       |
+| isPinned        | Boolean   | ❌       |
 
 ### 2. `messages` Collection
 

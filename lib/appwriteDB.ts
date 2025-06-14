@@ -25,6 +25,8 @@ export interface AppwriteThread extends Models.Document {
   title: string;
   updatedAt: string; // ISO date string
   lastMessageAt: string; // ISO date string
+  isPinned: boolean; // Pin status for thread organization
+  tags?: string[]; // Optional tags array for thread categorization
 }
 
 // Define Thread interface for internal use
@@ -34,6 +36,8 @@ export interface Thread {
   createdAt: Date;
   updatedAt: Date;
   lastMessageAt: Date;
+  isPinned: boolean; // Pin status for thread organization
+  tags?: string[]; // Optional tags array for thread categorization
 }
 
 // Interface for Appwrite Message document
@@ -116,7 +120,9 @@ export class AppwriteDB {
           title: threadDoc.title,
           createdAt: new Date(doc.$createdAt),
           updatedAt: new Date(threadDoc.updatedAt),
-          lastMessageAt: new Date(threadDoc.lastMessageAt)
+          lastMessageAt: new Date(threadDoc.lastMessageAt),
+          isPinned: threadDoc.isPinned || false, // Default to false for existing threads
+          tags: threadDoc.tags || [] // Default to empty array for existing threads
         };
       });
       
@@ -138,7 +144,8 @@ export class AppwriteDB {
         userId: userId,
         title: 'New Chat',
         updatedAt: now.toISOString(),
-        lastMessageAt: now.toISOString()
+        lastMessageAt: now.toISOString(),
+        isPinned: false // New threads are not pinned by default
       };
       
       // Use upsert-like behavior by trying to create and handling duplicates
@@ -179,7 +186,7 @@ export class AppwriteDB {
     try {
       const userId = await this.getCurrentUserId();
       const now = new Date();
-      
+
       // Find the Appwrite document ID by threadId
       const response = await databases.listDocuments(
         DATABASE_ID,
@@ -189,10 +196,10 @@ export class AppwriteDB {
           Query.equal('userId', userId)
         ]
       );
-      
+
       if (response.documents.length > 0) {
         const doc = response.documents[0] as AppwriteThread;
-        
+
         // Update in Appwrite - strictly adhering to schema
         await databases.updateDocument(
           DATABASE_ID,
@@ -209,6 +216,84 @@ export class AppwriteDB {
       }
     } catch (error) {
       console.error('Error updating thread:', error);
+      throw error;
+    }
+  }
+
+  // Pin or unpin a thread
+  static async updateThreadPinStatus(threadId: string, isPinned: boolean): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const now = new Date();
+
+      // Find the Appwrite document ID by threadId
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('threadId', threadId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (response.documents.length > 0) {
+        const doc = response.documents[0] as AppwriteThread;
+
+        // Update pin status in Appwrite
+        await databases.updateDocument(
+          DATABASE_ID,
+          THREADS_COLLECTION_ID,
+          doc.$id,
+          {
+            isPinned: isPinned,
+            updatedAt: now.toISOString(),
+            // We maintain lastMessageAt unchanged as this is just a pin status update
+          }
+        );
+      } else {
+        throw new Error(`Thread with ID ${threadId} not found`);
+      }
+    } catch (error) {
+      console.error('Error updating thread pin status:', error);
+      throw error;
+    }
+  }
+
+  // Update thread tags
+  static async updateThreadTags(threadId: string, tags: string[]): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const now = new Date();
+
+      // Find the Appwrite document ID by threadId
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('threadId', threadId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (response.documents.length > 0) {
+        const doc = response.documents[0] as AppwriteThread;
+
+        // Update tags in Appwrite
+        await databases.updateDocument(
+          DATABASE_ID,
+          THREADS_COLLECTION_ID,
+          doc.$id,
+          {
+            tags: tags,
+            updatedAt: now.toISOString(),
+            // We maintain lastMessageAt unchanged as this is just a tags update
+          }
+        );
+      } else {
+        throw new Error(`Thread with ID ${threadId} not found`);
+      }
+    } catch (error) {
+      console.error('Error updating thread tags:', error);
       throw error;
     }
   }

@@ -12,6 +12,7 @@ import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import * as SeparatorPrimitive from '@radix-ui/react-separator';
+import * as LabelPrimitive from '@radix-ui/react-label';
 import { useTheme } from 'next-themes';
 import { Toaster as Sonner, ToasterProps } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -27,7 +28,7 @@ import { cn } from '@/lib/utils';
  * Purpose: Provides loading placeholder with animated shimmer effect.
  * Used to show loading states while content is being fetched.
  */
-export function Skeleton({ className, ...props }: React.ComponentProps<'div'>) {
+function Skeleton({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="skeleton"
@@ -48,7 +49,7 @@ export function Skeleton({ className, ...props }: React.ComponentProps<'div'>) {
  * Purpose: Provides visual separation between sections with horizontal or vertical lines.
  * Used for layout organization and visual hierarchy.
  */
-export function Separator({
+function Separator({
   className,
   orientation = 'horizontal',
   decorative = true,
@@ -100,7 +101,7 @@ const badgeVariants = cva(
   }
 );
 
-export function Badge({
+function Badge({
   className,
   variant,
   asChild = false,
@@ -130,7 +131,7 @@ export function Badge({
  * Purpose: Provides toast notification system for the entire application.
  * Shows success, error, and info messages with theme-aware styling.
  */
-export function Toaster({ ...props }: ToasterProps) {
+function Toaster({ ...props }: ToasterProps) {
   const { theme = 'system' } = useTheme();
 
   return (
@@ -148,3 +149,30 @@ export function Toaster({ ...props }: ToasterProps) {
     />
   );
 }
+
+// ===============================================
+// Label Component
+// ===============================================
+
+/**
+ * Label Component
+ *
+ * Used in: Various form components
+ * Purpose: Provides accessible form labels with consistent styling.
+ */
+const Label = React.forwardRef<
+  React.ElementRef<typeof LabelPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
+>(({ className, ...props }, ref) => (
+  <LabelPrimitive.Root
+    ref={ref}
+    className={cn(
+      'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+      className
+    )}
+    {...props}
+  />
+));
+Label.displayName = LabelPrimitive.Root.displayName;
+
+export { Skeleton, Separator, Badge, Toaster, Label };

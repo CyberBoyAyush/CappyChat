@@ -48,16 +48,16 @@ export const useThreadManager = () => {
       event.preventDefault();
       event.stopPropagation();
     }
-    
+
     try {
       // Instant local update + async backend sync
       await HybridDB.deleteThread(threadId);
-      
+
       // Navigate away if we're deleting the current thread
       if (currentThreadId === threadId) {
         router(`/chat`);
       }
-      
+
       // Close sidebar on mobile after deletion
       if (isMobile && outletContext?.toggleSidebar) {
         outletContext.toggleSidebar();
@@ -68,6 +68,51 @@ export const useThreadManager = () => {
     }
   }, [currentThreadId, router, isMobile, outletContext]);
 
+  const toggleThreadPin = useCallback(async (threadId: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    try {
+      // Find the current thread to get its pin status
+      const thread = threadCollection.find(t => t.id === threadId);
+      if (!thread) {
+        console.error('Thread not found:', threadId);
+        return;
+      }
+
+      // Toggle pin status
+      const newPinStatus = !thread.isPinned;
+
+      // Instant local update + async backend sync
+      await HybridDB.updateThreadPinStatus(threadId, newPinStatus);
+    } catch (error) {
+      console.error('Error toggling thread pin status:', error);
+      throw error;
+    }
+  }, [threadCollection]);
+
+  const renameThread = useCallback(async (threadId: string, newTitle: string) => {
+    try {
+      // Instant local update + async backend sync
+      await HybridDB.updateThread(threadId, newTitle);
+    } catch (error) {
+      console.error('Error renaming thread:', error);
+      throw error;
+    }
+  }, []);
+
+  const updateThreadTags = useCallback(async (threadId: string, tags: string[]) => {
+    try {
+      // Instant local update + async backend sync
+      await HybridDB.updateThreadTags(threadId, tags);
+    } catch (error) {
+      console.error('Error updating thread tags:', error);
+      throw error;
+    }
+  }, []);
+
   const isActiveThread = useCallback((threadId: string) => 
     currentThreadId === threadId, [currentThreadId]);
 
@@ -76,6 +121,9 @@ export const useThreadManager = () => {
     threadCollection,
     navigateToThread,
     removeThread,
+    toggleThreadPin,
+    renameThread,
+    updateThreadTags,
     isActiveThread,
     isLoading,
   };
@@ -85,11 +133,16 @@ export const useThreadManager = () => {
 export interface ThreadData {
   id: string;
   title: string;
+  isPinned: boolean;
+  tags?: string[];
 }
 
 // Thread operations interface
 export interface ThreadOperations {
   onNavigate: (threadId: string) => void;
   onDelete: (threadId: string, event?: React.MouseEvent) => void;
+  onTogglePin: (threadId: string, event?: React.MouseEvent) => void;
+  onRename: (threadId: string, newTitle: string) => void;
+  onUpdateTags: (threadId: string, tags: string[]) => void;
   isActive: boolean;
 }

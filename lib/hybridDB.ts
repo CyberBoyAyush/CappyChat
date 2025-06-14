@@ -125,7 +125,9 @@ export class HybridDB {
       title: 'New Chat',
       createdAt: now,
       updatedAt: now,
-      lastMessageAt: now
+      lastMessageAt: now,
+      isPinned: false, // New threads are not pinned by default
+      tags: [] // New threads have no tags by default
     };
 
     // Instant local update
@@ -148,16 +150,16 @@ export class HybridDB {
   // Update thread (instant local + async remote)
   static async updateThread(threadId: string, title: string): Promise<void> {
     const now = new Date();
-    
+
     console.log('[HybridDB] Updating thread title:', { threadId, title });
-    
+
     // Instant local update
     LocalDB.updateThread(threadId, { title, updatedAt: now });
-    
+
     // Get updated threads and emit event with a small delay to avoid batching issues
     const updatedThreads = LocalDB.getThreads();
     console.log('[HybridDB] Emitting threads_updated event with', updatedThreads.length, 'threads');
-    
+
     // Use setTimeout to ensure this runs after any pending React updates
     setTimeout(() => {
       dbEvents.emit('threads_updated', updatedThreads);
@@ -169,6 +171,62 @@ export class HybridDB {
         await AppwriteDB.updateThread(threadId, title);
       } catch (error) {
         console.error('Failed to sync thread update:', error);
+      }
+    });
+  }
+
+  // Pin or unpin thread (instant local + async remote)
+  static async updateThreadPinStatus(threadId: string, isPinned: boolean): Promise<void> {
+    const now = new Date();
+
+    console.log('[HybridDB] Updating thread pin status:', { threadId, isPinned });
+
+    // Instant local update
+    LocalDB.updateThread(threadId, { isPinned, updatedAt: now });
+
+    // Get updated threads and emit event
+    const updatedThreads = LocalDB.getThreads();
+    console.log('[HybridDB] Emitting threads_updated event with', updatedThreads.length, 'threads');
+
+    // Use setTimeout to ensure this runs after any pending React updates
+    setTimeout(() => {
+      dbEvents.emit('threads_updated', updatedThreads);
+    }, 0);
+
+    // Async remote update
+    this.queueSync(async () => {
+      try {
+        await AppwriteDB.updateThreadPinStatus(threadId, isPinned);
+      } catch (error) {
+        console.error('Failed to sync thread pin status update:', error);
+      }
+    });
+  }
+
+  // Update thread tags (instant local + async remote)
+  static async updateThreadTags(threadId: string, tags: string[]): Promise<void> {
+    const now = new Date();
+
+    console.log('[HybridDB] Updating thread tags:', { threadId, tags });
+
+    // Instant local update
+    LocalDB.updateThread(threadId, { tags, updatedAt: now });
+
+    // Get updated threads and emit event
+    const updatedThreads = LocalDB.getThreads();
+    console.log('[HybridDB] Emitting threads_updated event with', updatedThreads.length, 'threads');
+
+    // Use setTimeout to ensure this runs after any pending React updates
+    setTimeout(() => {
+      dbEvents.emit('threads_updated', updatedThreads);
+    }, 0);
+
+    // Async remote update
+    this.queueSync(async () => {
+      try {
+        await AppwriteDB.updateThreadTags(threadId, tags);
+      } catch (error) {
+        console.error('Failed to sync thread tags update:', error);
       }
     });
   }
@@ -380,7 +438,7 @@ export class HybridDB {
     // Check if thread already exists locally to avoid duplicates
     const existingThreads = LocalDB.getThreads();
     const existsLocally = existingThreads.some(t => t.id === appwriteThread.threadId);
-    
+
     if (existsLocally) {
       // Thread already exists locally, this is likely from our own sync operation
       return;
@@ -391,7 +449,8 @@ export class HybridDB {
       title: appwriteThread.title,
       createdAt: new Date(appwriteThread.$createdAt),
       updatedAt: new Date(appwriteThread.updatedAt),
-      lastMessageAt: new Date(appwriteThread.lastMessageAt)
+      lastMessageAt: new Date(appwriteThread.lastMessageAt),
+      isPinned: appwriteThread.isPinned || false // Default to false for existing threads
     };
 
     LocalDB.upsertThread(thread);
@@ -404,7 +463,8 @@ export class HybridDB {
       title: appwriteThread.title,
       createdAt: new Date(appwriteThread.$createdAt),
       updatedAt: new Date(appwriteThread.updatedAt),
-      lastMessageAt: new Date(appwriteThread.lastMessageAt)
+      lastMessageAt: new Date(appwriteThread.lastMessageAt),
+      isPinned: appwriteThread.isPinned || false // Default to false for existing threads
     };
 
     LocalDB.upsertThread(thread);

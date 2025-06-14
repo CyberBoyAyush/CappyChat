@@ -9,5 +9,9 @@
 // Panel components barrel export - now consolidated
 export { PanelHeader, PanelFooter, default as ThreadListItem } from './PanelComponents';
 export { DeleteThreadDialog } from './DeleteThreadDialog';
+export { ThreadSearch } from './ThreadSearch';
+export { ThreadMenuDropdown } from './ThreadMenuDropdown';
+export { ThreadRenameDialog } from './ThreadRenameDialog';
+export { ThreadTagsDialog } from './ThreadTagsDialog';
 export { useThreadManager } from './ThreadManager';
 export type { ThreadData, ThreadOperations } from './ThreadManager';

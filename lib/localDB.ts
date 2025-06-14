@@ -97,10 +97,15 @@ export class LocalDB {
         threads.unshift(thread);
       }
       
-      // Sort by lastMessageAt
-      threads.sort((a, b) => 
-        new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
-      );
+      // Sort by pin status first, then by lastMessageAt
+      threads.sort((a, b) => {
+        // Pinned threads come first
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+
+        // Within same pin status, sort by lastMessageAt
+        return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
+      });
       
       localStorage.setItem(STORAGE_KEYS.THREADS, JSON.stringify(threads));
       
@@ -146,11 +151,16 @@ export class LocalDB {
           new: { id: threads[index].id, title: threads[index].title }
         });
         
-        // Sort by lastMessageAt if it was updated
-        if (updates.lastMessageAt) {
-          threads.sort((a, b) => 
-            new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
-          );
+        // Sort if lastMessageAt or isPinned was updated
+        if (updates.lastMessageAt || updates.isPinned !== undefined) {
+          threads.sort((a, b) => {
+            // Pinned threads come first
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+
+            // Within same pin status, sort by lastMessageAt
+            return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
+          });
         }
         
         localStorage.setItem(STORAGE_KEYS.THREADS, JSON.stringify(threads));
@@ -299,10 +309,15 @@ export class LocalDB {
   // Replace all threads (used during sync)
   static replaceAllThreads(threads: Thread[]): void {
     try {
-      // Sort before storing
-      const sortedThreads = threads.sort((a, b) => 
-        new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
-      );
+      // Sort before storing - pinned threads first, then by lastMessageAt
+      const sortedThreads = threads.sort((a, b) => {
+        // Pinned threads come first
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+
+        // Within same pin status, sort by lastMessageAt
+        return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
+      });
       
       localStorage.setItem(STORAGE_KEYS.THREADS, JSON.stringify(sortedThreads));
       
