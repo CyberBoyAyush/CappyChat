@@ -41,6 +41,139 @@ class EventEmitter {
 
 export const dbEvents = new EventEmitter();
 
+// Debounced event emitter for smooth real-time updates
+class DebouncedEventEmitter {
+  private static instance: DebouncedEventEmitter;
+  private pendingEvents = new Map<string, NodeJS.Timeout>();
+  private lastEmittedData = new Map<string, string>();
+
+  static getInstance(): DebouncedEventEmitter {
+    if (!this.instance) {
+      this.instance = new DebouncedEventEmitter();
+    }
+    return this.instance;
+  }
+
+  emit(eventName: string, ...args: any[]): void {
+    const eventKey = `${eventName}_${args[0] || 'global'}`;
+
+    // Clear existing timeout for this event
+    if (this.pendingEvents.has(eventKey)) {
+      clearTimeout(this.pendingEvents.get(eventKey)!);
+    }
+
+    // Quick comparison for messages - use count and last message ID instead of full JSON
+    let hasChanged = true;
+    if (eventName === 'messages_updated' && args.length >= 2) {
+      const threadId = args[0];
+      const messages = args[1];
+      const quickHash = `${messages.length}_${messages[messages.length - 1]?.id || 'empty'}`;
+      const lastHash = this.lastEmittedData.get(eventKey);
+
+      if (quickHash === lastHash) {
+        hasChanged = false;
+      } else {
+        this.lastEmittedData.set(eventKey, quickHash);
+      }
+    } else {
+      // For other events, use JSON comparison but cache it
+      const currentData = JSON.stringify(args);
+      const lastData = this.lastEmittedData.get(eventKey);
+
+      if (currentData === lastData) {
+        hasChanged = false;
+      } else {
+        this.lastEmittedData.set(eventKey, currentData);
+      }
+    }
+
+    if (!hasChanged) {
+      return; // Skip if data hasn't changed
+    }
+
+    // Set new timeout with appropriate delay based on event type
+    const delay = this.getDelayForEvent(eventName);
+    const timeout = setTimeout(() => {
+      dbEvents.emit(eventName, ...args);
+      this.pendingEvents.delete(eventKey);
+    }, delay);
+
+    this.pendingEvents.set(eventKey, timeout);
+  }
+
+  private getDelayForEvent(eventName: string): number {
+    switch (eventName) {
+      case 'messages_updated':
+        return 30; // Very quick updates for messages (smooth streaming)
+      case 'threads_updated':
+        return 100; // Slightly slower for threads
+      case 'summaries_updated':
+        return 200; // Slower for summaries
+      default:
+        return 50;
+    }
+  }
+
+  // Force immediate emission (for critical updates)
+  emitImmediate(eventName: string, ...args: any[]): void {
+    const eventKey = `${eventName}_${args[0] || 'global'}`;
+
+    // Clear any pending timeout
+    if (this.pendingEvents.has(eventKey)) {
+      clearTimeout(this.pendingEvents.get(eventKey)!);
+      this.pendingEvents.delete(eventKey);
+    }
+
+    // Update cache and emit immediately
+    if (eventName === 'messages_updated' && args.length >= 2) {
+      const messages = args[1];
+      const quickHash = `${messages.length}_${messages[messages.length - 1]?.id || 'empty'}`;
+      this.lastEmittedData.set(eventKey, quickHash);
+    } else {
+      this.lastEmittedData.set(eventKey, JSON.stringify(args));
+    }
+
+    dbEvents.emit(eventName, ...args);
+  }
+
+  // Clear cache for a specific event (useful for force refreshes)
+  clearCache(eventName?: string, identifier?: string): void {
+    if (eventName && identifier) {
+      const eventKey = `${eventName}_${identifier}`;
+      this.lastEmittedData.delete(eventKey);
+      if (this.pendingEvents.has(eventKey)) {
+        clearTimeout(this.pendingEvents.get(eventKey)!);
+        this.pendingEvents.delete(eventKey);
+      }
+    } else if (eventName) {
+      // Clear all events of this type
+      for (const [key] of this.lastEmittedData) {
+        if (key.startsWith(eventName)) {
+          this.lastEmittedData.delete(key);
+        }
+      }
+      for (const [key, timeout] of this.pendingEvents) {
+        if (key.startsWith(eventName)) {
+          clearTimeout(timeout);
+          this.pendingEvents.delete(key);
+        }
+      }
+    } else {
+      // Clear everything
+      this.lastEmittedData.clear();
+      for (const timeout of this.pendingEvents.values()) {
+        clearTimeout(timeout);
+      }
+      this.pendingEvents.clear();
+    }
+  }
+}
+
+const debouncedEmitter = DebouncedEventEmitter.getInstance();
+
+// Export the debounced emitter for external use
+export { debouncedEmitter };
+
 export class HybridDB {
   private static isOnline = true;
   private static syncQueue: Array<() => Promise<void>> = [];
@@ -59,23 +192,30 @@ export class HybridDB {
   }
 
   private static async doInitialize(userId: string): Promise<void> {
+    console.log('[HybridDB] Starting initialization for user:', userId);
     LocalDB.setUserId(userId);
-    
+
     // Set up realtime callbacks
+    console.log('[HybridDB] Setting up realtime callbacks');
     AppwriteRealtime.setCallbacks({
       onThreadCreated: this.handleRemoteThreadCreated.bind(this),
       onThreadUpdated: this.handleRemoteThreadUpdated.bind(this),
       onThreadDeleted: this.handleRemoteThreadDeleted.bind(this),
       onMessageCreated: this.handleRemoteMessageCreated.bind(this),
+      onMessageUpdated: this.handleRemoteMessageUpdated.bind(this),
+      onMessageDeleted: this.handleRemoteMessageDeleted.bind(this),
       onMessageSummaryCreated: this.handleRemoteMessageSummaryCreated.bind(this),
     });
 
     // Subscribe to realtime updates immediately for better UX
+    console.log('[HybridDB] Subscribing to realtime updates');
     AppwriteRealtime.subscribeToAll(userId);
 
     // Non-blocking background sync - instant UI, sync in background
+    console.log('[HybridDB] Starting background sync');
     this.performInitialSyncInBackground();
     this.initialized = true;
+    console.log('[HybridDB] Initialization complete');
   }
 
   // Perform initial sync from Appwrite - now async in background
@@ -86,13 +226,13 @@ export class HybridDB {
         // Load local data first for instant UI
         const localThreads = LocalDB.getThreads();
         if (localThreads.length > 0) {
-          dbEvents.emit('threads_updated', localThreads);
+          debouncedEmitter.emitImmediate('threads_updated', localThreads);
         }
 
         // Sync threads from remote
         const threads = await AppwriteDB.getThreads();
         LocalDB.replaceAllThreads(threads);
-        dbEvents.emit('threads_updated', threads);
+        debouncedEmitter.emit('threads_updated', threads);
 
         // For messages, only sync when actually needed (lazy loading)
         // This prevents the massive network requests on startup
@@ -104,7 +244,7 @@ export class HybridDB {
         // Use local data if remote fails
         const localThreads = LocalDB.getThreads();
         if (localThreads.length > 0) {
-          dbEvents.emit('threads_updated', localThreads);
+          debouncedEmitter.emitImmediate('threads_updated', localThreads);
         }
       }
     }, 0);
@@ -132,7 +272,7 @@ export class HybridDB {
 
     // Instant local update
     LocalDB.upsertThread(thread);
-    dbEvents.emit('threads_updated', LocalDB.getThreads());
+    debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
 
     // Async remote update
     this.queueSync(async () => {
@@ -162,7 +302,7 @@ export class HybridDB {
 
     // Use setTimeout to ensure this runs after any pending React updates
     setTimeout(() => {
-      dbEvents.emit('threads_updated', updatedThreads);
+      debouncedEmitter.emit('threads_updated', updatedThreads);
     }, 0);
 
     // Async remote update
@@ -190,7 +330,7 @@ export class HybridDB {
 
     // Use setTimeout to ensure this runs after any pending React updates
     setTimeout(() => {
-      dbEvents.emit('threads_updated', updatedThreads);
+      debouncedEmitter.emit('threads_updated', updatedThreads);
     }, 0);
 
     // Async remote update
@@ -218,7 +358,7 @@ export class HybridDB {
 
     // Use setTimeout to ensure this runs after any pending React updates
     setTimeout(() => {
-      dbEvents.emit('threads_updated', updatedThreads);
+      debouncedEmitter.emit('threads_updated', updatedThreads);
     }, 0);
 
     // Async remote update
@@ -235,7 +375,7 @@ export class HybridDB {
   static async deleteThread(threadId: string): Promise<void> {
     // Instant local update
     LocalDB.deleteThread(threadId);
-    dbEvents.emit('threads_updated', LocalDB.getThreads());
+    debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
 
     // Async remote update
     this.queueSync(async () => {
@@ -268,8 +408,8 @@ export class HybridDB {
 
     // Instant local update
     LocalDB.addMessage(dbMessage);
-    dbEvents.emit('messages_updated', threadId, LocalDB.getMessagesByThread(threadId));
-    dbEvents.emit('threads_updated', LocalDB.getThreads()); // Thread order might change
+    debouncedEmitter.emit('messages_updated', threadId, LocalDB.getMessagesByThread(threadId));
+    debouncedEmitter.emit('threads_updated', LocalDB.getThreads()); // Thread order might change
 
     // Async remote update
     this.queueSync(async () => {
@@ -306,7 +446,7 @@ export class HybridDB {
       });
       
       // Emit update event
-      dbEvents.emit('messages_updated', threadId, remoteMessages);
+      debouncedEmitter.emit('messages_updated', threadId, remoteMessages);
       
       return remoteMessages;
     } catch (error) {
@@ -336,7 +476,7 @@ export class HybridDB {
           remoteMessages.forEach(message => {
             LocalDB.addMessage(message);
           });
-          dbEvents.emit('messages_updated', threadId, remoteMessages);
+          debouncedEmitter.emit('messages_updated', threadId, remoteMessages);
         }
       } catch (error) {
         console.warn('Background message sync failed:', error);
@@ -374,7 +514,7 @@ export class HybridDB {
     content: string
   ): Promise<string> {
     const now = new Date();
-    const summaryId = `summary_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const summaryId = `summary_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     
     const summary: MessageSummary = {
       id: summaryId,
@@ -386,7 +526,7 @@ export class HybridDB {
 
     // Instant local update
     LocalDB.addSummary(summary);
-    dbEvents.emit('summaries_updated', threadId);
+    debouncedEmitter.emit('summaries_updated', threadId);
 
     // Async remote update
     this.queueSync(async () => {
@@ -420,7 +560,7 @@ export class HybridDB {
     });
     
     // Emit immediate update
-    dbEvents.emit('messages_updated', threadId, filteredMessages);
+    debouncedEmitter.emitImmediate('messages_updated', threadId, filteredMessages);
 
     // Async remote update
     this.queueSync(async () => {
@@ -454,7 +594,7 @@ export class HybridDB {
     };
 
     LocalDB.upsertThread(thread);
-    dbEvents.emit('threads_updated', LocalDB.getThreads());
+    debouncedEmitter.emit('threads_updated', LocalDB.getThreads());
   }
 
   private static handleRemoteThreadUpdated(appwriteThread: any): void {
@@ -468,21 +608,23 @@ export class HybridDB {
     };
 
     LocalDB.upsertThread(thread);
-    dbEvents.emit('threads_updated', LocalDB.getThreads());
+    debouncedEmitter.emit('threads_updated', LocalDB.getThreads());
   }
 
   private static handleRemoteThreadDeleted(appwriteThread: any): void {
     LocalDB.deleteThread(appwriteThread.threadId);
-    dbEvents.emit('threads_updated', LocalDB.getThreads());
+    debouncedEmitter.emit('threads_updated', LocalDB.getThreads());
   }
 
   private static handleRemoteMessageCreated(appwriteMessage: any): void {
+    console.log('[HybridDB] Handling remote message created:', appwriteMessage.messageId);
+
     // Check if message already exists locally to avoid duplicates
     const existingMessages = LocalDB.getMessagesByThread(appwriteMessage.threadId);
     const existsLocally = existingMessages.some(m => m.id === appwriteMessage.messageId);
-    
+
     if (existsLocally) {
-      // Message already exists locally, this is likely from our own sync operation
+      console.log('[HybridDB] Message already exists locally, skipping:', appwriteMessage.messageId);
       return;
     }
 
@@ -497,8 +639,47 @@ export class HybridDB {
     };
 
     LocalDB.addMessage(message);
-    dbEvents.emit('messages_updated', message.threadId, LocalDB.getMessagesByThread(message.threadId));
-    dbEvents.emit('threads_updated', LocalDB.getThreads());
+    const updatedMessages = LocalDB.getMessagesByThread(message.threadId);
+    console.log('[HybridDB] Message added locally, emitting update. Total messages:', updatedMessages.length);
+    debouncedEmitter.emit('messages_updated', message.threadId, updatedMessages);
+    debouncedEmitter.emit('threads_updated', LocalDB.getThreads());
+  }
+
+  private static handleRemoteMessageUpdated(appwriteMessage: any): void {
+    console.log('[HybridDB] Handling remote message updated:', appwriteMessage.messageId);
+
+    const message: DBMessage = {
+      id: appwriteMessage.messageId,
+      threadId: appwriteMessage.threadId,
+      content: appwriteMessage.content,
+      role: appwriteMessage.role,
+      parts: appwriteMessage.content ? [{ type: "text", text: appwriteMessage.content }] : [],
+      createdAt: new Date(appwriteMessage.createdAt),
+      webSearchResults: appwriteMessage.webSearchResults || undefined
+    };
+
+    LocalDB.addMessage(message); // addMessage handles both create and update
+    const updatedMessages = LocalDB.getMessagesByThread(message.threadId);
+    console.log('[HybridDB] Message updated locally, emitting update. Total messages:', updatedMessages.length);
+    debouncedEmitter.emit('messages_updated', message.threadId, updatedMessages);
+    debouncedEmitter.emit('threads_updated', LocalDB.getThreads());
+  }
+
+  private static handleRemoteMessageDeleted(appwriteMessage: any): void {
+    console.log('[HybridDB] Handling remote message deleted:', appwriteMessage.messageId);
+
+    // Remove message from local storage
+    const data = localStorage.getItem('atchat_messages');
+    if (data) {
+      const messages = JSON.parse(data);
+      const filteredMessages = messages.filter((msg: any) => msg.id !== appwriteMessage.messageId);
+      localStorage.setItem('atchat_messages', JSON.stringify(filteredMessages));
+
+      const updatedMessages = LocalDB.getMessagesByThread(appwriteMessage.threadId);
+      console.log('[HybridDB] Message deleted locally, emitting update. Total messages:', updatedMessages.length);
+      debouncedEmitter.emit('messages_updated', appwriteMessage.threadId, updatedMessages);
+      debouncedEmitter.emit('threads_updated', LocalDB.getThreads());
+    }
   }
 
   private static handleRemoteMessageSummaryCreated(appwriteSummary: any): void {
@@ -520,7 +701,7 @@ export class HybridDB {
     };
 
     LocalDB.addSummary(summary);
-    dbEvents.emit('summaries_updated', summary.threadId);
+    debouncedEmitter.emit('summaries_updated', summary.threadId);
   }
 
   // ============ SYNC MANAGEMENT ============
@@ -603,7 +784,7 @@ export class HybridDB {
       });
       
       // Emit update event for immediate UI refresh
-      dbEvents.emit('messages_updated', threadId, remoteMessages);
+      debouncedEmitter.emitImmediate('messages_updated', threadId, remoteMessages);
     } catch (error) {
       console.error('Failed to force sync thread:', error);
     } finally {

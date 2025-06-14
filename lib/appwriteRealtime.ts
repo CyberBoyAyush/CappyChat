@@ -41,6 +41,7 @@ export class AppwriteRealtime {
   
   // Subscribe to all collections (threads, messages, message_summaries)
   static subscribeToAll(userId: string): void {
+    console.log('[AppwriteRealtime] Subscribing to all collections for user:', userId);
     this.subscribeToThreads(userId);
     this.subscribeToMessages(userId);
     this.subscribeToMessageSummaries(userId);
@@ -57,65 +58,85 @@ export class AppwriteRealtime {
   // Subscribe to thread collection changes
   static subscribeToThreads(userId: string): void {
     if (this.subscriptions.has('threads')) {
+      console.log('[AppwriteRealtime] Already subscribed to threads');
       return; // Already subscribed
     }
-    
+
+    console.log('[AppwriteRealtime] Subscribing to threads collection');
     const unsubscribe = client.subscribe(
       `databases.${DATABASE_ID}.collections.${THREADS_COLLECTION_ID}.documents`,
       (response: RealtimeResponseEvent<AppwriteThread>) => {
+        console.log('[AppwriteRealtime] Thread event received:', response.events[0], response.payload);
+
         // Process only events for the current user
         if (response.payload?.userId !== userId) {
+          console.log('[AppwriteRealtime] Thread event ignored - different user:', response.payload?.userId, 'vs', userId);
           return;
         }
-        
-        // Handle different event types
-        switch (response.events[0]) {
-          case 'databases.*.collections.*.documents.*.create':
-            this.handleThreadCreated(response.payload);
-            break;
-          case 'databases.*.collections.*.documents.*.update':
-            this.handleThreadUpdated(response.payload);
-            break;
-          case 'databases.*.collections.*.documents.*.delete':
-            this.handleThreadDeleted(response.payload);
-            break;
+
+        // Handle different event types - check if event contains the action
+        const eventType = response.events[0];
+        console.log('[AppwriteRealtime] Thread event type:', eventType);
+
+        if (eventType.includes('.create')) {
+          console.log('[AppwriteRealtime] Thread created:', response.payload.threadId);
+          this.handleThreadCreated(response.payload);
+        } else if (eventType.includes('.update')) {
+          console.log('[AppwriteRealtime] Thread updated:', response.payload.threadId);
+          this.handleThreadUpdated(response.payload);
+        } else if (eventType.includes('.delete')) {
+          console.log('[AppwriteRealtime] Thread deleted:', response.payload.threadId);
+          this.handleThreadDeleted(response.payload);
+        } else {
+          console.log('[AppwriteRealtime] Unknown thread event type:', eventType);
         }
       }
     );
-    
+
     this.subscriptions.set('threads', unsubscribe);
+    console.log('[AppwriteRealtime] Successfully subscribed to threads');
   }
   
   // Subscribe to message collection changes
   static subscribeToMessages(userId: string): void {
     if (this.subscriptions.has('messages')) {
+      console.log('[AppwriteRealtime] Already subscribed to messages');
       return; // Already subscribed
     }
-    
+
+    console.log('[AppwriteRealtime] Subscribing to messages collection');
     const unsubscribe = client.subscribe(
       `databases.${DATABASE_ID}.collections.${MESSAGES_COLLECTION_ID}.documents`,
       (response: RealtimeResponseEvent<AppwriteMessage>) => {
+        console.log('[AppwriteRealtime] Message event received:', response.events[0], response.payload);
+
         // Process only events for the current user
         if (response.payload?.userId !== userId) {
+          console.log('[AppwriteRealtime] Message event ignored - different user:', response.payload?.userId, 'vs', userId);
           return;
         }
-        
-        // Handle different event types
-        switch (response.events[0]) {
-          case 'databases.*.collections.*.documents.*.create':
-            this.handleMessageCreated(response.payload);
-            break;
-          case 'databases.*.collections.*.documents.*.update':
-            this.handleMessageUpdated(response.payload);
-            break;
-          case 'databases.*.collections.*.documents.*.delete':
-            this.handleMessageDeleted(response.payload);
-            break;
+
+        // Handle different event types - check if event contains the action
+        const eventType = response.events[0];
+        console.log('[AppwriteRealtime] Message event type:', eventType);
+
+        if (eventType.includes('.create')) {
+          console.log('[AppwriteRealtime] Message created:', response.payload.messageId, 'in thread:', response.payload.threadId);
+          this.handleMessageCreated(response.payload);
+        } else if (eventType.includes('.update')) {
+          console.log('[AppwriteRealtime] Message updated:', response.payload.messageId, 'in thread:', response.payload.threadId);
+          this.handleMessageUpdated(response.payload);
+        } else if (eventType.includes('.delete')) {
+          console.log('[AppwriteRealtime] Message deleted:', response.payload.messageId, 'in thread:', response.payload.threadId);
+          this.handleMessageDeleted(response.payload);
+        } else {
+          console.log('[AppwriteRealtime] Unknown message event type:', eventType);
         }
       }
     );
-    
+
     this.subscriptions.set('messages', unsubscribe);
+    console.log('[AppwriteRealtime] Successfully subscribed to messages');
   }
   
   // Subscribe to message summary collection changes

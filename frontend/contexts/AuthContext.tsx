@@ -106,9 +106,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Initialize user services (DB and realtime) - optimized for performance
   const initializeUserServices = useCallback(async (userId: string) => {
     try {
+      console.log('[AuthContext] Initializing user services for user:', userId);
       // Only initialize HybridDB - realtime will be handled inside it
       // This is now non-blocking and much faster
       await HybridDB.initialize(userId);
+      console.log('[AuthContext] User services initialized successfully');
     } catch (error) {
       console.error('Failed to initialize user services:', error);
     }

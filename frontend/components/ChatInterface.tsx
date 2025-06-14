@@ -10,9 +10,11 @@ import { useChat } from "@ai-sdk/react";
 import ChatMessageDisplay from "./ChatMessageDisplay";
 import ChatInputField from "./ChatInputField";
 import ChatMessageBrowser from "./ChatMessageBrowser";
+
 import { UIMessage } from "ai";
 
-import { HybridDB } from "@/lib/hybridDB";
+import { HybridDB, dbEvents } from "@/lib/hybridDB";
+import { streamingSync, StreamingState } from "@/lib/streamingSync";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 import { useLocation } from "react-router-dom";
@@ -100,8 +102,11 @@ export default function ChatInterface({
     api: isWebSearchEnabled ? "/api/web-search" : "/api/chat-messaging",
     id: threadId,
     initialMessages,
-    experimental_throttle: 50,
+    experimental_throttle: 30, // Reduced for smoother streaming
     onFinish: async (message) => {
+      // End streaming synchronization
+      streamingSync.endStreaming(threadId, message.id, message.content);
+
       // Save the pending user message if it exists
       if (pendingUserMessageRef.current) {
         HybridDB.createMessage(threadId, pendingUserMessageRef.current);
@@ -190,6 +195,173 @@ export default function ChatInterface({
       scrollToBottom();
     }
   }, [messages.length, status]);
+
+  // Track streaming status and sync across sessions
+  const lastStreamingMessageRef = useRef<{ id: string; content: string; lastLength: number } | null>(null);
+  const streamingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (status === "streaming" && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === "assistant") {
+        // Check if this is a new streaming message or content update
+        const isNewMessage = !lastStreamingMessageRef.current ||
+                            lastStreamingMessageRef.current.id !== lastMessage.id;
+        const isContentUpdate = lastStreamingMessageRef.current &&
+                               (lastStreamingMessageRef.current.content !== lastMessage.content ||
+                                lastStreamingMessageRef.current.lastLength !== lastMessage.content.length);
+
+        if (isNewMessage) {
+          // Start streaming sync for new message
+          streamingSync.startStreaming(threadId, lastMessage.id);
+          console.log('[ChatInterface] Started streaming sync for message:', lastMessage.id);
+
+          // Start interval to continuously sync streaming content
+          if (streamingIntervalRef.current) {
+            clearInterval(streamingIntervalRef.current);
+          }
+
+          streamingIntervalRef.current = setInterval(() => {
+            const currentLastMessage = messages[messages.length - 1];
+            if (currentLastMessage && currentLastMessage.role === "assistant" && currentLastMessage.id === lastMessage.id) {
+              streamingSync.updateStreamingContent(threadId, currentLastMessage.id, currentLastMessage.content);
+            }
+          }, 100); // Update every 100ms during streaming
+        }
+
+        if (isNewMessage || isContentUpdate) {
+          // Update streaming content in real-time
+          streamingSync.updateStreamingContent(threadId, lastMessage.id, lastMessage.content);
+          console.log('[ChatInterface] Updated streaming content:', lastMessage.content.length, 'chars');
+        }
+
+        // Update reference
+        lastStreamingMessageRef.current = {
+          id: lastMessage.id,
+          content: lastMessage.content,
+          lastLength: lastMessage.content.length
+        };
+      }
+    } else if (status !== "streaming" && lastStreamingMessageRef.current) {
+      // Streaming ended, clean up
+      const lastRef = lastStreamingMessageRef.current;
+      streamingSync.endStreaming(threadId, lastRef.id, lastRef.content);
+      console.log('[ChatInterface] Ended streaming sync for message:', lastRef.id);
+      lastStreamingMessageRef.current = null;
+
+      // Clear interval
+      if (streamingIntervalRef.current) {
+        clearInterval(streamingIntervalRef.current);
+        streamingIntervalRef.current = null;
+      }
+    }
+  }, [status, messages, threadId]);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (streamingIntervalRef.current) {
+        clearInterval(streamingIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Real-time message synchronization
+  useEffect(() => {
+    console.log('[ChatInterface] Setting up real-time message sync for thread:', threadId);
+
+    const handleMessagesUpdated = (updatedThreadId: string, updatedMessages: any[]) => {
+      console.log('[ChatInterface] Real-time messages updated for thread:', updatedThreadId, 'Current thread:', threadId);
+
+      if (updatedThreadId === threadId) {
+        console.log('[ChatInterface] Updating messages in UI. Count:', updatedMessages.length);
+
+        // Convert DB messages to UI messages format
+        const uiMessages: UIMessage[] = updatedMessages.map((msg) => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          parts: msg.parts || [{ type: "text", text: msg.content }],
+          createdAt: msg.createdAt,
+          webSearchResults: msg.webSearchResults,
+        }));
+
+        // Lightweight comparison - check count and last message ID
+        const hasChanged = uiMessages.length !== messages.length ||
+          (uiMessages.length > 0 && messages.length > 0 &&
+           uiMessages[uiMessages.length - 1]?.id !== messages[messages.length - 1]?.id);
+
+        if (hasChanged) {
+          console.log('[ChatInterface] Messages changed, updating UI');
+          setMessages(uiMessages);
+
+          // Auto-scroll to bottom for new messages
+          setTimeout(() => scrollToBottom(), 30); // Further reduced for smoother experience
+        } else {
+          console.log('[ChatInterface] Messages unchanged, skipping UI update');
+        }
+      }
+    };
+
+    // Listen for real-time message updates
+    dbEvents.on('messages_updated', handleMessagesUpdated);
+
+    return () => {
+      console.log('[ChatInterface] Cleaning up real-time message sync for thread:', threadId);
+      dbEvents.off('messages_updated', handleMessagesUpdated);
+    };
+  }, [threadId, messages, setMessages]);
+
+  // Real-time streaming synchronization
+  useEffect(() => {
+    console.log('[ChatInterface] Setting up streaming sync for thread:', threadId);
+
+    // Listen for streaming broadcasts from other sessions
+    const handleStreamingBroadcast = (broadcastThreadId: string, messageId: string, streamingState: StreamingState) => {
+      console.log('[ChatInterface] Streaming broadcast received:', messageId, 'chars:', streamingState.content.length, 'from session:', streamingState.sessionId);
+
+      // Only apply if it's for this thread and from another session
+      if (broadcastThreadId === threadId && streamingState.sessionId !== streamingSync.getSessionId()) {
+        console.log('[ChatInterface] Applying streaming update from another session');
+
+        if (streamingState.isStreaming) {
+          // Update the streaming message in real-time from other sessions
+          setMessages(prevMessages => {
+            const updatedMessages = prevMessages.map(msg =>
+              msg.id === streamingState.messageId
+                ? { ...msg, content: streamingState.content }
+                : msg
+            );
+
+            // If message doesn't exist yet, add it
+            const messageExists = prevMessages.some(msg => msg.id === streamingState.messageId);
+            if (!messageExists) {
+              updatedMessages.push({
+                id: streamingState.messageId,
+                role: 'assistant',
+                content: streamingState.content,
+                parts: [{ type: 'text', text: streamingState.content }],
+                createdAt: new Date(),
+              });
+            }
+
+            return updatedMessages;
+          });
+
+          // Auto-scroll during streaming with minimal delay
+          setTimeout(() => scrollToBottom(), 5);
+        }
+      }
+    };
+
+    // Subscribe to streaming broadcasts
+    dbEvents.on('streaming_broadcast', handleStreamingBroadcast);
+
+    return () => {
+      console.log('[ChatInterface] Cleaning up streaming sync for thread:', threadId);
+      dbEvents.off('streaming_broadcast', handleStreamingBroadcast);
+    };
+  }, [threadId, setMessages]);
 
   // Track when web search is enabled for the next assistant response
   const nextResponseNeedsWebSearch = useRef<boolean>(false);
@@ -359,6 +531,8 @@ export default function ChatInterface({
         isVisible={isNavigatorVisible}
         onClose={closeNavigator}
       />
+
+
     </div>
   );
 }
