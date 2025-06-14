@@ -56,7 +56,8 @@ const NewChatButton = () => (
     to="/chat"
     className={buttonVariants({
       variant: "default",
-      className: "w-full justify-center h-11 sm:h-12 rounded-lg text-sm sm:text-base",
+      className:
+        "w-full justify-center h-7 sm:h-9 rounded-lg text-sm sm:text-sm",
     })}
   >
     New Chat
@@ -75,7 +76,10 @@ interface PanelHeaderProps {
   onFilteredThreadsChange?: (filteredThreads: ThreadData[]) => void;
 }
 
-const PanelHeaderComponent = ({ threads = [], onFilteredThreadsChange }: PanelHeaderProps) => {
+const PanelHeaderComponent = ({
+  threads = [],
+  onFilteredThreadsChange,
+}: PanelHeaderProps) => {
   return (
     <div className="flex flex-col gap-3 p-3 sm:p-4">
       {/* Logo */}
@@ -134,8 +138,6 @@ const ThreadTitle = ({ title }: { title: string }) => (
   <span className="truncate block">{title}</span>
 );
 
-
-
 /**
  * Delete Thread Button Component
  *
@@ -185,7 +187,7 @@ const ThreadListItem = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const containerStyles = cn(
-    "cursor-pointer group/thread min-h-[44px] sm:min-h-[48px] flex items-center px-3 py-2 sm:px-4 sm:py-3 rounded-lg overflow-hidden w-full transition-colors",
+    "cursor-pointer group/thread  flex items-center px-3 py-2 sm:px-2 text-sm sm:py-1 rounded-md overflow-hidden w-full transition-colors",
     "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
     "border border-transparent hover:border-border/50",
     isActive && "bg-sidebar-accent text-sidebar-accent-foreground border-border"
@@ -208,7 +210,7 @@ const ThreadListItem = ({
     try {
       await onDelete(threadData.id);
     } catch (error) {
-      console.error('Error deleting thread:', error);
+      console.error("Error deleting thread:", error);
     } finally {
       setIsDeleting(false);
       setIsDeleteDialogOpen(false);
@@ -218,7 +220,7 @@ const ThreadListItem = ({
   return (
     <>
       <div className={containerStyles} onClick={handleItemClick}>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 text-sm">
           <ThreadTitle title={threadData.title} />
         </div>
         <div className="flex items-center gap-1">

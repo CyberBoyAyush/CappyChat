@@ -174,9 +174,9 @@ function PureInputField({
 
   return (
     <div className="w-full">
-      <div className="bg-card border border-border rounded-t-3xl shadow-lg w-full backdrop-blur-sm">
-        <div className="flex flex-col">
-          <div className="bg-transparent overflow-y-auto max-h-[300px] rounded-lg">
+      <div className="border-t-[1px] border-x-[1px] border-primary/30 rounded-t-2xl shadow-lg w-full backdrop-blur-md">
+        <div className="flex flex-col bg-background/55 border-t-8 rounded-t-2xl border-x-8 border-zinc-900/50">
+          <div className="bg-transparent overflow-y-auto max-h-[300px] rounded-t-xl">
             <Textarea
               id="message-input"
               value={input}
@@ -184,7 +184,7 @@ function PureInputField({
                 isHomePage ? "Ask me anything..." : "What can I do for you?"
               }
               className={cn(
-                "w-full px-3 sm:px-4 py-2 sm:py-1.5 md:py-3 border-none shadow-none bg-transparent",
+                "w-full px-3 sm:px-4 py-2 sm:py-1.5 md:pt-4 border-none shadow-none ",
                 "placeholder:text-muted-foreground resize-none text-foreground",
                 "focus-visible:ring-0 focus-visible:ring-offset-0",
                 "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/30",
@@ -204,7 +204,7 @@ function PureInputField({
             </span>
           </div>
 
-          <div className="h-16 sm:h-14 flex items-center px-3 sm:px-2 border-t border-border/50">
+          <div className="h-16 sm:h-14 flex bg-transparent items-center px-3 sm:px-2 border-t border-border/50">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-2">
                 <ModelSelector />

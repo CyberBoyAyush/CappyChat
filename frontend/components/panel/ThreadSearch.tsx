@@ -6,13 +6,13 @@
  * Allows users to quickly find specific conversations.
  */
 
-import { useState, useCallback, useMemo } from 'react';
-import { Search, X } from 'lucide-react';
-import { Input } from '@/frontend/components/ui/input';
-import { Button } from '@/frontend/components/ui/button';
-import { cn } from '@/lib/utils';
-import { ThreadData } from './ThreadManager';
-import { HybridDB } from '@/lib/hybridDB';
+import { useState, useCallback, useMemo } from "react";
+import { Search, X } from "lucide-react";
+import { Input } from "@/frontend/components/ui/input";
+import { Button } from "@/frontend/components/ui/button";
+import { cn } from "@/lib/utils";
+import { ThreadData } from "./ThreadManager";
+import { HybridDB } from "@/lib/hybridDB";
 
 interface ThreadSearchProps {
   threads: ThreadData[];
@@ -20,51 +20,66 @@ interface ThreadSearchProps {
   className?: string;
 }
 
-export const ThreadSearch = ({ threads, onFilteredThreadsChange, className }: ThreadSearchProps) => {
-  const [searchQuery, setSearchQuery] = useState('');
+export const ThreadSearch = ({
+  threads,
+  onFilteredThreadsChange,
+  className,
+}: ThreadSearchProps) => {
+  const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
   // Perform search across threads, summaries, and tags
-  const performSearch = useCallback(async (query: string): Promise<ThreadData[]> => {
-    if (!query.trim()) {
-      return threads;
-    }
-
-    const lowerQuery = query.toLowerCase();
-    const filteredThreads: ThreadData[] = [];
-
-    for (const thread of threads) {
-      let isMatch = false;
-
-      // Search in thread title
-      if (thread.title.toLowerCase().includes(lowerQuery)) {
-        isMatch = true;
+  const performSearch = useCallback(
+    async (query: string): Promise<ThreadData[]> => {
+      if (!query.trim()) {
+        return threads;
       }
 
-      // Search in thread tags
-      if (!isMatch && thread.tags) {
-        isMatch = thread.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
-      }
+      const lowerQuery = query.toLowerCase();
+      const filteredThreads: ThreadData[] = [];
 
-      // Search in message summaries
-      if (!isMatch) {
-        try {
-          const summaries = await HybridDB.getMessageSummariesWithRole(thread.id);
-          isMatch = summaries.some(summary => 
-            summary.content.toLowerCase().includes(lowerQuery)
+      for (const thread of threads) {
+        let isMatch = false;
+
+        // Search in thread title
+        if (thread.title.toLowerCase().includes(lowerQuery)) {
+          isMatch = true;
+        }
+
+        // Search in thread tags
+        if (!isMatch && thread.tags) {
+          isMatch = thread.tags.some((tag) =>
+            tag.toLowerCase().includes(lowerQuery)
           );
-        } catch (error) {
-          console.error('Error searching summaries for thread:', thread.id, error);
+        }
+
+        // Search in message summaries
+        if (!isMatch) {
+          try {
+            const summaries = await HybridDB.getMessageSummariesWithRole(
+              thread.id
+            );
+            isMatch = summaries.some((summary) =>
+              summary.content.toLowerCase().includes(lowerQuery)
+            );
+          } catch (error) {
+            console.error(
+              "Error searching summaries for thread:",
+              thread.id,
+              error
+            );
+          }
+        }
+
+        if (isMatch) {
+          filteredThreads.push(thread);
         }
       }
 
-      if (isMatch) {
-        filteredThreads.push(thread);
-      }
-    }
-
-    return filteredThreads;
-  }, [threads]);
+      return filteredThreads;
+    },
+    [threads]
+  );
 
   // Debounced search effect
   const debouncedSearch = useMemo(() => {
@@ -86,7 +101,7 @@ export const ThreadSearch = ({ threads, onFilteredThreadsChange, className }: Th
           const filtered = await performSearch(query);
           onFilteredThreadsChange(filtered);
         } catch (error) {
-          console.error('Search error:', error);
+          console.error("Search error:", error);
           onFilteredThreadsChange(threads);
         } finally {
           setIsSearching(false);
@@ -95,14 +110,17 @@ export const ThreadSearch = ({ threads, onFilteredThreadsChange, className }: Th
     };
   }, [performSearch, onFilteredThreadsChange, threads]);
 
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    debouncedSearch(query);
-  }, [debouncedSearch]);
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const query = e.target.value;
+      setSearchQuery(query);
+      debouncedSearch(query);
+    },
+    [debouncedSearch]
+  );
 
   const handleClearSearch = useCallback(() => {
-    setSearchQuery('');
+    setSearchQuery("");
     onFilteredThreadsChange(threads);
   }, [onFilteredThreadsChange, threads]);
 
@@ -112,11 +130,13 @@ export const ThreadSearch = ({ threads, onFilteredThreadsChange, className }: Th
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="Search conversations..."
+          placeholder="Search "
           value={searchQuery}
           onChange={handleSearchChange}
-          className="pl-10 pr-10 h-11 sm:h-12 text-sm w-full rounded-lg"
+          className="pl-10 pr-10 h-11 sm:h-9 text-sm w-full "
         />
+
+        <div className="h-[1px] bg-zinc-600 w-full mt-2" />
         {searchQuery && !isSearching && (
           <Button
             variant="ghost"

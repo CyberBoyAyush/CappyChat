@@ -245,7 +245,7 @@ const HomePage: React.FC = () => {
                 />
               </motion.div>
               <span className="text-lg sm:text-xl font-bold text-foreground">
-                AtChat
+                AV<span className="text-primary">Chat</span>
               </span>
             </motion.div>
 
@@ -524,7 +524,7 @@ const HomePage: React.FC = () => {
               Performance That Speaks for Itself
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Real metrics from real users. See why AtChat is the fastest AI
+              Real metrics from real users. See why AVChat is the fastest AI
               platform.
             </p>
           </div>
@@ -588,7 +588,7 @@ const HomePage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-3 h-3 bg-primary rounded-full"></div>
-                  <span className="text-foreground font-medium">AtChat</span>
+                  <span className="text-foreground font-medium">AVChat</span>
                 </div>
                 <div className="flex-1 mx-4 bg-secondary rounded-full h-2 relative overflow-hidden">
                   <div
@@ -758,7 +758,7 @@ const HomePage: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Why Switch to AtChat?
+              Why Switch to AV<span className="text-primary">Chat</span> ?
             </h2>
             <p className="text-lg text-muted-foreground">
               See how we compare to other AI platforms
@@ -774,7 +774,7 @@ const HomePage: React.FC = () => {
                       Feature
                     </th>
                     <th className="text-center py-4 text-primary font-semibold">
-                      AtChat
+                      AVChat
                     </th>
                     <th className="text-center py-4 text-muted-foreground">
                       ChatGPT
@@ -882,7 +882,7 @@ const HomePage: React.FC = () => {
             </h2>
             <p className="text-lg text-muted-foreground">
               Join thousands of developers, researchers, and teams already using
-              AtChat
+              AVChat
             </p>
           </div>
 
@@ -939,7 +939,7 @@ const HomePage: React.FC = () => {
                 </div>
               </div>
               <p className="text-muted-foreground mb-4 italic">
-                "AtChat is incredibly fast. I can get complex code explanations
+                "AVChat is incredibly fast. I can get complex code explanations
                 in seconds, not minutes."
               </p>
               <div className="flex items-center">
@@ -1017,7 +1017,7 @@ const HomePage: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 bg-gradient-to-br from-primary/5 via-transparent to-primary/5">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              See AtChat in Action
+              See AV<span className="text-primary">Chat</span> in Action
             </h2>
             <p className="text-lg text-muted-foreground">
               Watch how fast and intelligent our AI responses can be
@@ -1098,7 +1098,7 @@ const HomePage: React.FC = () => {
                       Starter
                     </h3>
                     <p className="text-muted-foreground text-sm">
-                      Perfect for trying out AtChat
+                      Perfect for trying out AVChat
                     </p>
                   </div>
                   <div className="h-12 w-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
@@ -1503,11 +1503,11 @@ const HomePage: React.FC = () => {
                 <div className="flex items-center space-x-2 mb-3 sm:mb-4">
                   <img
                     src="/logo.png"
-                    alt="AtChat Logo"
+                    alt="AVChat Logo"
                     className="h-5 w-5 xs:h-6 xs:w-6 sm:h-8 sm:w-8"
                   />
                   <span className="text-base xs:text-lg sm:text-xl font-bold text-foreground">
-                    AtChat
+                    AV<span className="text-primary">Chat</span>
                   </span>
                 </div>
                 <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground leading-relaxed">
@@ -1651,7 +1651,7 @@ const HomePage: React.FC = () => {
             <div className="border-t border-border pt-3 sm:pt-6">
               <div className="flex flex-col sm:flex-row justify-between items-center">
                 <div className="text-[9px] xs:text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-0 text-center sm:text-left">
-                  © 2025 AtChat. All rights reserved. Built with ❤️ for the AI
+                  © 2025 AVChat. All rights reserved. Built with ❤️ for the AI
                   community.
                 </div>
 

@@ -128,31 +128,37 @@ export default function ChatInterface({
         // For now, add sample web search results when web search was enabled
         // This will be replaced with actual grounding metadata extraction
         const webSearchResults = [
-          'https://makemytrip.com',
-          'https://planetware.com',
-          'https://delhitourism.gov.in',
-          'https://holidify.com',
-          'https://traveltriangle.com',
+          "https://makemytrip.com",
+          "https://planetware.com",
+          "https://delhitourism.gov.in",
+          "https://holidify.com",
+          "https://traveltriangle.com",
         ];
 
-        console.log('✅ Adding web search results to AI message:', message.id, webSearchResults);
+        console.log(
+          "✅ Adding web search results to AI message:",
+          message.id,
+          webSearchResults
+        );
         aiMessage.webSearchResults = webSearchResults;
 
         // Reset the flag
         nextResponseNeedsWebSearch.current = false;
 
         // Also update the message in the UI immediately
-        setMessages(prevMessages => {
-          const updatedMessages = prevMessages.map(msg =>
+        setMessages((prevMessages) => {
+          const updatedMessages = prevMessages.map((msg) =>
             msg.id === message.id
-              ? { ...msg, webSearchResults } as UIMessage & { webSearchResults?: string[] }
+              ? ({ ...msg, webSearchResults } as UIMessage & {
+                  webSearchResults?: string[];
+                })
               : msg
           );
-          console.log('📱 Updated UI messages with web search results');
+          console.log("📱 Updated UI messages with web search results");
           return updatedMessages;
         });
       } else {
-        console.log('❌ No web search results needed for message:', message.id);
+        console.log("❌ No web search results needed for message:", message.id);
       }
 
       HybridDB.createMessage(threadId, aiMessage);
@@ -197,7 +203,11 @@ export default function ChatInterface({
   }, [messages.length, status]);
 
   // Track streaming status and sync across sessions
-  const lastStreamingMessageRef = useRef<{ id: string; content: string; lastLength: number } | null>(null);
+  const lastStreamingMessageRef = useRef<{
+    id: string;
+    content: string;
+    lastLength: number;
+  } | null>(null);
   const streamingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -205,16 +215,22 @@ export default function ChatInterface({
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === "assistant") {
         // Check if this is a new streaming message or content update
-        const isNewMessage = !lastStreamingMessageRef.current ||
-                            lastStreamingMessageRef.current.id !== lastMessage.id;
-        const isContentUpdate = lastStreamingMessageRef.current &&
-                               (lastStreamingMessageRef.current.content !== lastMessage.content ||
-                                lastStreamingMessageRef.current.lastLength !== lastMessage.content.length);
+        const isNewMessage =
+          !lastStreamingMessageRef.current ||
+          lastStreamingMessageRef.current.id !== lastMessage.id;
+        const isContentUpdate =
+          lastStreamingMessageRef.current &&
+          (lastStreamingMessageRef.current.content !== lastMessage.content ||
+            lastStreamingMessageRef.current.lastLength !==
+              lastMessage.content.length);
 
         if (isNewMessage) {
           // Start streaming sync for new message
           streamingSync.startStreaming(threadId, lastMessage.id);
-          console.log('[ChatInterface] Started streaming sync for message:', lastMessage.id);
+          console.log(
+            "[ChatInterface] Started streaming sync for message:",
+            lastMessage.id
+          );
 
           // Start interval to continuously sync streaming content
           if (streamingIntervalRef.current) {
@@ -223,30 +239,49 @@ export default function ChatInterface({
 
           streamingIntervalRef.current = setInterval(() => {
             const currentLastMessage = messages[messages.length - 1];
-            if (currentLastMessage && currentLastMessage.role === "assistant" && currentLastMessage.id === lastMessage.id) {
-              streamingSync.updateStreamingContent(threadId, currentLastMessage.id, currentLastMessage.content);
+            if (
+              currentLastMessage &&
+              currentLastMessage.role === "assistant" &&
+              currentLastMessage.id === lastMessage.id
+            ) {
+              streamingSync.updateStreamingContent(
+                threadId,
+                currentLastMessage.id,
+                currentLastMessage.content
+              );
             }
           }, 100); // Update every 100ms during streaming
         }
 
         if (isNewMessage || isContentUpdate) {
           // Update streaming content in real-time
-          streamingSync.updateStreamingContent(threadId, lastMessage.id, lastMessage.content);
-          console.log('[ChatInterface] Updated streaming content:', lastMessage.content.length, 'chars');
+          streamingSync.updateStreamingContent(
+            threadId,
+            lastMessage.id,
+            lastMessage.content
+          );
+          console.log(
+            "[ChatInterface] Updated streaming content:",
+            lastMessage.content.length,
+            "chars"
+          );
         }
 
         // Update reference
         lastStreamingMessageRef.current = {
           id: lastMessage.id,
           content: lastMessage.content,
-          lastLength: lastMessage.content.length
+          lastLength: lastMessage.content.length,
         };
       }
     } else if (status !== "streaming" && lastStreamingMessageRef.current) {
       // Streaming ended, clean up
       const lastRef = lastStreamingMessageRef.current;
       streamingSync.endStreaming(threadId, lastRef.id, lastRef.content);
-      console.log('[ChatInterface] Ended streaming sync for message:', lastRef.id);
+      console.log(
+        "[ChatInterface] Ended streaming sync for message:",
+        lastRef.id
+      );
       lastStreamingMessageRef.current = null;
 
       // Clear interval
@@ -268,13 +303,27 @@ export default function ChatInterface({
 
   // Real-time message synchronization
   useEffect(() => {
-    console.log('[ChatInterface] Setting up real-time message sync for thread:', threadId);
+    console.log(
+      "[ChatInterface] Setting up real-time message sync for thread:",
+      threadId
+    );
 
-    const handleMessagesUpdated = (updatedThreadId: string, updatedMessages: any[]) => {
-      console.log('[ChatInterface] Real-time messages updated for thread:', updatedThreadId, 'Current thread:', threadId);
+    const handleMessagesUpdated = (
+      updatedThreadId: string,
+      updatedMessages: any[]
+    ) => {
+      console.log(
+        "[ChatInterface] Real-time messages updated for thread:",
+        updatedThreadId,
+        "Current thread:",
+        threadId
+      );
 
       if (updatedThreadId === threadId) {
-        console.log('[ChatInterface] Updating messages in UI. Count:', updatedMessages.length);
+        console.log(
+          "[ChatInterface] Updating messages in UI. Count:",
+          updatedMessages.length
+        );
 
         // Convert DB messages to UI messages format
         const uiMessages: UIMessage[] = updatedMessages.map((msg) => ({
@@ -287,60 +336,87 @@ export default function ChatInterface({
         }));
 
         // Lightweight comparison - check count and last message ID
-        const hasChanged = uiMessages.length !== messages.length ||
-          (uiMessages.length > 0 && messages.length > 0 &&
-           uiMessages[uiMessages.length - 1]?.id !== messages[messages.length - 1]?.id);
+        const hasChanged =
+          uiMessages.length !== messages.length ||
+          (uiMessages.length > 0 &&
+            messages.length > 0 &&
+            uiMessages[uiMessages.length - 1]?.id !==
+              messages[messages.length - 1]?.id);
 
         if (hasChanged) {
-          console.log('[ChatInterface] Messages changed, updating UI');
+          console.log("[ChatInterface] Messages changed, updating UI");
           setMessages(uiMessages);
 
           // Auto-scroll to bottom for new messages
           setTimeout(() => scrollToBottom(), 30); // Further reduced for smoother experience
         } else {
-          console.log('[ChatInterface] Messages unchanged, skipping UI update');
+          console.log("[ChatInterface] Messages unchanged, skipping UI update");
         }
       }
     };
 
     // Listen for real-time message updates
-    dbEvents.on('messages_updated', handleMessagesUpdated);
+    dbEvents.on("messages_updated", handleMessagesUpdated);
 
     return () => {
-      console.log('[ChatInterface] Cleaning up real-time message sync for thread:', threadId);
-      dbEvents.off('messages_updated', handleMessagesUpdated);
+      console.log(
+        "[ChatInterface] Cleaning up real-time message sync for thread:",
+        threadId
+      );
+      dbEvents.off("messages_updated", handleMessagesUpdated);
     };
   }, [threadId, messages, setMessages]);
 
   // Real-time streaming synchronization
   useEffect(() => {
-    console.log('[ChatInterface] Setting up streaming sync for thread:', threadId);
+    console.log(
+      "[ChatInterface] Setting up streaming sync for thread:",
+      threadId
+    );
 
     // Listen for streaming broadcasts from other sessions
-    const handleStreamingBroadcast = (broadcastThreadId: string, messageId: string, streamingState: StreamingState) => {
-      console.log('[ChatInterface] Streaming broadcast received:', messageId, 'chars:', streamingState.content.length, 'from session:', streamingState.sessionId);
+    const handleStreamingBroadcast = (
+      broadcastThreadId: string,
+      messageId: string,
+      streamingState: StreamingState
+    ) => {
+      console.log(
+        "[ChatInterface] Streaming broadcast received:",
+        messageId,
+        "chars:",
+        streamingState.content.length,
+        "from session:",
+        streamingState.sessionId
+      );
 
       // Only apply if it's for this thread and from another session
-      if (broadcastThreadId === threadId && streamingState.sessionId !== streamingSync.getSessionId()) {
-        console.log('[ChatInterface] Applying streaming update from another session');
+      if (
+        broadcastThreadId === threadId &&
+        streamingState.sessionId !== streamingSync.getSessionId()
+      ) {
+        console.log(
+          "[ChatInterface] Applying streaming update from another session"
+        );
 
         if (streamingState.isStreaming) {
           // Update the streaming message in real-time from other sessions
-          setMessages(prevMessages => {
-            const updatedMessages = prevMessages.map(msg =>
+          setMessages((prevMessages) => {
+            const updatedMessages = prevMessages.map((msg) =>
               msg.id === streamingState.messageId
                 ? { ...msg, content: streamingState.content }
                 : msg
             );
 
             // If message doesn't exist yet, add it
-            const messageExists = prevMessages.some(msg => msg.id === streamingState.messageId);
+            const messageExists = prevMessages.some(
+              (msg) => msg.id === streamingState.messageId
+            );
             if (!messageExists) {
               updatedMessages.push({
                 id: streamingState.messageId,
-                role: 'assistant',
+                role: "assistant",
                 content: streamingState.content,
-                parts: [{ type: 'text', text: streamingState.content }],
+                parts: [{ type: "text", text: streamingState.content }],
                 createdAt: new Date(),
               });
             }
@@ -355,11 +431,14 @@ export default function ChatInterface({
     };
 
     // Subscribe to streaming broadcasts
-    dbEvents.on('streaming_broadcast', handleStreamingBroadcast);
+    dbEvents.on("streaming_broadcast", handleStreamingBroadcast);
 
     return () => {
-      console.log('[ChatInterface] Cleaning up streaming sync for thread:', threadId);
-      dbEvents.off('streaming_broadcast', handleStreamingBroadcast);
+      console.log(
+        "[ChatInterface] Cleaning up streaming sync for thread:",
+        threadId
+      );
+      dbEvents.off("streaming_broadcast", handleStreamingBroadcast);
     };
   }, [threadId, setMessages]);
 
@@ -368,7 +447,10 @@ export default function ChatInterface({
 
   // Callback to track when a message is sent with web search enabled
   const handleWebSearchMessage = useCallback((messageId: string) => {
-    console.log('🔍 Web search enabled for next response. User message ID:', messageId);
+    console.log(
+      "🔍 Web search enabled for next response. User message ID:",
+      messageId
+    );
     nextResponseNeedsWebSearch.current = true;
   }, []);
 
@@ -531,8 +613,6 @@ export default function ChatInterface({
         isVisible={isNavigatorVisible}
         onClose={closeNavigator}
       />
-
-
     </div>
   );
 }
@@ -555,15 +635,24 @@ const AppPanelTrigger = () => {
 
   // Show trigger on mobile or when sidebar is collapsed on desktop
   return (
-    <Button
-      size="icon"
-      variant="outline"
-      onClick={handleToggle}
-      className={`fixed left-2 top-1 z-50 bg-transparent hover:bg-zinc-600/10 `}
-      aria-label="Toggle sidebar"
+    <div
+      className={`fixed left-2 top-3 z-50   ${
+        state === "collapsed"
+          ? "top-8 bg-zinc-900 mr-6 ml-3 rounded-md"
+          : "bg-transparent"
+      }`}
     >
-      <PanelLeftIcon className="h-5 w-5" />
-    </Button>
+      <div className="hover:bg-zinc-600/10">
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={handleToggle}
+          aria-label="Toggle sidebar"
+        >
+          <PanelLeftIcon className="h-5 w-5" />
+        </Button>
+      </div>
+    </div>
   );
 };
 
