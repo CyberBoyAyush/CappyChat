@@ -6,18 +6,17 @@
  * Contains app branding, navigation buttons, thread display, and settings access.
  */
 
-import { memo } from "react";
-import { Link, useParams } from "react-router";
+import { memo, useState } from "react";
+import { Link } from "react-router";
 import { Button } from "../ui/button";
 import { buttonVariants } from "../ui/button";
-import {
-  SidebarHeader,
-  SidebarTrigger,
-} from "@/frontend/components/ui/sidebar";
-import { X } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThreadData, ThreadOperations } from "./ThreadManager";
 import UserProfileDropdown from "../UserProfileDropdown";
+import { DeleteThreadDialog } from "./DeleteThreadDialog";
+import { ThreadSearch } from "./ThreadSearch";
+import { ThreadMenuDropdown } from "./ThreadMenuDropdown";
 
 // ===============================================
 // Panel Header Components
@@ -30,19 +29,7 @@ import UserProfileDropdown from "../UserProfileDropdown";
  * Purpose: Displays the app logo and branding with gradient design and animation.
  */
 const AppTitle = memo(() => (
-  <div className="flex items-center gap-2">
-    {/* Logo Icon */}
-    <div className="relative">
-      <div className="w-9 h-9 rounded-sm bg-primary opacity-20 animate-pulse flex items-center justify-center shadow-sm"></div>
-      {/* Subtle glow effect */}
-      <img
-        src="/logo.png"
-        alt="Logo"
-        className="absolute inset-0 w-8 h-8 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg"
-      />
-      <div className="absolute inset-0 w-8 h-8 rounded-lg bg-primary/20 blur-sm -z-10"></div>
-    </div>
-
+  <div className="flex items-center gap-2 shrink-0">
     {/* Logo Text */}
     <div className="flex items-baseline">
       <span className="text-xl font-bold text-sidebar-foreground tracking-tight">
@@ -69,7 +56,8 @@ const NewChatButton = () => (
     to="/chat"
     className={buttonVariants({
       variant: "default",
-      className: "w-full",
+      className:
+        "w-full justify-center h-7 sm:h-9 rounded-lg text-sm sm:text-sm",
     })}
   >
     New Chat
@@ -80,16 +68,36 @@ const NewChatButton = () => (
  * Panel Header Component
  *
  * Used in: frontend/components/ChatSidebarPanel.tsx
- * Purpose: Header section of the conversation panel containing app title, sidebar toggle, and new chat button.
- * Provides branding and quick access to start new conversations.
+ * Purpose: Header section of the conversation panel containing app title, search, and new chat button.
+ * Provides branding, search functionality, and quick access to start new conversations.
  */
-const PanelHeaderComponent = () => {
+interface PanelHeaderProps {
+  threads?: ThreadData[];
+  onFilteredThreadsChange?: (filteredThreads: ThreadData[]) => void;
+}
+
+const PanelHeaderComponent = ({
+  threads = [],
+  onFilteredThreadsChange,
+}: PanelHeaderProps) => {
   return (
-    <SidebarHeader className="flex justify-between items-center gap-4 relative">
-      <SidebarTrigger className="absolute right-1 top-2.5" />
-      <AppTitle />
+    <div className="flex flex-col gap-3 p-3 sm:p-4">
+      {/* Logo */}
+      <div className="flex justify-center">
+        <AppTitle />
+      </div>
+
+      {/* New Chat Button - Full Width */}
       <NewChatButton />
-    </SidebarHeader>
+
+      {/* Search Bar - Full Width */}
+      {onFilteredThreadsChange && (
+        <ThreadSearch
+          threads={threads}
+          onFilteredThreadsChange={onFilteredThreadsChange}
+        />
+      )}
+    </div>
   );
 };
 
@@ -137,17 +145,21 @@ const ThreadTitle = ({ title }: { title: string }) => (
  * Purpose: Provides delete functionality for individual threads.
  */
 interface DeleteButtonProps {
-  onDelete: (event: React.MouseEvent) => void;
+  onDelete: (event?: React.MouseEvent) => void;
 }
 
 const DeleteButton = ({ onDelete }: DeleteButtonProps) => (
   <Button
     variant="ghost"
     size="icon"
-    className="hidden group-hover/thread:flex ml-auto h-7 w-7"
-    onClick={onDelete}
+    className="h-7 w-7 text-muted-foreground hover:text-destructive transition-all duration-200 focus:opacity-100 active:opacity-100
+      md:opacity-0 md:group-hover/thread:opacity-100
+      opacity-70 group-hover/thread:opacity-100"
+    onClick={(event: React.MouseEvent) => onDelete(event)}
+    aria-label="Delete thread"
+    data-delete-button
   >
-    <X size={16} />
+    <Trash2 size={14} />
   </Button>
 );
 
@@ -166,27 +178,71 @@ const ThreadListItem = ({
   threadData,
   onNavigate,
   onDelete,
+  onTogglePin,
+  onRename,
+  onUpdateTags,
   isActive,
 }: ThreadListItemProps) => {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const containerStyles = cn(
-    "cursor-pointer group/thread h-9 flex items-center px-2 py-1 rounded-lg overflow-hidden w-full transition-colors",
+    "cursor-pointer group/thread  flex items-center px-3 py-2 sm:px-2 text-sm sm:py-1 rounded-md overflow-hidden w-full transition-colors",
     "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-    isActive && "bg-sidebar-accent text-sidebar-accent-foreground"
+    "border border-transparent hover:border-border/50",
+    isActive && "bg-sidebar-accent text-sidebar-accent-foreground border-border"
   );
 
   const handleItemClick = () => {
     onNavigate(threadData.id);
   };
 
-  const handleDeleteClick = (event: React.MouseEvent) => {
-    onDelete(threadData.id, event);
+  const handleDeleteClick = (event?: React.MouseEvent) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await onDelete(threadData.id);
+    } catch (error) {
+      console.error("Error deleting thread:", error);
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+    }
   };
 
   return (
-    <div className={containerStyles} onClick={handleItemClick}>
-      <ThreadTitle title={threadData.title} />
-      <DeleteButton onDelete={handleDeleteClick} />
-    </div>
+    <>
+      <div className={containerStyles} onClick={handleItemClick}>
+        <div className="flex-1 min-w-0 text-sm">
+          <ThreadTitle title={threadData.title} />
+        </div>
+        <div className="flex items-center gap-1">
+          <DeleteButton onDelete={handleDeleteClick} />
+          <ThreadMenuDropdown
+            threadData={threadData}
+            onTogglePin={onTogglePin}
+            onRename={onRename}
+            onUpdateTags={onUpdateTags}
+            onDelete={(_, event) => handleDeleteClick(event)}
+          />
+        </div>
+      </div>
+
+      <DeleteThreadDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        threadTitle={threadData.title}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
+      />
+    </>
   );
 };
 

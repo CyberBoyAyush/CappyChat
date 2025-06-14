@@ -15,6 +15,7 @@ import ChatMessageControls from "./ChatMessageControls";
 import { UseChatHelpers } from "@ai-sdk/react";
 import ChatMessageEditor from "./ChatMessageEditor";
 import ChatMessageReasoning from "./ChatMessageReasoning";
+import WebSearchCitations from "./WebSearchCitations";
 
 function PureMessage({
   threadId,
@@ -39,7 +40,7 @@ function PureMessage({
     <div
       role="article"
       className={cn(
-        "flex flex-col",
+        "flex flex-col w-full",
         message.role === "user" ? "items-end" : "items-start"
       )}
     >
@@ -61,7 +62,7 @@ function PureMessage({
           return message.role === "user" ? (
             <div
               key={key}
-              className="relative group px-4 py-2 rounded-xl bg-card border border-border shadow-sm max-w-[80%] sm:max-w-[70%] md:max-w-[60%]"
+              className="relative group px-2 py-1.5 rounded-xl bg-card border border-border shadow-sm max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%]"
               ref={(el) => registerRef(message.id, el)}
             >
               {mode === "edit" && (
@@ -75,8 +76,9 @@ function PureMessage({
                   stop={stop}
                 />
               )}
-              {mode === "view" && <p>{part.text}</p>}
-
+              {mode === "view" && (
+                <p className="break-words whitespace-pre-wrap">{part.text}</p>
+              )}
               {mode === "view" && (
                 <ChatMessageControls
                   threadId={threadId}
@@ -90,7 +92,10 @@ function PureMessage({
               )}
             </div>
           ) : (
-            <div key={key} className="group flex flex-col gap-2 w-full">
+            <div
+              key={key}
+              className="group flex flex-col gap-2 w-full max-w-3xl"
+            >
               <MarkdownRenderer content={part.text} id={message.id} />
               {!isStreaming && (
                 <ChatMessageControls
@@ -102,6 +107,22 @@ function PureMessage({
                   stop={stop}
                 />
               )}
+              {/* Show web search citations for assistant messages with search results */}
+              {message.role === "assistant" &&
+                (message as any).webSearchResults && (
+                  <>
+                    {console.log(
+                      "🎯 Rendering citations for message:",
+                      message.id,
+                      "Results:",
+                      (message as any).webSearchResults
+                    )}
+                    <WebSearchCitations
+                      results={(message as any).webSearchResults}
+                      searchQuery="web search"
+                    />
+                  </>
+                )}
             </div>
           );
         }

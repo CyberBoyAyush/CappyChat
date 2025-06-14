@@ -6,8 +6,8 @@
  * Shows message summaries and allows quick navigation to any message in the conversation.
  */
 
-import { useLiveQuery } from 'dexie-react-hooks';
-import { getMessageSummariesWithRole } from '@/frontend/database/chatQueries';
+import { useState, useEffect, useCallback } from 'react';
+import { HybridDB, dbEvents } from '@/lib/hybridDB';
 import { memo } from 'react';
 import { X, MessageCircle, Bot, User, Search, Clock } from 'lucide-react';
 import { Button } from './ui/button';
@@ -35,10 +35,48 @@ function PureMessageBrowser({
   isVisible,
   onClose,
 }: MessageBrowserProps) {
-  const messageSummaries = useLiveQuery(
-    () => getMessageSummariesWithRole(threadId),
-    [threadId]
-  );
+  const [messageSummaries, setMessageSummaries] = useState<MessageSummaryWithRole[]>([]);
+
+  // Handle message summary updates from the hybrid database
+  const handleSummariesUpdated = useCallback((updatedThreadId: string) => {
+    if (updatedThreadId === threadId) {
+      // Load the updated summaries instantly from local storage
+      HybridDB.getMessageSummariesWithRole(threadId)
+        .then(summaries => setMessageSummaries(summaries || []))
+        .catch(error => console.error('Error loading updated summaries:', error));
+    }
+  }, [threadId]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadMessageSummaries = async () => {
+      try {
+        // Load summaries instantly from local storage
+        const summaries = await HybridDB.getMessageSummariesWithRole(threadId);
+        if (isMounted) {
+          setMessageSummaries(summaries || []);
+        }
+      } catch (error) {
+        console.error('Error loading message summaries:', error);
+        if (isMounted) {
+          setMessageSummaries([]);
+        }
+      }
+    };
+
+    if (threadId) {
+      loadMessageSummaries();
+      
+      // Listen for real-time summary updates
+      dbEvents.on('summaries_updated', handleSummariesUpdated);
+    }
+
+    return () => {
+      isMounted = false;
+      dbEvents.off('summaries_updated', handleSummariesUpdated);
+    };
+  }, [threadId, handleSummariesUpdated]);
 
   const formatTimeAgo = (createdAt: Date | string) => {
     const date = new Date(createdAt);

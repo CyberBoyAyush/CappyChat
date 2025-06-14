@@ -1,6 +1,6 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText, smoothStream } from 'ai';
-import { getModelConfig, AIModel } from '@/lib/models';
+import { getModelConfig } from '@/lib/models';
 import { getConversationStyleConfig, ConversationStyle, DEFAULT_CONVERSATION_STYLE } from '@/lib/conversationStyles';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -9,7 +9,7 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, model, conversationStyle } = body;
+    const { messages, conversationStyle } = body;
 
     // Validate required fields
     if (!messages || !Array.isArray(messages)) {
@@ -22,21 +22,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!model || typeof model !== 'string') {
-      return new Response(
-        JSON.stringify({ error: 'Model is required' }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    const modelConfig = getModelConfig(model as AIModel);
+    // Force use of Gemini 2.5 Flash Search model for web search
+    const modelConfig = getModelConfig('Gemini 2.5 Flash Search');
 
     if (!modelConfig) {
       return new Response(
-        JSON.stringify({ error: 'Invalid model specified' }),
+        JSON.stringify({ error: 'Web search model not available' }),
         {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
@@ -57,7 +48,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // All models now use OpenRouter with app identification headers
+    // Create OpenRouter client with web search enabled model
     const openrouter = createOpenRouter({
       apiKey,
       headers: {
@@ -83,7 +74,9 @@ export async function POST(req: NextRequest) {
       ${styleConfig.systemPrompt}
 
       You are AVChat, an ai assistant that can answer questions and help with tasks.
-      Be helpful and provide relevant information
+      You have access to real-time web search capabilities through Google Search.
+      When answering questions, use the most up-to-date information available from web search.
+      Be helpful and provide relevant information with proper citations.
       Be respectful and polite in all interactions.
       Always use LaTeX for mathematical expressions -
       Inline math must be wrapped in single dollar signs: $content$
@@ -94,6 +87,8 @@ export async function POST(req: NextRequest) {
       - Inline: The equation $E = mc^2$ shows mass-energy equivalence.
       - Display:
       $$\\frac{d}{dx}\\sin(x) = \\cos(x)$$
+
+      When you use web search results, make sure to provide the source URLs in your response.
       `,
       experimental_transform: [smoothStream({ chunking: 'word' })],
       abortSignal: req.signal,

@@ -6,11 +6,8 @@
  * Allows users to edit their messages and regenerate AI responses from that point.
  */
 
-import {
-  createMessage,
-  deleteTrailingMessages,
-  createMessageSummary,
-} from '@/frontend/database/chatQueries';
+import { AppwriteDB } from '@/lib/appwriteDB';
+import { HybridDB } from '@/lib/hybridDB';
 import { UseChatHelpers, useCompletion } from '@ai-sdk/react';
 import { useState } from 'react';
 import { UIMessage } from 'ai';
@@ -47,7 +44,7 @@ export default function MessageEditor({
 
         if (response.ok) {
           const { title, messageId, threadId } = payload;
-          await createMessageSummary(threadId, messageId, title);
+          await HybridDB.createMessageSummary(threadId, messageId, title);
         } else {
           toast.error(
             payload.error || 'Failed to generate a summary for the message'
@@ -61,7 +58,7 @@ export default function MessageEditor({
 
   const handleSave = async () => {
     try {
-      await deleteTrailingMessages(threadId, message.createdAt as Date);
+      await HybridDB.deleteTrailingMessages(threadId, message.createdAt as Date);
 
       const updatedMessage = {
         ...message,
@@ -76,7 +73,7 @@ export default function MessageEditor({
         createdAt: new Date(),
       };
 
-      await createMessage(threadId, updatedMessage);
+      await HybridDB.createMessage(threadId, updatedMessage);
 
       setMessages((messages) => {
         const index = messages.findIndex((m) => m.id === message.id);

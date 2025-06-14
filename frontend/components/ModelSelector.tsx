@@ -5,7 +5,7 @@
  * Features: Responsive grid layout, enhanced badges, better visual hierarchy
  */
 
-import { ChevronDown, Check, Search } from "lucide-react";
+import { ChevronDown, Check, Search, Lock } from "lucide-react";
 import { memo, useCallback, useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/frontend/components/ui/dropdown-menu";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
+import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 import { AI_MODELS, AIModel, getModelConfig } from "@/lib/models";
 import {
   ModelBadge,
@@ -28,9 +29,13 @@ interface ModelCardProps {
   onSelect: (model: AIModel) => void;
 }
 
-const ModelCard: React.FC<ModelCardProps> = ({ model, isSelected, onSelect }) => {
+const ModelCard: React.FC<ModelCardProps> = ({
+  model,
+  isSelected,
+  onSelect,
+}) => {
   const modelConfig = getModelConfig(model);
-  
+
   return (
     <div
       onClick={() => onSelect(model)}
@@ -38,8 +43,8 @@ const ModelCard: React.FC<ModelCardProps> = ({ model, isSelected, onSelect }) =>
         "relative group cursor-pointer p-2 sm:p-4 rounded-lg border-2 transition-all duration-200",
         "hover:shadow-md hover:border-primary/50 hover:bg-accent/50",
         "flex flex-col gap-1.5 sm:gap-3 min-h-[80px] sm:min-h-[120px]",
-        isSelected 
-          ? "border-primary bg-primary/5 shadow-sm" 
+        isSelected
+          ? "border-primary bg-primary/5 shadow-sm"
           : "border-border bg-card hover:bg-accent/30"
       )}
     >
@@ -51,17 +56,19 @@ const ModelCard: React.FC<ModelCardProps> = ({ model, isSelected, onSelect }) =>
           </div>
         </div>
       )}
-      
+
       {/* Header with icon and name */}
       <div className="flex items-start gap-1.5 sm:gap-3">
         <div className="flex-shrink-0 mt-0.5 sm:mt-1">
           {getModelIcon(modelConfig.iconType, 16)}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className={cn(
-            "font-semibold text-xs sm:text-sm leading-tight truncate",
-            isSelected ? "text-primary" : "text-foreground"
-          )}>
+          <h3
+            className={cn(
+              "font-semibold text-xs sm:text-sm leading-tight truncate",
+              isSelected ? "text-primary" : "text-foreground"
+            )}
+          >
             {modelConfig.displayName}
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5 sm:mt-1 font-medium hidden sm:block">
@@ -69,7 +76,7 @@ const ModelCard: React.FC<ModelCardProps> = ({ model, isSelected, onSelect }) =>
           </p>
         </div>
       </div>
-      
+
       {/* Badges */}
       <div className="flex items-center gap-0.5 sm:gap-1.5 flex-wrap">
         {modelConfig.isSuperPremium && (
@@ -97,44 +104,59 @@ const ModelCard: React.FC<ModelCardProps> = ({ model, isSelected, onSelect }) =>
           </div>
         )}
       </div>
-      
+
       {/* Description */}
       <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed hidden sm:block">
         {modelConfig.description}
       </p>
-      
+
       {/* Hover effect overlay */}
-      <div className={cn(
-        "absolute inset-0 rounded-lg transition-opacity duration-200",
-        "bg-gradient-to-br from-primary/5 to-transparent opacity-0",
-        "group-hover:opacity-100 pointer-events-none"
-      )} />
+      <div
+        className={cn(
+          "absolute inset-0 rounded-lg transition-opacity duration-200",
+          "bg-gradient-to-br from-primary/5 to-transparent opacity-0",
+          "group-hover:opacity-100 pointer-events-none"
+        )}
+      />
     </div>
   );
 };
 
 const PureModelSelector = () => {
   const { selectedModel, setModel } = useModelStore();
+  const { isWebSearchEnabled } = useWebSearchStore();
   const selectedModelConfig = getModelConfig(selectedModel);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const isModelEnabled = useCallback((_model: AIModel) => {
-    return true;
-  }, []);
+  // When web search is enabled, lock to Gemini 2.5 Flash Search
+  const isLocked = isWebSearchEnabled;
 
-  const handleModelSelect = useCallback((model: AIModel) => {
-    if (isModelEnabled(model)) {
-      setModel(model);
-      setSearchQuery(""); // Clear search when model is selected
-    }
-  }, [isModelEnabled, setModel]);
+  const isModelEnabled = useCallback(
+    (model: AIModel) => {
+      if (isLocked) {
+        return model === "Gemini 2.5 Flash Search";
+      }
+      return true;
+    },
+    [isLocked]
+  );
+
+  const handleModelSelect = useCallback(
+    (model: AIModel) => {
+      if (isModelEnabled(model) && !isLocked) {
+        setModel(model);
+        setSearchQuery(""); // Clear search when model is selected
+      }
+    },
+    [isModelEnabled, setModel, isLocked]
+  );
 
   // Filter models based on search query
   const filteredModels = useMemo(() => {
     if (!searchQuery.trim()) {
       return AI_MODELS;
     }
-    
+
     const query = searchQuery.toLowerCase();
     return AI_MODELS.filter((model) => {
       const config = getModelConfig(model);
@@ -152,29 +174,38 @@ const PureModelSelector = () => {
   return (
     <div className="flex items-center gap-2">
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+        <DropdownMenuTrigger asChild disabled={isLocked}>
           <Button
             variant="ghost"
             className={cn(
               "flex items-center gap-2 h-9 sm:h-8 pl-2 pr-2 text-xs rounded-md",
               "text-foreground hover:bg-accent hover:text-accent-foreground",
               "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-              "transition-all duration-200"
+              "transition-all duration-200",
+              isLocked && "opacity-75 cursor-not-allowed hover:bg-transparent"
             )}
-            aria-label={`Selected model: ${selectedModel}`}
+            aria-label={`Selected model: ${selectedModel}${
+              isLocked ? " (locked for web search)" : ""
+            }`}
+            disabled={isLocked}
           >
             <div className="flex max-w-[160px] sm:max-w-[180px] md:max-w-sm items-center gap-1.5 sm:gap-2">
+              {isLocked && (
+                <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-60" />
+              )}
               <span className="mobile-text truncate max-w-sm font-medium text-xs sm:text-sm">
                 {selectedModelConfig.displayName}
               </span>
-              <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-50 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+              {!isLocked && (
+                <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-50 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+              )}
             </div>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           className={cn(
             "w-[320px] sm:w-[480px] max-w-[95vw] p-3 sm:p-4",
-            "border-border bg-popover/95 backdrop-blur-sm",
+            "border-border bg-zinc-900/50 backdrop-blur-3xl",
             "max-h-[70vh] overflow-y-auto",
             "scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent scrollbar-thumb-rounded-full",
             "shadow-lg"
@@ -191,7 +222,7 @@ const PureModelSelector = () => {
               Choose the AI model that best fits your needs
             </p>
           </div>
-          
+
           {/* Search Input */}
           <div className="mb-3 sm:mb-4 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -203,7 +234,7 @@ const PureModelSelector = () => {
               className="pl-9 pr-3 py-2 text-sm border-border bg-background focus:ring-primary focus:border-primary"
             />
           </div>
-          
+
           {/* Grid of models */}
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {filteredModels.length > 0 ? (
@@ -225,7 +256,7 @@ const PureModelSelector = () => {
               </div>
             )}
           </div>
-          
+
           {/* Footer */}
           <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-border">
             <p className="text-xs text-muted-foreground text-center hidden sm:block">

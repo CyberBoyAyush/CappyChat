@@ -5,6 +5,7 @@ import 'katex/dist/katex.min.css';
 import { Toaster } from '@/frontend/components/ui/BasicComponents';
 import { ThemeProvider } from '@/frontend/components/ui/ThemeComponents';
 import { Analytics } from '@vercel/analytics/react';
+import PerformanceOptimizations from '@/frontend/components/PerformanceOptimizations';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -24,6 +25,12 @@ export const metadata: Metadata = {
     shortcut: '/logo.png',
     apple: '/logo.png',
   },
+  other: {
+    // Performance optimization meta tags
+    'dns-prefetch': 'https://avchatbackend.ayush-sharma.in',
+    'preconnect': 'https://avchatbackend.ayush-sharma.in',
+    'viewport': 'width=device-width, initial-scale=1, maximum-scale=1',
+  },
 };
 
 export default function RootLayout({
@@ -42,6 +49,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <PerformanceOptimizations />
           {children}
           <Toaster richColors position="top-right" />
         </ThemeProvider>
