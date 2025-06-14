@@ -55,13 +55,15 @@ export const DeleteThreadDialog = ({
             </DialogDescription>
           </div>
         </DialogHeader>
-        
+
         <div className="rounded-lg bg-gradient-to-r from-secondary/80 to-muted/60 border border-border/50 p-4 my-2">
           <div className="flex items-center gap-2 mb-1">
             <div className="h-1.5 w-1.5 bg-primary rounded-full"></div>
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Thread</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Thread
+            </span>
           </div>
-          <p className="text-sm font-medium text-foreground truncate">
+          <p className="text-sm font-medium text-foreground break-words whitespace-normal">
             "{threadTitle}"
           </p>
         </div>

@@ -176,7 +176,7 @@ function PureInputField({
   return (
     <div className="w-full">
       <div className="border-t-[1px] border-x-[1px] border-primary/30 rounded-t-2xl shadow-lg w-full backdrop-blur-md">
-        <div className="flex flex-col bg-background/55 border-t-8 rounded-t-2xl border-x-8 border-zinc-900/50">
+        <div className="flex flex-col bg-background/55 border-t-8 rounded-t-2xl border-x-8 border-primary/10 dark:border-zinc-900/50">
           <div className="bg-transparent overflow-y-auto max-h-[300px] rounded-t-xl">
             <Textarea
               id="message-input"

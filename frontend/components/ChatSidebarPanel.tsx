@@ -176,7 +176,7 @@ export default function ChatSidebarPanel() {
               {/* Pinned Threads Section */}
               {pinnedThreads.length > 0 && (
                 <>
-                  <div className="px-0 py-2 flex text-xs font-medium text-muted-foreground">
+                  <div className="px-0 py-2 flex text-xs font-medium text-primary/85">
                     <Pin className="h-4 w-4 mr-2" /> Pinned
                   </div>
                   {pinnedThreads.map((threadItem) => (

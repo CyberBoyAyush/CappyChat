@@ -135,9 +135,10 @@ export const PanelFooter = memo(PanelFooterComponent);
  * Purpose: Displays the thread title with truncation for long titles.
  */
 const ThreadTitle = ({ title }: { title: string }) => (
-  <span className="truncate block">{title}</span>
+  <span className="truncate block " title={title}>
+    {title}
+  </span>
 );
-
 /**
  * Delete Thread Button Component
  *
@@ -152,9 +153,7 @@ const DeleteButton = ({ onDelete }: DeleteButtonProps) => (
   <Button
     variant="ghost"
     size="icon"
-    className="h-7 w-7 text-muted-foreground hover:text-destructive transition-all duration-200 focus:opacity-100 active:opacity-100
-      md:opacity-0 md:group-hover/thread:opacity-100
-      opacity-70 group-hover/thread:opacity-100"
+    className="h-7 w-7 text-muted-foreground hover:text-destructive transition-all duration-200"
     onClick={(event: React.MouseEvent) => onDelete(event)}
     aria-label="Delete thread"
     data-delete-button
@@ -187,7 +186,7 @@ const ThreadListItem = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const containerStyles = cn(
-    "cursor-pointer group/thread  flex items-center px-3 py-2 sm:px-2 text-sm sm:py-1 rounded-md overflow-hidden w-full transition-colors",
+    "cursor-pointer group/thread relative flex items-center px-3 py-2 sm:px-2 text-sm sm:py-1 rounded-md overflow-hidden w-full transition-colors",
     "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
     "border border-transparent hover:border-border/50",
     isActive && "bg-sidebar-accent text-sidebar-accent-foreground border-border"
@@ -220,18 +219,37 @@ const ThreadListItem = ({
   return (
     <>
       <div className={containerStyles} onClick={handleItemClick}>
-        <div className="flex-1 min-w-0 text-sm">
+        <div className="flex min-w-0 pr-2 overflow-hidden ">
           <ThreadTitle title={threadData.title} />
+
+          <div className="flex md:hidden items-start justify-start gap-1 text-xs text-muted-foreground mt-0.5">
+            <DeleteButton onDelete={handleDeleteClick} />
+            <ThreadMenuDropdown
+              threadData={threadData}
+              onTogglePin={onTogglePin}
+              onRename={onRename}
+              onUpdateTags={onUpdateTags}
+              onDelete={(_, event) => handleDeleteClick(event)}
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <DeleteButton onDelete={handleDeleteClick} />
-          <ThreadMenuDropdown
-            threadData={threadData}
-            onTogglePin={onTogglePin}
-            onRename={onRename}
-            onUpdateTags={onUpdateTags}
-            onDelete={(_, event) => handleDeleteClick(event)}
-          />
+
+        <div
+          className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 items-center  
+                       opacity-0 group-hover/thread:opacity-100 scale-90 group-hover/thread:scale-100
+                       transition-all duration-200 transform-gpu"
+        >
+          <div className="bg-gradient-to-r from-transparent w-8 to-sidebar-accent h-6 "></div>
+          <div className="bg-sidebar-accent text-sidebar-accent-foreground">
+            <DeleteButton onDelete={handleDeleteClick} />
+            <ThreadMenuDropdown
+              threadData={threadData}
+              onTogglePin={onTogglePin}
+              onRename={onRename}
+              onUpdateTags={onUpdateTags}
+              onDelete={(_, event) => handleDeleteClick(event)}
+            />
+          </div>
         </div>
       </div>
 

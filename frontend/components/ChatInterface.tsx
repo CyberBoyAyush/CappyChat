@@ -46,6 +46,7 @@ import { Plus } from "lucide-react";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
+import { stat } from "fs";
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -483,10 +484,17 @@ export default function ChatInterface({
     setSelectedDomain(domainId === selectedDomain ? null : domainId);
   };
 
+  const { state } = useOutletContext<{
+    state: "open" | "collapsed";
+  }>();
+
   return (
     <div
       className={cn(
-        "relative w-full h-screen border-primary/30 flex flex-col bg-background dark:bg-card  border-t-[1px] border-l-[1px] rounded-tl-xl mt-5"
+        "relative w-full h-screen border-primary/30 flex flex-col bg-background dark:bg-card   ",
+        state === "open"
+          ? "mt-5 border-t-[1px] border-l-[1px] rounded-tl-xl"
+          : ""
       )}
     >
       <AppPanelTrigger />
@@ -586,10 +594,18 @@ export default function ChatInterface({
       </div>
 
       {/* Fixed action buttons */}
-      <div className={cn("fixed top-8 right-0 z-50")}>
+      <div
+        className={cn(
+          "fixed z-20",
+          state === "open" ? " top-5 right-0" : "top-3 right-0"
+        )}
+      >
         <div
           className={cn(
-            "flex gap-2 bg-background mr-6 ml-3 rounded-md px-2 py-2"
+            "flex gap-2 bg-background ml-3  px-2 ",
+            state === "open"
+              ? "border-l-[1px] pr-3 border-b-[1px] pb-2 rounded-bl-md border-primary/30"
+              : "border-none mr-6 rounded-md py-2"
           )}
         >
           <Button
@@ -639,16 +655,17 @@ const AppPanelTrigger = () => {
   // Show trigger on mobile or when sidebar is collapsed on desktop
   return (
     <div
-      className={`fixed left-2 top-3 z-50   ${
+      className={`fixed left-2 top-3 z-50 overflow-hidden ${
         state === "collapsed"
-          ? "top-8 bg-zinc-900 mr-6 ml-3 rounded-md"
-          : "bg-transparent"
+          ? "top-3 bg-background p-1.5 mr-6 ml-3 rounded-md"
+          : "bg-background"
       }`}
     >
-      <div className="hover:bg-zinc-600/10">
+      <div className="hover:bg-zinc-600/10 rounded-md">
         <Button
           size="icon"
           variant="outline"
+          className=" bg-background"
           onClick={handleToggle}
           aria-label="Toggle sidebar"
         >
