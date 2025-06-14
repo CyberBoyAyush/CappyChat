@@ -218,26 +218,8 @@ const ThreadListItem = ({
   return (
     <>
       <div className={containerStyles} onClick={handleItemClick}>
-        <div className="flex-1 min-w-0 flex items-center gap-2">
+        <div className="flex-1 min-w-0">
           <ThreadTitle title={threadData.title} />
-          {/* Show tags if available - compact inline display */}
-          {threadData.tags && threadData.tags.length > 0 && (
-            <div className="flex items-center gap-1">
-              {threadData.tags.slice(0, 1).map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center px-1 py-0.5 rounded text-xs bg-muted/50 text-muted-foreground"
-                >
-                  {tag}
-                </span>
-              ))}
-              {threadData.tags.length > 1 && (
-                <span className="text-xs text-muted-foreground">
-                  +{threadData.tags.length - 1}
-                </span>
-              )}
-            </div>
-          )}
         </div>
         <div className="flex items-center gap-1">
           <DeleteButton onDelete={handleDeleteClick} />

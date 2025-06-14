@@ -17,7 +17,7 @@ import {
 } from '@/frontend/components/ui/dialog';
 import { Button } from '@/frontend/components/ui/button';
 import { Input } from '@/frontend/components/ui/input';
-import { Label } from '@/frontend/components/ui/label';
+import { Label } from '@/frontend/components/ui/BasicComponents';
 
 interface ThreadRenameDialogProps {
   isOpen: boolean;

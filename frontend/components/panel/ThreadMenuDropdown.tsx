@@ -17,8 +17,8 @@ import {
 } from '@/frontend/components/ui/dropdown-menu';
 import { Button } from '@/frontend/components/ui/button';
 import { ThreadData } from './ThreadManager';
-import { ThreadRenameDialog } from './ThreadRenameDialog';
-import { ThreadTagsDialog } from './ThreadTagsDialog';
+import { ThreadRenameDialog } from './index';
+import { ThreadTagsDialog } from './index';
 
 interface ThreadMenuDropdownProps {
   threadData: ThreadData;
@@ -116,8 +116,10 @@ export const ThreadMenuDropdown = ({
             <Tag className="mr-2 h-4 w-4" />
             Tags
             {threadData.tags && threadData.tags.length > 0 && (
-              <span className="ml-auto text-xs text-muted-foreground">
-                {threadData.tags.length}
+              <span className="ml-auto flex items-center gap-1">
+                <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-medium bg-primary text-primary-foreground rounded-full">
+                  {threadData.tags.length}
+                </span>
               </span>
             )}
           </DropdownMenuItem>
