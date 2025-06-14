@@ -25,6 +25,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  loginWithGitHub: () => Promise<void>;
   logout: () => Promise<void>;
   getCurrentUser: () => Promise<User | null>;
   refreshSession: () => Promise<void>;
@@ -218,6 +219,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Login with GitHub OAuth
+  const loginWithGitHub = async (): Promise<void> => {
+    try {
+      account.createOAuth2Session(
+        OAuthProvider.Github,
+        APPWRITE_CONFIG.successUrl,
+        APPWRITE_CONFIG.failureUrl
+      );
+    } catch (error) {
+      console.error('GitHub login error:', error);
+      throw new Error(getErrorMessage(error));
+    }
+  };
+
   // Logout
   const logout = async (): Promise<void> => {
     try {
@@ -366,6 +381,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         login,
         register,
         loginWithGoogle,
+        loginWithGitHub,
         logout,
         getCurrentUser,
         refreshSession,

@@ -44,14 +44,14 @@ import {
   MessagesSquare,
   Command,
 } from "lucide-react";
-import { GoogleIcon } from "@/frontend/components/ui/icons";
+import { GoogleIcon, GitHubIcon } from "@/frontend/components/ui/icons";
 import { ThemeToggleButton } from "@/frontend/components/ui/ThemeComponents";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const HomePage: React.FC = () => {
-  const { isAuthenticated, loading, loginWithGoogle } = useAuth();
+  const { isAuthenticated, loading, loginWithGoogle, loginWithGitHub } = useAuth();
   const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -86,6 +86,14 @@ const HomePage: React.FC = () => {
       await loginWithGoogle();
     } catch (error) {
       console.error("Google login failed:", error);
+    }
+  };
+
+  const handleGitHubLogin = async () => {
+    try {
+      await loginWithGitHub();
+    } catch (error) {
+      console.error("GitHub login failed:", error);
     }
   };
 
@@ -425,36 +433,59 @@ const HomePage: React.FC = () => {
               transition={{ duration: 0.7, delay: 0.6 }}
             >
               {/* Primary CTA */}
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-full flex justify-center xs:w-auto"
-              >
-                <Button
-                  onClick={handleGoogleLogin}
-                  size="lg"
-                  className="group w-full xs:w-auto max-w-xs flex items-center space-x-2 sm:space-x-3 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 transform px-3 xs:px-4 sm:px-8 py-2.5 xs:py-3 sm:py-4 text-xs xs:text-sm sm:text-base lg:text-lg font-medium rounded-xl relative overflow-hidden"
-                  disabled={loading}
+              <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-full flex justify-center xs:w-auto"
                 >
-                  <motion.span
-                    className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-primary-foreground/10 to-transparent"
-                    animate={{
-                      x: ["-100%", "100%"],
-                    }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 1.5,
-                      ease: "linear",
-                    }}
-                  />
-                  <GoogleIcon className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
-                  <span className="truncate">
-                    <span className="hidden xs:inline">Start Chatting</span>
-                    <span className="xs:hidden">Chat</span> with Google
-                  </span>
-                  <ArrowRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-200" />
-                </Button>
-              </motion.div>
+                  <Button
+                    onClick={handleGoogleLogin}
+                    size="lg"
+                    className="group w-full xs:w-auto max-w-xs flex items-center space-x-2 sm:space-x-3 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 transform px-3 xs:px-4 sm:px-8 py-2.5 xs:py-3 sm:py-4 text-xs xs:text-sm sm:text-base lg:text-lg font-medium rounded-xl relative overflow-hidden"
+                    disabled={loading}
+                  >
+                    <motion.span
+                      className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-primary-foreground/10 to-transparent"
+                      animate={{
+                        x: ["-100%", "100%"],
+                      }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 1.5,
+                        ease: "linear",
+                      }}
+                    />
+                    <GoogleIcon className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
+                    <span className="truncate">
+                      <span className="hidden xs:inline">Start Chatting</span>
+                      <span className="xs:hidden">Chat</span> with Google
+                    </span>
+                    <ArrowRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-200" />
+                  </Button>
+                </motion.div>
+
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-full flex justify-center xs:w-auto"
+                >
+                  <Button
+                    onClick={handleGitHubLogin}
+                    size="lg"
+                    variant="outline"
+                    className="group w-full xs:w-auto max-w-xs flex items-center space-x-2 sm:space-x-3 border-2 border-primary/50 hover:bg-primary/5 text-foreground shadow-lg hover:shadow-xl transition-all duration-300 transform px-3 xs:px-4 sm:px-8 py-2.5 xs:py-3 sm:py-4 text-xs xs:text-sm sm:text-base lg:text-lg font-medium rounded-xl relative overflow-hidden"
+                    disabled={loading}
+                  >
+                    <GitHubIcon className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
+                    <span className="truncate">
+                      <span className="hidden xs:inline">Start Chatting</span>
+                      <span className="xs:hidden">Chat</span> with GitHub
+                    </span>
+                    <ArrowRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-200" />
+                  </Button>
+                </motion.div>
+              </div>
 
               {/* Secondary Options */}
               <div className="flex items-center gap-2 xs:gap-3 sm:gap-4">
@@ -1452,16 +1483,30 @@ const HomePage: React.FC = () => {
             </p>
 
             <div className="flex flex-col xs:flex-row items-center justify-center gap-3 sm:gap-4">
-              <Button
-                onClick={handleGoogleLogin}
-                size="lg"
-                className="group w-full xs:w-auto flex items-center space-x-2 xs:space-x-3 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 px-4 xs:px-5 sm:px-8 py-2.5 xs:py-3 sm:py-4 text-xs xs:text-sm sm:text-base lg:text-lg font-medium rounded-xl"
-                disabled={loading}
-              >
-                <GoogleIcon className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
-                <span>Get Started Now</span>
-                <ArrowRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-200" />
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  onClick={handleGoogleLogin}
+                  size="lg"
+                  className="group w-full xs:w-auto flex items-center space-x-2 xs:space-x-3 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 px-4 xs:px-5 sm:px-8 py-2.5 xs:py-3 sm:py-4 text-xs xs:text-sm sm:text-base lg:text-lg font-medium rounded-xl"
+                  disabled={loading}
+                >
+                  <GoogleIcon className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
+                  <span>Get Started Now</span>
+                  <ArrowRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-200" />
+                </Button>
+
+                <Button
+                  onClick={handleGitHubLogin}
+                  size="lg"
+                  variant="outline"
+                  className="group w-full xs:w-auto flex items-center space-x-2 xs:space-x-3 border-2 border-primary/50 hover:bg-primary/5 text-foreground shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 px-4 xs:px-5 sm:px-8 py-2.5 xs:py-3 sm:py-4 text-xs xs:text-sm sm:text-base lg:text-lg font-medium rounded-xl"
+                  disabled={loading}
+                >
+                  <GitHubIcon className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
+                  <span>Get Started Now</span>
+                  <ArrowRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-200" />
+                </Button>
+              </div>
 
               <Link to="/auth/signup" className="w-full xs:w-auto">
                 <motion.div

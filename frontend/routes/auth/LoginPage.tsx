@@ -23,7 +23,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { ThemeToggleButton } from "@/frontend/components/ui/ThemeComponents";
-import { GoogleIcon } from "@/frontend/components/ui/icons";
+import { GoogleIcon, GitHubIcon } from "@/frontend/components/ui/icons";
 import { motion } from "framer-motion";
 
 const LoginPage: React.FC = () => {
@@ -33,7 +33,7 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login, loginWithGoogle, loading, isAuthenticated } = useAuth();
+  const { login, loginWithGoogle, loginWithGitHub, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/chat";
@@ -72,6 +72,15 @@ const LoginPage: React.FC = () => {
       await loginWithGoogle();
     } catch (err: any) {
       setError(err.message || "Google login failed. Please try again.");
+    }
+  };
+
+  const handleGitHubLogin = async () => {
+    setError("");
+    try {
+      await loginWithGitHub();
+    } catch (err: any) {
+      setError(err.message || "GitHub login failed. Please try again.");
     }
   };
 
@@ -140,16 +149,28 @@ const LoginPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Google Login Button */}
-              <Button
-                onClick={handleGoogleLogin}
-                disabled={isLoading || loading}
-                className="w-full mb-6 bg-card hover:bg-accent/50 text-foreground border border-border h-11 relative overflow-hidden group"
-              >
-                <span className="absolute inset-0 w-3 bg-gradient-to-r from-transparent via-primary/10 to-transparent -translate-x-full group-hover:animate-shimmer"></span>
-                <GoogleIcon className="h-5 w-5 mr-3" />
-                <span>Continue with Google</span>
-              </Button>
+              {/* OAuth Login Buttons */}
+              <div className="space-y-3 mb-6">
+                <Button
+                  onClick={handleGoogleLogin}
+                  disabled={isLoading || loading}
+                  className="w-full bg-card hover:bg-accent/50 text-foreground border border-border h-11 relative overflow-hidden group"
+                >
+                  <span className="absolute inset-0 w-3 bg-gradient-to-r from-transparent via-primary/10 to-transparent -translate-x-full group-hover:animate-shimmer"></span>
+                  <GoogleIcon className="h-5 w-5 mr-3" />
+                  <span>Continue with Google</span>
+                </Button>
+
+                <Button
+                  onClick={handleGitHubLogin}
+                  disabled={isLoading || loading}
+                  className="w-full bg-card hover:bg-accent/50 text-foreground border border-border h-11 relative overflow-hidden group"
+                >
+                  <span className="absolute inset-0 w-3 bg-gradient-to-r from-transparent via-primary/10 to-transparent -translate-x-full group-hover:animate-shimmer"></span>
+                  <GitHubIcon className="h-5 w-5 mr-3" />
+                  <span>Continue with GitHub</span>
+                </Button>
+              </div>
 
               {/* Divider */}
               <div className="relative mb-6">

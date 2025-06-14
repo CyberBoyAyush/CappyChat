@@ -5,7 +5,7 @@
  * Handles initialization of client, account, and database services.
  */
 
-import { Client, Account, OAuthProvider, ID } from 'appwrite';
+import { Client, Account, ID } from 'appwrite';
 
 // Validate required environment variables
 if (!process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT) {
@@ -27,6 +27,7 @@ export const account = new Account(client);
 // OAuth provider configuration
 export const OAuthProviders = {
   Google: 'google', // Using string literal 'google' instead of OAuthProvider.Google to ensure correct casing
+  GitHub: 'github', // Using string literal 'github' for GitHub OAuth
 } as const;
 
 // Helper for generating unique IDs
