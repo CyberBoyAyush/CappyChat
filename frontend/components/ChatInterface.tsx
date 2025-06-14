@@ -17,6 +17,7 @@ import { HybridDB, dbEvents } from "@/lib/hybridDB";
 import { streamingSync, StreamingState } from "@/lib/streamingSync";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
+import { useConversationStyleStore } from "@/frontend/stores/ConversationStyleStore";
 import { useLocation } from "react-router-dom";
 import ThemeToggleButton from "./ui/ThemeComponents";
 import { Button } from "./ui/button";
@@ -59,6 +60,7 @@ export default function ChatInterface({
 }: ChatInterfaceProps) {
   const selectedModel = useModelStore((state) => state.selectedModel);
   const { isWebSearchEnabled } = useWebSearchStore();
+  const { selectedStyle } = useConversationStyleStore();
   const {
     sidebarWidth,
     toggleSidebar,
@@ -169,6 +171,7 @@ export default function ChatInterface({
     headers: {},
     body: {
       model: selectedModel,
+      conversationStyle: selectedStyle,
     },
   });
 

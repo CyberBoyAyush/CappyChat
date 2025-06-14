@@ -22,6 +22,7 @@ import { StopIcon, WebSearchToggle } from "./ui/UIComponents";
 import { HybridDB } from "@/lib/hybridDB";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 import { ModelSelector } from "./ModelSelector";
+import { ConversationStyleSelector } from "./ConversationStyleSelector";
 import { useIsMobile } from "@/hooks/useMobileDetection";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
@@ -208,6 +209,7 @@ function PureInputField({
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-2">
                 <ModelSelector />
+                <ConversationStyleSelector className="hidden sm:flex" />
                 <WebSearchToggle
                   isEnabled={isWebSearchEnabled}
                   onToggle={setWebSearchEnabled}
@@ -216,6 +218,7 @@ function PureInputField({
               </div>
 
               <div className="flex items-center gap-2">
+                <ConversationStyleSelector className="flex sm:hidden" />
                 <WebSearchToggle
                   isEnabled={isWebSearchEnabled}
                   onToggle={setWebSearchEnabled}

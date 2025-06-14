@@ -1,6 +1,7 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText, smoothStream } from 'ai';
 import { getModelConfig, AIModel } from '@/lib/models';
+import { getConversationStyleConfig, ConversationStyle, DEFAULT_CONVERSATION_STYLE } from '@/lib/conversationStyles';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const maxDuration = 60;
@@ -8,7 +9,7 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, model } = body;
+    const { messages, model, conversationStyle } = body;
 
     // Validate required fields
     if (!messages || !Array.isArray(messages)) {
@@ -67,6 +68,11 @@ export async function POST(req: NextRequest) {
     });
     const aiModel = openrouter(modelConfig.modelId);
 
+    // Get conversation style configuration
+    const styleConfig = getConversationStyleConfig(
+      (conversationStyle as ConversationStyle) || DEFAULT_CONVERSATION_STYLE
+    );
+
     const result = streamText({
       model: aiModel,
       messages,
@@ -74,10 +80,11 @@ export async function POST(req: NextRequest) {
         console.log('error', error);
       },
       system: `
+      ${styleConfig.systemPrompt}
+
       You are AVChat, an ai assistant that can answer questions and help with tasks.
       Be helpful and provide relevant information
       Be respectful and polite in all interactions.
-      Be engaging and maintain a conversational tone.
       Always use LaTeX for mathematical expressions -
       Inline math must be wrapped in single dollar signs: $content$
       Display math must be wrapped in double dollar signs: $$content$$
