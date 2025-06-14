@@ -18,11 +18,13 @@ import { useParams } from "react-router";
 import { useNavigate, useLocation } from "react-router";
 import { UIMessage } from "ai";
 import { v4 as uuidv4 } from "uuid";
-import { StopIcon } from "./ui/UIComponents";
+import { StopIcon, WebSearchToggle } from "./ui/UIComponents";
 import { HybridDB } from "@/lib/hybridDB";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 import { ModelSelector } from "./ModelSelector";
 import { useIsMobile } from "@/hooks/useMobileDetection";
+import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
+import { useModelStore } from "@/frontend/stores/ChatModelStore";
 
 interface InputFieldProps {
   threadId: string;
@@ -32,6 +34,7 @@ interface InputFieldProps {
   append: UseChatHelpers["append"];
   stop: UseChatHelpers["stop"];
   pendingUserMessageRef: React.RefObject<UIMessage | null>;
+  onWebSearchMessage?: (messageId: string) => void;
 }
 
 interface StopButtonProps {
@@ -59,6 +62,7 @@ function PureInputField({
   append,
   stop,
   pendingUserMessageRef,
+  onWebSearchMessage,
 }: InputFieldProps) {
   const { textareaRef, adjustHeight } = useTextAreaAutoResize({
     minHeight: 72,
@@ -77,6 +81,13 @@ function PureInputField({
   );
 
   const { complete } = useChatMessageSummary();
+
+  // Web search state
+  const { isWebSearchEnabled, setWebSearchEnabled } = useWebSearchStore();
+  const { selectedModel } = useModelStore();
+
+  // Lock model selector when web search is enabled
+  const isModelLocked = isWebSearchEnabled;
 
   // Focus textarea when input changes (especially for prompt selections)
   useEffect(() => {
@@ -125,6 +136,11 @@ function PureInputField({
     // Update UI immediately for better responsiveness - useChat handles the state
     // Store the user message in ref so it can be persisted in ChatInterface's onFinish callback
     pendingUserMessageRef.current = userMessage;
+
+    // Track if this message was sent with web search enabled
+    if (isWebSearchEnabled && onWebSearchMessage) {
+      onWebSearchMessage(messageId);
+    }
 
     // The message will be persisted to database in ChatInterface's onFinish callback
     append(userMessage);
@@ -190,13 +206,27 @@ function PureInputField({
 
           <div className="h-16 sm:h-14 flex items-center px-3 sm:px-2 border-t border-border/50">
             <div className="flex items-center justify-between w-full">
-              <ModelSelector />
+              <div className="flex items-center gap-2">
+                <ModelSelector />
+                <WebSearchToggle
+                  isEnabled={isWebSearchEnabled}
+                  onToggle={setWebSearchEnabled}
+                  className="hidden sm:flex"
+                />
+              </div>
 
-              {status === "submitted" || status === "streaming" ? (
-                <StopButton stop={stop} />
-              ) : (
-                <SendButton onSubmit={handleSubmit} disabled={isDisabled} />
-              )}
+              <div className="flex items-center gap-2">
+                <WebSearchToggle
+                  isEnabled={isWebSearchEnabled}
+                  onToggle={setWebSearchEnabled}
+                  className="flex sm:hidden"
+                />
+                {status === "submitted" || status === "streaming" ? (
+                  <StopButton stop={stop} />
+                ) : (
+                  <SendButton onSubmit={handleSubmit} disabled={isDisabled} />
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -15,6 +15,7 @@ import ChatMessageControls from "./ChatMessageControls";
 import { UseChatHelpers } from "@ai-sdk/react";
 import ChatMessageEditor from "./ChatMessageEditor";
 import ChatMessageReasoning from "./ChatMessageReasoning";
+import WebSearchCitations from "./WebSearchCitations";
 
 function PureMessage({
   threadId,
@@ -101,6 +102,16 @@ function PureMessage({
                   reload={reload}
                   stop={stop}
                 />
+              )}
+              {/* Show web search citations for assistant messages with search results */}
+              {message.role === "assistant" && (message as any).webSearchResults && (
+                <>
+                  {console.log('🎯 Rendering citations for message:', message.id, 'Results:', (message as any).webSearchResults)}
+                  <WebSearchCitations
+                    results={(message as any).webSearchResults}
+                    searchQuery="web search"
+                  />
+                </>
               )}
             </div>
           );

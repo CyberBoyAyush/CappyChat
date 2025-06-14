@@ -1,5 +1,6 @@
 export const AI_MODELS = [
   'Gemini 2.5 Flash',
+  'Gemini 2.5 Flash Search',
   'OpenAI 4.1 Mini',
   'OpenAI o4-mini',
   'OpenAI 4.1',
@@ -36,6 +37,17 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: true,
     description: 'Fast and efficient model from Google',
+  },
+  'Gemini 2.5 Flash Search': {
+    modelId: 'google/gemini-2.5-flash-preview-05-20:online',
+    provider: 'openrouter',
+    displayName: 'Gemini 2.5 Flash Search',
+    iconType: 'google',
+    company: 'Google',
+    isPremium: false,
+    isSuperPremium: false,
+    hasReasoning: true,
+    description: 'Fast and efficient model from Google with web search capabilities',
   },
   'OpenAI 4.1': {
     modelId: 'openai/gpt-4.1',

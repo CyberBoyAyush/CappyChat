@@ -5,7 +5,7 @@
  * Features: Responsive grid layout, enhanced badges, better visual hierarchy
  */
 
-import { ChevronDown, Check, Search } from "lucide-react";
+import { ChevronDown, Check, Search, Lock } from "lucide-react";
 import { memo, useCallback, useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/frontend/components/ui/dropdown-menu";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
+import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 import { AI_MODELS, AIModel, getModelConfig } from "@/lib/models";
 import {
   ModelBadge,
@@ -115,19 +116,26 @@ const ModelCard: React.FC<ModelCardProps> = ({ model, isSelected, onSelect }) =>
 
 const PureModelSelector = () => {
   const { selectedModel, setModel } = useModelStore();
+  const { isWebSearchEnabled } = useWebSearchStore();
   const selectedModelConfig = getModelConfig(selectedModel);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const isModelEnabled = useCallback((_model: AIModel) => {
+  // When web search is enabled, lock to Gemini 2.5 Flash Search
+  const isLocked = isWebSearchEnabled;
+
+  const isModelEnabled = useCallback((model: AIModel) => {
+    if (isLocked) {
+      return model === 'Gemini 2.5 Flash Search';
+    }
     return true;
-  }, []);
+  }, [isLocked]);
 
   const handleModelSelect = useCallback((model: AIModel) => {
-    if (isModelEnabled(model)) {
+    if (isModelEnabled(model) && !isLocked) {
       setModel(model);
       setSearchQuery(""); // Clear search when model is selected
     }
-  }, [isModelEnabled, setModel]);
+  }, [isModelEnabled, setModel, isLocked]);
 
   // Filter models based on search query
   const filteredModels = useMemo(() => {
@@ -152,22 +160,25 @@ const PureModelSelector = () => {
   return (
     <div className="flex items-center gap-2">
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+        <DropdownMenuTrigger asChild disabled={isLocked}>
           <Button
             variant="ghost"
             className={cn(
               "flex items-center gap-2 h-9 sm:h-8 pl-2 pr-2 text-xs rounded-md",
               "text-foreground hover:bg-accent hover:text-accent-foreground",
               "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-              "transition-all duration-200"
+              "transition-all duration-200",
+              isLocked && "opacity-75 cursor-not-allowed hover:bg-transparent"
             )}
-            aria-label={`Selected model: ${selectedModel}`}
+            aria-label={`Selected model: ${selectedModel}${isLocked ? ' (locked for web search)' : ''}`}
+            disabled={isLocked}
           >
             <div className="flex max-w-[160px] sm:max-w-[180px] md:max-w-sm items-center gap-1.5 sm:gap-2">
+              {isLocked && <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-60" />}
               <span className="mobile-text truncate max-w-sm font-medium text-xs sm:text-sm">
                 {selectedModelConfig.displayName}
               </span>
-              <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-50 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+              {!isLocked && <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-50 transition-transform duration-200 group-data-[state=open]:rotate-180" />}
             </div>
           </Button>
         </DropdownMenuTrigger>

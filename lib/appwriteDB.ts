@@ -44,6 +44,7 @@ export interface AppwriteMessage extends Models.Document {
   content: string;
   role: 'user' | 'assistant' | 'system' | 'data';
   createdAt: string; // ISO date string
+  webSearchResults?: string[]; // URLs from web search results
 }
 
 // Define Message interface for internal use
@@ -54,6 +55,7 @@ export interface DBMessage {
   parts?: any[];
   role: 'user' | 'assistant' | 'system' | 'data';
   createdAt: Date;
+  webSearchResults?: string[]; // URLs from web search results
 }
 
 // Interface for Appwrite Message Summary document
@@ -331,7 +333,8 @@ export class AppwriteDB {
           content: messageDoc.content,
           role: messageDoc.role,
           parts: messageDoc.content ? [{ type: "text", text: messageDoc.content }] : [],
-          createdAt: new Date(messageDoc.createdAt)
+          createdAt: new Date(messageDoc.createdAt),
+          webSearchResults: messageDoc.webSearchResults || undefined
         };
       });
       
@@ -350,18 +353,25 @@ export class AppwriteDB {
       const messageCreatedAt = message.createdAt || now;
 
       // Create message first
+      const messageData: any = {
+        messageId: message.id,
+        threadId: threadId,
+        userId: userId,
+        content: message.content,
+        role: message.role,
+        createdAt: messageCreatedAt.toISOString()
+      };
+
+      // Add webSearchResults if present
+      if (message.webSearchResults && message.webSearchResults.length > 0) {
+        messageData.webSearchResults = message.webSearchResults;
+      }
+
       const messagePromise = databases.createDocument(
         DATABASE_ID,
         MESSAGES_COLLECTION_ID,
         ID.unique(),
-        {
-          messageId: message.id,
-          threadId: threadId,
-          userId: userId,
-          content: message.content,
-          role: message.role,
-          createdAt: messageCreatedAt.toISOString()
-        }
+        messageData
       ).catch(async (error) => {
         // If message creation fails, don't automatically create thread
         // Let it fail since HybridDB should have handled thread creation

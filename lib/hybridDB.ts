@@ -204,7 +204,8 @@ export class HybridDB {
       content: message.content,
       role: message.role,
       parts: message.parts || [],
-      createdAt: message.createdAt || new Date()
+      createdAt: message.createdAt || new Date(),
+      webSearchResults: message.webSearchResults || undefined
     };
 
     // Instant local update
@@ -431,7 +432,8 @@ export class HybridDB {
       content: appwriteMessage.content,
       role: appwriteMessage.role,
       parts: appwriteMessage.content ? [{ type: "text", text: appwriteMessage.content }] : [],
-      createdAt: new Date(appwriteMessage.createdAt)
+      createdAt: new Date(appwriteMessage.createdAt),
+      webSearchResults: appwriteMessage.webSearchResults || undefined
     };
 
     LocalDB.addMessage(message);

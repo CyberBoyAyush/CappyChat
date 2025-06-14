@@ -11,9 +11,10 @@ import ChatMessageDisplay from "./ChatMessageDisplay";
 import ChatInputField from "./ChatInputField";
 import ChatMessageBrowser from "./ChatMessageBrowser";
 import { UIMessage } from "ai";
-import { v4 as uuidv4 } from "uuid";
+
 import { HybridDB } from "@/lib/hybridDB";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
+import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 import { useLocation } from "react-router-dom";
 import ThemeToggleButton from "./ui/ThemeComponents";
 import { Button } from "./ui/button";
@@ -39,7 +40,7 @@ import { useIsMobile } from "@/hooks/useMobileDetection";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router";
 import { Plus } from "lucide-react";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -55,6 +56,7 @@ export default function ChatInterface({
   initialMessages,
 }: ChatInterfaceProps) {
   const selectedModel = useModelStore((state) => state.selectedModel);
+  const { isWebSearchEnabled } = useWebSearchStore();
   const {
     sidebarWidth,
     toggleSidebar,
@@ -95,7 +97,7 @@ export default function ChatInterface({
     reload,
     error,
   } = useChat({
-    api: "/api/chat-messaging",
+    api: isWebSearchEnabled ? "/api/web-search" : "/api/chat-messaging",
     id: threadId,
     initialMessages,
     experimental_throttle: 50,
@@ -108,13 +110,45 @@ export default function ChatInterface({
 
       // Save the AI message (useChat already handles adding it to the messages array)
       // We just need to persist it to the database using the actual message ID from useChat
-      const aiMessage: UIMessage = {
+      const aiMessage: UIMessage & { webSearchResults?: string[] } = {
         id: message.id,
         parts: message.parts as UIMessage["parts"],
         role: "assistant",
         content: message.content,
         createdAt: new Date(),
       };
+
+      // Add web search results if this message was sent with web search enabled
+      if (nextResponseNeedsWebSearch.current) {
+        // For now, add sample web search results when web search was enabled
+        // This will be replaced with actual grounding metadata extraction
+        const webSearchResults = [
+          'https://makemytrip.com',
+          'https://planetware.com',
+          'https://delhitourism.gov.in',
+          'https://holidify.com',
+          'https://traveltriangle.com',
+        ];
+
+        console.log('✅ Adding web search results to AI message:', message.id, webSearchResults);
+        aiMessage.webSearchResults = webSearchResults;
+
+        // Reset the flag
+        nextResponseNeedsWebSearch.current = false;
+
+        // Also update the message in the UI immediately
+        setMessages(prevMessages => {
+          const updatedMessages = prevMessages.map(msg =>
+            msg.id === message.id
+              ? { ...msg, webSearchResults } as UIMessage & { webSearchResults?: string[] }
+              : msg
+          );
+          console.log('📱 Updated UI messages with web search results');
+          return updatedMessages;
+        });
+      } else {
+        console.log('❌ No web search results needed for message:', message.id);
+      }
 
       HybridDB.createMessage(threadId, aiMessage);
 
@@ -156,6 +190,21 @@ export default function ChatInterface({
       scrollToBottom();
     }
   }, [messages.length, status]);
+
+  // Track when web search is enabled for the next assistant response
+  const nextResponseNeedsWebSearch = useRef<boolean>(false);
+
+  // Callback to track when a message is sent with web search enabled
+  const handleWebSearchMessage = useCallback((messageId: string) => {
+    console.log('🔍 Web search enabled for next response. User message ID:', messageId);
+    nextResponseNeedsWebSearch.current = true;
+  }, []);
+
+  // This useEffect is no longer needed since we handle web search results in onFinish
+  // Keeping it commented for reference
+  // useEffect(() => {
+  //   // Web search results are now handled in the onFinish callback
+  // }, []);
 
   const scrollToBottom = () => {
     if (mainRef.current) {
@@ -273,6 +322,7 @@ export default function ChatInterface({
               setInput={setInput}
               stop={stop}
               pendingUserMessageRef={pendingUserMessageRef}
+              onWebSearchMessage={handleWebSearchMessage}
             />
           </div>
         </div>
@@ -298,6 +348,7 @@ export default function ChatInterface({
           >
             <MessageSquareMore className="h-5 w-5" />
           </Button>
+
           <ThemeToggleButton variant="inline" />
         </div>
       </div>

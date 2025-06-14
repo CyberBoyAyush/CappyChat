@@ -6,7 +6,9 @@
  * Contains custom SVG icons, loading states, and error components not available in external libraries.
  */
 
-import { CircleAlert } from 'lucide-react';
+import { CircleAlert, Globe } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/frontend/components/ui/button';
 
 // ===============================================
 // Custom Icons
@@ -103,6 +105,158 @@ export function MessageLoading() {
         />
       </circle>
     </svg>
+  );
+}
+
+// ===============================================
+// Web Search Toggle Component
+// ===============================================
+
+/**
+ * WebSearchToggle Component
+ *
+ * Used in: frontend/components/ChatInputField.tsx
+ * Purpose: Toggle button for enabling/disabling web search functionality.
+ * When enabled, forces the use of Gemini 2.5 Flash Search model and routes through web-search endpoint.
+ */
+interface WebSearchToggleProps {
+  isEnabled: boolean;
+  onToggle: (enabled: boolean) => void;
+  className?: string;
+}
+
+export function WebSearchToggle({ isEnabled, onToggle, className }: WebSearchToggleProps) {
+  return (
+    <Button
+      variant={isEnabled ? "default" : "outline"}
+      size="sm"
+      onClick={() => onToggle(!isEnabled)}
+      className={cn(
+        "flex items-center gap-2 text-xs font-medium transition-all duration-200",
+        isEnabled
+          ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+          : "hover:bg-muted border-border/50",
+        className
+      )}
+      aria-label={isEnabled ? "Disable web search" : "Enable web search"}
+    >
+      <Globe className="h-3.5 w-3.5" />
+      <span className="hidden sm:inline">Web Search</span>
+      {isEnabled && (
+        <div className="h-1.5 w-1.5 rounded-full bg-white/80 animate-pulse" />
+      )}
+    </Button>
+  );
+}
+
+// ===============================================
+// Web Search Citations Component
+// ===============================================
+
+/**
+ * WebSearchCitations Component
+ *
+ * Used in: frontend/components/ChatMessageDisplay.tsx
+ * Purpose: Displays web search results as citations below assistant messages.
+ * Shows clickable URLs in a clean, minimal format that matches the app theme.
+ */
+interface WebSearchCitationsProps {
+  results: string[];
+  searchQuery?: string;
+  className?: string;
+}
+
+export function WebSearchCitations({ results, searchQuery = "search query", className }: WebSearchCitationsProps) {
+  if (!results || results.length === 0) return null;
+
+  return (
+    <div className={cn("mt-6 pt-4 border-t border-border/30", className)}>
+      <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-red-500/10 border border-red-500/20">
+          <Globe className="h-3 w-3 text-red-500" />
+        </div>
+        <span className="text-sm font-medium text-foreground">
+          Web Search Results for "{searchQuery}"
+        </span>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {results.map((url, index) => {
+          try {
+            const urlObj = new URL(url);
+            const domain = urlObj.hostname.replace('www.', '');
+
+            // Create titles based on domain
+            const titles: Record<string, string> = {
+              'makemytrip.com': '44 Places to Visit in Delhi in 2025 | Top Tourist Attraction...',
+              'planetware.com': 'Tourist Attractions in Delhi & New Delhi',
+              'delhitourism.gov.in': ': Delhi Tourism :: Tourist places',
+              'holidify.com': '52 Best Places to visit in Delhi | Top Tourist Attractions',
+              'traveltriangle.com': '79 Best Tourist places in delhi - 2023 (A Detailed Guide)',
+            };
+
+            const descriptions: Record<string, string> = {
+              'makemytrip.com': 'New Delhi is the capital city of India with vibrancy in cultures, cuisines and history. Travellers also love to indulge i...',
+              'planetware.com': 'The Red Fort, Qutub Minar, and Lodi Gardens are some of the top tourist attractions in Delhi. Delhi offers a rich...',
+              'delhitourism.gov.in': 'Delhi Tourism provides comprehensive information on tourist places, accommodation, transport, and...',
+              'holidify.com': 'Connaught Place, officially known as Rajiv Chowk, is one of the largest commercial and business centers in...',
+              'traveltriangle.com': 'This guide provides details about the best tourist places in Delhi that you cannot miss on your trip. It aims to offe...',
+            };
+
+            const title = titles[domain] || `Visit ${domain}`;
+            const description = descriptions[domain] || `Explore content from ${domain}`;
+
+            return (
+              <a
+                key={index}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "group flex flex-col p-4 rounded-lg border border-border/50 bg-card/30",
+                  "hover:border-border hover:bg-card/50 transition-all duration-200",
+                  "focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                )}
+              >
+                <h3 className="text-sm font-medium text-foreground mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                  {title}
+                </h3>
+                <p className="text-xs text-muted-foreground mb-3 line-clamp-3 leading-relaxed">
+                  {description}
+                </p>
+                <div className="flex items-center justify-between mt-auto">
+                  <span className="text-xs text-blue-600 font-medium">
+                    {domain}
+                  </span>
+                  <span className="text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Visit →
+                  </span>
+                </div>
+              </a>
+            );
+          } catch {
+            return (
+              <a
+                key={index}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "group flex items-center gap-3 p-4 rounded-lg border border-border/50 bg-card/30",
+                  "hover:border-border hover:bg-card/50 transition-all duration-200",
+                  "focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                )}
+              >
+                <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
+                <span className="text-sm text-foreground group-hover:text-blue-600 transition-colors truncate">
+                  {url}
+                </span>
+              </a>
+            );
+          }
+        })}
+      </div>
+    </div>
   );
 }
 
