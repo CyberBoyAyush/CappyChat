@@ -47,11 +47,12 @@ import { Plus } from "lucide-react";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
-import { stat } from "fs";
+import { v4 as uuidv4 } from 'uuid';
 
 interface ChatInterfaceProps {
   threadId: string;
   initialMessages: UIMessage[];
+  searchQuery?: string | null;
 }
 
 // Define domain categories for suggested prompts with more specific questions
@@ -59,6 +60,7 @@ interface ChatInterfaceProps {
 export default function ChatInterface({
   threadId,
   initialMessages,
+  searchQuery,
 }: ChatInterfaceProps) {
   const selectedModel = useModelStore((state) => state.selectedModel);
   const { isWebSearchEnabled } = useWebSearchStore();
@@ -77,6 +79,7 @@ export default function ChatInterface({
   const mainRef = useRef<HTMLElement>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const pendingUserMessageRef = useRef<UIMessage | null>(null);
+  const chatInputSubmitRef = useRef<(() => void) | null>(null);
   const { theme } = useTheme();
   const isDarkTheme = theme === "dark";
   const location = useLocation();
@@ -188,6 +191,24 @@ export default function ChatInterface({
       setSelectedPrompt("");
     }
   }, [selectedPrompt, setInput]);
+
+  // Effect to handle search query from URL parameter - only run once
+  useEffect(() => {
+    if (searchQuery && searchQuery.trim() && messages.length === 0) {
+      console.log('🔍 Search query detected:', searchQuery);
+      setInput(searchQuery);
+
+      // Auto-submit the search query through ChatInputField's submit function
+      const timer = setTimeout(() => {
+        if (chatInputSubmitRef.current) {
+          console.log('🚀 Auto-submitting search query through ChatInputField:', searchQuery);
+          chatInputSubmitRef.current();
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchQuery, setInput]); // Only depend on searchQuery and setInput
 
   // Check if user has scrolled up
   useEffect(() => {
@@ -594,6 +615,7 @@ export default function ChatInterface({
               stop={stop}
               pendingUserMessageRef={pendingUserMessageRef}
               onWebSearchMessage={handleWebSearchMessage}
+              submitRef={chatInputSubmitRef}
             />
           </div>
         </div>

@@ -51,6 +51,7 @@ interface InputFieldProps {
   stop: UseChatHelpers["stop"];
   pendingUserMessageRef: React.RefObject<UIMessage | null>;
   onWebSearchMessage?: (messageId: string) => void;
+  submitRef?: React.RefObject<(() => void) | null>;
 }
 
 interface StopButtonProps {
@@ -84,6 +85,7 @@ function PureInputField({
   stop,
   pendingUserMessageRef,
   onWebSearchMessage,
+  submitRef,
 }: InputFieldProps) {
   const { textareaRef, adjustHeight } = useTextAreaAutoResize({
     minHeight: 72,
@@ -126,6 +128,8 @@ function PureInputField({
       adjustHeight();
     }
   }, [input, textareaRef, isHomePage, adjustHeight]);
+
+
 
   // Handle file uploads
   const handleFilesUploaded = useCallback(
@@ -422,6 +426,13 @@ function PureInputField({
     setInput(e.target.value);
     adjustHeight();
   };
+
+  // Expose handleSubmit function through ref for external access
+  useEffect(() => {
+    if (submitRef) {
+      submitRef.current = handleSubmit;
+    }
+  }, [submitRef, handleSubmit]);
 
   // State for voice input active status
   const [isVoiceInputActive, setIsVoiceInputActive] = useState(false);
