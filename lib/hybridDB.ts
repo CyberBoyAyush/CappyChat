@@ -267,7 +267,8 @@ export class HybridDB {
       updatedAt: now,
       lastMessageAt: now,
       isPinned: false, // New threads are not pinned by default
-      tags: [] // New threads have no tags by default
+      tags: [], // New threads have no tags by default
+      isBranched: false // New threads are not branched by default
     };
 
     // Instant local update
@@ -385,6 +386,62 @@ export class HybridDB {
         console.error('Failed to sync thread deletion:', error);
       }
     });
+  }
+
+  // Branch thread (instant local + async remote)
+  static async branchThread(originalThreadId: string, newThreadId: string, newTitle?: string): Promise<string> {
+    const now = new Date();
+
+    // Get the original thread from local storage
+    const originalThread = LocalDB.getThreads().find(t => t.id === originalThreadId);
+    if (!originalThread) {
+      throw new Error('Original thread not found');
+    }
+
+    // Get all messages from the original thread
+    const originalMessages = LocalDB.getMessagesByThread(originalThreadId);
+
+    // Create the new branched thread
+    const branchedThread: Thread = {
+      id: newThreadId,
+      title: newTitle || `${originalThread.title} (Branch)`,
+      createdAt: now,
+      updatedAt: now,
+      lastMessageAt: originalMessages.length > 0 ? originalMessages[originalMessages.length - 1].createdAt : now,
+      isPinned: false, // Branched threads are not pinned by default
+      tags: [...(originalThread.tags || [])], // Copy tags from original thread
+      isBranched: true // Mark as branched
+    };
+
+    // Instant local update - add the new thread
+    LocalDB.upsertThread(branchedThread);
+
+    // Copy all messages to the new thread locally
+    originalMessages.forEach(originalMessage => {
+      const newMessage: DBMessage = {
+        ...originalMessage,
+        id: `${originalMessage.id}_branch_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`, // Generate new message ID
+        threadId: newThreadId,
+        createdAt: originalMessage.createdAt // Keep original timestamps
+      };
+      LocalDB.addMessage(newMessage);
+    });
+
+    // Emit immediate updates
+    debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
+    debouncedEmitter.emitImmediate('messages_updated', newThreadId, LocalDB.getMessagesByThread(newThreadId));
+
+    // Async remote update
+    this.queueSync(async () => {
+      try {
+        await AppwriteDB.branchThread(originalThreadId, newThreadId, newTitle);
+      } catch (error) {
+        console.error('Failed to sync thread branching:', error);
+        // On failure, we keep the local version as it will sync later
+      }
+    });
+
+    return newThreadId;
   }
 
   // ============ MESSAGE OPERATIONS ============
@@ -590,7 +647,9 @@ export class HybridDB {
       createdAt: new Date(appwriteThread.$createdAt),
       updatedAt: new Date(appwriteThread.updatedAt),
       lastMessageAt: new Date(appwriteThread.lastMessageAt),
-      isPinned: appwriteThread.isPinned || false // Default to false for existing threads
+      isPinned: appwriteThread.isPinned || false, // Default to false for existing threads
+      tags: appwriteThread.tags || [], // Default to empty array for existing threads
+      isBranched: appwriteThread.isBranched || false // Default to false for existing threads
     };
 
     LocalDB.upsertThread(thread);
@@ -604,7 +663,9 @@ export class HybridDB {
       createdAt: new Date(appwriteThread.$createdAt),
       updatedAt: new Date(appwriteThread.updatedAt),
       lastMessageAt: new Date(appwriteThread.lastMessageAt),
-      isPinned: appwriteThread.isPinned || false // Default to false for existing threads
+      isPinned: appwriteThread.isPinned || false, // Default to false for existing threads
+      tags: appwriteThread.tags || [], // Default to empty array for existing threads
+      isBranched: appwriteThread.isBranched || false // Default to false for existing threads
     };
 
     LocalDB.upsertThread(thread);

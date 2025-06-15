@@ -10,7 +10,7 @@ import { memo, useState } from "react";
 import { Link } from "react-router";
 import { Button } from "../ui/button";
 import { buttonVariants } from "../ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, GitBranch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThreadData, ThreadOperations } from "./ThreadManager";
 import UserProfileDropdown from "../UserProfileDropdown";
@@ -132,12 +132,17 @@ export const PanelFooter = memo(PanelFooterComponent);
  * Thread Title Component
  *
  * Used in: ThreadListItem
- * Purpose: Displays the thread title with truncation for long titles.
+ * Purpose: Displays the thread title with truncation for long titles and branch indicator.
  */
-const ThreadTitle = ({ title }: { title: string }) => (
-  <span className="truncate block " title={title}>
-    {title}
-  </span>
+const ThreadTitle = ({ threadData }: { threadData: ThreadData }) => (
+  <div className="flex items-center min-w-0 gap-1.5">
+    {threadData.isBranched && (
+      <GitBranch className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+    )}
+    <span className="truncate block" title={threadData.title}>
+      {threadData.title}
+    </span>
+  </div>
 );
 /**
  * Delete Thread Button Component
@@ -180,6 +185,7 @@ const ThreadListItem = ({
   onTogglePin,
   onRename,
   onUpdateTags,
+  onBranch,
   isActive,
 }: ThreadListItemProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -220,7 +226,7 @@ const ThreadListItem = ({
     <>
       <div className={containerStyles} onClick={handleItemClick}>
         <div className="flex min-w-0 pr-2 overflow-hidden ">
-          <ThreadTitle title={threadData.title} />
+          <ThreadTitle threadData={threadData} />
 
           <div className="flex md:hidden items-start justify-start gap-1 text-xs text-muted-foreground mt-0.5">
             <DeleteButton onDelete={handleDeleteClick} />
@@ -229,6 +235,7 @@ const ThreadListItem = ({
               onTogglePin={onTogglePin}
               onRename={onRename}
               onUpdateTags={onUpdateTags}
+              onBranch={onBranch}
               onDelete={(_, event) => handleDeleteClick(event)}
             />
           </div>
@@ -247,6 +254,7 @@ const ThreadListItem = ({
               onTogglePin={onTogglePin}
               onRename={onRename}
               onUpdateTags={onUpdateTags}
+              onBranch={onBranch}
               onDelete={(_, event) => handleDeleteClick(event)}
             />
           </div>

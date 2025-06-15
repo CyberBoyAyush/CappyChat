@@ -27,6 +27,7 @@ export interface AppwriteThread extends Models.Document {
   lastMessageAt: string; // ISO date string
   isPinned: boolean; // Pin status for thread organization
   tags?: string[]; // Optional tags array for thread categorization
+  isBranched?: boolean; // Branch status for thread organization
 }
 
 // Define Thread interface for internal use
@@ -38,6 +39,7 @@ export interface Thread {
   lastMessageAt: Date;
   isPinned: boolean; // Pin status for thread organization
   tags?: string[]; // Optional tags array for thread categorization
+  isBranched?: boolean; // Branch status for thread organization
 }
 
 // Interface for Appwrite Message document
@@ -122,7 +124,8 @@ export class AppwriteDB {
           updatedAt: new Date(threadDoc.updatedAt),
           lastMessageAt: new Date(threadDoc.lastMessageAt),
           isPinned: threadDoc.isPinned || false, // Default to false for existing threads
-          tags: threadDoc.tags || [] // Default to empty array for existing threads
+          tags: threadDoc.tags || [], // Default to empty array for existing threads
+          isBranched: threadDoc.isBranched || false // Default to false for existing threads
         };
       });
       
@@ -145,7 +148,8 @@ export class AppwriteDB {
         title: 'New Chat',
         updatedAt: now.toISOString(),
         lastMessageAt: now.toISOString(),
-        isPinned: false // New threads are not pinned by default
+        isPinned: false, // New threads are not pinned by default
+        isBranched: false // New threads are not branched by default
       };
       
       // Use upsert-like behavior by trying to create and handling duplicates
@@ -675,6 +679,86 @@ export class AppwriteDB {
     } catch (error) {
       console.error('Error fetching message summaries with role from Appwrite:', error);
       return []; // Return empty array instead of using localDb as fallback
+    }
+  }
+
+  // Branch a thread (copy thread and all its messages)
+  static async branchThread(originalThreadId: string, newThreadId: string, newTitle?: string): Promise<string> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const now = new Date();
+
+      // Get the original thread
+      const originalThreadResponse = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('threadId', originalThreadId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (originalThreadResponse.documents.length === 0) {
+        throw new Error('Original thread not found');
+      }
+
+      const originalThread = originalThreadResponse.documents[0] as AppwriteThread;
+
+      // Create the new branched thread
+      const branchedThreadData = {
+        threadId: newThreadId,
+        userId: userId,
+        title: newTitle || `${originalThread.title} (Branch)`,
+        updatedAt: now.toISOString(),
+        lastMessageAt: now.toISOString(),
+        isPinned: false, // Branched threads are not pinned by default
+        isBranched: true, // Mark as branched
+        tags: originalThread.tags || [] // Copy tags from original thread
+      };
+
+      await databases.createDocument(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        ID.unique(),
+        branchedThreadData
+      );
+
+      // Get all messages from the original thread
+      const messagesResponse = await databases.listDocuments(
+        DATABASE_ID,
+        MESSAGES_COLLECTION_ID,
+        [
+          Query.equal('threadId', originalThreadId),
+          Query.equal('userId', userId),
+          Query.orderAsc('createdAt')
+        ]
+      );
+
+      // Copy all messages to the new thread
+      for (const messageDoc of messagesResponse.documents) {
+        const originalMessage = messageDoc as AppwriteMessage;
+        const newMessageData = {
+          messageId: ID.unique(), // Generate new message ID
+          threadId: newThreadId,
+          userId: userId,
+          content: originalMessage.content,
+          role: originalMessage.role,
+          createdAt: originalMessage.createdAt,
+          webSearchResults: originalMessage.webSearchResults || undefined
+        };
+
+        await databases.createDocument(
+          DATABASE_ID,
+          MESSAGES_COLLECTION_ID,
+          ID.unique(),
+          newMessageData
+        );
+      }
+
+      return newThreadId;
+    } catch (error) {
+      console.error('Error branching thread:', error);
+      throw error;
     }
   }
 

@@ -52,6 +52,7 @@ export default function ChatSidebarPanel() {
     toggleThreadPin,
     renameThread,
     updateThreadTags,
+    branchThread,
     isActiveThread,
     isLoading,
   } = useThreadManager();
@@ -148,6 +149,7 @@ export default function ChatSidebarPanel() {
               onTogglePin={toggleThreadPin}
               onRename={renameThread}
               onUpdateTags={updateThreadTags}
+              onBranch={branchThread}
             />
           </SidebarMenuItem>
         ))}
@@ -189,6 +191,7 @@ export default function ChatSidebarPanel() {
                         onTogglePin={toggleThreadPin}
                         onRename={renameThread}
                         onUpdateTags={updateThreadTags}
+                        onBranch={branchThread}
                       />
                     </SidebarMenuItem>
                   ))}

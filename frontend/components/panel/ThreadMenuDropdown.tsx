@@ -7,7 +7,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { MoreHorizontal, Pin, PinOff, Edit3, Tag, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pin, PinOff, Edit3, Tag, Trash2, GitBranch } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +25,7 @@ interface ThreadMenuDropdownProps {
   onTogglePin: (threadId: string, event?: React.MouseEvent) => void;
   onRename: (threadId: string, newTitle: string) => void;
   onUpdateTags: (threadId: string, tags: string[]) => void;
+  onBranch: (threadId: string, newTitle?: string) => void;
   onDelete: (threadId: string, event?: React.MouseEvent) => void;
 }
 
@@ -33,6 +34,7 @@ export const ThreadMenuDropdown = ({
   onTogglePin,
   onRename,
   onUpdateTags,
+  onBranch,
   onDelete,
 }: ThreadMenuDropdownProps) => {
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
@@ -55,6 +57,12 @@ export const ThreadMenuDropdown = ({
     event.stopPropagation();
     setIsTagsDialogOpen(true);
   }, []);
+
+  const handleBranchClick = useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onBranch(threadData.id);
+  }, [onBranch, threadData.id]);
 
   const handleDeleteClick = useCallback((event: React.MouseEvent) => {
     event.preventDefault();
@@ -122,6 +130,11 @@ export const ThreadMenuDropdown = ({
                 </span>
               </span>
             )}
+          </DropdownMenuItem>
+
+          <DropdownMenuItem onClick={handleBranchClick}>
+            <GitBranch className="mr-2 h-4 w-4" />
+            Branch
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />

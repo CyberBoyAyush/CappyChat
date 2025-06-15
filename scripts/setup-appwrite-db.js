@@ -58,6 +58,7 @@ async function createThreadsCollection() {
         await databases.createDatetimeAttribute(databaseId, collectionId, 'updatedAt', true);
         await databases.createDatetimeAttribute(databaseId, collectionId, 'lastMessageAt', true);
         await databases.createBooleanAttribute(databaseId, collectionId, 'isPinned', false, false); // Default to false, not required
+        await databases.createBooleanAttribute(databaseId, collectionId, 'isBranched', false, false); // Default to false, not required
 
         // Create indexes for faster queries
         await databases.createIndex(databaseId, collectionId, 'threadId_index', 'key', ['threadId'], []);

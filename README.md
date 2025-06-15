@@ -81,6 +81,7 @@ A realtime chat application with AI capabilities, IndexedDB local storage, and A
 | updatedAt       | Datetime  | ✅       |
 | lastMessageAt   | Datetime  | ✅       |
 | isPinned        | Boolean   | ❌       |
+| isBranched      | Boolean   | ❌       |
 
 ### 2. `messages` Collection
 

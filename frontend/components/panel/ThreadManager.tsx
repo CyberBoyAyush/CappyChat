@@ -113,7 +113,30 @@ export const useThreadManager = () => {
     }
   }, []);
 
-  const isActiveThread = useCallback((threadId: string) => 
+  const branchThread = useCallback(async (threadId: string, newTitle?: string) => {
+    try {
+      // Generate new thread ID
+      const newThreadId = `thread_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+      // Instant local update + async backend sync
+      await HybridDB.branchThread(threadId, newThreadId, newTitle);
+
+      // Navigate to the new branched thread
+      router(`/chat/${newThreadId}`);
+
+      // Close sidebar on mobile after navigation
+      if (isMobile && outletContext?.toggleSidebar) {
+        outletContext.toggleSidebar();
+      }
+
+      return newThreadId;
+    } catch (error) {
+      console.error('Error branching thread:', error);
+      throw error;
+    }
+  }, [router, isMobile, outletContext]);
+
+  const isActiveThread = useCallback((threadId: string) =>
     currentThreadId === threadId, [currentThreadId]);
 
   return {
@@ -124,6 +147,7 @@ export const useThreadManager = () => {
     toggleThreadPin,
     renameThread,
     updateThreadTags,
+    branchThread,
     isActiveThread,
     isLoading,
   };
@@ -135,6 +159,7 @@ export interface ThreadData {
   title: string;
   isPinned: boolean;
   tags?: string[];
+  isBranched?: boolean;
 }
 
 // Thread operations interface
@@ -144,5 +169,6 @@ export interface ThreadOperations {
   onTogglePin: (threadId: string, event?: React.MouseEvent) => void;
   onRename: (threadId: string, newTitle: string) => void;
   onUpdateTags: (threadId: string, tags: string[]) => void;
+  onBranch: (threadId: string, newTitle?: string) => void;
   isActive: boolean;
 }
