@@ -66,11 +66,25 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // BYOK state
-  const { openRouterApiKey, setOpenRouterApiKey, hasOpenRouterKey, validateOpenRouterKey } = useBYOKStore();
+  const {
+    openRouterApiKey,
+    openAIApiKey,
+    setOpenRouterApiKey,
+    setOpenAIApiKey,
+    hasOpenRouterKey,
+    hasOpenAIKey,
+    validateOpenRouterKey,
+    validateOpenAIKey
+  } = useBYOKStore();
+
   const [keyInput, setKeyInput] = useState("");
+  const [openAIKeyInput, setOpenAIKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
+  const [showOpenAIKey, setShowOpenAIKey] = useState(false);
   const [keyError, setKeyError] = useState("");
+  const [openAIKeyError, setOpenAIKeyError] = useState("");
   const [keySaved, setKeySaved] = useState(false);
+  const [openAIKeySaved, setOpenAIKeySaved] = useState(false);
 
   // Initialize profile data and handle section navigation
   useEffect(() => {
@@ -154,6 +168,30 @@ export default function SettingsPage() {
     setOpenRouterApiKey(null);
     setKeyInput("");
     setKeyError("");
+  };
+
+  const handleSaveOpenAIKey = () => {
+    if (!openAIKeyInput.trim()) {
+      setOpenAIKeyError("Please enter an OpenAI API key");
+      return;
+    }
+
+    if (!validateOpenAIKey(openAIKeyInput.trim())) {
+      setOpenAIKeyError("Invalid API key format. OpenAI keys should start with 'sk-'");
+      return;
+    }
+
+    setOpenAIApiKey(openAIKeyInput.trim());
+    setOpenAIKeyInput("");
+    setOpenAIKeyError("");
+    setOpenAIKeySaved(true);
+    setTimeout(() => setOpenAIKeySaved(false), 3000);
+  };
+
+  const handleRemoveOpenAIKey = () => {
+    setOpenAIApiKey(null);
+    setOpenAIKeyInput("");
+    setOpenAIKeyError("");
   };
 
   const maskKey = (key: string) => {
@@ -635,6 +673,125 @@ export default function SettingsPage() {
                       <Button onClick={handleSaveKey} disabled={!keyInput.trim()}>
                         <Key className="h-4 w-4 mr-2" />
                         Save API Key
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                  )}
+                </div>
+
+                {/* OpenAI API Key (for Voice Input) Card */}
+                <div className="p-6 border rounded-xl bg-card shadow-sm">
+                  <div className="space-y-1 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Key className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-medium">OpenAI API Key</h3>
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
+                        Voice Input
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Use your own OpenAI API key for voice input powered by Whisper
+                    </p>
+                  </div>
+
+              {hasOpenAIKey() ? (
+                // OpenAI Key is configured
+                <div className="space-y-4">
+                  <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
+                        <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                          OpenAI API Key Configured
+                        </p>
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                          Key: {maskKey(openAIApiKey || "")}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRemoveOpenAIKey}
+                        className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-muted-foreground">
+                    <p>✓ Your OpenAI API key is stored securely in your browser only</p>
+                    <p>✓ Used exclusively for voice input transcription via Whisper</p>
+                    <p>✓ Fallback to system key if your key fails</p>
+                  </div>
+                </div>
+              ) : (
+                // No OpenAI key configured
+                <div className="space-y-4">
+                  <div className="rounded-lg bg-muted/50 p-4">
+                    <div className="flex items-start gap-4">
+                      <div className="p-2 rounded-full bg-muted">
+                        <Key className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm">
+                          Add your OpenAI API key to use your own credits for voice input transcription.
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Get your API key from{" "}
+                          <a
+                            href="https://platform.openai.com/api-keys"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            OpenAI Platform
+                          </a>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">OpenAI API Key</label>
+                      <div className="relative">
+                        <Input
+                          type={showOpenAIKey ? "text" : "password"}
+                          placeholder="sk-..."
+                          value={openAIKeyInput}
+                          onChange={(e) => {
+                            setOpenAIKeyInput(e.target.value);
+                            setOpenAIKeyError("");
+                          }}
+                          className={openAIKeyError ? "border-red-500" : ""}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                          onClick={() => setShowOpenAIKey(!showOpenAIKey)}
+                        >
+                          {showOpenAIKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      {openAIKeyError && (
+                        <p className="text-sm text-red-600">{openAIKeyError}</p>
+                      )}
+                      {openAIKeySaved && (
+                        <p className="text-sm text-green-600">✓ OpenAI API key saved successfully!</p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button onClick={handleSaveOpenAIKey} disabled={!openAIKeyInput.trim()}>
+                        <Key className="h-4 w-4 mr-2" />
+                        Save OpenAI Key
                       </Button>
                     </div>
                   </div>

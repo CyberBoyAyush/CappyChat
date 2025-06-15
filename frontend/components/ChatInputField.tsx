@@ -374,7 +374,14 @@ function PureInputField({
 
   function handleVoiceInput(text: string) {
     setInput((prev) => prev + (prev ? " " : "") + text);
-    // optionally you can also focus the textarea here
+    // Focus the textarea after voice input
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }
+
+  function handleVoiceInputError(error: string) {
+    toast.error(error);
   }
 
   // Handle drag and drop for textarea
@@ -540,6 +547,7 @@ function PureInputField({
             <div className="absolute right-2 top-2">
               <VoiceInputButton
                 onResult={handleVoiceInput}
+                onError={handleVoiceInputError}
                 className="!bg-transparent hover:!bg-muted/50 !p-1.5 h-8 w-8 text-muted-foreground hover:text-foreground transition-colors"
                 disabled={status === "streaming" || status === "submitted"}
               />
