@@ -52,6 +52,7 @@ interface InputFieldProps {
   pendingUserMessageRef: React.RefObject<UIMessage | null>;
   onWebSearchMessage?: (messageId: string) => void;
   submitRef?: React.RefObject<(() => void) | null>;
+  messages?: UIMessage[];
 }
 
 interface StopButtonProps {
@@ -86,6 +87,7 @@ function PureInputField({
   pendingUserMessageRef,
   onWebSearchMessage,
   submitRef,
+  messages,
 }: InputFieldProps) {
   const { textareaRef, adjustHeight } = useTextAreaAutoResize({
     minHeight: 72,
@@ -320,12 +322,16 @@ function PureInputField({
     )
       return;
 
+    // Use the input as-is without automatic file conversion
+    let finalInput = currentInput.trim();
+    let finalAttachments = [...attachments];
+
     const messageId = uuidv4();
-    // Create user message without attachments for the message content
+    // Create user message with potentially updated content and attachments
     const userMessage = createUserMessage(
       messageId,
-      currentInput.trim(),
-      attachments.length > 0 ? attachments : undefined
+      finalInput,
+      finalAttachments.length > 0 ? finalAttachments : undefined
     );
 
     console.log("=== FRONTEND DEBUG ===");
@@ -333,34 +339,38 @@ function PureInputField({
       "User message being sent:",
       JSON.stringify(userMessage, null, 2)
     );
-    console.log("Attachments count:", attachments.length);
-    console.log("Attachments:", attachments);
+    console.log("Attachments count:", finalAttachments.length);
+    console.log("Attachments:", finalAttachments);
 
     // Handle new vs existing conversations
-    if (!id) {
-      // New conversation - navigate first
-      navigate(`/chat/${threadId}`);
+    // Check if this is a new conversation by looking at message count
+    const isNewConversation = !id || (messages && messages.length === 0);
 
-      // Create thread instantly with local update + async backend sync
-      HybridDB.createThread(threadId);
+    if (isNewConversation) {
+      // New conversation - navigate first if not already there
+      if (!id) {
+        navigate(`/chat/${threadId}`);
+        // Create thread instantly with local update + async backend sync
+        HybridDB.createThread(threadId);
+      }
 
       // Start completion immediately for better UX
       // Include attachment information for better title generation
       const titlePrompt =
-        attachments.length > 0
-          ? `${currentInput.trim()}\n\n[User also attached ${
-              attachments.length
-            } file(s): ${attachments
+        finalAttachments.length > 0
+          ? `${finalInput}\n\n[User also attached ${
+              finalAttachments.length
+            } file(s): ${finalAttachments
               .map((att) => `${att.originalName} (${att.fileType})`)
               .join(", ")}]`
-          : currentInput.trim();
+          : finalInput;
 
       complete(titlePrompt, {
         body: { threadId, messageId, isTitle: true },
       });
     } else {
       // Existing conversation
-      complete(currentInput.trim(), { body: { messageId, threadId } });
+      complete(finalInput, { body: { messageId, threadId } });
     }
 
     // Update UI immediately for better responsiveness - useChat handles the state
@@ -387,14 +397,14 @@ function PureInputField({
       {
         id: messageId,
         role: "user",
-        content: currentInput.trim(),
+        content: finalInput,
         createdAt: new Date(),
         // Include attachments directly in the message object for immediate UI display
-        attachments: attachments.length > 0 ? attachments : undefined,
+        attachments: finalAttachments.length > 0 ? finalAttachments : undefined,
       } as any,
       {
         experimental_attachments:
-          attachments.length > 0 ? attachments : undefined,
+          finalAttachments.length > 0 ? finalAttachments : undefined,
       }
     );
     setInput("");
@@ -413,9 +423,28 @@ function PureInputField({
     navigate,
     pendingUserMessageRef,
     attachments,
+    messages,
+    isWebSearchEnabled,
+    onWebSearchMessage,
   ]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Allow normal navigation keys to work
+    if (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      // Don't prevent default for arrow keys - let them work normally
+      return;
+    }
+
+    if (e.key === "Home" || e.key === "End" || e.key === "PageUp" || e.key === "PageDown") {
+      // Don't prevent default for navigation keys
+      return;
+    }
+
+    if (e.key === "Tab") {
+      // Don't prevent default for tab key
+      return;
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
@@ -695,6 +724,21 @@ function PureInputField({
                 disabled={status === "streaming" || status === "submitted"}
               />
             </div>
+            {/* Character counter for long text warning */}
+            {input.length > 800 && (
+              <div className="absolute bottom-2 left-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
+                {input.length > 1000 ? (
+                  <span className="text-orange-500 font-medium">
+                    {input.length} chars - Will convert to .txt file
+                  </span>
+                ) : (
+                  <span className="text-yellow-500">
+                    {input.length}/1000 chars
+                  </span>
+                )}
+              </div>
+            )}
+
             <span id="input-field-description" className="sr-only">
               Press Enter to send, Shift+Enter for new line. Paste or drag
               images and PDFs to upload.

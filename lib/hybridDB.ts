@@ -5,7 +5,7 @@
  * Provides instant UI updates while maintaining data consistency.
  */
 
-import { AppwriteDB, Thread, DBMessage, MessageSummary, AppwriteMessage, FileAttachment } from './appwriteDB';
+import { AppwriteDB, Thread, DBMessage, MessageSummary, AppwriteMessage, FileAttachment, Project } from './appwriteDB';
 import { LocalDB } from './localDB';
 import { AppwriteRealtime } from './appwriteRealtime';
 
@@ -234,6 +234,11 @@ export class HybridDB {
         LocalDB.replaceAllThreads(threads);
         debouncedEmitter.emit('threads_updated', threads);
 
+        // Sync projects from remote
+        const projects = await AppwriteDB.getProjects();
+        LocalDB.replaceAllProjects(projects);
+        debouncedEmitter.emit('projects_updated', projects);
+
         // For messages, only sync when actually needed (lazy loading)
         // This prevents the massive network requests on startup
         this.isOnline = true;
@@ -258,7 +263,7 @@ export class HybridDB {
   }
 
   // Create thread (instant local + async remote)
-  static async createThread(threadId: string): Promise<string> {
+  static async createThread(threadId: string, projectId?: string): Promise<string> {
     const now = new Date();
     const thread: Thread = {
       id: threadId,
@@ -268,7 +273,8 @@ export class HybridDB {
       lastMessageAt: now,
       isPinned: false, // New threads are not pinned by default
       tags: [], // New threads have no tags by default
-      isBranched: false // New threads are not branched by default
+      isBranched: false, // New threads are not branched by default
+      projectId: projectId // Optional project ID
     };
 
     // Instant local update
@@ -278,7 +284,7 @@ export class HybridDB {
     // Async remote update
     this.queueSync(async () => {
       try {
-        await AppwriteDB.createThread(threadId);
+        await AppwriteDB.createThread(threadId, projectId);
       } catch (error) {
         console.error('Failed to sync thread creation:', error);
         // On failure, we keep the local version as it will sync later
@@ -372,6 +378,34 @@ export class HybridDB {
     });
   }
 
+  // Update thread project (instant local + async remote)
+  static async updateThreadProject(threadId: string, projectId?: string): Promise<void> {
+    const now = new Date();
+
+    console.log('[HybridDB] Updating thread project:', { threadId, projectId });
+
+    // Instant local update
+    LocalDB.updateThread(threadId, { projectId, updatedAt: now });
+
+    // Get updated threads and emit event
+    const updatedThreads = LocalDB.getThreads();
+    console.log('[HybridDB] Emitting threads_updated event with', updatedThreads.length, 'threads');
+
+    // Use setTimeout to ensure this runs after any pending React updates
+    setTimeout(() => {
+      debouncedEmitter.emit('threads_updated', updatedThreads);
+    }, 0);
+
+    // Async remote update
+    this.queueSync(async () => {
+      try {
+        await AppwriteDB.updateThreadProject(threadId, projectId);
+      } catch (error) {
+        console.error('Failed to sync thread project update:', error);
+      }
+    });
+  }
+
   // Delete thread (instant local + async remote)
   static async deleteThread(threadId: string): Promise<void> {
     // Instant local update
@@ -442,6 +476,122 @@ export class HybridDB {
     });
 
     return newThreadId;
+  }
+
+  // ============ PROJECT OPERATIONS ============
+
+  // Get projects (instant from local storage)
+  static getProjects(): Project[] {
+    return LocalDB.getProjects();
+  }
+
+  // Create project (instant local + async remote)
+  static async createProject(name: string, description?: string): Promise<string> {
+    const projectId = `project_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    const now = new Date();
+    const project: Project = {
+      id: projectId,
+      name: name,
+      description: description,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    // Instant local update
+    LocalDB.upsertProject(project);
+    debouncedEmitter.emitImmediate('projects_updated', LocalDB.getProjects());
+
+    // Async remote update
+    this.queueSync(async () => {
+      try {
+        await AppwriteDB.createProject(projectId, name, description);
+      } catch (error) {
+        console.error('Failed to sync project creation:', error);
+        // On failure, we keep the local version as it will sync later
+      }
+    });
+
+    return projectId;
+  }
+
+  // Update project (instant local + async remote)
+  static async updateProject(projectId: string, name: string, description?: string): Promise<void> {
+    const now = new Date();
+
+    // Instant local update
+    LocalDB.updateProject(projectId, { name, description, updatedAt: now });
+
+    // Get updated projects and emit event
+    const updatedProjects = LocalDB.getProjects();
+    debouncedEmitter.emit('projects_updated', updatedProjects);
+
+    // Async remote update
+    this.queueSync(async () => {
+      try {
+        await AppwriteDB.updateProject(projectId, name, description);
+      } catch (error) {
+        console.error('Failed to sync project update:', error);
+      }
+    });
+  }
+
+  // Update project color (instant local + async remote)
+  static async updateProjectColor(projectId: string, colorIndex: number): Promise<void> {
+    const now = new Date();
+
+    // Instant local update
+    LocalDB.updateProject(projectId, { colorIndex, updatedAt: now });
+
+    // Get updated projects and emit event
+    const updatedProjects = LocalDB.getProjects();
+    debouncedEmitter.emit('projects_updated', updatedProjects);
+
+    // Async remote update
+    this.queueSync(async () => {
+      try {
+        await AppwriteDB.updateProjectColor(projectId, colorIndex);
+      } catch (error) {
+        console.error('Failed to sync project color update:', error);
+      }
+    });
+  }
+
+  // Delete project (instant local + async remote)
+  static async deleteProject(projectId: string, reassignThreadsToProjectId?: string): Promise<void> {
+    // Instant local update
+    LocalDB.deleteProject(projectId);
+
+    // Handle threads in this project
+    if (reassignThreadsToProjectId) {
+      // Reassign threads to another project
+      const threads = LocalDB.getThreads();
+      threads.forEach(thread => {
+        if (thread.projectId === projectId) {
+          LocalDB.updateThread(thread.id, { projectId: reassignThreadsToProjectId, updatedAt: new Date() });
+        }
+      });
+    } else {
+      // Remove project association from threads
+      const threads = LocalDB.getThreads();
+      threads.forEach(thread => {
+        if (thread.projectId === projectId) {
+          LocalDB.updateThread(thread.id, { projectId: undefined, updatedAt: new Date() });
+        }
+      });
+    }
+
+    // Emit immediate updates
+    debouncedEmitter.emitImmediate('projects_updated', LocalDB.getProjects());
+    debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
+
+    // Async remote update
+    this.queueSync(async () => {
+      try {
+        await AppwriteDB.deleteProject(projectId, reassignThreadsToProjectId);
+      } catch (error) {
+        console.error('Failed to sync project deletion:', error);
+      }
+    });
   }
 
   // ============ MESSAGE OPERATIONS ============
@@ -657,7 +807,8 @@ export class HybridDB {
       lastMessageAt: new Date(appwriteThread.lastMessageAt),
       isPinned: appwriteThread.isPinned || false, // Default to false for existing threads
       tags: appwriteThread.tags || [], // Default to empty array for existing threads
-      isBranched: appwriteThread.isBranched || false // Default to false for existing threads
+      isBranched: appwriteThread.isBranched || false, // Default to false for existing threads
+      projectId: appwriteThread.projectId // Optional project ID
     };
 
     LocalDB.upsertThread(thread);
@@ -673,7 +824,8 @@ export class HybridDB {
       lastMessageAt: new Date(appwriteThread.lastMessageAt),
       isPinned: appwriteThread.isPinned || false, // Default to false for existing threads
       tags: appwriteThread.tags || [], // Default to empty array for existing threads
-      isBranched: appwriteThread.isBranched || false // Default to false for existing threads
+      isBranched: appwriteThread.isBranched || false, // Default to false for existing threads
+      projectId: appwriteThread.projectId // Optional project ID
     };
 
     LocalDB.upsertThread(thread);

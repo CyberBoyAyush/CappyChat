@@ -5,13 +5,14 @@
  * Provides instant UI updates while maintaining data consistency.
  */
 
-import { Thread, DBMessage, MessageSummary } from './appwriteDB';
+import { Thread, DBMessage, MessageSummary, Project } from './appwriteDB';
 
 // Local storage keys
 const STORAGE_KEYS = {
   THREADS: 'atchat_threads',
   MESSAGES: 'atchat_messages',
   SUMMARIES: 'atchat_summaries',
+  PROJECTS: 'atchat_projects',
   USER_ID: 'atchat_user_id'
 };
 
@@ -19,6 +20,7 @@ export class LocalDB {
   private static currentUserId: string | null = null;
   private static threadsCache: Thread[] | null = null;
   private static messagesCache: Map<string, DBMessage[]> = new Map();
+  private static projectsCache: Project[] | null = null;
   private static lastCacheUpdate = 0;
   private static CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
 
@@ -45,6 +47,7 @@ export class LocalDB {
     // Clear caches
     this.threadsCache = null;
     this.messagesCache.clear();
+    this.projectsCache = null;
     this.lastCacheUpdate = 0;
   }
 
@@ -304,6 +307,86 @@ export class LocalDB {
     }
   }
 
+  // ============ PROJECT OPERATIONS ============
+
+  // Get all projects (instant from local storage)
+  static getProjects(): Project[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.PROJECTS);
+      if (!data) return [];
+
+      const projects = JSON.parse(data);
+      return projects.map((project: any) => ({
+        ...project,
+        createdAt: new Date(project.createdAt),
+        updatedAt: new Date(project.updatedAt)
+      }));
+    } catch (error) {
+      console.error('Error loading projects from local storage:', error);
+      return [];
+    }
+  }
+
+  // Add or update project (instant local update)
+  static upsertProject(project: Project): void {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.PROJECTS);
+      const projects = data ? JSON.parse(data) : [];
+
+      // Check if project already exists
+      const existingIndex = projects.findIndex((p: any) => p.id === project.id);
+      if (existingIndex >= 0) {
+        projects[existingIndex] = project;
+      } else {
+        projects.push(project);
+      }
+
+      // Sort projects by updatedAt (most recent first)
+      projects.sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+      localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+    } catch (error) {
+      console.error('Error saving project to local storage:', error);
+    }
+  }
+
+  // Update project (instant local update)
+  static updateProject(projectId: string, updates: Partial<Project>): void {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.PROJECTS);
+      if (!data) return;
+
+      const projects = JSON.parse(data);
+      const projectIndex = projects.findIndex((p: any) => p.id === projectId);
+
+      if (projectIndex >= 0) {
+        projects[projectIndex] = { ...projects[projectIndex], ...updates };
+
+        // Sort projects by updatedAt (most recent first)
+        projects.sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+        localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+      }
+    } catch (error) {
+      console.error('Error updating project in local storage:', error);
+    }
+  }
+
+  // Delete project (instant local update)
+  static deleteProject(projectId: string): void {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.PROJECTS);
+      if (!data) return;
+
+      const projects = JSON.parse(data);
+      const filteredProjects = projects.filter((p: any) => p.id !== projectId);
+
+      localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(filteredProjects));
+    } catch (error) {
+      console.error('Error deleting project from local storage:', error);
+    }
+  }
+
   // ============ SYNC OPERATIONS ============
 
   // Replace all threads (used during sync)
@@ -326,6 +409,24 @@ export class LocalDB {
       this.lastCacheUpdate = Date.now();
     } catch (error) {
       console.error('Error replacing threads in local storage:', error);
+    }
+  }
+
+  // Replace all projects (used during sync)
+  static replaceAllProjects(projects: Project[]): void {
+    try {
+      // Sort projects by updatedAt (most recent first)
+      const sortedProjects = projects.sort((a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+
+      localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(sortedProjects));
+
+      // Update cache
+      this.projectsCache = sortedProjects;
+      this.lastCacheUpdate = Date.now();
+    } catch (error) {
+      console.error('Error replacing projects in local storage:', error);
     }
   }
 

@@ -13,9 +13,31 @@ export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
 export const THREADS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_THREADS_COLLECTION_ID || 'threads';
 export const MESSAGES_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID || 'messages';
 export const MESSAGE_SUMMARIES_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_MESSAGE_SUMMARIES_COLLECTION_ID || 'message_summaries';
+export const PROJECTS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECTS_COLLECTION_ID || 'projects';
 
 // Initialize Appwrite databases service
 const databases = new Databases(client);
+
+// Interface for Appwrite Project document
+export interface AppwriteProject extends Models.Document {
+  projectId: string;
+  userId: string;
+  name: string;
+  description?: string;
+  colorIndex?: number;
+  createdAt: string; // ISO date string
+  updatedAt: string; // ISO date string
+}
+
+// Define Project interface for internal use
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  colorIndex?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // Interface for Appwrite Thread document
 // These interfaces strictly follow the provided schema requirements
@@ -28,6 +50,7 @@ export interface AppwriteThread extends Models.Document {
   isPinned: boolean; // Pin status for thread organization
   tags?: string[]; // Optional tags array for thread categorization
   isBranched?: boolean; // Branch status for thread organization
+  projectId?: string; // Optional project ID for thread organization
 }
 
 // Define Thread interface for internal use
@@ -40,6 +63,7 @@ export interface Thread {
   isPinned: boolean; // Pin status for thread organization
   tags?: string[]; // Optional tags array for thread categorization
   isBranched?: boolean; // Branch status for thread organization
+  projectId?: string; // Optional project ID for thread organization
 }
 
 // Interface for file attachments
@@ -140,7 +164,8 @@ export class AppwriteDB {
           lastMessageAt: new Date(threadDoc.lastMessageAt),
           isPinned: threadDoc.isPinned || false, // Default to false for existing threads
           tags: threadDoc.tags || [], // Default to empty array for existing threads
-          isBranched: threadDoc.isBranched || false // Default to false for existing threads
+          isBranched: threadDoc.isBranched || false, // Default to false for existing threads
+          projectId: threadDoc.projectId // Optional project ID
         };
       });
       
@@ -152,12 +177,12 @@ export class AppwriteDB {
   }
 
   // Create a new thread (with duplicate check) - optimized for speed
-  static async createThread(threadId: string): Promise<string> {
+  static async createThread(threadId: string, projectId?: string): Promise<string> {
     try {
       const userId = await this.getCurrentUserId();
       const now = new Date();
-      
-      const threadData = {
+
+      const threadData: any = {
         threadId: threadId,
         userId: userId,
         title: 'New Chat',
@@ -166,6 +191,11 @@ export class AppwriteDB {
         isPinned: false, // New threads are not pinned by default
         isBranched: false // New threads are not branched by default
       };
+
+      // Add projectId if provided
+      if (projectId) {
+        threadData.projectId = projectId;
+      }
       
       // Use upsert-like behavior by trying to create and handling duplicates
       try {
@@ -317,6 +347,53 @@ export class AppwriteDB {
     }
   }
 
+  // Update thread project
+  static async updateThreadProject(threadId: string, projectId?: string): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const now = new Date();
+
+      // Find the Appwrite document ID by threadId
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('threadId', threadId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (response.documents.length > 0) {
+        const doc = response.documents[0] as AppwriteThread;
+
+        // Update project in Appwrite
+        const updateData: any = {
+          updatedAt: now.toISOString(),
+          // We maintain lastMessageAt unchanged as this is just a project update
+        };
+
+        if (projectId) {
+          updateData.projectId = projectId;
+        } else {
+          // Remove project association by setting to null
+          updateData.projectId = null;
+        }
+
+        await databases.updateDocument(
+          DATABASE_ID,
+          THREADS_COLLECTION_ID,
+          doc.$id,
+          updateData
+        );
+      } else {
+        throw new Error(`Thread with ID ${threadId} not found`);
+      }
+    } catch (error) {
+      console.error('Error updating thread project:', error);
+      throw error;
+    }
+  }
+
   // Delete a thread and all associated messages and summaries
   static async deleteThread(threadId: string): Promise<void> {
     try {
@@ -406,6 +483,213 @@ export class AppwriteDB {
       // No need to clear local DB as we're using Appwrite exclusively now
     } catch (error) {
       console.error('Error deleting all threads:', error);
+      throw error;
+    }
+  }
+
+  // -------------- Project Operations --------------
+
+  // Get all projects for current user
+  static async getProjects(): Promise<Project[]> {
+    try {
+      const userId = await this.getCurrentUserId();
+
+      // Get projects from Appwrite
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.equal('userId', userId),
+          Query.orderDesc('updatedAt')
+        ]
+      );
+
+      // Map Appwrite projects to Project format
+      const projects = response.documents.map((doc) => {
+        const projectDoc = doc as unknown as AppwriteProject;
+        return {
+          id: projectDoc.projectId,
+          name: projectDoc.name,
+          description: projectDoc.description,
+          colorIndex: projectDoc.colorIndex,
+          createdAt: new Date(doc.$createdAt),
+          updatedAt: new Date(projectDoc.updatedAt)
+        };
+      });
+
+      return projects;
+    } catch (error) {
+      console.error('Error fetching projects from Appwrite:', error);
+      return [];
+    }
+  }
+
+  // Create a new project
+  static async createProject(projectId: string, name: string, description?: string): Promise<string> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const now = new Date();
+
+      const projectData = {
+        projectId: projectId,
+        userId: userId,
+        name: name,
+        description: description || '',
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString()
+      };
+
+      await databases.createDocument(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        ID.unique(),
+        projectData
+      );
+
+      return projectId;
+    } catch (error) {
+      console.error('Error creating project:', error);
+      throw error;
+    }
+  }
+
+  // Update project
+  static async updateProject(projectId: string, name: string, description?: string): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const now = new Date();
+
+      // Find the Appwrite document ID by projectId
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.equal('projectId', projectId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (response.documents.length > 0) {
+        const doc = response.documents[0] as AppwriteProject;
+
+        // Update project in Appwrite
+        await databases.updateDocument(
+          DATABASE_ID,
+          PROJECTS_COLLECTION_ID,
+          doc.$id,
+          {
+            name: name,
+            description: description || '',
+            updatedAt: now.toISOString()
+          }
+        );
+      } else {
+        throw new Error(`Project with ID ${projectId} not found`);
+      }
+    } catch (error) {
+      console.error('Error updating project:', error);
+      throw error;
+    }
+  }
+
+  // Update project color
+  static async updateProjectColor(projectId: string, colorIndex: number): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const now = new Date();
+
+      // Find the Appwrite document ID by projectId
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.equal('projectId', projectId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (response.documents.length > 0) {
+        const doc = response.documents[0] as AppwriteProject;
+
+        // Update project color in Appwrite
+        await databases.updateDocument(
+          DATABASE_ID,
+          PROJECTS_COLLECTION_ID,
+          doc.$id,
+          {
+            colorIndex: colorIndex,
+            updatedAt: now.toISOString()
+          }
+        );
+      } else {
+        throw new Error(`Project with ID ${projectId} not found`);
+      }
+    } catch (error) {
+      console.error('Error updating project color:', error);
+      throw error;
+    }
+  }
+
+  // Delete project and optionally reassign threads
+  static async deleteProject(projectId: string, reassignThreadsToProjectId?: string): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+
+      // Find the project document
+      const projectsResponse = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.equal('projectId', projectId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (projectsResponse.documents.length === 0) {
+        console.warn(`Project ${projectId} not found, may already be deleted`);
+        return;
+      }
+
+      // Handle threads in this project
+      const threadsResponse = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('projectId', projectId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      // Update threads - either reassign to another project or remove project association
+      for (const threadDoc of threadsResponse.documents) {
+        const updateData: any = {
+          updatedAt: new Date().toISOString()
+        };
+
+        if (reassignThreadsToProjectId) {
+          updateData.projectId = reassignThreadsToProjectId;
+        } else {
+          // Remove project association by setting to null/undefined
+          updateData.projectId = null;
+        }
+
+        await databases.updateDocument(
+          DATABASE_ID,
+          THREADS_COLLECTION_ID,
+          threadDoc.$id,
+          updateData
+        );
+      }
+
+      // Delete the project itself
+      const projectDoc = projectsResponse.documents[0] as AppwriteProject;
+      await databases.deleteDocument(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        projectDoc.$id
+      );
+    } catch (error) {
+      console.error('Error deleting project:', error);
       throw error;
     }
   }

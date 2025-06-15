@@ -616,6 +616,7 @@ export default function ChatInterface({
               pendingUserMessageRef={pendingUserMessageRef}
               onWebSearchMessage={handleWebSearchMessage}
               submitRef={chatInputSubmitRef}
+              messages={messages}
             />
           </div>
         </div>

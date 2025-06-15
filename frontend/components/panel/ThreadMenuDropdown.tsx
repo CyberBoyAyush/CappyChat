@@ -7,18 +7,23 @@
  */
 
 import { useState, useCallback } from 'react';
-import { MoreHorizontal, Pin, PinOff, Edit3, Tag, Trash2, GitBranch } from 'lucide-react';
+import { MoreHorizontal, Pin, PinOff, Edit3, Tag, Trash2, GitBranch, FolderPlus } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from '@/frontend/components/ui/dropdown-menu';
 import { Button } from '@/frontend/components/ui/button';
 import { ThreadData } from './ThreadManager';
 import { ThreadRenameDialog } from './index';
 import { ThreadTagsDialog } from './index';
+import { useProjectManager } from '@/frontend/hooks/useProjectManager';
+import { HybridDB } from '@/lib/hybridDB';
 
 interface ThreadMenuDropdownProps {
   threadData: ThreadData;
@@ -39,6 +44,9 @@ export const ThreadMenuDropdown = ({
 }: ThreadMenuDropdownProps) => {
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [isTagsDialogOpen, setIsTagsDialogOpen] = useState(false);
+
+  // Get projects for the "Add to Project" functionality
+  const { projects } = useProjectManager();
 
   const handlePinClick = useCallback((event: React.MouseEvent) => {
     event.preventDefault();
@@ -79,6 +87,24 @@ export const ThreadMenuDropdown = ({
     onUpdateTags(threadData.id, tags);
     setIsTagsDialogOpen(false);
   }, [onUpdateTags, threadData.id]);
+
+  const handleAddToProject = useCallback(async (projectId: string) => {
+    try {
+      // Update thread to assign it to the project
+      await HybridDB.updateThreadProject(threadData.id, projectId);
+    } catch (error) {
+      console.error('Error adding thread to project:', error);
+    }
+  }, [threadData.id]);
+
+  const handleRemoveFromProject = useCallback(async () => {
+    try {
+      // Update thread to remove it from the project
+      await HybridDB.updateThreadProject(threadData.id, undefined);
+    } catch (error) {
+      console.error('Error removing thread from project:', error);
+    }
+  }, [threadData.id]);
 
   return (
     <>
@@ -132,6 +158,39 @@ export const ThreadMenuDropdown = ({
             )}
           </DropdownMenuItem>
 
+          {/* Project Management */}
+          {projects.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <FolderPlus className="mr-2 h-4 w-4" />
+                  {threadData.projectId ? 'Move to Project' : 'Add to Project'}
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {threadData.projectId && (
+                    <>
+                      <DropdownMenuItem onClick={handleRemoveFromProject}>
+                        Remove from Project
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  {projects
+                    .filter(project => project.id !== threadData.projectId)
+                    .map((project) => (
+                      <DropdownMenuItem
+                        key={project.id}
+                        onClick={() => handleAddToProject(project.id)}
+                      >
+                        {project.name}
+                      </DropdownMenuItem>
+                    ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            </>
+          )}
+
           <DropdownMenuItem onClick={handleBranchClick}>
             <GitBranch className="mr-2 h-4 w-4" />
             Branch
@@ -139,7 +198,7 @@ export const ThreadMenuDropdown = ({
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={handleDeleteClick}
             variant="destructive"
           >

@@ -160,6 +160,7 @@ export interface ThreadData {
   isPinned: boolean;
   tags?: string[];
   isBranched?: boolean;
+  projectId?: string;
 }
 
 // Thread operations interface
