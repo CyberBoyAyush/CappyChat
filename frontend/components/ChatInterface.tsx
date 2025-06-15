@@ -109,12 +109,14 @@ export default function ChatInterface({
     initialMessages,
     experimental_throttle: 30, // Reduced for smoother streaming
     onFinish: async (message) => {
+      console.log('🏁 onFinish callback called for message:', message.id);
+
       // End streaming synchronization
       streamingSync.endStreaming(threadId, message.id, message.content);
 
-      // Save the pending user message if it exists
+      // Clear the pending user message ref (user message is now stored immediately in ChatInputField)
       if (pendingUserMessageRef.current) {
-        HybridDB.createMessage(threadId, pendingUserMessageRef.current);
+        console.log('🧹 Clearing pending user message ref:', pendingUserMessageRef.current.id);
         pendingUserMessageRef.current = null;
       }
 
@@ -340,7 +342,8 @@ export default function ChatInterface({
           parts: msg.parts || [{ type: "text", text: msg.content }],
           createdAt: msg.createdAt,
           webSearchResults: msg.webSearchResults,
-        }));
+          attachments: msg.attachments,
+        } as any));
 
         // Lightweight comparison - check count and last message ID
         const hasChanged =

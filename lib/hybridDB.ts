@@ -5,7 +5,7 @@
  * Provides instant UI updates while maintaining data consistency.
  */
 
-import { AppwriteDB, Thread, DBMessage, MessageSummary } from './appwriteDB';
+import { AppwriteDB, Thread, DBMessage, MessageSummary, AppwriteMessage, FileAttachment } from './appwriteDB';
 import { LocalDB } from './localDB';
 import { AppwriteRealtime } from './appwriteRealtime';
 
@@ -453,6 +453,11 @@ export class HybridDB {
 
   // Create message (instant local + async remote)
   static async createMessage(threadId: string, message: any): Promise<void> {
+    console.log('🔄 HybridDB.createMessage called for:', message.id, 'Has attachments:', !!message.attachments);
+    if (message.attachments) {
+      console.log('📎 Attachments in HybridDB.createMessage:', message.attachments);
+    }
+
     const dbMessage: DBMessage = {
       id: message.id,
       threadId,
@@ -460,7 +465,8 @@ export class HybridDB {
       role: message.role,
       parts: message.parts || [],
       createdAt: message.createdAt || new Date(),
-      webSearchResults: message.webSearchResults || undefined
+      webSearchResults: message.webSearchResults || undefined,
+      attachments: message.attachments || undefined
     };
 
     // Instant local update
@@ -471,9 +477,11 @@ export class HybridDB {
     // Async remote update
     this.queueSync(async () => {
       try {
+        console.log('🔄 Syncing message to Appwrite:', message.id, 'Has attachments:', !!message.attachments);
         await AppwriteDB.createMessage(threadId, message);
+        console.log('✅ Message synced to Appwrite successfully:', message.id);
       } catch (error) {
-        console.error('Failed to sync message creation:', error);
+        console.error('❌ Failed to sync message creation:', error);
       }
     });
   }
@@ -689,6 +697,31 @@ export class HybridDB {
       return;
     }
 
+    // Parse attachments from JSON string if present
+    let attachments: FileAttachment[] | undefined = undefined;
+    if (appwriteMessage.attachments) {
+      try {
+        // If it's already an object, use it directly (backward compatibility)
+        if (typeof appwriteMessage.attachments === 'object') {
+          attachments = appwriteMessage.attachments as FileAttachment[];
+        } else {
+          // If it's a string, parse it
+          attachments = JSON.parse(appwriteMessage.attachments as string);
+        }
+
+        // Ensure createdAt is a Date object for each attachment
+        if (attachments && Array.isArray(attachments)) {
+          attachments = attachments.map(att => ({
+            ...att,
+            createdAt: typeof att.createdAt === 'string' ? new Date(att.createdAt) : att.createdAt
+          }));
+        }
+      } catch (error) {
+        console.error('Error parsing attachments in real-time sync:', error);
+        attachments = undefined;
+      }
+    }
+
     const message: DBMessage = {
       id: appwriteMessage.messageId,
       threadId: appwriteMessage.threadId,
@@ -696,7 +729,8 @@ export class HybridDB {
       role: appwriteMessage.role,
       parts: appwriteMessage.content ? [{ type: "text", text: appwriteMessage.content }] : [],
       createdAt: new Date(appwriteMessage.createdAt),
-      webSearchResults: appwriteMessage.webSearchResults || undefined
+      webSearchResults: appwriteMessage.webSearchResults || undefined,
+      attachments: attachments
     };
 
     LocalDB.addMessage(message);
@@ -709,6 +743,31 @@ export class HybridDB {
   private static handleRemoteMessageUpdated(appwriteMessage: any): void {
     console.log('[HybridDB] Handling remote message updated:', appwriteMessage.messageId);
 
+    // Parse attachments from JSON string if present
+    let attachments: FileAttachment[] | undefined = undefined;
+    if (appwriteMessage.attachments) {
+      try {
+        // If it's already an object, use it directly (backward compatibility)
+        if (typeof appwriteMessage.attachments === 'object') {
+          attachments = appwriteMessage.attachments as FileAttachment[];
+        } else {
+          // If it's a string, parse it
+          attachments = JSON.parse(appwriteMessage.attachments as string);
+        }
+
+        // Ensure createdAt is a Date object for each attachment
+        if (attachments && Array.isArray(attachments)) {
+          attachments = attachments.map(att => ({
+            ...att,
+            createdAt: typeof att.createdAt === 'string' ? new Date(att.createdAt) : att.createdAt
+          }));
+        }
+      } catch (error) {
+        console.error('Error parsing attachments in real-time message update:', error);
+        attachments = undefined;
+      }
+    }
+
     const message: DBMessage = {
       id: appwriteMessage.messageId,
       threadId: appwriteMessage.threadId,
@@ -716,7 +775,8 @@ export class HybridDB {
       role: appwriteMessage.role,
       parts: appwriteMessage.content ? [{ type: "text", text: appwriteMessage.content }] : [],
       createdAt: new Date(appwriteMessage.createdAt),
-      webSearchResults: appwriteMessage.webSearchResults || undefined
+      webSearchResults: appwriteMessage.webSearchResults || undefined,
+      attachments: attachments
     };
 
     LocalDB.addMessage(message); // addMessage handles both create and update

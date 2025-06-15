@@ -8,7 +8,7 @@
  */
 
 import { ArrowUpIcon } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Textarea } from "@/frontend/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
@@ -27,6 +27,14 @@ import { useIsMobile } from "@/hooks/useMobileDetection";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import VoiceInputButton from "./ui/VoiceInputButton";
+import FileUpload from "./FileUpload";
+import { FileAttachment } from "@/lib/appwriteDB";
+import { X, FileImage, FileText } from "lucide-react";
+
+// Extended UIMessage type to include attachments
+type ExtendedUIMessage = UIMessage & {
+  attachments?: FileAttachment[];
+};
 
 interface InputFieldProps {
   threadId: string;
@@ -48,12 +56,13 @@ interface SendButtonProps {
   disabled: boolean;
 }
 
-const createUserMessage = (id: string, text: string): UIMessage => ({
+const createUserMessage = (id: string, text: string, attachments?: FileAttachment[]): ExtendedUIMessage => ({
   id,
   parts: [{ type: "text", text }],
   role: "user",
   content: text,
   createdAt: new Date(),
+  attachments,
 });
 
 function PureInputField({
@@ -71,6 +80,9 @@ function PureInputField({
     maxHeight: 200,
   });
 
+  // File attachments state
+  const [attachments, setAttachments] = useState<FileAttachment[]>([]);
+
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
@@ -78,8 +90,8 @@ function PureInputField({
   const isHomePage = location.pathname === "/chat";
 
   const isDisabled = useMemo(
-    () => !input.trim() || status === "streaming" || status === "submitted",
-    [input, status]
+    () => (!input.trim() && attachments.length === 0) || status === "streaming" || status === "submitted",
+    [input, status, attachments]
   );
 
   const { complete } = useChatMessageSummary();
@@ -105,18 +117,34 @@ function PureInputField({
     }
   }, [input, textareaRef, isHomePage, adjustHeight]);
 
+  // Handle file uploads
+  const handleFilesUploaded = useCallback((newAttachments: FileAttachment[]) => {
+    setAttachments(prev => [...prev, ...newAttachments]);
+  }, []);
+
+  // Remove attachment
+  const removeAttachment = useCallback((attachmentId: string) => {
+    setAttachments(prev => prev.filter(att => att.id !== attachmentId));
+  }, []);
+
   const handleSubmit = useCallback(async () => {
     const currentInput = textareaRef.current?.value || input;
 
     if (
-      !currentInput.trim() ||
+      (!currentInput.trim() && attachments.length === 0) ||
       status === "streaming" ||
       status === "submitted"
     )
       return;
 
     const messageId = uuidv4();
-    const userMessage = createUserMessage(messageId, currentInput.trim());
+    // Create user message without attachments for the message content
+    const userMessage = createUserMessage(messageId, currentInput.trim(), attachments.length > 0 ? attachments : undefined);
+
+    console.log('=== FRONTEND DEBUG ===');
+    console.log('User message being sent:', JSON.stringify(userMessage, null, 2));
+    console.log('Attachments count:', attachments.length);
+    console.log('Attachments:', attachments);
 
     // Handle new vs existing conversations
     if (!id) {
@@ -127,7 +155,12 @@ function PureInputField({
       HybridDB.createThread(threadId);
 
       // Start completion immediately for better UX
-      complete(currentInput.trim(), {
+      // Include attachment information for better title generation
+      const titlePrompt = attachments.length > 0
+        ? `${currentInput.trim()}\n\n[User also attached ${attachments.length} file(s): ${attachments.map(att => `${att.originalName} (${att.fileType})`).join(', ')}]`
+        : currentInput.trim();
+
+      complete(titlePrompt, {
         body: { threadId, messageId, isTitle: true },
       });
     } else {
@@ -144,9 +177,27 @@ function PureInputField({
       onWebSearchMessage(messageId);
     }
 
+    // Store the user message immediately to the database
+    console.log('💾 Storing user message immediately:', messageId, 'Has attachments:', !!userMessage.attachments);
+    HybridDB.createMessage(threadId, userMessage);
+
     // The message will be persisted to database in ChatInterface's onFinish callback
-    append(userMessage);
+    // Pass attachments using experimental_attachments parameter AND include in message object for immediate UI display
+    append(
+      {
+        id: messageId,
+        role: "user",
+        content: currentInput.trim(),
+        createdAt: new Date(),
+        // Include attachments directly in the message object for immediate UI display
+        attachments: attachments.length > 0 ? attachments : undefined,
+      } as any,
+      {
+        experimental_attachments: attachments.length > 0 ? attachments : undefined,
+      }
+    );
     setInput("");
+    setAttachments([]); // Clear attachments after sending
     adjustHeight(true);
   }, [
     input,
@@ -160,6 +211,7 @@ function PureInputField({
     complete,
     navigate,
     pendingUserMessageRef,
+    attachments,
   ]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -182,8 +234,36 @@ function PureInputField({
   return (
     <div className="w-full">
       <div className="border-t-[1px] border-x-[1px] border-primary/30 rounded-t-2xl shadow-lg w-full backdrop-blur-md">
-        <div className="flex flex-col bg-background/55 border-t-8 rounded-t-2xl border-x-8 border-primary/10 dark:border-zinc-900/50">
-          <div className="bg-transparent overflow-y-auto max-h-[300px] rounded-t-xl">
+        <div className="flex flex-col bg-background/55 border-t-4 sm:border-t-8 rounded-t-2xl border-x-4 sm:border-x-8 border-primary/10 dark:border-zinc-900/50">
+          {/* Attachment Preview */}
+          {attachments.length > 0 && (
+            <div className="px-2 sm:px-3 pt-2 sm:pt-3 pb-2 border-b border-border/50">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                {attachments.map((attachment) => (
+                  <div
+                    key={attachment.id}
+                    className="flex items-center gap-1.5 sm:gap-2 bg-muted rounded-lg px-2 py-1.5 text-xs mobile-touch"
+                  >
+                    {attachment.fileType === 'image' ? (
+                      <FileImage className="w-3 h-3 flex-shrink-0" />
+                    ) : (
+                      <FileText className="w-3 h-3 flex-shrink-0" />
+                    )}
+                    <span className="truncate max-w-16 sm:max-w-24 md:max-w-32">{attachment.originalName}</span>
+                    <button
+                      onClick={() => removeAttachment(attachment.id)}
+                      className="text-muted-foreground hover:text-foreground flex-shrink-0 mobile-touch"
+                      type="button"
+                      aria-label={`Remove ${attachment.originalName}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="bg-transparent overflow-y-auto max-h-[250px] sm:max-h-[300px] rounded-t-xl relative">
             <Textarea
               id="message-input"
               value={input}
@@ -191,12 +271,12 @@ function PureInputField({
                 isHomePage ? "Ask me anything..." : "What can I do for you?"
               }
               className={cn(
-                "w-full px-3 sm:px-4 py-2 sm:py-1.5 md:pt-4 border-none shadow-none ",
+                "w-full px-3 sm:px-4 py-3 sm:py-2 md:pt-4 pr-12 border-none shadow-none",
                 "placeholder:text-muted-foreground resize-none text-foreground",
                 "focus-visible:ring-0 focus-visible:ring-offset-0",
                 "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/30",
                 "scrollbar-thumb-rounded-full",
-                "min-h-[40px] sm:min-h-[10px] text-sm sm:text-base",
+                "min-h-[44px] sm:min-h-[40px] text-base sm:text-base",
                 "selection:bg-primary selection:text-primary-foreground",
                 "mobile-input leading-relaxed"
               )}
@@ -206,34 +286,43 @@ function PureInputField({
               aria-label="Message input field"
               aria-describedby="input-field-description"
             />
+            {/* Voice Input Button inside textarea */}
+            <div className="absolute right-2 top-2">
+              <VoiceInputButton
+                onResult={handleVoiceInput}
+                className="!bg-transparent hover:!bg-muted/50 !p-1.5 h-8 w-8 text-muted-foreground hover:text-foreground transition-colors"
+                disabled={status === "streaming" || status === "submitted"}
+              />
+            </div>
             <span id="input-field-description" className="sr-only">
               Press Enter to send, Shift+Enter for new line
             </span>
           </div>
 
-          <div className="h-16 sm:h-14 flex bg-transparent items-center px-3 sm:px-2 border-t border-border/50">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-2">
-                <ModelSelector />
-                <ConversationStyleSelector className="hidden sm:flex" />
+          <div className="min-h-[60px] sm:h-14 flex bg-transparent items-center px-2 sm:px-3 border-t border-border/50">
+            <div className="flex items-center justify-between w-full gap-2 sm:gap-3">
+              <div className="flex items-center gap-1 sm:gap-2 flex-shrink min-w-0">
+                <div className="min-w-0 flex-shrink">
+                  <ModelSelector />
+                </div>
+                <ConversationStyleSelector className="hidden sm:flex flex-shrink-0" />
                 <WebSearchToggle
                   isEnabled={isWebSearchEnabled}
                   onToggle={setWebSearchEnabled}
-                  className="hidden sm:flex"
+                  className="hidden sm:flex flex-shrink-0"
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                 <ConversationStyleSelector className="flex sm:hidden" />
                 <WebSearchToggle
                   isEnabled={isWebSearchEnabled}
                   onToggle={setWebSearchEnabled}
                   className="flex sm:hidden"
                 />
-                <VoiceInputButton
-                  onResult={handleVoiceInput}
-                  className="relative"
-                  disabled={status === "streaming" || status === "submitted"} // Optional: disable while streaming
+                <FileUpload
+                  onFilesUploaded={handleFilesUploaded}
+                  disabled={status === "streaming" || status === "submitted"}
                 />
                 {status === "submitted" || status === "streaming" ? (
                   <StopButton stop={stop} />
@@ -260,11 +349,11 @@ function PureStopButton({ stop }: StopButtonProps) {
     <Button
       variant="outline"
       size="icon"
-      className="h-9 w-9 sm:h-8 sm:w-8"
+      className="h-10 w-10 sm:h-9 sm:w-9 mobile-touch"
       onClick={stop}
       aria-label="Stop generating response"
     >
-      <StopIcon size={20} />
+      <StopIcon size={18} />
     </Button>
   );
 }
@@ -277,7 +366,7 @@ const PureSendButton = ({ onSubmit, disabled }: SendButtonProps) => {
       onClick={onSubmit}
       variant="default"
       size="icon"
-      className="h-9 w-9 sm:h-8 sm:w-8"
+      className="h-10 w-10 sm:h-9 sm:w-9 mobile-touch"
       disabled={disabled}
       aria-label="Send message"
     >

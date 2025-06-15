@@ -6,10 +6,17 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const maxDuration = 60;
 
+
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, model, conversationStyle, userApiKey } = body;
+    const { messages, model, conversationStyle, userApiKey, experimental_attachments } = body;
+
+    console.log('=== CHAT MESSAGING API DEBUG ===');
+    console.log('Number of messages received:', messages?.length);
+    console.log('Experimental attachments:', experimental_attachments);
+    console.log('Messages structure:', JSON.stringify(messages, null, 2));
 
     // Validate required fields
     if (!messages || !Array.isArray(messages)) {
@@ -73,17 +80,44 @@ export async function POST(req: NextRequest) {
       (conversationStyle as ConversationStyle) || DEFAULT_CONVERSATION_STYLE
     );
 
+    // Process messages to handle experimental_attachments
+    const processedMessages = messages.map((message: any) => {
+      if (message.experimental_attachments && message.experimental_attachments.length > 0) {
+        console.log('Processing message with experimental_attachments:', message.experimental_attachments.length);
+
+        // Convert our attachment format to AI SDK format
+        const aiSdkAttachments = message.experimental_attachments.map((attachment: any) => ({
+          name: attachment.originalName || attachment.filename,
+          contentType: attachment.mimeType || attachment.contentType,
+          url: attachment.url,
+        }));
+
+        console.log('AI SDK attachments:', JSON.stringify(aiSdkAttachments, null, 2));
+
+        return {
+          ...message,
+          experimental_attachments: aiSdkAttachments,
+        };
+      }
+      return message;
+    });
+
+    console.log('Final processed messages:', processedMessages.length);
+
+    console.log('Sending request to AI SDK with model:', modelConfig.modelId);
+    console.log('Number of processed messages:', processedMessages.length);
+
     const result = streamText({
       model: aiModel,
-      messages,
+      messages: processedMessages,
       onError: (error) => {
-        console.log('error', error);
+        console.error('OpenRouter API error:', error);
       },
       system: `
       ${styleConfig.systemPrompt}
 
       You are AVChat, an ai assistant that can answer questions and help with tasks.
-      Be helpful and provide relevant information
+      Be helpful and provide relevant information about any documents, images, or files that are shared with you.
       Be respectful and polite in all interactions.
       Always use LaTeX for mathematical expressions -
       Inline math must be wrapped in single dollar signs: $content$
@@ -94,6 +128,8 @@ export async function POST(req: NextRequest) {
       - Inline: The equation $E = mc^2$ shows mass-energy equivalence.
       - Display:
       $$\\frac{d}{dx}\\sin(x) = \\cos(x)$$
+
+      When analyzing documents or files, provide detailed and helpful information about their contents.
       `,
       experimental_transform: [smoothStream({ chunking: 'word' })],
       abortSignal: req.signal,

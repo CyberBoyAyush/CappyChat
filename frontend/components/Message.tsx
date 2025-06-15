@@ -16,6 +16,7 @@ import { UseChatHelpers } from "@ai-sdk/react";
 import ChatMessageEditor from "./ChatMessageEditor";
 import ChatMessageReasoning from "./ChatMessageReasoning";
 import WebSearchCitations from "./WebSearchCitations";
+import MessageAttachments from "./MessageAttachments";
 
 function PureMessage({
   threadId,
@@ -35,6 +36,11 @@ function PureMessage({
   stop: UseChatHelpers["stop"];
 }) {
   const [mode, setMode] = useState<"view" | "edit">("view");
+
+  // Debug: Log message attachments
+  if ((message as any).attachments && (message as any).attachments.length > 0) {
+    console.log('🖼️ Message has attachments:', message.id, 'Attachments:', (message as any).attachments);
+  }
 
   return (
     <div
@@ -77,7 +83,15 @@ function PureMessage({
                 />
               )}
               {mode === "view" && (
-                <p className="break-words whitespace-pre-wrap">{(part as any).text || ""}</p>
+                <>
+                  <p className="break-words whitespace-pre-wrap">{(part as any).text || ""}</p>
+                  {/* Show attachments for user messages */}
+                  {(message as any).attachments && (message as any).attachments.length > 0 && (
+                    <div className="mt-2">
+                      <MessageAttachments attachments={(message as any).attachments} />
+                    </div>
+                  )}
+                </>
               )}
               {mode === "view" && (
                 <ChatMessageControls

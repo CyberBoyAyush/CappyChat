@@ -6,10 +6,9 @@
  * Loads messages from database and renders the chat interface for the specific thread.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import ChatInterface from '@/frontend/components/ChatInterface';
 import { useParams } from 'react-router';
-import { HybridDB, dbEvents } from '@/lib/hybridDB';
 import { useOptimizedMessages } from '@/frontend/hooks/useOptimizedHybridDB';
 import { UIMessage } from 'ai';
 
@@ -21,13 +20,21 @@ export default function ChatThreadPage() {
   const { messages, isLoading } = useOptimizedMessages(id);
 
   const convertToUIMessages = useCallback((messages?: any[]) => {
-    return messages?.map((message) => ({
-      id: message.id,
-      role: message.role,
-      parts: message.parts as UIMessage['parts'],
-      content: message.content || '',
-      createdAt: message.createdAt,
-    }));
+    console.log('🔄 Converting messages to UI format:', messages?.length, 'messages');
+    return messages?.map((message) => {
+      if (message.attachments && message.attachments.length > 0) {
+        console.log('📎 Message with attachments found:', message.id, 'Attachments:', message.attachments);
+      }
+      return {
+        id: message.id,
+        role: message.role,
+        parts: message.parts as UIMessage['parts'],
+        content: message.content || '',
+        createdAt: message.createdAt,
+        webSearchResults: message.webSearchResults,
+        attachments: message.attachments, // ✅ Include attachments!
+      };
+    });
   }, []);
 
   if (isLoading) {

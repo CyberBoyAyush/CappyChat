@@ -42,6 +42,19 @@ export interface Thread {
   isBranched?: boolean; // Branch status for thread organization
 }
 
+// Interface for file attachments
+export interface FileAttachment {
+  id: string;
+  filename: string;
+  originalName: string;
+  fileType: 'image' | 'pdf';
+  mimeType: string;
+  size: number;
+  url: string;
+  publicId: string; // Cloudinary public ID
+  createdAt: Date;
+}
+
 // Interface for Appwrite Message document
 export interface AppwriteMessage extends Models.Document {
   messageId: string;
@@ -51,6 +64,7 @@ export interface AppwriteMessage extends Models.Document {
   role: 'user' | 'assistant' | 'system' | 'data';
   createdAt: string; // ISO date string
   webSearchResults?: string[]; // URLs from web search results
+  attachments?: string | FileAttachment[]; // File attachments (stored as JSON string in Appwrite)
 }
 
 // Define Message interface for internal use
@@ -62,6 +76,7 @@ export interface DBMessage {
   role: 'user' | 'assistant' | 'system' | 'data';
   createdAt: Date;
   webSearchResults?: string[]; // URLs from web search results
+  attachments?: FileAttachment[]; // File attachments
 }
 
 // Interface for Appwrite Message Summary document
@@ -416,6 +431,36 @@ export class AppwriteDB {
       // Map Appwrite messages to local DBMessage format
       const messages = response.documents.map((doc) => {
         const messageDoc = doc as unknown as AppwriteMessage;
+
+        // Parse attachments from JSON string if present
+        let attachments: FileAttachment[] | undefined = undefined;
+        if (messageDoc.attachments) {
+          console.log('🔍 Raw attachments from Appwrite:', messageDoc.attachments, 'Type:', typeof messageDoc.attachments);
+          try {
+            // If it's already an object, use it directly (backward compatibility)
+            if (typeof messageDoc.attachments === 'object') {
+              attachments = messageDoc.attachments as FileAttachment[];
+              console.log('✅ Using attachments as object:', attachments);
+            } else {
+              // If it's a string, parse it
+              attachments = JSON.parse(messageDoc.attachments as string);
+              console.log('✅ Parsed attachments from JSON string:', attachments);
+            }
+
+            // Ensure createdAt is a Date object for each attachment
+            if (attachments && Array.isArray(attachments)) {
+              attachments = attachments.map(att => ({
+                ...att,
+                createdAt: typeof att.createdAt === 'string' ? new Date(att.createdAt) : att.createdAt
+              }));
+              console.log('✅ Final processed attachments:', attachments);
+            }
+          } catch (error) {
+            console.error('❌ Error parsing attachments:', error);
+            attachments = undefined;
+          }
+        }
+
         return {
           id: messageDoc.messageId,
           threadId: messageDoc.threadId,
@@ -423,7 +468,8 @@ export class AppwriteDB {
           role: messageDoc.role,
           parts: messageDoc.content ? [{ type: "text", text: messageDoc.content }] : [],
           createdAt: new Date(messageDoc.createdAt),
-          webSearchResults: messageDoc.webSearchResults || undefined
+          webSearchResults: messageDoc.webSearchResults || undefined,
+          attachments: attachments
         };
       });
       
@@ -454,6 +500,13 @@ export class AppwriteDB {
       // Add webSearchResults if present
       if (message.webSearchResults && message.webSearchResults.length > 0) {
         messageData.webSearchResults = message.webSearchResults;
+      }
+
+      // Add attachments if present (serialize to JSON string for Appwrite)
+      if (message.attachments && message.attachments.length > 0) {
+        console.log('💾 Storing attachments to Appwrite:', message.attachments);
+        messageData.attachments = JSON.stringify(message.attachments);
+        console.log('💾 Serialized attachments:', messageData.attachments);
       }
 
       const messagePromise = databases.createDocument(
@@ -737,7 +790,7 @@ export class AppwriteDB {
       // Copy all messages to the new thread
       for (const messageDoc of messagesResponse.documents) {
         const originalMessage = messageDoc as AppwriteMessage;
-        const newMessageData = {
+        const newMessageData: any = {
           messageId: ID.unique(), // Generate new message ID
           threadId: newThreadId,
           userId: userId,
@@ -746,6 +799,11 @@ export class AppwriteDB {
           createdAt: originalMessage.createdAt,
           webSearchResults: originalMessage.webSearchResults || undefined
         };
+
+        // Handle attachments properly
+        if (originalMessage.attachments) {
+          newMessageData.attachments = originalMessage.attachments;
+        }
 
         await databases.createDocument(
           DATABASE_ID,

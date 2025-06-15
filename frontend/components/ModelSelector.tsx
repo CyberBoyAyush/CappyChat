@@ -221,10 +221,10 @@ const PureModelSelector = () => {
           <Button
             variant="ghost"
             className={cn(
-              "flex items-center gap-2 h-9 sm:h-8 pl-2 pr-2 text-xs rounded-md",
+              "flex items-center gap-1 sm:gap-2 h-10 sm:h-9 md:h-8 pl-2 pr-1.5 sm:pr-2 text-xs rounded-md min-w-0",
               "text-foreground hover:bg-accent hover:text-accent-foreground",
               "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-              "transition-all duration-200",
+              "transition-all duration-200 mobile-touch",
               isLocked && "opacity-75 cursor-not-allowed hover:bg-transparent"
             )}
             aria-label={`Selected model: ${selectedModel}${
@@ -232,15 +232,15 @@ const PureModelSelector = () => {
             }`}
             disabled={isLocked}
           >
-            <div className="flex max-w-[160px] sm:max-w-[180px] md:max-w-sm items-center gap-1.5 sm:gap-2">
+            <div className="flex max-w-[120px] sm:max-w-[160px] md:max-w-sm items-center gap-1 sm:gap-1.5">
               {isLocked && (
-                <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-60" />
+                <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-60 flex-shrink-0" />
               )}
-              <span className="mobile-text truncate max-w-sm font-medium text-xs sm:text-sm">
+              <span className="mobile-text truncate font-medium text-xs sm:text-sm min-w-0">
                 {selectedModelConfig.displayName}
               </span>
               {!isLocked && (
-                <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-50 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-50 transition-transform duration-200 group-data-[state=open]:rotate-180 flex-shrink-0" />
               )}
             </div>
           </Button>
