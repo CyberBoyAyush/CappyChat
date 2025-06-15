@@ -23,13 +23,11 @@ import { HybridDB } from "@/lib/hybridDB";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 import { ModelSelector } from "./ModelSelector";
 import { ConversationStyleSelector } from "./ConversationStyleSelector";
-import { useIsMobile } from "@/hooks/useMobileDetection";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
-import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import VoiceInputButton from "./ui/VoiceInputButton";
-import FileUpload from "./FileUpload";
+import FileUpload, { UploadingFile } from "./FileUpload";
 import { FileAttachment } from "@/lib/appwriteDB";
-import { X, FileImage, FileText } from "lucide-react";
+import { X, FileImage, FileText, Loader2, CheckCircle, XCircle } from "lucide-react";
 
 // Extended UIMessage type to include attachments
 type ExtendedUIMessage = UIMessage & {
@@ -82,11 +80,11 @@ function PureInputField({
 
   // File attachments state
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
 
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
-  const isMobile = useIsMobile();
   const isHomePage = location.pathname === "/chat";
 
   const isDisabled = useMemo(
@@ -98,10 +96,6 @@ function PureInputField({
 
   // Web search state
   const { isWebSearchEnabled, setWebSearchEnabled } = useWebSearchStore();
-  const { selectedModel } = useModelStore();
-
-  // Lock model selector when web search is enabled
-  const isModelLocked = isWebSearchEnabled;
 
   // Focus textarea when input changes (especially for prompt selections)
   useEffect(() => {
@@ -126,6 +120,27 @@ function PureInputField({
   const removeAttachment = useCallback((attachmentId: string) => {
     setAttachments(prev => prev.filter(att => att.id !== attachmentId));
   }, []);
+
+  // Handle upload status changes
+  const handleUploadStatusChange = useCallback((files: UploadingFile[]) => {
+    setUploadingFiles(files);
+  }, []);
+
+  // Helper functions for file display
+  const getFileIcon = (file: File) => {
+    if (file.type.startsWith('image/')) {
+      return <FileImage className="w-3 h-3 flex-shrink-0" />;
+    }
+    return <FileText className="w-3 h-3 flex-shrink-0" />;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   const handleSubmit = useCallback(async () => {
     const currentInput = textareaRef.current?.value || input;
@@ -232,27 +247,100 @@ function PureInputField({
   }
 
   return (
-    <div className="w-full">
-      <div className="border-t-[1px] border-x-[1px] border-primary/30 rounded-t-2xl shadow-lg w-full backdrop-blur-md">
-        <div className="flex flex-col bg-background/55 border-t-4 sm:border-t-8 rounded-t-2xl border-x-4 sm:border-x-8 border-primary/10 dark:border-zinc-900/50">
-          {/* Attachment Preview */}
+    <div className="w-full max-w-full">
+      <div className="border-t-[1px] border-x-[1px] border-primary/30 rounded-t-2xl shadow-lg w-full backdrop-blur-md overflow-hidden">
+        <div className="flex flex-col bg-background/55 border-t-2 sm:border-t-4 md:border-t-8 rounded-t-2xl border-x-2 sm:border-x-4 md:border-x-8 border-primary/10 dark:border-zinc-900/50 overflow-hidden">
+          {/* Upload Status - Enhanced responsive design */}
+          {uploadingFiles.length > 0 && (
+            <div className={cn(
+              "px-3 sm:px-4 py-3 border-b border-border/50 bg-muted/30",
+              uploadingFiles.every(f => f.status === 'success') && "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800",
+              uploadingFiles.some(f => f.status === 'error') && "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
+            )}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="relative">
+                  {uploadingFiles.some(f => f.status === 'uploading') && (
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  )}
+                  {uploadingFiles.every(f => f.status === 'success') && (
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                  )}
+                  {uploadingFiles.some(f => f.status === 'error') && (
+                    <XCircle className="w-4 h-4 text-red-500" />
+                  )}
+                </div>
+                <div className="text-sm font-medium text-foreground">
+                  {uploadingFiles.every(f => f.status === 'success')
+                    ? `Successfully uploaded ${uploadingFiles.length} file${uploadingFiles.length > 1 ? 's' : ''}!`
+                    : uploadingFiles.some(f => f.status === 'error')
+                    ? `Upload failed for ${uploadingFiles.filter(f => f.status === 'error').length} file${uploadingFiles.filter(f => f.status === 'error').length > 1 ? 's' : ''}`
+                    : `Uploading ${uploadingFiles.length} file${uploadingFiles.length > 1 ? 's' : ''}...`
+                  }
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                {uploadingFiles.map((uploadingFile, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 rounded-lg bg-background/50">
+                    <div className="flex-shrink-0">
+                      {getFileIcon(uploadingFile.file)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium truncate text-foreground">
+                        {uploadingFile.file.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatFileSize(uploadingFile.file.size)}
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      {uploadingFile.status === 'uploading' && (
+                        <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                      )}
+                      {uploadingFile.status === 'success' && (
+                        <CheckCircle className="w-3 h-3 text-green-500" />
+                      )}
+                      {uploadingFile.status === 'error' && (
+                        <XCircle className="w-3 h-3 text-red-500" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Enhanced Attachment Preview */}
           {attachments.length > 0 && (
-            <div className="px-2 sm:px-3 pt-2 sm:pt-3 pb-2 border-b border-border/50">
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            <div className="px-3 sm:px-4 pt-3 pb-2 border-b border-border/50">
+              <div className="flex flex-wrap gap-2">
                 {attachments.map((attachment) => (
                   <div
                     key={attachment.id}
-                    className="flex items-center gap-1.5 sm:gap-2 bg-muted rounded-lg px-2 py-1.5 text-xs mobile-touch"
+                    className="group flex items-center gap-2 bg-muted/70 hover:bg-muted rounded-xl px-3 py-2 text-xs transition-colors mobile-touch"
                   >
-                    {attachment.fileType === 'image' ? (
-                      <FileImage className="w-3 h-3 flex-shrink-0" />
-                    ) : (
-                      <FileText className="w-3 h-3 flex-shrink-0" />
-                    )}
-                    <span className="truncate max-w-16 sm:max-w-24 md:max-w-32">{attachment.originalName}</span>
+                    <div className="flex-shrink-0">
+                      {attachment.fileType === 'image' ? (
+                        <div className="relative">
+                          <FileImage className="w-4 h-4 text-blue-500" />
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <FileText className="w-4 h-4 text-red-500" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate max-w-20 sm:max-w-28 md:max-w-36 text-foreground">
+                        {attachment.originalName}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {(attachment.size / 1024).toFixed(1)} KB
+                      </div>
+                    </div>
                     <button
                       onClick={() => removeAttachment(attachment.id)}
-                      className="text-muted-foreground hover:text-foreground flex-shrink-0 mobile-touch"
+                      className="flex-shrink-0 text-muted-foreground hover:text-red-500 opacity-70 group-hover:opacity-100 transition-all mobile-touch"
                       type="button"
                       aria-label={`Remove ${attachment.originalName}`}
                     >
@@ -271,14 +359,14 @@ function PureInputField({
                 isHomePage ? "Ask me anything..." : "What can I do for you?"
               }
               className={cn(
-                "w-full px-3 sm:px-4 py-3 sm:py-2 md:pt-4 pr-12 border-none shadow-none",
+                "w-full px-3 sm:px-4 py-3 sm:py-2 md:pt-4 pr-10 sm:pr-12 border-none shadow-none",
                 "placeholder:text-muted-foreground resize-none text-foreground",
                 "focus-visible:ring-0 focus-visible:ring-offset-0",
                 "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/30",
                 "scrollbar-thumb-rounded-full",
                 "min-h-[44px] sm:min-h-[40px] text-base sm:text-base",
                 "selection:bg-primary selection:text-primary-foreground",
-                "mobile-input leading-relaxed"
+                "mobile-input leading-relaxed overflow-hidden"
               )}
               ref={textareaRef}
               onKeyDown={handleKeyDown}
@@ -300,28 +388,29 @@ function PureInputField({
           </div>
 
           <div className="min-h-[60px] sm:h-14 flex bg-transparent items-center px-2 sm:px-3 border-t border-border/50">
-            <div className="flex items-center justify-between w-full gap-2 sm:gap-3">
-              <div className="flex items-center gap-1 sm:gap-2 flex-shrink min-w-0">
-                <div className="min-w-0 flex-shrink">
+            <div className="flex items-center justify-between w-full gap-1 sm:gap-2 md:gap-3">
+              <div className="flex items-center gap-1 sm:gap-2 flex-shrink min-w-0 overflow-hidden">
+                <div className="min-w-0 flex-shrink overflow-hidden">
                   <ModelSelector />
                 </div>
-                <ConversationStyleSelector className="hidden sm:flex flex-shrink-0" />
+                <ConversationStyleSelector className="hidden md:flex flex-shrink-0" />
                 <WebSearchToggle
                   isEnabled={isWebSearchEnabled}
                   onToggle={setWebSearchEnabled}
-                  className="hidden sm:flex flex-shrink-0"
+                  className="hidden md:flex flex-shrink-0"
                 />
               </div>
 
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                <ConversationStyleSelector className="flex sm:hidden" />
+              <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 flex-shrink-0">
+                <ConversationStyleSelector className="flex md:hidden" />
                 <WebSearchToggle
                   isEnabled={isWebSearchEnabled}
                   onToggle={setWebSearchEnabled}
-                  className="flex sm:hidden"
+                  className="flex md:hidden"
                 />
                 <FileUpload
                   onFilesUploaded={handleFilesUploaded}
+                  onUploadStatusChange={handleUploadStatusChange}
                   disabled={status === "streaming" || status === "submitted"}
                 />
                 {status === "submitted" || status === "streaming" ? (

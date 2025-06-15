@@ -8,7 +8,7 @@
 import React, { useCallback, useState, useRef } from 'react';
 import { FileAttachment } from '@/lib/appwriteDB';
 import { Button } from './ui/button';
-import { Paperclip, X, Upload, FileImage, FileText, Loader2 } from 'lucide-react';
+import { Paperclip, Upload, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -16,15 +16,17 @@ interface FileUploadProps {
   onFilesUploaded: (attachments: FileAttachment[]) => void;
   disabled?: boolean;
   className?: string;
+  onUploadStatusChange?: (uploadingFiles: UploadingFile[]) => void;
 }
 
-interface UploadingFile {
+export interface UploadingFile {
   file: File;
   progress: number;
   error?: string;
+  status: 'uploading' | 'success' | 'error';
 }
 
-export default function FileUpload({ onFilesUploaded, disabled, className }: FileUploadProps) {
+export default function FileUpload({ onFilesUploaded, disabled, className, onUploadStatusChange }: FileUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,8 +67,10 @@ export default function FileUpload({ onFilesUploaded, disabled, className }: Fil
     const uploadingFiles: UploadingFile[] = validFiles.map(file => ({
       file,
       progress: 0,
+      status: 'uploading' as const,
     }));
     setUploadingFiles(uploadingFiles);
+    onUploadStatusChange?.(uploadingFiles);
 
     try {
       // Create form data
@@ -87,6 +91,15 @@ export default function FileUpload({ onFilesUploaded, disabled, className }: Fil
         throw new Error(result.error || 'Upload failed');
       }
 
+      // Show success state briefly before clearing
+      const successFiles = validFiles.map(file => ({
+        file,
+        progress: 100,
+        status: 'success' as const,
+      }));
+      setUploadingFiles(successFiles);
+      onUploadStatusChange?.(successFiles);
+
       // Handle successful uploads
       if (result.attachments && result.attachments.length > 0) {
         onFilesUploaded(result.attachments);
@@ -100,11 +113,32 @@ export default function FileUpload({ onFilesUploaded, disabled, className }: Fil
         });
       }
 
+      // Clear uploading state after a brief delay to show success
+      setTimeout(() => {
+        setUploadingFiles([]);
+        onUploadStatusChange?.([]);
+      }, 1500);
+
     } catch (error) {
       console.error('Upload error:', error);
+
+      // Show error state
+      const errorFiles = validFiles.map(file => ({
+        file,
+        progress: 0,
+        status: 'error' as const,
+        error: 'Upload failed'
+      }));
+      setUploadingFiles(errorFiles);
+      onUploadStatusChange?.(errorFiles);
+
       toast.error('Failed to upload files. Please try again.');
-    } finally {
-      setUploadingFiles([]);
+
+      // Clear error state after delay
+      setTimeout(() => {
+        setUploadingFiles([]);
+        onUploadStatusChange?.([]);
+      }, 3000);
     }
   };
 
@@ -144,20 +178,7 @@ export default function FileUpload({ onFilesUploaded, disabled, className }: Fil
     fileInputRef.current?.click();
   };
 
-  const getFileIcon = (file: File) => {
-    if (file.type.startsWith('image/')) {
-      return <FileImage className="w-4 h-4" />;
-    }
-    return <FileText className="w-4 h-4" />;
-  };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
 
   return (
     <div className={cn("relative", className)}>
@@ -172,59 +193,78 @@ export default function FileUpload({ onFilesUploaded, disabled, className }: Fil
         disabled={disabled}
       />
 
-      {/* Upload button */}
+      {/* Upload button - Enhanced with better visual feedback */}
       <Button
         type="button"
         variant="ghost"
         size="icon"
         onClick={handleButtonClick}
         disabled={disabled || uploadingFiles.length > 0}
-        className="relative"
-        title="Upload files (Images and PDFs)"
+        className={cn(
+          "relative h-9 w-9 sm:h-10 sm:w-10 transition-all duration-200 mobile-touch",
+          uploadingFiles.length > 0
+            ? "bg-primary/10 text-primary"
+            : "hover:bg-muted/80 hover:scale-105 active:scale-95"
+        )}
+        title={uploadingFiles.length > 0 ? "Uploading files..." : "Upload files (Images and PDFs)"}
       >
         {uploadingFiles.length > 0 ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <div className="relative">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            {/* Pulsing background effect */}
+            <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
+          </div>
         ) : (
-          <Paperclip className="w-4 h-4" />
+          <Paperclip className="w-4 h-4 transition-transform group-hover:rotate-12" />
+        )}
+
+        {/* Upload count indicator */}
+        {uploadingFiles.length > 0 && (
+          <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium animate-pulse">
+            {uploadingFiles.length}
+          </div>
         )}
       </Button>
 
-      {/* Drag and drop overlay */}
+      {/* Drag and drop overlay - Enhanced responsive design */}
       {isDragOver && (
         <div
-          className="fixed inset-0 bg-primary/10 backdrop-blur-sm z-50 flex items-center justify-center"
+          className="fixed inset-0 bg-primary/15 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          <div className="bg-background border-2 border-dashed border-primary rounded-lg p-8 text-center">
-            <Upload className="w-12 h-12 mx-auto mb-4 text-primary" />
-            <p className="text-lg font-medium">Drop files here to upload</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Images (JPEG, PNG, GIF, WebP) and PDF files up to 5MB
-            </p>
+          <div className="bg-background/95 backdrop-blur-sm border-2 border-dashed border-primary rounded-2xl p-6 sm:p-8 md:p-12 text-center max-w-md mx-auto shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="relative mb-4 sm:mb-6">
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+              <Upload className="relative w-12 h-12 sm:w-16 sm:h-16 mx-auto text-primary animate-bounce" />
+            </div>
+
+            <div className="space-y-2 sm:space-y-3">
+              <p className="text-lg sm:text-xl font-semibold text-foreground">
+                Drop files here to upload
+              </p>
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                Images (JPEG, PNG, GIF, WebP) and PDF files
+              </p>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Maximum file size: 5MB each
+              </p>
+            </div>
+
+            {/* Visual indicator */}
+            <div className="mt-4 sm:mt-6 flex justify-center">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Upload progress */}
-      {uploadingFiles.length > 0 && (
-        <div className="absolute bottom-full mb-2 left-0 bg-background border rounded-lg p-3 shadow-lg min-w-64">
-          <div className="text-sm font-medium mb-2">Uploading files...</div>
-          {uploadingFiles.map((uploadingFile, index) => (
-            <div key={index} className="flex items-center gap-2 mb-2 last:mb-0">
-              {getFileIcon(uploadingFile.file)}
-              <div className="flex-1 min-w-0">
-                <div className="text-xs truncate">{uploadingFile.file.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {formatFileSize(uploadingFile.file.size)}
-                </div>
-              </div>
-              <Loader2 className="w-3 h-3 animate-spin" />
-            </div>
-          ))}
-        </div>
-      )}
+
 
       {/* Global drag handlers */}
       <div
