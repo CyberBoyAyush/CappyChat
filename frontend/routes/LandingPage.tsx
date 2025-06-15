@@ -253,7 +253,7 @@ const LandingPage: React.FC = () => {
             <div className="space-y-4">
               <h4 className="font-semibold">Legal</h4>
               <div className="space-y-2 text-sm">
-                <Link to="/privacy" className="block text-muted-foreground hover:text-foreground">
+                <Link to="/settings#privacy" className="block text-muted-foreground hover:text-foreground">
                   Privacy Policy
                 </Link>
                 <Link to="/terms" className="block text-muted-foreground hover:text-foreground">

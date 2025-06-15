@@ -5,7 +5,7 @@
  * Features: Responsive grid layout, enhanced badges, better visual hierarchy
  */
 
-import { ChevronDown, Check, Search, Lock, Key, Settings } from "lucide-react";
+import { ChevronDown, Check, Search, Lock, Key } from "lucide-react";
 import { memo, useCallback, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -140,7 +140,7 @@ const BYOKIndicator = () => {
   const hasByok = hasOpenRouterKey();
 
   const handleClick = () => {
-    navigate('/settings');
+    navigate('/settings#settings');
   };
 
   return (

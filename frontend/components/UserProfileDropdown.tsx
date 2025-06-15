@@ -116,14 +116,14 @@ const UserProfileDropdown: React.FC = () => {
 
         {/* User Actions */}
         <DropdownMenuItem
-          onClick={() => navigate("/profile")}
+          onClick={() => navigate("/settings#profile")}
           className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         >
           <User className="h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={() => navigate("/privacy")}
+          onClick={() => navigate("/settings#privacy")}
           className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         >
           <Shield className="h-4 w-4" />

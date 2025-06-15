@@ -429,7 +429,7 @@ const SignUpPage: React.FC = () => {
 
             <div className="flex items-center space-x-6">
               <Link
-                to="/privacy"
+                to="/settings#privacy"
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 Privacy Policy
