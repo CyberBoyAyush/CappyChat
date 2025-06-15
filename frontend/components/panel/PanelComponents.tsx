@@ -137,7 +137,7 @@ export const PanelFooter = memo(PanelFooterComponent);
 const ThreadTitle = ({ threadData }: { threadData: ThreadData }) => (
   <div className="flex items-center min-w-0 gap-1.5">
     {threadData.isBranched && (
-      <GitBranch className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+      <GitBranch className="h-3.5 w-3.5 text-primary/50 flex-shrink-0" />
     )}
     <span className="truncate block" title={threadData.title}>
       {threadData.title}

@@ -26,6 +26,7 @@ import { ConversationStyleSelector } from "./ConversationStyleSelector";
 import { useIsMobile } from "@/hooks/useMobileDetection";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
+import VoiceInputButton from "./ui/VoiceInputButton";
 
 interface InputFieldProps {
   threadId: string;
@@ -173,6 +174,11 @@ function PureInputField({
     adjustHeight();
   };
 
+  function handleVoiceInput(text: string) {
+    setInput((prev) => prev + (prev ? " " : "") + text);
+    // optionally you can also focus the textarea here
+  }
+
   return (
     <div className="w-full">
       <div className="border-t-[1px] border-x-[1px] border-primary/30 rounded-t-2xl shadow-lg w-full backdrop-blur-md">
@@ -223,6 +229,11 @@ function PureInputField({
                   isEnabled={isWebSearchEnabled}
                   onToggle={setWebSearchEnabled}
                   className="flex sm:hidden"
+                />
+                <VoiceInputButton
+                  onResult={handleVoiceInput}
+                  className="relative"
+                  disabled={status === "streaming" || status === "submitted"} // Optional: disable while streaming
                 />
                 {status === "submitted" || status === "streaming" ? (
                   <StopButton stop={stop} />
