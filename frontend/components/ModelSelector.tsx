@@ -5,8 +5,9 @@
  * Features: Responsive grid layout, enhanced badges, better visual hierarchy
  */
 
-import { ChevronDown, Check, Search, Lock } from "lucide-react";
+import { ChevronDown, Check, Search, Lock, Key, Settings } from "lucide-react";
 import { memo, useCallback, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
 import { Input } from "@/frontend/components/ui/input";
@@ -17,6 +18,7 @@ import {
 } from "@/frontend/components/ui/dropdown-menu";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
+import { useBYOKStore } from "@/frontend/stores/BYOKStore";
 import { AI_MODELS, AIModel, getModelConfig } from "@/lib/models";
 import {
   ModelBadge,
@@ -27,12 +29,14 @@ interface ModelCardProps {
   model: AIModel;
   isSelected: boolean;
   onSelect: (model: AIModel) => void;
+  showKeyIcon?: boolean;
 }
 
 const ModelCard: React.FC<ModelCardProps> = ({
   model,
   isSelected,
   onSelect,
+  showKeyIcon = false,
 }) => {
   const modelConfig = getModelConfig(model);
 
@@ -63,14 +67,21 @@ const ModelCard: React.FC<ModelCardProps> = ({
           {getModelIcon(modelConfig.iconType, 16)}
         </div>
         <div className="flex-1 min-w-0">
-          <h3
-            className={cn(
-              "font-semibold text-xs sm:text-sm leading-tight truncate",
-              isSelected ? "text-primary" : "text-foreground"
+          <div className="flex items-center gap-1.5">
+            <h3
+              className={cn(
+                "font-semibold text-xs sm:text-sm leading-tight truncate",
+                isSelected ? "text-primary" : "text-foreground"
+              )}
+            >
+              {modelConfig.displayName}
+            </h3>
+            {showKeyIcon && (
+              <div className="flex-shrink-0" title="Using your API key">
+                <Key className="w-3 h-3 text-primary" />
+              </div>
             )}
-          >
-            {modelConfig.displayName}
-          </h3>
+          </div>
           <p className="text-xs text-muted-foreground mt-0.5 sm:mt-1 font-medium hidden sm:block">
             {modelConfig.company}
           </p>
@@ -122,9 +133,41 @@ const ModelCard: React.FC<ModelCardProps> = ({
   );
 };
 
+// BYOK Status Indicator Component
+const BYOKIndicator = () => {
+  const { hasOpenRouterKey } = useBYOKStore();
+  const navigate = useNavigate();
+  const hasByok = hasOpenRouterKey();
+
+  const handleClick = () => {
+    navigate('/settings');
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleClick}
+      className={cn(
+        "h-7 px-2 text-xs font-medium transition-all duration-200",
+        hasByok
+          ? "text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-950/20"
+          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+      )}
+      title={hasByok ? "BYOK is ON - Unlimited access to all models" : "Configure your own API key for unlimited access"}
+    >
+      <Key className="w-3 h-3 mr-1" />
+      <span className="hidden sm:inline">
+        {hasByok ? "BYOK ON" : "BYOK"}
+      </span>
+    </Button>
+  );
+};
+
 const PureModelSelector = () => {
   const { selectedModel, setModel } = useModelStore();
   const { isWebSearchEnabled } = useWebSearchStore();
+  const { hasOpenRouterKey } = useBYOKStore();
   const selectedModelConfig = getModelConfig(selectedModel);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -244,6 +287,7 @@ const PureModelSelector = () => {
                   model={model}
                   isSelected={selectedModel === model}
                   onSelect={handleModelSelect}
+                  showKeyIcon={hasOpenRouterKey()}
                 />
               ))
             ) : (
@@ -270,6 +314,7 @@ const PureModelSelector = () => {
           </div>
         </DropdownMenuContent>
       </DropdownMenu>
+      <BYOKIndicator />
     </div>
   );
 };

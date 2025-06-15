@@ -3,13 +3,16 @@ import { generateText } from 'ai';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
-  // Get OpenRouter API key from environment variable
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const body = await req.json();
+  const { prompt, isTitle, messageId, threadId, userApiKey } = body;
+
+  // Use user's API key if provided, otherwise fall back to system key
+  const apiKey = userApiKey || process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
     return NextResponse.json(
       {
-        error: 'OpenRouter API key not configured.',
+        error: 'OpenRouter API key not configured. Please add your API key in Settings.',
       },
       { status: 500 }
     );
@@ -23,9 +26,6 @@ export async function POST(req: Request) {
       'User-Agent': 'AVChat/1.0.0'
     }
   });
-
-  const body = await req.json();
-  const { prompt, isTitle, messageId, threadId } = body;
 
   // Validate required fields
   if (!prompt || typeof prompt !== 'string') {

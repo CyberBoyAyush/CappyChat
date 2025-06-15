@@ -18,6 +18,7 @@ import { streamingSync, StreamingState } from "@/lib/streamingSync";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 import { useConversationStyleStore } from "@/frontend/stores/ConversationStyleStore";
+import { useBYOKStore } from "@/frontend/stores/BYOKStore";
 import { useLocation } from "react-router-dom";
 import ThemeToggleButton from "./ui/ThemeComponents";
 import { Button } from "./ui/button";
@@ -62,6 +63,7 @@ export default function ChatInterface({
   const selectedModel = useModelStore((state) => state.selectedModel);
   const { isWebSearchEnabled } = useWebSearchStore();
   const { selectedStyle } = useConversationStyleStore();
+  const { openRouterApiKey } = useBYOKStore();
   const {
     sidebarWidth,
     toggleSidebar,
@@ -173,6 +175,7 @@ export default function ChatInterface({
     body: {
       model: selectedModel,
       conversationStyle: selectedStyle,
+      userApiKey: openRouterApiKey,
     },
   });
 

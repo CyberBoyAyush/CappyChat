@@ -15,16 +15,60 @@ import {
   Moon,
   Sun,
   Laptop,
+  Key,
+  Eye,
+  EyeOff,
+  Check,
+  X,
 } from "lucide-react";
 import ThemeToggleButton from "../components/ui/ThemeComponents";
 import { useTheme } from "next-themes";
 import { Button } from "../components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { Input } from "../components/ui/input";
+import { useState } from "react";
+import { useBYOKStore } from "../stores/BYOKStore";
 
 export default function SettingsPage() {
   const [searchParams] = useSearchParams();
   const chatId = searchParams.get("from");
   const { setTheme, theme } = useTheme();
+
+  // BYOK state
+  const { openRouterApiKey, setOpenRouterApiKey, hasOpenRouterKey, clearAllKeys, validateOpenRouterKey } = useBYOKStore();
+  const [keyInput, setKeyInput] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [keyError, setKeyError] = useState("");
+  const [keySaved, setKeySaved] = useState(false);
+
+  const handleSaveKey = () => {
+    if (!keyInput.trim()) {
+      setKeyError("Please enter an API key");
+      return;
+    }
+
+    if (!validateOpenRouterKey(keyInput.trim())) {
+      setKeyError("Invalid API key format. OpenRouter keys should start with 'sk-or-'");
+      return;
+    }
+
+    setOpenRouterApiKey(keyInput.trim());
+    setKeyInput("");
+    setKeyError("");
+    setKeySaved(true);
+    setTimeout(() => setKeySaved(false), 3000);
+  };
+
+  const handleRemoveKey = () => {
+    setOpenRouterApiKey(null);
+    setKeyInput("");
+    setKeyError("");
+  };
+
+  const maskKey = (key: string) => {
+    if (!key) return "";
+    return key.substring(0, 8) + "..." + key.substring(key.length - 4);
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col align-middle justify-center">
@@ -106,41 +150,120 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* API Configuration Card */}
+            {/* Bring Your Own Key (BYOK) Card */}
             <div className="p-6 border rounded-xl bg-card shadow-sm transition-shadow hover:shadow-md">
               <div className="space-y-1 mb-4">
-                <h3 className="text-lg font-medium">API Configuration</h3>
+                <div className="flex items-center gap-2">
+                  <Key className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-medium">Bring Your Own Key</h3>
+                </div>
                 <p className="text-sm text-muted-foreground">
-                  Language model access and authentication settings
+                  Use your own OpenRouter API key for unlimited access to AI models
                 </p>
               </div>
 
-              <div className="rounded-lg bg-muted/50 p-4 mt-2">
-                <div className="flex items-start gap-4">
-                  <div className="p-2 rounded-full bg-muted">
-                    <SettingsIcon className="h-5 w-5 text-muted-foreground" />
+              {hasOpenRouterKey() ? (
+                // Key is configured
+                <div className="space-y-4">
+                  <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
+                        <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                          OpenRouter API Key Configured
+                        </p>
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                          Key: {maskKey(openRouterApiKey || "")}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRemoveKey}
+                        className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Remove
+                      </Button>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm">
-                      For security purposes, API keys are managed via
-                      environment variables. This approach ensures your
-                      credentials remain protected and are never exposed
-                      client-side.
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      If you need access to additional language models or have
-                      questions about API configuration, please contact your
-                      system administrator.
-                    </p>
+
+                  <div className="text-xs text-muted-foreground">
+                    <p>✓ Your API key is stored securely in your browser only</p>
+                    <p>✓ Models will show a key icon when using your API key</p>
+                    <p>✓ Fallback to system key if your key fails</p>
                   </div>
                 </div>
-              </div>
+              ) : (
+                // No key configured
+                <div className="space-y-4">
+                  <div className="rounded-lg bg-muted/50 p-4">
+                    <div className="flex items-start gap-4">
+                      <div className="p-2 rounded-full bg-muted">
+                        <Key className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm">
+                          Add your OpenRouter API key to use your own credits and access all available models.
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Get your API key from{" "}
+                          <a
+                            href="https://openrouter.ai/settings/keys"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            OpenRouter Settings
+                          </a>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="flex items-center mt-6 pt-4 border-t text-sm text-muted-foreground">
-                <p>
-                  Current model configuration is managed by your administrator
-                </p>
-              </div>
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">OpenRouter API Key</label>
+                      <div className="relative">
+                        <Input
+                          type={showKey ? "text" : "password"}
+                          placeholder="sk-or-..."
+                          value={keyInput}
+                          onChange={(e) => {
+                            setKeyInput(e.target.value);
+                            setKeyError("");
+                          }}
+                          className={keyError ? "border-red-500" : ""}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                          onClick={() => setShowKey(!showKey)}
+                        >
+                          {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      {keyError && (
+                        <p className="text-sm text-red-600">{keyError}</p>
+                      )}
+                      {keySaved && (
+                        <p className="text-sm text-green-600">✓ API key saved successfully!</p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button onClick={handleSaveKey} disabled={!keyInput.trim()}>
+                        <Key className="h-4 w-4 mr-2" />
+                        Save API Key
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Minimal Footer */}

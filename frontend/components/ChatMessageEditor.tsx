@@ -9,6 +9,7 @@
 import { AppwriteDB } from '@/lib/appwriteDB';
 import { HybridDB } from '@/lib/hybridDB';
 import { UseChatHelpers, useCompletion } from '@ai-sdk/react';
+import { useBYOKStore } from '@/frontend/stores/BYOKStore';
 import { useState } from 'react';
 import { UIMessage } from 'ai';
 import { Dispatch, SetStateAction } from 'react';
@@ -35,9 +36,13 @@ export default function MessageEditor({
   stop: UseChatHelpers['stop'];
 }) {
   const [draftContent, setDraftContent] = useState(content);
+  const { openRouterApiKey } = useBYOKStore();
 
   const { complete } = useCompletion({
     api: '/api/ai-text-generation',
+    body: {
+      userApiKey: openRouterApiKey,
+    },
     onResponse: async (response) => {
       try {
         const payload = await response.json();
