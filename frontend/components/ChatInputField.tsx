@@ -28,6 +28,7 @@ import VoiceInputButton from "./ui/VoiceInputButton";
 import FileUpload, { UploadingFile } from "./FileUpload";
 import { FileAttachment } from "@/lib/appwriteDB";
 import { X, FileImage, FileText, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { toast } from "sonner";
 
 // Extended UIMessage type to include attachments
 type ExtendedUIMessage = UIMessage & {
@@ -81,6 +82,7 @@ function PureInputField({
   // File attachments state
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
+  const [isDragOverTextarea, setIsDragOverTextarea] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -141,6 +143,135 @@ function PureInputField({
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
+
+  // Upload pasted files
+  const uploadPastedFiles = useCallback(async (files: File[]) => {
+    // Initialize uploading state
+    const uploadingFiles: UploadingFile[] = files.map(file => ({
+      file,
+      progress: 0,
+      status: 'uploading' as const,
+    }));
+    setUploadingFiles(uploadingFiles);
+
+    try {
+      // Create form data
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('files', file);
+      });
+
+      // Upload files
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Upload failed');
+      }
+
+      // Show success state briefly before clearing
+      const successFiles = files.map(file => ({
+        file,
+        progress: 100,
+        status: 'success' as const,
+      }));
+      setUploadingFiles(successFiles);
+
+      // Handle successful uploads
+      if (result.attachments && result.attachments.length > 0) {
+        handleFilesUploaded(result.attachments);
+        toast.success(`${result.attachments.length} pasted file(s) uploaded successfully`);
+      }
+
+      // Handle partial failures
+      if (result.failures && result.failures.length > 0) {
+        result.failures.forEach((error: string) => {
+          toast.error(`Upload failed: ${error}`);
+        });
+      }
+
+      // Clear uploading state after a brief delay to show success
+      setTimeout(() => {
+        setUploadingFiles([]);
+      }, 1500);
+
+    } catch (error) {
+      console.error('Paste upload error:', error);
+
+      // Show error state
+      const errorFiles = files.map(file => ({
+        file,
+        progress: 0,
+        status: 'error' as const,
+        error: 'Upload failed'
+      }));
+      setUploadingFiles(errorFiles);
+
+      toast.error('Failed to upload pasted files. Please try again.');
+
+      // Clear error state after delay
+      setTimeout(() => {
+        setUploadingFiles([]);
+      }, 3000);
+    }
+  }, [handleFilesUploaded]);
+
+  // Handle paste events for file uploads
+  const handlePaste = useCallback(async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const clipboardData = e.clipboardData;
+    if (!clipboardData) return;
+
+    const items = Array.from(clipboardData.items);
+    const fileItems = items.filter(item => item.kind === 'file');
+
+    if (fileItems.length === 0) return;
+
+    // Prevent default paste behavior for files
+    e.preventDefault();
+
+    const files: File[] = [];
+    const rejectedFiles: string[] = [];
+
+    for (const item of fileItems) {
+      const file = item.getAsFile();
+      if (file) {
+        // Validate file type
+        const allowedTypes = [
+          'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+          'application/pdf'
+        ];
+
+        // Validate file size (5MB limit)
+        const maxSize = 5 * 1024 * 1024;
+
+        if (!allowedTypes.includes(file.type)) {
+          rejectedFiles.push(`${file.name} (unsupported file type)`);
+        } else if (file.size > maxSize) {
+          rejectedFiles.push(`${file.name} (file too large - max 5MB)`);
+        } else {
+          files.push(file);
+        }
+      }
+    }
+
+    // Show feedback for rejected files
+    if (rejectedFiles.length > 0) {
+      toast.error(`Cannot upload: ${rejectedFiles.join(', ')}`);
+    }
+
+    if (files.length > 0) {
+      // Show immediate feedback with file details
+      const fileNames = files.map(f => f.name).join(', ');
+      toast.success(`📎 Pasted ${files.length} file${files.length > 1 ? 's' : ''}: ${fileNames.length > 50 ? fileNames.substring(0, 50) + '...' : fileNames}`);
+
+      // Upload files using the same logic as FileUpload component
+      await uploadPastedFiles(files);
+    }
+  }, [uploadPastedFiles]);
 
   const handleSubmit = useCallback(async () => {
     const currentInput = textareaRef.current?.value || input;
@@ -245,6 +376,32 @@ function PureInputField({
     setInput((prev) => prev + (prev ? " " : "") + text);
     // optionally you can also focus the textarea here
   }
+
+  // Handle drag and drop for textarea
+  const handleTextareaDragOver = useCallback((e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOverTextarea(true);
+  }, []);
+
+  const handleTextareaDragLeave = useCallback((e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOverTextarea(false);
+  }, []);
+
+  const handleTextareaDrop = useCallback(async (e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOverTextarea(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      // Show immediate feedback
+      toast.success(`📎 Dropped ${files.length} file${files.length > 1 ? 's' : ''} - uploading...`);
+      await uploadPastedFiles(files);
+    }
+  }, [uploadPastedFiles]);
 
   return (
     <div className="w-full max-w-full">
@@ -356,7 +513,7 @@ function PureInputField({
               id="message-input"
               value={input}
               placeholder={
-                isHomePage ? "Ask me anything..." : "What can I do for you?"
+                isHomePage ? "Ask me anything..." : "What can I do for you? (Copy Paste works here)"
               }
               className={cn(
                 "w-full px-3 sm:px-4 py-3 sm:py-2 md:pt-4 pr-10 sm:pr-12 border-none shadow-none",
@@ -366,11 +523,16 @@ function PureInputField({
                 "scrollbar-thumb-rounded-full",
                 "min-h-[44px] sm:min-h-[40px] text-base sm:text-base",
                 "selection:bg-primary selection:text-primary-foreground",
-                "mobile-input leading-relaxed overflow-hidden"
+                "mobile-input leading-relaxed overflow-hidden transition-colors",
+                isDragOverTextarea && "bg-primary/5 border-primary/20"
               )}
               ref={textareaRef}
               onKeyDown={handleKeyDown}
               onChange={handleInputChange}
+              onPaste={handlePaste}
+              onDragOver={handleTextareaDragOver}
+              onDragLeave={handleTextareaDragLeave}
+              onDrop={handleTextareaDrop}
               aria-label="Message input field"
               aria-describedby="input-field-description"
             />
@@ -383,7 +545,7 @@ function PureInputField({
               />
             </div>
             <span id="input-field-description" className="sr-only">
-              Press Enter to send, Shift+Enter for new line
+              Press Enter to send, Shift+Enter for new line. Paste or drag images and PDFs to upload.
             </span>
           </div>
 
