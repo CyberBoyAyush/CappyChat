@@ -24,7 +24,10 @@ export class AudioRecorder {
   private callbacks: AudioRecorderCallbacks;
   private maxDurationTimer: NodeJS.Timeout | null = null;
 
-  constructor(options: AudioRecorderOptions = {}, callbacks: AudioRecorderCallbacks = {}) {
+  constructor(
+    options: AudioRecorderOptions = {},
+    callbacks: AudioRecorderCallbacks = {}
+  ) {
     this.options = {
       mimeType: this.getSupportedMimeType(),
       audioBitsPerSecond: 128000,
@@ -39,12 +42,12 @@ export class AudioRecorder {
    */
   private getSupportedMimeType(): string {
     const types = [
-      'audio/webm;codecs=opus',
-      'audio/webm',
-      'audio/mp4',
-      'audio/ogg;codecs=opus',
-      'audio/ogg',
-      'audio/wav',
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/mp4",
+      "audio/ogg;codecs=opus",
+      "audio/ogg",
+      "audio/wav",
     ];
 
     for (const type of types) {
@@ -54,16 +57,18 @@ export class AudioRecorder {
     }
 
     // Fallback - most browsers support this
-    return 'audio/webm';
+    return "audio/webm";
   }
 
   /**
    * Check if audio recording is supported in the current browser
    */
   static isSupported(): boolean {
-    return !!(navigator.mediaDevices &&
-              typeof navigator.mediaDevices.getUserMedia === 'function' &&
-              typeof MediaRecorder !== 'undefined');
+    return !!(
+      navigator.mediaDevices &&
+      typeof navigator.mediaDevices.getUserMedia === "function" &&
+      typeof MediaRecorder !== "undefined"
+    );
   }
 
   /**
@@ -72,12 +77,14 @@ export class AudioRecorder {
   static getBrowserInfo() {
     const userAgent = navigator.userAgent.toLowerCase();
     return {
-      isChrome: userAgent.includes('chrome') && !userAgent.includes('edg'),
-      isFirefox: userAgent.includes('firefox'),
-      isSafari: userAgent.includes('safari') && !userAgent.includes('chrome'),
-      isEdge: userAgent.includes('edg'),
-      isOpera: userAgent.includes('opera') || userAgent.includes('opr'),
-      isMobile: /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent),
+      isChrome: userAgent.includes("chrome") && !userAgent.includes("edg"),
+      isFirefox: userAgent.includes("firefox"),
+      isSafari: userAgent.includes("safari") && !userAgent.includes("chrome"),
+      isEdge: userAgent.includes("edg"),
+      isOpera: userAgent.includes("opera") || userAgent.includes("opr"),
+      isMobile: /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+        userAgent
+      ),
     };
   }
 
@@ -87,8 +94,8 @@ export class AudioRecorder {
   async startRecording(): Promise<void> {
     try {
       // Check if already recording
-      if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-        throw new Error('Recording is already in progress');
+      if (this.mediaRecorder && this.mediaRecorder.state === "recording") {
+        throw new Error("Recording is already in progress");
       }
 
       // Clear previous audio chunks
@@ -111,10 +118,14 @@ export class AudioRecorder {
 
       // Add bitrate if supported
       if (this.options.audioBitsPerSecond) {
-        mediaRecorderOptions.audioBitsPerSecond = this.options.audioBitsPerSecond;
+        mediaRecorderOptions.audioBitsPerSecond =
+          this.options.audioBitsPerSecond;
       }
 
-      this.mediaRecorder = new MediaRecorder(this.mediaStream, mediaRecorderOptions);
+      this.mediaRecorder = new MediaRecorder(
+        this.mediaStream,
+        mediaRecorderOptions
+      );
 
       // Set up event handlers
       this.mediaRecorder.ondataavailable = (event) => {
@@ -129,7 +140,7 @@ export class AudioRecorder {
       };
 
       this.mediaRecorder.onerror = (event) => {
-        const error = (event as any).error || 'Recording error occurred';
+        const error = (event as any).error || "Recording error occurred";
         this.handleError(`Recording failed: ${error}`);
       };
 
@@ -146,7 +157,6 @@ export class AudioRecorder {
           this.stopRecording();
         }, this.options.maxDuration);
       }
-
     } catch (error) {
       this.handleError(this.getErrorMessage(error));
     }
@@ -163,13 +173,13 @@ export class AudioRecorder {
         this.maxDurationTimer = null;
       }
 
-      if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+      if (this.mediaRecorder && this.mediaRecorder.state === "recording") {
         this.mediaRecorder.stop();
       }
 
       // Stop all media tracks
       if (this.mediaStream) {
-        this.mediaStream.getTracks().forEach(track => track.stop());
+        this.mediaStream.getTracks().forEach((track) => track.stop());
         this.mediaStream = null;
       }
     } catch (error) {
@@ -183,18 +193,18 @@ export class AudioRecorder {
   private handleRecordingStop(): void {
     try {
       if (this.audioChunks.length === 0) {
-        this.handleError('No audio data recorded');
+        this.handleError("No audio data recorded");
         return;
       }
 
       // Create blob from recorded chunks
-      const audioBlob = new Blob(this.audioChunks, { 
-        type: this.options.mimeType 
+      const audioBlob = new Blob(this.audioChunks, {
+        type: this.options.mimeType,
       });
 
       // Check if blob has content
       if (audioBlob.size === 0) {
-        this.handleError('Recorded audio is empty');
+        this.handleError("Recorded audio is empty");
         return;
       }
 
@@ -208,7 +218,7 @@ export class AudioRecorder {
    * Handle errors with user-friendly messages
    */
   private handleError(error: string | Error): void {
-    const errorMessage = typeof error === 'string' ? error : error.message;
+    const errorMessage = typeof error === "string" ? error : error.message;
     this.callbacks.onError?.(errorMessage);
   }
 
@@ -216,30 +226,30 @@ export class AudioRecorder {
    * Get user-friendly error message based on the error type
    */
   private getErrorMessage(error: any): string {
-    if (error.name === 'NotAllowedError') {
-      return 'Microphone access denied. Please allow microphone access and try again.';
+    if (error.name === "NotAllowedError") {
+      return "Microphone access denied. Please allow microphone access and try again.";
     }
-    if (error.name === 'NotFoundError') {
-      return 'No microphone found. Please connect a microphone and try again.';
+    if (error.name === "NotFoundError") {
+      return "No microphone found. Please connect a microphone and try again.";
     }
-    if (error.name === 'NotReadableError') {
-      return 'Microphone is being used by another application. Please close other apps and try again.';
+    if (error.name === "NotReadableError") {
+      return "Microphone is being used by another application. Please close other apps and try again.";
     }
-    if (error.name === 'OverconstrainedError') {
-      return 'Microphone constraints not supported. Please try again.';
+    if (error.name === "OverconstrainedError") {
+      return "Microphone constraints not supported. Please try again.";
     }
-    if (error.name === 'SecurityError') {
-      return 'Microphone access blocked by security policy. Please check your browser settings.';
+    if (error.name === "SecurityError") {
+      return "Microphone access blocked by security policy. Please check your browser settings.";
     }
-    
-    return `Microphone error: ${error.message || 'Unknown error occurred'}`;
+
+    return `Microphone error: ${error.message || "Unknown error occurred"}`;
   }
 
   /**
    * Check current recording state
    */
   isRecording(): boolean {
-    return this.mediaRecorder?.state === 'recording';
+    return this.mediaRecorder?.state === "recording";
   }
 
   /**
@@ -250,15 +260,22 @@ export class AudioRecorder {
     this.audioChunks = [];
     this.mediaRecorder = null;
   }
+
+  /**
+   * Get the current media stream
+   */
+  getMediaStream(): MediaStream | null {
+    return this.mediaStream;
+  }
 }
 
 /**
  * Convert audio blob to File object for API upload
  */
-export function blobToFile(blob: Blob, filename: string = 'audio.webm'): File {
-  return new File([blob], filename, { 
-    type: blob.type || 'audio/webm',
-    lastModified: Date.now()
+export function blobToFile(blob: Blob, filename: string = "audio.webm"): File {
+  return new File([blob], filename, {
+    type: blob.type || "audio/webm",
+    lastModified: Date.now(),
   });
 }
 
@@ -267,12 +284,12 @@ export function blobToFile(blob: Blob, filename: string = 'audio.webm'): File {
  */
 export function getFileExtension(mimeType: string): string {
   const extensions: Record<string, string> = {
-    'audio/webm': 'webm',
-    'audio/mp4': 'm4a',
-    'audio/ogg': 'ogg',
-    'audio/wav': 'wav',
-    'audio/mpeg': 'mp3',
+    "audio/webm": "webm",
+    "audio/mp4": "m4a",
+    "audio/ogg": "ogg",
+    "audio/wav": "wav",
+    "audio/mpeg": "mp3",
   };
-  
-  return extensions[mimeType] || 'webm';
+
+  return extensions[mimeType] || "webm";
 }
