@@ -47,7 +47,7 @@ import { Plus } from "lucide-react";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -78,7 +78,9 @@ export default function ChatInterface({
   const isMobile = useIsMobile();
   const mainRef = useRef<HTMLElement>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
   const pendingUserMessageRef = useRef<UIMessage | null>(null);
+  const isAutoScrollingRef = useRef(false);
   const chatInputSubmitRef = useRef<(() => void) | null>(null);
   const { theme } = useTheme();
   const isDarkTheme = theme === "dark";
@@ -112,14 +114,17 @@ export default function ChatInterface({
     initialMessages,
     experimental_throttle: 30, // Reduced for smoother streaming
     onFinish: async (message) => {
-      console.log('🏁 onFinish callback called for message:', message.id);
+      console.log("🏁 onFinish callback called for message:", message.id);
 
       // End streaming synchronization
       streamingSync.endStreaming(threadId, message.id, message.content);
 
       // Clear the pending user message ref (user message is now stored immediately in ChatInputField)
       if (pendingUserMessageRef.current) {
-        console.log('🧹 Clearing pending user message ref:', pendingUserMessageRef.current.id);
+        console.log(
+          "🧹 Clearing pending user message ref:",
+          pendingUserMessageRef.current.id
+        );
         pendingUserMessageRef.current = null;
       }
 
@@ -195,13 +200,16 @@ export default function ChatInterface({
   // Effect to handle search query from URL parameter - only run once
   useEffect(() => {
     if (searchQuery && searchQuery.trim() && messages.length === 0) {
-      console.log('🔍 Search query detected:', searchQuery);
+      console.log("🔍 Search query detected:", searchQuery);
       setInput(searchQuery);
 
       // Auto-submit the search query through ChatInputField's submit function
       const timer = setTimeout(() => {
         if (chatInputSubmitRef.current) {
-          console.log('🚀 Auto-submitting search query through ChatInputField:', searchQuery);
+          console.log(
+            "🚀 Auto-submitting search query through ChatInputField:",
+            searchQuery
+          );
           chatInputSubmitRef.current();
         }
       }, 100);
@@ -210,27 +218,80 @@ export default function ChatInterface({
     }
   }, [searchQuery, setInput]); // Only depend on searchQuery and setInput
 
-  // Check if user has scrolled up
+  // Simple scroll detection - track if user manually scrolled up
   useEffect(() => {
     const mainElement = mainRef.current;
     if (!mainElement) return;
 
     const handleScroll = () => {
+      // Skip if we're auto-scrolling
+      if (isAutoScrollingRef.current) {
+        return;
+      }
+
       const { scrollHeight, scrollTop, clientHeight } = mainElement;
-      const isNotAtBottom = scrollHeight - scrollTop - clientHeight > 100;
-      setShowScrollToBottom(isNotAtBottom);
+      const isAtBottom = scrollHeight - scrollTop - clientHeight <= 50;
+
+      setShowScrollToBottom(!isAtBottom);
+
+      // If user scrolled up manually, mark it
+      if (!isAtBottom) {
+        setUserHasScrolledUp(true);
+      } else {
+        // User is back at bottom, reset the flag
+        setUserHasScrolledUp(false);
+      }
     };
 
     mainElement.addEventListener("scroll", handleScroll);
     return () => mainElement.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Auto-scroll to bottom when new message is added
+  // Force scroll to bottom during streaming - this runs on every message content change
   useEffect(() => {
-    if (status === "streaming" || messages.length > 0) {
+    if (status === "streaming" && !userHasScrolledUp && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === "assistant") {
+        // Force immediate scroll to bottom during streaming
+        if (mainRef.current) {
+          mainRef.current.scrollTop = mainRef.current.scrollHeight;
+        }
+      }
+    }
+  }, [messages, status, userHasScrolledUp]);
+
+  // Auto-scroll when new messages arrive (not during streaming)
+  useEffect(() => {
+    if (status !== "streaming" && messages.length > 0 && !userHasScrolledUp) {
       scrollToBottom();
     }
-  }, [messages.length, status]);
+  }, [messages.length, status, userHasScrolledUp]);
+
+  // Reset user scroll flag when streaming starts (so it sticks to bottom by default)
+  useEffect(() => {
+    if (status === "streaming") {
+      setUserHasScrolledUp(false);
+    }
+  }, [status]);
+
+  // Continuous scroll during streaming - more aggressive approach
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+
+    if (status === "streaming" && !userHasScrolledUp) {
+      intervalId = setInterval(() => {
+        if (mainRef.current && !userHasScrolledUp) {
+          mainRef.current.scrollTop = mainRef.current.scrollHeight;
+        }
+      }, 50); // Scroll every 50ms during streaming
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [status, userHasScrolledUp]);
 
   // Track streaming status and sync across sessions
   const lastStreamingMessageRef = useRef<{
@@ -356,15 +417,18 @@ export default function ChatInterface({
         );
 
         // Convert DB messages to UI messages format
-        const uiMessages: UIMessage[] = updatedMessages.map((msg) => ({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          parts: msg.parts || [{ type: "text", text: msg.content }],
-          createdAt: msg.createdAt,
-          webSearchResults: msg.webSearchResults,
-          attachments: msg.attachments,
-        } as any));
+        const uiMessages: UIMessage[] = updatedMessages.map(
+          (msg) =>
+            ({
+              id: msg.id,
+              role: msg.role,
+              content: msg.content,
+              parts: msg.parts || [{ type: "text", text: msg.content }],
+              createdAt: msg.createdAt,
+              webSearchResults: msg.webSearchResults,
+              attachments: msg.attachments,
+            } as any)
+        );
 
         // Lightweight comparison - check count and last message ID
         const hasChanged =
@@ -378,8 +442,10 @@ export default function ChatInterface({
           console.log("[ChatInterface] Messages changed, updating UI");
           setMessages(uiMessages);
 
-          // Auto-scroll to bottom for new messages
-          setTimeout(() => scrollToBottom(), 30); // Further reduced for smoother experience
+          // Auto-scroll to bottom for new messages unless user scrolled up
+          if (!userHasScrolledUp) {
+            setTimeout(() => scrollToBottom(), 30);
+          }
         } else {
           console.log("[ChatInterface] Messages unchanged, skipping UI update");
         }
@@ -455,8 +521,10 @@ export default function ChatInterface({
             return updatedMessages;
           });
 
-          // Auto-scroll during streaming with minimal delay
-          setTimeout(() => scrollToBottom(), 5);
+          // Auto-scroll during streaming with minimal delay unless user scrolled up
+          if (!userHasScrolledUp) {
+            setTimeout(() => scrollToBottom(), 5);
+          }
         }
       }
     };
@@ -493,12 +561,22 @@ export default function ChatInterface({
 
   const scrollToBottom = () => {
     if (mainRef.current) {
+      // Set flag to prevent scroll event from triggering during auto-scroll
+      isAutoScrollingRef.current = true;
+
       mainRef.current.scrollTo({
         top: mainRef.current.scrollHeight,
         behavior: "smooth",
       });
+
+      // Reset flag after scroll completes
+      setTimeout(() => {
+        isAutoScrollingRef.current = false;
+      }, 100);
     }
     setShowScrollToBottom(false);
+    // Reset user scroll flag when manually scrolling to bottom
+    setUserHasScrolledUp(false);
   };
 
   const sidebarOpen = localStorage.getItem("sidebarOpen") === "true";
