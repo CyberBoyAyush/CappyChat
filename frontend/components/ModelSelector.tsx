@@ -377,6 +377,7 @@ const PureModelSelector = () => {
                   <span className="text-primary">⭐</span>
                   Recommended
                 </h3>
+                <span className="text-xs text-muted-foreground block mb-2">AVChat Recommened Models - Best Overall Performance</span>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {filteredModels.recommended.map((model) => (
                     <ModelCard
@@ -396,9 +397,10 @@ const PureModelSelector = () => {
             {filteredModels.freeModels.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                  <span className="text-green-500">🆓</span>
-                  Free
+                  <span className="text-green-500">✴️</span>
+                  Budget Models
                 </h3>
+                <span className="text-xs text-muted-foreground block mb-2">Best Price To Performance Ratio Models - Good For Most Of The Tasks</span>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {filteredModels.freeModels.map((model) => (
                     <ModelCard
@@ -421,6 +423,7 @@ const PureModelSelector = () => {
                   <span className="text-primary">💎</span>
                   Premium
                 </h3>
+                <span className="text-xs text-muted-foreground block mb-2">Finest Models For Most of The Tasks</span>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {filteredModels.premiumModels.map((model) => (
                     <ModelCard
@@ -443,6 +446,7 @@ const PureModelSelector = () => {
                   <span className="text-primary">💎💎</span>
                   Super Premium
                 </h3>
+                <span className="text-xs text-muted-foreground block mb-2">Super Advanced Models For Advanced Tasks</span>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {filteredModels.superPremiumModels.map((model) => (
                     <ModelCard

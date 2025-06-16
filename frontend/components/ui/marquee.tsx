@@ -11,7 +11,8 @@ interface LLMItem {
     | "anthropic"
     | "deepseek"
     | "huggingface"
-    | "qwen";
+    | "qwen"
+    | "meta";
   description: string;
 }
 
