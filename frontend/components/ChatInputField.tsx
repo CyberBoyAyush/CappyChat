@@ -8,7 +8,7 @@
  */
 
 import { ArrowUpIcon } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Textarea } from "@/frontend/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
@@ -117,17 +117,51 @@ function PureInputField({
   // Web search state
   const { isWebSearchEnabled, setWebSearchEnabled } = useWebSearchStore();
 
-  // Focus textarea when input changes (especially for prompt selections)
+  // Track if input change was from user typing vs external source (like prompt selection)
+  const lastInputRef = useRef("");
+  const isUserTypingRef = useRef(false);
+
+  // Focus textarea when input changes from external sources (like prompt selections)
   useEffect(() => {
     if (input && textareaRef.current && isHomePage) {
-      textareaRef.current.focus();
+      const lastInput = lastInputRef.current;
+      const textareaHasFocus = document.activeElement === textareaRef.current;
+      const isUserTyping = isUserTypingRef.current;
 
-      // Set cursor at the end of the text
-      const length = input.length;
-      textareaRef.current.setSelectionRange(length, length);
+      // Skip cursor manipulation if this is from user typing
+      if (isUserTyping) {
+        adjustHeight();
+        lastInputRef.current = input;
+        return;
+      }
 
-      // Also adjust height for the new content
+      // Check if this is a complete replacement of text (prompt selection)
+      // vs incremental changes (user typing)
+      const isCompleteReplacement =
+        lastInput.length > 0 &&
+        !input.startsWith(lastInput) &&
+        !lastInput.startsWith(input);
+
+      // Check if textarea doesn't have focus (external input)
+      const isExternalInput = !textareaHasFocus;
+
+      // Check if this is likely a prompt selection (empty to full text)
+      const isPromptSelection = lastInput === "" && input.length > 20;
+
+      // Only interfere with cursor positioning for external inputs or prompt selections
+      if (isCompleteReplacement || isExternalInput || isPromptSelection) {
+        textareaRef.current.focus();
+
+        // For prompt selections, put cursor at the end
+        const length = input.length;
+        textareaRef.current.setSelectionRange(length, length);
+      }
+
+      // Always adjust height for new content
       adjustHeight();
+
+      // Update the last input
+      lastInputRef.current = input;
     }
   }, [input, textareaRef, isHomePage, adjustHeight]);
 
@@ -311,18 +345,32 @@ function PureInputField({
   );
 
   const handleSubmit = useCallback(async () => {
+    console.log("=== HANDLE SUBMIT CALLED ===");
+    console.log("Attachments state at submit:", attachments);
+    console.log("Attachments length at submit:", attachments.length);
+
     const currentInput = textareaRef.current?.value || input;
 
     if (
       (!currentInput.trim() && attachments.length === 0) ||
       status === "streaming" ||
       status === "submitted"
-    )
+    ) {
+      console.log("=== SUBMIT BLOCKED ===");
+      console.log("Current input:", currentInput);
+      console.log("Attachments length:", attachments.length);
+      console.log("Status:", status);
       return;
+    }
 
     // Use the input as-is without automatic file conversion
     let finalInput = currentInput.trim();
     let finalAttachments = [...attachments];
+
+    console.log("=== PROCESSING SUBMIT ===");
+    console.log("Final input:", finalInput);
+    console.log("Final attachments:", finalAttachments);
+    console.log("Final attachments length:", finalAttachments.length);
 
     const messageId = uuidv4();
     // Create user message with potentially updated content and attachments
@@ -337,8 +385,6 @@ function PureInputField({
       "User message being sent:",
       JSON.stringify(userMessage, null, 2)
     );
-    console.log("Attachments count:", finalAttachments.length);
-    console.log("Attachments:", finalAttachments);
 
     // Handle new vs existing conversations
     // Check if this is a new conversation by looking at message count
@@ -455,16 +501,22 @@ function PureInputField({
 
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      console.log("=== ENTER KEY PRESSED ===");
       handleSubmit();
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    // Mark that this change is from user typing
+    isUserTypingRef.current = true;
+
     setInput(e.target.value);
     adjustHeight();
 
-    // We don't need extra cursor position handling as React will maintain it automatically
-    // when using controlled input with the value property
+    // Reset the flag after a short delay to allow the effect to run
+    setTimeout(() => {
+      isUserTypingRef.current = false;
+    }, 10);
   };
 
   // Expose handleSubmit function through ref for external access
@@ -797,11 +849,8 @@ function PureInputField({
   );
 }
 
-const InputField = memo(PureInputField, (prevProps, nextProps) => {
-  if (prevProps.input !== nextProps.input) return false;
-  if (prevProps.status !== nextProps.status) return false;
-  return true;
-});
+// Remove memo to prevent stale closure issues with internal state
+const InputField = PureInputField;
 
 function PureStopButton({ stop }: StopButtonProps) {
   return (
@@ -820,9 +869,15 @@ function PureStopButton({ stop }: StopButtonProps) {
 const StopButton = memo(PureStopButton);
 
 const PureSendButton = ({ onSubmit, disabled }: SendButtonProps) => {
+  const handleClick = () => {
+    console.log("=== SEND BUTTON CLICKED ===");
+    onSubmit();
+  };
+
   return (
     <Button
-      onClick={onSubmit}
+      type="button"
+      onClick={handleClick}
       variant="default"
       size="icon"
       className="h-10 w-10 sm:h-9 sm:w-9 mobile-touch"
@@ -834,8 +889,7 @@ const PureSendButton = ({ onSubmit, disabled }: SendButtonProps) => {
   );
 };
 
-const SendButton = memo(PureSendButton, (prevProps, nextProps) => {
-  return prevProps.disabled === nextProps.disabled;
-});
+// Remove memo to ensure SendButton always gets the latest onSubmit function
+const SendButton = PureSendButton;
 
 export default InputField;

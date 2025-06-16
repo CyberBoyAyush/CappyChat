@@ -65,7 +65,9 @@ export default function SettingsPage() {
   // Profile state
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState("");
-  const [notification, setNotification] = useState<NotificationType | null>(null);
+  const [notification, setNotification] = useState<NotificationType | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   // BYOK state
@@ -77,7 +79,7 @@ export default function SettingsPage() {
     hasOpenRouterKey,
     hasOpenAIKey,
     validateOpenRouterKey,
-    validateOpenAIKey
+    validateOpenAIKey,
   } = useBYOKStore();
 
   const [keyInput, setKeyInput] = useState("");
@@ -113,8 +115,8 @@ export default function SettingsPage() {
     }
 
     // Handle hash-based navigation
-    const hash = location.hash.replace('#', '');
-    if (hash && ['profile', 'privacy', 'settings'].includes(hash)) {
+    const hash = location.hash.replace("#", "");
+    if (hash && ["profile", "privacy", "settings"].includes(hash)) {
       setActiveSection(hash);
     }
   }, [user, location.hash]);
@@ -130,7 +132,7 @@ export default function SettingsPage() {
         const info = await getUserTierInfo();
         setTierInfo(info);
       } catch (error) {
-        console.error('Error loading tier info:', error);
+        console.error("Error loading tier info:", error);
       } finally {
         setLoadingTier(false);
       }
@@ -193,7 +195,9 @@ export default function SettingsPage() {
     }
 
     if (!validateOpenRouterKey(keyInput.trim())) {
-      setKeyError("Invalid API key format. OpenRouter keys should start with 'sk-or-'");
+      setKeyError(
+        "Invalid API key format. OpenRouter keys should start with 'sk-or-'"
+      );
       return;
     }
 
@@ -210,8 +214,6 @@ export default function SettingsPage() {
     setKeyError("");
   };
 
-
-
   const handleSaveOpenAIKey = () => {
     if (!openAIKeyInput.trim()) {
       setOpenAIKeyError("Please enter an OpenAI API key");
@@ -219,7 +221,9 @@ export default function SettingsPage() {
     }
 
     if (!validateOpenAIKey(openAIKeyInput.trim())) {
-      setOpenAIKeyError("Invalid API key format. OpenAI keys should start with 'sk-'");
+      setOpenAIKeyError(
+        "Invalid API key format. OpenAI keys should start with 'sk-'"
+      );
       return;
     }
 
@@ -253,14 +257,14 @@ export default function SettingsPage() {
 
     setIsAdminLoading(true);
     try {
-      const response = await fetch('/api/admin/manage-user', {
-        method: 'POST',
+      const response = await fetch("/api/admin/manage-user", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
-          action: 'getUserByEmail',
+          action: "getUserByEmail",
           email: userEmail.trim(),
         }),
       });
@@ -280,7 +284,7 @@ export default function SettingsPage() {
         });
       }
     } catch (error) {
-      console.error('Error searching user:', error);
+      console.error("Error searching user:", error);
       setNotification({
         type: "error",
         message: "Network error occurred",
@@ -290,7 +294,9 @@ export default function SettingsPage() {
     }
   };
 
-  const handleUpdateUserTier = async (newTier: 'free' | 'premium' | 'admin') => {
+  const handleUpdateUserTier = async (
+    newTier: "free" | "premium" | "admin"
+  ) => {
     if (!selectedUser || !adminKey.trim()) {
       setNotification({
         type: "error",
@@ -301,14 +307,14 @@ export default function SettingsPage() {
 
     setIsAdminLoading(true);
     try {
-      const response = await fetch('/api/admin/manage-user', {
-        method: 'POST',
+      const response = await fetch("/api/admin/manage-user", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
-          action: 'updateTier',
+          action: "updateTier",
           userId: selectedUser.$id,
           tier: newTier,
         }),
@@ -330,7 +336,7 @@ export default function SettingsPage() {
         });
       }
     } catch (error) {
-      console.error('Error updating user tier:', error);
+      console.error("Error updating user tier:", error);
       setNotification({
         type: "error",
         message: "Network error occurred",
@@ -351,14 +357,14 @@ export default function SettingsPage() {
 
     setIsAdminLoading(true);
     try {
-      const response = await fetch('/api/admin/manage-user', {
-        method: 'POST',
+      const response = await fetch("/api/admin/manage-user", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
-          action: 'resetCredits',
+          action: "resetCredits",
           userId: selectedUser.$id,
         }),
       });
@@ -379,7 +385,7 @@ export default function SettingsPage() {
         });
       }
     } catch (error) {
-      console.error('Error resetting user credits:', error);
+      console.error("Error resetting user credits:", error);
       setNotification({
         type: "error",
         message: "Network error occurred",
@@ -401,10 +407,10 @@ export default function SettingsPage() {
 
     setLoadingStats(true);
     try {
-      const response = await fetch('/api/admin/stats', {
-        method: 'POST',
+      const response = await fetch("/api/admin/stats", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
@@ -426,7 +432,7 @@ export default function SettingsPage() {
         });
       }
     } catch (error) {
-      console.error('Error loading stats:', error);
+      console.error("Error loading stats:", error);
       setNotification({
         type: "error",
         message: "Network error occurred",
@@ -446,20 +452,24 @@ export default function SettingsPage() {
       return;
     }
 
-    if (!confirm("Are you sure you want to reset all user credits? This action cannot be undone.")) {
+    if (
+      !confirm(
+        "Are you sure you want to reset all user credits? This action cannot be undone."
+      )
+    ) {
       return;
     }
 
     setIsAdminLoading(true);
     try {
-      const response = await fetch('/api/admin/manage-user', {
-        method: 'POST',
+      const response = await fetch("/api/admin/manage-user", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
-          action: 'monthlyReset',
+          action: "monthlyReset",
         }),
       });
 
@@ -481,7 +491,7 @@ export default function SettingsPage() {
         });
       }
     } catch (error) {
-      console.error('Error performing monthly reset:', error);
+      console.error("Error performing monthly reset:", error);
       setNotification({
         type: "error",
         message: "Network error occurred",
@@ -501,25 +511,33 @@ export default function SettingsPage() {
       return;
     }
 
-    if (!confirm("⚠️ CRITICAL OPERATION ⚠️\n\nThis will immediately logout ALL active users from the system. This should only be used in emergency situations.\n\nAre you absolutely sure you want to proceed?")) {
+    if (
+      !confirm(
+        "⚠️ CRITICAL OPERATION ⚠️\n\nThis will immediately logout ALL active users from the system. This should only be used in emergency situations.\n\nAre you absolutely sure you want to proceed?"
+      )
+    ) {
       return;
     }
 
     // Double confirmation for this critical operation
-    if (!confirm("This is your final confirmation. All users will be logged out immediately. Continue?")) {
+    if (
+      !confirm(
+        "This is your final confirmation. All users will be logged out immediately. Continue?"
+      )
+    ) {
       return;
     }
 
     setIsAdminLoading(true);
     try {
-      const response = await fetch('/api/admin/manage-user', {
-        method: 'POST',
+      const response = await fetch("/api/admin/manage-user", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
-          action: 'logoutAllUsers',
+          action: "logoutAllUsers",
         }),
       });
 
@@ -528,7 +546,8 @@ export default function SettingsPage() {
       if (response.ok) {
         setNotification({
           type: "success",
-          message: data.message || "All users have been logged out successfully",
+          message:
+            data.message || "All users have been logged out successfully",
         });
         // Refresh stats if they're loaded
         if (adminStats) {
@@ -541,7 +560,7 @@ export default function SettingsPage() {
         });
       }
     } catch (error) {
-      console.error('Error logging out all users:', error);
+      console.error("Error logging out all users:", error);
       setNotification({
         type: "error",
         message: "Network error occurred",
@@ -582,7 +601,8 @@ export default function SettingsPage() {
               Settings
             </h2>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Manage your profile, privacy settings, and application preferences.
+              Manage your profile, privacy settings, and application
+              preferences.
             </p>
             <div className="h-px bg-border mt-4"></div>
           </div>
@@ -606,17 +626,19 @@ export default function SettingsPage() {
           )}
 
           {/* Section Navigation */}
-          <div className="flex flex-wrap gap-2 border-b border-border">
+          <div className="flex flex-wrap justify-center gap-1 md:gap-2 border-b border-border">
             {[
               { id: "profile", label: "Profile", icon: User },
               { id: "privacy", label: "Privacy & Security", icon: Shield },
               { id: "settings", label: "Application", icon: SettingsIcon },
-              ...(tierInfo?.tier === 'admin' ? [{ id: "admin", label: "Admin Dashboard", icon: Shield }] : []),
+              ...(tierInfo?.tier === "admin"
+                ? [{ id: "admin", label: "Admin Dashboard", icon: Shield }]
+                : []),
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveSection(id)}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex items-center gap-2 px-2 md:px-4 py-2 text-xs md:text-sm font-medium border-b-2 transition-colors ${
                   activeSection === id
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground"
@@ -671,7 +693,9 @@ export default function SettingsPage() {
                         </div>
                       ) : (
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                          <h3 className="text-xl font-semibold">{user?.name || "Anonymous User"}</h3>
+                          <h3 className="text-xl font-semibold">
+                            {user?.name || "Anonymous User"}
+                          </h3>
                           <Button
                             onClick={() => setIsEditing(true)}
                             variant="ghost"
@@ -689,7 +713,13 @@ export default function SettingsPage() {
                       {user?.registration && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Calendar className="w-4 h-4" />
-                          <span>Joined {format(new Date(user.registration), "MMMM d, yyyy")}</span>
+                          <span>
+                            Joined{" "}
+                            {format(
+                              new Date(user.registration),
+                              "MMMM d, yyyy"
+                            )}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -703,17 +733,21 @@ export default function SettingsPage() {
                   </h3>
                   <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <dt className="text-sm text-muted-foreground">Account Type</dt>
+                      <dt className="text-sm text-muted-foreground">
+                        Account Type
+                      </dt>
                       <dd className="font-medium flex items-center gap-2">
                         {tierInfo ? (
                           <>
-                            <span className="capitalize">{getTierDisplayInfo(tierInfo.tier).name} Plan</span>
-                            {tierInfo.tier === 'premium' && (
+                            <span className="capitalize">
+                              {getTierDisplayInfo(tierInfo.tier).name} Plan
+                            </span>
+                            {tierInfo.tier === "premium" && (
                               <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
                                 PRO
                               </span>
                             )}
-                            {tierInfo.tier === 'admin' && (
+                            {tierInfo.tier === "admin" && (
                               <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full">
                                 ADMIN
                               </span>
@@ -725,48 +759,75 @@ export default function SettingsPage() {
                       </dd>
                     </div>
                     <div className="space-y-1">
-                      <dt className="text-sm text-muted-foreground">Authentication</dt>
+                      <dt className="text-sm text-muted-foreground">
+                        Authentication
+                      </dt>
                       <dd className="font-medium">Email</dd>
                     </div>
                     <div className="space-y-1">
-                      <dt className="text-sm text-muted-foreground">Email Status</dt>
+                      <dt className="text-sm text-muted-foreground">
+                        Email Status
+                      </dt>
                       <dd className="flex items-center gap-1">
                         {user?.emailVerification ? (
                           <>
                             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                            <span className="text-emerald-600 dark:text-emerald-400">Verified</span>
+                            <span className="text-emerald-600 dark:text-emerald-400">
+                              Verified
+                            </span>
                           </>
                         ) : (
                           <>
                             <AlertTriangle className="w-4 h-4 text-amber-500" />
-                            <span className="text-amber-600 dark:text-amber-400">Unverified</span>
+                            <span className="text-amber-600 dark:text-amber-400">
+                              Unverified
+                            </span>
                           </>
                         )}
                       </dd>
                     </div>
                     <div className="space-y-1">
                       <dt className="text-sm text-muted-foreground">User ID</dt>
-                      <dd className="font-mono text-xs text-muted-foreground">{user?.$id || "N/A"}</dd>
+                      <dd className="font-mono text-xs text-muted-foreground">
+                        {user?.$id || "N/A"}
+                      </dd>
                     </div>
                   </dl>
 
                   {/* Current Plan Limits */}
-                  {tierInfo && tierInfo.tier !== 'admin' && (
+                  {tierInfo && tierInfo.tier !== "admin" && (
                     <div className="mt-6 pt-4 border-t border-border">
-                      <h4 className="text-sm font-medium text-muted-foreground mb-3">Current Usage</h4>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-3">
+                        Current Usage
+                      </h4>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Free Models</span>
+                            <span className="text-muted-foreground">
+                              Free Models
+                            </span>
                             <span className="font-medium">
-                              {tierInfo.freeCredits} / {getTierDisplayInfo(tierInfo.tier).limits.freeCredits}
+                              {tierInfo.freeCredits} /{" "}
+                              {
+                                getTierDisplayInfo(tierInfo.tier).limits
+                                  .freeCredits
+                              }
                             </span>
                           </div>
                           <div className="w-full bg-muted rounded-full h-2">
                             <div
                               className="bg-green-500 h-2 rounded-full transition-all duration-300"
                               style={{
-                                width: `${Math.max(0, Math.min(100, (tierInfo.freeCredits / getTierDisplayInfo(tierInfo.tier).limits.freeCredits) * 100))}%`
+                                width: `${Math.max(
+                                  0,
+                                  Math.min(
+                                    100,
+                                    (tierInfo.freeCredits /
+                                      getTierDisplayInfo(tierInfo.tier).limits
+                                        .freeCredits) *
+                                      100
+                                  )
+                                )}%`,
                               }}
                             ></div>
                           </div>
@@ -774,16 +835,31 @@ export default function SettingsPage() {
 
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Premium</span>
+                            <span className="text-muted-foreground">
+                              Premium
+                            </span>
                             <span className="font-medium">
-                              {tierInfo.premiumCredits} / {getTierDisplayInfo(tierInfo.tier).limits.premiumCredits}
+                              {tierInfo.premiumCredits} /{" "}
+                              {
+                                getTierDisplayInfo(tierInfo.tier).limits
+                                  .premiumCredits
+                              }
                             </span>
                           </div>
                           <div className="w-full bg-muted rounded-full h-2">
                             <div
                               className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                               style={{
-                                width: `${Math.max(0, Math.min(100, (tierInfo.premiumCredits / getTierDisplayInfo(tierInfo.tier).limits.premiumCredits) * 100))}%`
+                                width: `${Math.max(
+                                  0,
+                                  Math.min(
+                                    100,
+                                    (tierInfo.premiumCredits /
+                                      getTierDisplayInfo(tierInfo.tier).limits
+                                        .premiumCredits) *
+                                      100
+                                  )
+                                )}%`,
                               }}
                             ></div>
                           </div>
@@ -791,16 +867,31 @@ export default function SettingsPage() {
 
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Super Premium</span>
+                            <span className="text-muted-foreground">
+                              Super Premium
+                            </span>
                             <span className="font-medium">
-                              {tierInfo.superPremiumCredits} / {getTierDisplayInfo(tierInfo.tier).limits.superPremiumCredits}
+                              {tierInfo.superPremiumCredits} /{" "}
+                              {
+                                getTierDisplayInfo(tierInfo.tier).limits
+                                  .superPremiumCredits
+                              }
                             </span>
                           </div>
                           <div className="w-full bg-muted rounded-full h-2">
                             <div
                               className="bg-purple-500 h-2 rounded-full transition-all duration-300"
                               style={{
-                                width: `${Math.max(0, Math.min(100, (tierInfo.superPremiumCredits / getTierDisplayInfo(tierInfo.tier).limits.superPremiumCredits) * 100))}%`
+                                width: `${Math.max(
+                                  0,
+                                  Math.min(
+                                    100,
+                                    (tierInfo.superPremiumCredits /
+                                      getTierDisplayInfo(tierInfo.tier).limits
+                                        .superPremiumCredits) *
+                                      100
+                                  )
+                                )}%`,
                               }}
                             ></div>
                           </div>
@@ -809,14 +900,20 @@ export default function SettingsPage() {
 
                       <div className="mt-3 text-xs text-muted-foreground">
                         {tierInfo.lastResetDate && (
-                          <p>• Last reset: {format(new Date(tierInfo.lastResetDate), "MMMM d, yyyy")}</p>
+                          <p>
+                            • Last reset:{" "}
+                            {format(
+                              new Date(tierInfo.lastResetDate),
+                              "MMMM d, yyyy"
+                            )}
+                          </p>
                         )}
                         <p>• Credits reset monthly on the 1st of each month</p>
                       </div>
                     </div>
                   )}
 
-                  {tierInfo?.tier === 'admin' && (
+                  {tierInfo?.tier === "admin" && (
                     <div className="mt-6 pt-4 border-t border-border">
                       <div className="text-center py-4">
                         <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-lg">
@@ -861,36 +958,48 @@ export default function SettingsPage() {
                     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
                       <Lock className="w-5 h-5 text-primary mt-0.5" />
                       <div>
-                        <h4 className="font-medium text-sm">End-to-End Encryption</h4>
+                        <h4 className="font-medium text-sm">
+                          End-to-End Encryption
+                        </h4>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Your conversations are encrypted in transit and at rest.
+                          Your conversations are encrypted in transit and at
+                          rest.
                         </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
                       <Eye className="w-5 h-5 text-primary mt-0.5" />
                       <div>
-                        <h4 className="font-medium text-sm">Data Transparency</h4>
+                        <h4 className="font-medium text-sm">
+                          Data Transparency
+                        </h4>
                         <p className="text-xs text-muted-foreground mt-1">
-                          We clearly explain what data we collect and how we use it.
+                          We clearly explain what data we collect and how we use
+                          it.
                         </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
                       <Database className="w-5 h-5 text-primary mt-0.5" />
                       <div>
-                        <h4 className="font-medium text-sm">Minimal Data Collection</h4>
+                        <h4 className="font-medium text-sm">
+                          Minimal Data Collection
+                        </h4>
                         <p className="text-xs text-muted-foreground mt-1">
-                          We only collect information necessary to provide our services.
+                          We only collect information necessary to provide our
+                          services.
                         </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
                       <Trash2 className="w-5 h-5 text-primary mt-0.5" />
                       <div>
-                        <h4 className="font-medium text-sm">Data Deletion Controls</h4>
+                        <h4 className="font-medium text-sm">
+                          Data Deletion Controls
+                        </h4>
                         <p className="text-xs text-muted-foreground mt-1">
-                          You have full control over your data and can delete it anytime.
+                          You have full control over your data and can delete it
+                          anytime.
                         </p>
                       </div>
                     </div>
@@ -906,9 +1015,12 @@ export default function SettingsPage() {
                     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
                       <Server className="w-5 h-5 text-primary mt-0.5" />
                       <div>
-                        <h4 className="font-medium text-sm">Secure Infrastructure</h4>
+                        <h4 className="font-medium text-sm">
+                          Secure Infrastructure
+                        </h4>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Industry-leading cloud providers with rigorous security controls.
+                          Industry-leading cloud providers with rigorous
+                          security controls.
                         </p>
                       </div>
                     </div>
@@ -917,7 +1029,8 @@ export default function SettingsPage() {
                       <div>
                         <h4 className="font-medium text-sm">Regular Audits</h4>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Regular security assessments and vulnerability testing.
+                          Regular security assessments and vulnerability
+                          testing.
                         </p>
                       </div>
                     </div>
@@ -926,7 +1039,8 @@ export default function SettingsPage() {
                       <div>
                         <h4 className="font-medium text-sm">Access Controls</h4>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Strict internal access controls with comprehensive audit logging.
+                          Strict internal access controls with comprehensive
+                          audit logging.
                         </p>
                       </div>
                     </div>
@@ -935,7 +1049,8 @@ export default function SettingsPage() {
                       <div>
                         <h4 className="font-medium text-sm">Compliance</h4>
                         <p className="text-xs text-muted-foreground mt-1">
-                          We follow industry standards and best practices for data protection.
+                          We follow industry standards and best practices for
+                          data protection.
                         </p>
                       </div>
                     </div>
@@ -950,19 +1065,27 @@ export default function SettingsPage() {
                   <div className="space-y-3 text-sm">
                     <div className="flex items-start gap-2">
                       <Check className="w-4 h-4 text-emerald-500 mt-0.5" />
-                      <span>Your conversations are stored securely and encrypted</span>
+                      <span>
+                        Your conversations are stored securely and encrypted
+                      </span>
                     </div>
                     <div className="flex items-start gap-2">
                       <Check className="w-4 h-4 text-emerald-500 mt-0.5" />
-                      <span>We never sell your personal data to third parties</span>
+                      <span>
+                        We never sell your personal data to third parties
+                      </span>
                     </div>
                     <div className="flex items-start gap-2">
                       <Check className="w-4 h-4 text-emerald-500 mt-0.5" />
-                      <span>You can export or delete your data at any time</span>
+                      <span>
+                        You can export or delete your data at any time
+                      </span>
                     </div>
                     <div className="flex items-start gap-2">
                       <Check className="w-4 h-4 text-emerald-500 mt-0.5" />
-                      <span>API keys are stored locally in your browser only</span>
+                      <span>
+                        API keys are stored locally in your browser only
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1019,114 +1142,133 @@ export default function SettingsPage() {
                   <div className="space-y-1 mb-4">
                     <div className="flex items-center gap-2">
                       <Key className="h-5 w-5 text-primary" />
-                      <h3 className="text-lg font-medium">Bring Your Own Key</h3>
+                      <h3 className="text-lg font-medium">
+                        Bring Your Own Key
+                      </h3>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Use your own OpenRouter API key for unlimited access to AI models
+                      Use your own OpenRouter API key for unlimited access to AI
+                      models
                     </p>
                   </div>
 
-              {hasOpenRouterKey() ? (
-                // Key is configured
-                <div className="space-y-4">
-                  <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
-                        <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                          OpenRouter API Key Configured
-                        </p>
-                        <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                          Key: {maskKey(openRouterApiKey || "")}
-                        </p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleRemoveKey}
-                        className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-muted-foreground">
-                    <p>✓ Your API key is stored securely in your browser only</p>
-                    <p>✓ Models will show a key icon when using your API key</p>
-                    <p>✓ Fallback to system key if your key fails</p>
-                  </div>
-                </div>
-              ) : (
-                // No key configured
-                <div className="space-y-4">
-                  <div className="rounded-lg bg-muted/50 p-4">
-                    <div className="flex items-start gap-4">
-                      <div className="p-2 rounded-full bg-muted">
-                        <Key className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm">
-                          Add your OpenRouter API key to use your own credits and access all available models.
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Get your API key from{" "}
-                          <a
-                            href="https://openrouter.ai/settings/keys"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
+                  {hasOpenRouterKey() ? (
+                    // Key is configured
+                    <div className="space-y-4">
+                      <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
+                            <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                              OpenRouter API Key Configured
+                            </p>
+                            <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                              Key: {maskKey(openRouterApiKey || "")}
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRemoveKey}
+                            className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
                           >
-                            OpenRouter Settings
-                          </a>
+                            <X className="h-4 w-4 mr-1" />
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-muted-foreground">
+                        <p>
+                          ✓ Your API key is stored securely in your browser only
                         </p>
+                        <p>
+                          ✓ Models will show a key icon when using your API key
+                        </p>
+                        <p>✓ Fallback to system key if your key fails</p>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">OpenRouter API Key</label>
-                      <div className="relative">
-                        <Input
-                          type={showKey ? "text" : "password"}
-                          placeholder="sk-or-..."
-                          value={keyInput}
-                          onChange={(e) => {
-                            setKeyInput(e.target.value);
-                            setKeyError("");
-                          }}
-                          className={keyError ? "border-red-500" : ""}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                          onClick={() => setShowKey(!showKey)}
-                        >
-                          {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
+                  ) : (
+                    // No key configured
+                    <div className="space-y-4">
+                      <div className="rounded-lg bg-muted/50 p-4">
+                        <div className="flex items-start gap-4">
+                          <div className="p-2 rounded-full bg-muted">
+                            <Key className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm">
+                              Add your OpenRouter API key to use your own
+                              credits and access all available models.
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-2">
+                              Get your API key from{" "}
+                              <a
+                                href="https://openrouter.ai/settings/keys"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                OpenRouter Settings
+                              </a>
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      {keyError && (
-                        <p className="text-sm text-red-600">{keyError}</p>
-                      )}
-                      {keySaved && (
-                        <p className="text-sm text-green-600">✓ API key saved successfully!</p>
-                      )}
-                    </div>
 
-                    <div className="flex gap-2">
-                      <Button onClick={handleSaveKey} disabled={!keyInput.trim()}>
-                        <Key className="h-4 w-4 mr-2" />
-                        Save API Key
-                      </Button>
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">
+                            OpenRouter API Key
+                          </label>
+                          <div className="relative">
+                            <Input
+                              type={showKey ? "text" : "password"}
+                              placeholder="sk-or-..."
+                              value={keyInput}
+                              onChange={(e) => {
+                                setKeyInput(e.target.value);
+                                setKeyError("");
+                              }}
+                              className={keyError ? "border-red-500" : ""}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                              onClick={() => setShowKey(!showKey)}
+                            >
+                              {showKey ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                          {keyError && (
+                            <p className="text-sm text-red-600">{keyError}</p>
+                          )}
+                          {keySaved && (
+                            <p className="text-sm text-green-600">
+                              ✓ API key saved successfully!
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={handleSaveKey}
+                            disabled={!keyInput.trim()}
+                          >
+                            <Key className="h-4 w-4 mr-2" />
+                            Save API Key
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
                   )}
                 </div>
 
@@ -1141,111 +1283,132 @@ export default function SettingsPage() {
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Use your own OpenAI API key for voice input powered by Whisper
+                      Use your own OpenAI API key for voice input powered by
+                      Whisper
                     </p>
                   </div>
 
-              {hasOpenAIKey() ? (
-                // OpenAI Key is configured
-                <div className="space-y-4">
-                  <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
-                        <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                          OpenAI API Key Configured
-                        </p>
-                        <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                          Key: {maskKey(openAIApiKey || "")}
-                        </p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleRemoveOpenAIKey}
-                        className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-muted-foreground">
-                    <p>✓ Your OpenAI API key is stored securely in your browser only</p>
-                    <p>✓ Used exclusively for voice input transcription via Whisper</p>
-                    <p>✓ Fallback to system key if your key fails</p>
-                  </div>
-                </div>
-              ) : (
-                // No OpenAI key configured
-                <div className="space-y-4">
-                  <div className="rounded-lg bg-muted/50 p-4">
-                    <div className="flex items-start gap-4">
-                      <div className="p-2 rounded-full bg-muted">
-                        <Key className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm">
-                          Add your OpenAI API key to use your own credits for voice input transcription.
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Get your API key from{" "}
-                          <a
-                            href="https://platform.openai.com/api-keys"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
+                  {hasOpenAIKey() ? (
+                    // OpenAI Key is configured
+                    <div className="space-y-4">
+                      <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
+                            <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                              OpenAI API Key Configured
+                            </p>
+                            <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                              Key: {maskKey(openAIApiKey || "")}
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRemoveOpenAIKey}
+                            className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
                           >
-                            OpenAI Platform
-                          </a>
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-muted-foreground">
+                        <p>
+                          ✓ Your OpenAI API key is stored securely in your
+                          browser only
                         </p>
+                        <p>
+                          ✓ Used exclusively for voice input transcription via
+                          Whisper
+                        </p>
+                        <p>✓ Fallback to system key if your key fails</p>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">OpenAI API Key</label>
-                      <div className="relative">
-                        <Input
-                          type={showOpenAIKey ? "text" : "password"}
-                          placeholder="sk-..."
-                          value={openAIKeyInput}
-                          onChange={(e) => {
-                            setOpenAIKeyInput(e.target.value);
-                            setOpenAIKeyError("");
-                          }}
-                          className={openAIKeyError ? "border-red-500" : ""}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                          onClick={() => setShowOpenAIKey(!showOpenAIKey)}
-                        >
-                          {showOpenAIKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
+                  ) : (
+                    // No OpenAI key configured
+                    <div className="space-y-4">
+                      <div className="rounded-lg bg-muted/50 p-4">
+                        <div className="flex items-start gap-4">
+                          <div className="p-2 rounded-full bg-muted">
+                            <Key className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm">
+                              Add your OpenAI API key to use your own credits
+                              for voice input transcription.
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-2">
+                              Get your API key from{" "}
+                              <a
+                                href="https://platform.openai.com/api-keys"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                OpenAI Platform
+                              </a>
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      {openAIKeyError && (
-                        <p className="text-sm text-red-600">{openAIKeyError}</p>
-                      )}
-                      {openAIKeySaved && (
-                        <p className="text-sm text-green-600">✓ OpenAI API key saved successfully!</p>
-                      )}
-                    </div>
 
-                    <div className="flex gap-2">
-                      <Button onClick={handleSaveOpenAIKey} disabled={!openAIKeyInput.trim()}>
-                        <Key className="h-4 w-4 mr-2" />
-                        Save OpenAI Key
-                      </Button>
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">
+                            OpenAI API Key
+                          </label>
+                          <div className="relative">
+                            <Input
+                              type={showOpenAIKey ? "text" : "password"}
+                              placeholder="sk-..."
+                              value={openAIKeyInput}
+                              onChange={(e) => {
+                                setOpenAIKeyInput(e.target.value);
+                                setOpenAIKeyError("");
+                              }}
+                              className={openAIKeyError ? "border-red-500" : ""}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                              onClick={() => setShowOpenAIKey(!showOpenAIKey)}
+                            >
+                              {showOpenAIKey ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                          {openAIKeyError && (
+                            <p className="text-sm text-red-600">
+                              {openAIKeyError}
+                            </p>
+                          )}
+                          {openAIKeySaved && (
+                            <p className="text-sm text-green-600">
+                              ✓ OpenAI API key saved successfully!
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={handleSaveOpenAIKey}
+                            disabled={!openAIKeyInput.trim()}
+                          >
+                            <Key className="h-4 w-4 mr-2" />
+                            Save OpenAI Key
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
                   )}
                 </div>
 
@@ -1275,14 +1438,21 @@ export default function SettingsPage() {
                               {getTierDisplayInfo(tierInfo.tier).name} Plan
                             </h4>
                             <p className="text-sm text-muted-foreground">
-                              {tierInfo.tier === 'admin' ? 'Unlimited access to all models' : 'Monthly credit limits'}
+                              {tierInfo.tier === "admin"
+                                ? "Unlimited access to all models"
+                                : "Monthly credit limits"}
                             </p>
                           </div>
-                          {tierInfo.tier !== 'admin' && (
+                          {tierInfo.tier !== "admin" && (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => window.open('mailto:ayush@atchat.app?subject=Upgrade Plan Request', '_blank')}
+                              onClick={() =>
+                                window.open(
+                                  "mailto:ayush@atchat.app?subject=Upgrade Plan Request",
+                                  "_blank"
+                                )
+                              }
                               className="text-primary border-primary hover:bg-primary hover:text-primary-foreground"
                             >
                               Upgrade Plan
@@ -1291,20 +1461,35 @@ export default function SettingsPage() {
                         </div>
 
                         {/* Usage Stats */}
-                        {tierInfo.tier !== 'admin' && (
+                        {tierInfo.tier !== "admin" && (
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="space-y-2">
                               <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Free Models</span>
+                                <span className="text-muted-foreground">
+                                  Free Models
+                                </span>
                                 <span className="font-medium">
-                                  {tierInfo.freeCredits} / {getTierDisplayInfo(tierInfo.tier).limits.freeCredits}
+                                  {tierInfo.freeCredits} /{" "}
+                                  {
+                                    getTierDisplayInfo(tierInfo.tier).limits
+                                      .freeCredits
+                                  }
                                 </span>
                               </div>
                               <div className="w-full bg-muted rounded-full h-2">
                                 <div
                                   className="bg-green-500 h-2 rounded-full transition-all duration-300"
                                   style={{
-                                    width: `${Math.max(0, Math.min(100, (tierInfo.freeCredits / getTierDisplayInfo(tierInfo.tier).limits.freeCredits) * 100))}%`
+                                    width: `${Math.max(
+                                      0,
+                                      Math.min(
+                                        100,
+                                        (tierInfo.freeCredits /
+                                          getTierDisplayInfo(tierInfo.tier)
+                                            .limits.freeCredits) *
+                                          100
+                                      )
+                                    )}%`,
                                   }}
                                 ></div>
                               </div>
@@ -1312,16 +1497,31 @@ export default function SettingsPage() {
 
                             <div className="space-y-2">
                               <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Premium Models</span>
+                                <span className="text-muted-foreground">
+                                  Premium Models
+                                </span>
                                 <span className="font-medium">
-                                  {tierInfo.premiumCredits} / {getTierDisplayInfo(tierInfo.tier).limits.premiumCredits}
+                                  {tierInfo.premiumCredits} /{" "}
+                                  {
+                                    getTierDisplayInfo(tierInfo.tier).limits
+                                      .premiumCredits
+                                  }
                                 </span>
                               </div>
                               <div className="w-full bg-muted rounded-full h-2">
                                 <div
                                   className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                                   style={{
-                                    width: `${Math.max(0, Math.min(100, (tierInfo.premiumCredits / getTierDisplayInfo(tierInfo.tier).limits.premiumCredits) * 100))}%`
+                                    width: `${Math.max(
+                                      0,
+                                      Math.min(
+                                        100,
+                                        (tierInfo.premiumCredits /
+                                          getTierDisplayInfo(tierInfo.tier)
+                                            .limits.premiumCredits) *
+                                          100
+                                      )
+                                    )}%`,
                                   }}
                                 ></div>
                               </div>
@@ -1329,16 +1529,31 @@ export default function SettingsPage() {
 
                             <div className="space-y-2">
                               <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Super Premium</span>
+                                <span className="text-muted-foreground">
+                                  Super Premium
+                                </span>
                                 <span className="font-medium">
-                                  {tierInfo.superPremiumCredits} / {getTierDisplayInfo(tierInfo.tier).limits.superPremiumCredits}
+                                  {tierInfo.superPremiumCredits} /{" "}
+                                  {
+                                    getTierDisplayInfo(tierInfo.tier).limits
+                                      .superPremiumCredits
+                                  }
                                 </span>
                               </div>
                               <div className="w-full bg-muted rounded-full h-2">
                                 <div
                                   className="bg-purple-500 h-2 rounded-full transition-all duration-300"
                                   style={{
-                                    width: `${Math.max(0, Math.min(100, (tierInfo.superPremiumCredits / getTierDisplayInfo(tierInfo.tier).limits.superPremiumCredits) * 100))}%`
+                                    width: `${Math.max(
+                                      0,
+                                      Math.min(
+                                        100,
+                                        (tierInfo.superPremiumCredits /
+                                          getTierDisplayInfo(tierInfo.tier)
+                                            .limits.superPremiumCredits) *
+                                          100
+                                      )
+                                    )}%`,
                                   }}
                                 ></div>
                               </div>
@@ -1346,7 +1561,7 @@ export default function SettingsPage() {
                           </div>
                         )}
 
-                        {tierInfo.tier === 'admin' && (
+                        {tierInfo.tier === "admin" && (
                           <div className="text-center py-4">
                             <p className="text-sm text-muted-foreground">
                               ✨ You have unlimited access to all models
@@ -1358,18 +1573,34 @@ export default function SettingsPage() {
                       {/* Plan Information */}
                       <div className="text-xs text-muted-foreground space-y-1">
                         <p>• Credits reset monthly on the 1st of each month</p>
-                        <p>• Free models include basic AI models without premium features</p>
-                        <p>• Premium models include advanced AI models with enhanced capabilities</p>
-                        <p>• Super Premium models include the most advanced AI models with cutting-edge features</p>
+                        <p>
+                          • Free models include basic AI models without premium
+                          features
+                        </p>
+                        <p>
+                          • Premium models include advanced AI models with
+                          enhanced capabilities
+                        </p>
+                        <p>
+                          • Super Premium models include the most advanced AI
+                          models with cutting-edge features
+                        </p>
                         {tierInfo.lastResetDate && (
-                          <p>• Last reset: {format(new Date(tierInfo.lastResetDate), "MMMM d, yyyy")}</p>
+                          <p>
+                            • Last reset:{" "}
+                            {format(
+                              new Date(tierInfo.lastResetDate),
+                              "MMMM d, yyyy"
+                            )}
+                          </p>
                         )}
                       </div>
                     </div>
                   ) : (
                     <div className="text-center py-8">
                       <p className="text-sm text-muted-foreground">
-                        Unable to load tier information. Please refresh the page.
+                        Unable to load tier information. Please refresh the
+                        page.
                       </p>
                     </div>
                   )}
@@ -1378,7 +1609,7 @@ export default function SettingsPage() {
             )}
 
             {/* Admin Dashboard Section */}
-            {activeSection === "admin" && tierInfo?.tier === 'admin' && (
+            {activeSection === "admin" && tierInfo?.tier === "admin" && (
               <div className="space-y-6">
                 {/* Admin Dashboard Header */}
                 <div className="p-6 border rounded-xl bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 border-orange-200 dark:border-orange-800 shadow-lg">
@@ -1404,13 +1635,16 @@ export default function SettingsPage() {
                           Administrative Access Required
                         </p>
                         <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                          Enter your admin secret key to access system management features
+                          Enter your admin secret key to access system
+                          management features
                         </p>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Admin Secret Key</label>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Admin Secret Key
+                      </label>
                       <Input
                         type="password"
                         placeholder="Enter admin secret key"
@@ -1430,8 +1664,12 @@ export default function SettingsPage() {
                         <Database className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <h4 className="text-lg font-bold text-blue-800 dark:text-blue-200">Platform Statistics</h4>
-                        <p className="text-sm text-blue-600 dark:text-blue-400">Real-time system metrics and analytics</p>
+                        <h4 className="text-lg font-bold text-blue-800 dark:text-blue-200">
+                          Platform Statistics
+                        </h4>
+                        <p className="text-sm text-blue-600 dark:text-blue-400">
+                          Real-time system metrics and analytics
+                        </p>
                       </div>
                     </div>
                     <Button
@@ -1460,43 +1698,65 @@ export default function SettingsPage() {
                       <div className="bg-white/50 dark:bg-black/20 rounded-lg p-4 border border-blue-200/50 dark:border-blue-800/50">
                         <div className="flex items-center gap-2 mb-4">
                           <Users className="h-4 w-4 text-blue-600" />
-                          <h5 className="text-sm font-semibold text-blue-800 dark:text-blue-200">User Statistics</h5>
+                          <h5 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                            User Statistics
+                          </h5>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                           <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 p-4 rounded-lg text-center border border-slate-200 dark:border-slate-700 shadow-sm">
                             <div className="flex items-center justify-center mb-2">
                               <User className="h-5 w-5 text-slate-600 dark:text-slate-400" />
                             </div>
-                            <p className="text-2xl font-bold text-slate-700 dark:text-slate-300">{adminStats.users.total}</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Users</p>
+                            <p className="text-2xl font-bold text-slate-700 dark:text-slate-300">
+                              {adminStats.users.total}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                              Total Users
+                            </p>
                           </div>
                           <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-4 rounded-lg text-center border border-green-200 dark:border-green-700 shadow-sm">
                             <div className="flex items-center justify-center mb-2">
                               <CheckCircle2 className="h-5 w-5 text-green-600" />
                             </div>
-                            <p className="text-2xl font-bold text-green-700 dark:text-green-300">{adminStats.users.verified}</p>
-                            <p className="text-xs text-green-600 dark:text-green-400 font-medium">Verified</p>
+                            <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                              {adminStats.users.verified}
+                            </p>
+                            <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                              Verified
+                            </p>
                           </div>
                           <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 p-4 rounded-lg text-center border border-amber-200 dark:border-amber-700 shadow-sm">
                             <div className="flex items-center justify-center mb-2">
                               <AlertTriangle className="h-5 w-5 text-amber-600" />
                             </div>
-                            <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">{adminStats.users.unverified}</p>
-                            <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">Unverified</p>
+                            <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                              {adminStats.users.unverified}
+                            </p>
+                            <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                              Unverified
+                            </p>
                           </div>
                           <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-4 rounded-lg text-center border border-blue-200 dark:border-blue-700 shadow-sm">
                             <div className="flex items-center justify-center mb-2">
                               <Calendar className="h-5 w-5 text-blue-600" />
                             </div>
-                            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{adminStats.users.recentlyRegistered}</p>
-                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Last 30 Days</p>
+                            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                              {adminStats.users.recentlyRegistered}
+                            </p>
+                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                              Last 30 Days
+                            </p>
                           </div>
                           <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 p-4 rounded-lg text-center border border-purple-200 dark:border-purple-700 shadow-sm">
                             <div className="flex items-center justify-center mb-2">
                               <User className="h-5 w-5 text-purple-600" />
                             </div>
-                            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{adminStats.users.registeredToday}</p>
-                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">Today</p>
+                            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                              {adminStats.users.registeredToday}
+                            </p>
+                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                              Today
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -1505,29 +1765,43 @@ export default function SettingsPage() {
                       <div className="bg-white/50 dark:bg-black/20 rounded-lg p-4 border border-blue-200/50 dark:border-blue-800/50">
                         <div className="flex items-center gap-2 mb-4">
                           <Database className="h-4 w-4 text-blue-600" />
-                          <h5 className="text-sm font-semibold text-blue-800 dark:text-blue-200">Database Statistics</h5>
+                          <h5 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                            Database Statistics
+                          </h5>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/40 dark:to-indigo-800/40 p-4 rounded-lg text-center border border-indigo-200 dark:border-indigo-600 shadow-sm">
                             <div className="flex items-center justify-center mb-2">
                               <FileCheck className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                             </div>
-                            <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-200">{adminStats.database.threads.toLocaleString()}</p>
-                            <p className="text-xs text-indigo-600 dark:text-indigo-300 font-medium">Total Threads</p>
+                            <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-200">
+                              {adminStats.database.threads.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-indigo-600 dark:text-indigo-300 font-medium">
+                              Total Threads
+                            </p>
                           </div>
                           <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/40 dark:to-emerald-800/40 p-4 rounded-lg text-center border border-emerald-200 dark:border-emerald-600 shadow-sm">
                             <div className="flex items-center justify-center mb-2">
                               <Mail className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                             </div>
-                            <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-200">{adminStats.database.messages.toLocaleString()}</p>
-                            <p className="text-xs text-emerald-600 dark:text-emerald-300 font-medium">Total Messages</p>
+                            <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-200">
+                              {adminStats.database.messages.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-emerald-600 dark:text-emerald-300 font-medium">
+                              Total Messages
+                            </p>
                           </div>
                           <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/40 dark:to-orange-800/40 p-4 rounded-lg text-center border border-orange-200 dark:border-orange-600 shadow-sm">
                             <div className="flex items-center justify-center mb-2">
                               <Folder className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                             </div>
-                            <p className="text-2xl font-bold text-orange-700 dark:text-orange-200">{adminStats.database.projects.toLocaleString()}</p>
-                            <p className="text-xs text-orange-600 dark:text-orange-300 font-medium">Total Projects</p>
+                            <p className="text-2xl font-bold text-orange-700 dark:text-orange-200">
+                              {adminStats.database.projects.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-orange-600 dark:text-orange-300 font-medium">
+                              Total Projects
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -1536,36 +1810,54 @@ export default function SettingsPage() {
                       <div className="bg-white/50 dark:bg-black/20 rounded-lg p-4 border border-blue-200/50 dark:border-blue-800/50">
                         <div className="flex items-center gap-2 mb-4">
                           <Users className="h-4 w-4 text-blue-600" />
-                          <h5 className="text-sm font-semibold text-blue-800 dark:text-blue-200">Tier Distribution</h5>
+                          <h5 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                            Tier Distribution
+                          </h5>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                           <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 p-4 rounded-lg text-center border border-gray-200 dark:border-gray-700 shadow-sm">
                             <div className="flex items-center justify-center mb-2">
                               <User className="h-5 w-5 text-gray-600" />
                             </div>
-                            <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">{adminStats.tiers.distribution.free}</p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Free Users</p>
+                            <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">
+                              {adminStats.tiers.distribution.free}
+                            </p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                              Free Users
+                            </p>
                           </div>
                           <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-4 rounded-lg text-center border border-blue-200 dark:border-blue-700 shadow-sm">
                             <div className="flex items-center justify-center mb-2">
                               <Shield className="h-5 w-5 text-blue-600" />
                             </div>
-                            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{adminStats.tiers.distribution.premium}</p>
-                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Premium Users</p>
+                            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                              {adminStats.tiers.distribution.premium}
+                            </p>
+                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                              Premium Users
+                            </p>
                           </div>
                           <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 p-4 rounded-lg text-center border border-purple-200 dark:border-purple-700 shadow-sm">
                             <div className="flex items-center justify-center mb-2">
                               <Shield className="h-5 w-5 text-purple-600" />
                             </div>
-                            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{adminStats.tiers.distribution.admin}</p>
-                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">Admin Users</p>
+                            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                              {adminStats.tiers.distribution.admin}
+                            </p>
+                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                              Admin Users
+                            </p>
                           </div>
                           <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 p-4 rounded-lg text-center border border-red-200 dark:border-red-700 shadow-sm">
                             <div className="flex items-center justify-center mb-2">
                               <AlertTriangle className="h-5 w-5 text-red-600" />
                             </div>
-                            <p className="text-2xl font-bold text-red-700 dark:text-red-300">{adminStats.tiers.distribution.uninitialized}</p>
-                            <p className="text-xs text-red-600 dark:text-red-400 font-medium">Uninitialized</p>
+                            <p className="text-2xl font-bold text-red-700 dark:text-red-300">
+                              {adminStats.tiers.distribution.uninitialized}
+                            </p>
+                            <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                              Uninitialized
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -1574,35 +1866,50 @@ export default function SettingsPage() {
                       <div className="bg-white/50 dark:bg-black/20 rounded-lg p-4 border border-blue-200/50 dark:border-blue-800/50">
                         <div className="flex items-center gap-2 mb-4">
                           <Key className="h-4 w-4 text-blue-600" />
-                          <h5 className="text-sm font-semibold text-blue-800 dark:text-blue-200">Total Credits Remaining</h5>
+                          <h5 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                            Total Credits Remaining
+                          </h5>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-4 rounded-lg text-center border border-green-200 dark:border-green-700 shadow-sm">
                             <div className="flex items-center justify-center mb-2">
                               <CheckCircle2 className="h-6 w-6 text-green-600" />
                             </div>
-                            <p className="text-2xl font-bold text-green-700 dark:text-green-300">{adminStats.tiers.credits.totalFreeCredits.toLocaleString()}</p>
-                            <p className="text-xs text-green-600 dark:text-green-400 font-medium">Free Credits</p>
+                            <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                              {adminStats.tiers.credits.totalFreeCredits.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                              Free Credits
+                            </p>
                           </div>
                           <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-4 rounded-lg text-center border border-blue-200 dark:border-blue-700 shadow-sm">
                             <div className="flex items-center justify-center mb-2">
                               <Shield className="h-6 w-6 text-blue-600" />
                             </div>
-                            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{adminStats.tiers.credits.totalPremiumCredits.toLocaleString()}</p>
-                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Premium Credits</p>
+                            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                              {adminStats.tiers.credits.totalPremiumCredits.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                              Premium Credits
+                            </p>
                           </div>
                           <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 p-4 rounded-lg text-center border border-purple-200 dark:border-purple-700 shadow-sm">
                             <div className="flex items-center justify-center mb-2">
                               <Key className="h-6 w-6 text-purple-600" />
                             </div>
-                            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{adminStats.tiers.credits.totalSuperPremiumCredits.toLocaleString()}</p>
-                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">Super Premium Credits</p>
+                            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                              {adminStats.tiers.credits.totalSuperPremiumCredits.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                              Super Premium Credits
+                            </p>
                           </div>
                         </div>
                       </div>
 
                       <div className="text-xs text-muted-foreground">
-                        Last updated: {new Date(adminStats.lastUpdated).toLocaleString()}
+                        Last updated:{" "}
+                        {new Date(adminStats.lastUpdated).toLocaleString()}
                       </div>
                     </div>
                   ) : (
@@ -1621,8 +1928,12 @@ export default function SettingsPage() {
                       <AlertTriangle className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <h4 className="text-lg font-bold text-red-800 dark:text-red-200">System Operations</h4>
-                      <p className="text-sm text-red-600 dark:text-red-400">Critical system-wide operations</p>
+                      <h4 className="text-lg font-bold text-red-800 dark:text-red-200">
+                        System Operations
+                      </h4>
+                      <p className="text-sm text-red-600 dark:text-red-400">
+                        Critical system-wide operations
+                      </p>
                     </div>
                   </div>
 
@@ -1635,7 +1946,10 @@ export default function SettingsPage() {
                           ⚠️ DANGER ZONE - CRITICAL OPERATIONS
                         </p>
                         <p className="text-xs text-red-700 dark:text-red-300 leading-relaxed">
-                          These operations affect all users and cannot be undone. Use extreme caution and ensure you have proper authorization before proceeding. Always notify users before performing system-wide operations.
+                          These operations affect all users and cannot be
+                          undone. Use extreme caution and ensure you have proper
+                          authorization before proceeding. Always notify users
+                          before performing system-wide operations.
                         </p>
                       </div>
                     </div>
@@ -1653,7 +1967,8 @@ export default function SettingsPage() {
                             Monthly Credit Reset
                           </p>
                           <p className="text-xs text-red-600 dark:text-red-400">
-                            Reset all user credits to their tier limits (affects all users)
+                            Reset all user credits to their tier limits (affects
+                            all users)
                           </p>
                         </div>
                       </div>
@@ -1689,7 +2004,8 @@ export default function SettingsPage() {
                             Logout All Users
                           </p>
                           <p className="text-xs text-red-600 dark:text-red-400">
-                            Force logout all active user sessions (emergency use only)
+                            Force logout all active user sessions (emergency use
+                            only)
                           </p>
                         </div>
                       </div>
@@ -1723,8 +2039,12 @@ export default function SettingsPage() {
                       <User className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <h4 className="text-lg font-bold text-slate-800 dark:text-slate-200">Search User</h4>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">Find and manage user accounts</p>
+                      <h4 className="text-lg font-bold text-slate-800 dark:text-slate-200">
+                        Search User
+                      </h4>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        Find and manage user accounts
+                      </p>
                     </div>
                   </div>
 
@@ -1738,7 +2058,11 @@ export default function SettingsPage() {
                       />
                       <Button
                         onClick={handleSearchUser}
-                        disabled={isAdminLoading || !adminKey.trim() || !userEmail.trim()}
+                        disabled={
+                          isAdminLoading ||
+                          !adminKey.trim() ||
+                          !userEmail.trim()
+                        }
                         className="bg-gradient-to-r from-slate-500 to-gray-500 hover:from-slate-600 hover:to-gray-600 text-white border-0"
                       >
                         {isAdminLoading ? (
@@ -1765,8 +2089,12 @@ export default function SettingsPage() {
                         <Settings className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <h4 className="text-lg font-bold text-emerald-800 dark:text-emerald-200">User Management</h4>
-                        <p className="text-sm text-emerald-600 dark:text-emerald-400">Manage user account and permissions</p>
+                        <h4 className="text-lg font-bold text-emerald-800 dark:text-emerald-200">
+                          User Management
+                        </h4>
+                        <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                          Manage user account and permissions
+                        </p>
                       </div>
                     </div>
 
@@ -1774,32 +2102,50 @@ export default function SettingsPage() {
                     <div className="bg-white/60 dark:bg-black/30 p-5 rounded-lg mb-6 border border-emerald-200/50 dark:border-emerald-700/50">
                       <div className="flex items-center gap-3 mb-4">
                         <User className="h-5 w-5 text-emerald-600" />
-                        <h5 className="text-md font-semibold text-emerald-800 dark:text-emerald-200">User Information</h5>
+                        <h5 className="text-md font-semibold text-emerald-800 dark:text-emerald-200">
+                          User Information
+                        </h5>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="bg-emerald-50/50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-200/30 dark:border-emerald-700/30">
-                          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Email</p>
-                          <p className="font-semibold text-emerald-900 dark:text-emerald-100">{selectedUser.email}</p>
+                          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                            Email
+                          </p>
+                          <p className="font-semibold text-emerald-900 dark:text-emerald-100">
+                            {selectedUser.email}
+                          </p>
                         </div>
                         <div className="bg-emerald-50/50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-200/30 dark:border-emerald-700/30">
-                          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Name</p>
-                          <p className="font-semibold text-emerald-900 dark:text-emerald-100">{selectedUser.name || 'N/A'}</p>
+                          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                            Name
+                          </p>
+                          <p className="font-semibold text-emerald-900 dark:text-emerald-100">
+                            {selectedUser.name || "N/A"}
+                          </p>
                         </div>
                         <div className="bg-emerald-50/50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-200/30 dark:border-emerald-700/30">
-                          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">User ID</p>
-                          <p className="font-mono text-xs text-emerald-800 dark:text-emerald-200">{selectedUser.$id}</p>
+                          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                            User ID
+                          </p>
+                          <p className="font-mono text-xs text-emerald-800 dark:text-emerald-200">
+                            {selectedUser.$id}
+                          </p>
                         </div>
                         <div className="bg-emerald-50/50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-200/30 dark:border-emerald-700/30">
-                          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Current Tier</p>
+                          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                            Current Tier
+                          </p>
                           <div className="flex items-center gap-2">
-                            <p className="font-semibold text-emerald-900 dark:text-emerald-100 capitalize">{selectedUser.preferences?.tier || 'N/A'}</p>
-                            {selectedUser.preferences?.tier === 'premium' && (
+                            <p className="font-semibold text-emerald-900 dark:text-emerald-100 capitalize">
+                              {selectedUser.preferences?.tier || "N/A"}
+                            </p>
+                            {selectedUser.preferences?.tier === "premium" && (
                               <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
                                 PRO
                               </span>
                             )}
-                            {selectedUser.preferences?.tier === 'admin' && (
+                            {selectedUser.preferences?.tier === "admin" && (
                               <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full">
                                 ADMIN
                               </span>
@@ -1813,29 +2159,43 @@ export default function SettingsPage() {
                         <div className="mt-4 pt-4 border-t border-emerald-200/50 dark:border-emerald-700/50">
                           <div className="flex items-center gap-2 mb-3">
                             <Key className="h-4 w-4 text-emerald-600" />
-                            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Current Credits</p>
+                            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                              Current Credits
+                            </p>
                           </div>
                           <div className="grid grid-cols-3 gap-3">
                             <div className="bg-green-50/50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200/30 dark:border-green-700/30 text-center">
                               <div className="flex items-center justify-center mb-1">
                                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                               </div>
-                              <p className="text-xs font-medium text-green-700 dark:text-green-300">Free</p>
-                              <p className="text-lg font-bold text-green-800 dark:text-green-200">{selectedUser.preferences.freeCredits}</p>
+                              <p className="text-xs font-medium text-green-700 dark:text-green-300">
+                                Free
+                              </p>
+                              <p className="text-lg font-bold text-green-800 dark:text-green-200">
+                                {selectedUser.preferences.freeCredits}
+                              </p>
                             </div>
                             <div className="bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200/30 dark:border-blue-700/30 text-center">
                               <div className="flex items-center justify-center mb-1">
                                 <Shield className="h-4 w-4 text-blue-600" />
                               </div>
-                              <p className="text-xs font-medium text-blue-700 dark:text-blue-300">Premium</p>
-                              <p className="text-lg font-bold text-blue-800 dark:text-blue-200">{selectedUser.preferences.premiumCredits}</p>
+                              <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                                Premium
+                              </p>
+                              <p className="text-lg font-bold text-blue-800 dark:text-blue-200">
+                                {selectedUser.preferences.premiumCredits}
+                              </p>
                             </div>
                             <div className="bg-purple-50/50 dark:bg-purple-900/20 p-3 rounded-lg border border-purple-200/30 dark:border-purple-700/30 text-center">
                               <div className="flex items-center justify-center mb-1">
                                 <Key className="h-4 w-4 text-purple-600" />
                               </div>
-                              <p className="text-xs font-medium text-purple-700 dark:text-purple-300">Super Premium</p>
-                              <p className="text-lg font-bold text-purple-800 dark:text-purple-200">{selectedUser.preferences.superPremiumCredits}</p>
+                              <p className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                                Super Premium
+                              </p>
+                              <p className="text-lg font-bold text-purple-800 dark:text-purple-200">
+                                {selectedUser.preferences.superPremiumCredits}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -1847,13 +2207,15 @@ export default function SettingsPage() {
                       <div className="bg-white/60 dark:bg-black/30 p-4 rounded-lg border border-emerald-200/50 dark:border-emerald-700/50">
                         <div className="flex items-center gap-2 mb-3">
                           <Settings className="h-4 w-4 text-emerald-600" />
-                          <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Update Tier</p>
+                          <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                            Update Tier
+                          </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleUpdateUserTier('free')}
+                            onClick={() => handleUpdateUserTier("free")}
                             disabled={isAdminLoading}
                             className="border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
                           >
@@ -1863,7 +2225,7 @@ export default function SettingsPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleUpdateUserTier('premium')}
+                            onClick={() => handleUpdateUserTier("premium")}
                             disabled={isAdminLoading}
                             className="border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-600 dark:text-purple-300 dark:hover:bg-purple-900/20"
                           >
@@ -1873,7 +2235,7 @@ export default function SettingsPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleUpdateUserTier('admin')}
+                            onClick={() => handleUpdateUserTier("admin")}
                             disabled={isAdminLoading}
                             className="border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-600 dark:text-orange-300 dark:hover:bg-orange-900/20"
                           >
@@ -1886,7 +2248,9 @@ export default function SettingsPage() {
                       <div className="bg-white/60 dark:bg-black/30 p-4 rounded-lg border border-emerald-200/50 dark:border-emerald-700/50">
                         <div className="flex items-center gap-2 mb-3">
                           <AlertTriangle className="h-4 w-4 text-red-600" />
-                          <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Reset Credits</p>
+                          <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                            Reset Credits
+                          </p>
                         </div>
                         <Button
                           variant="destructive"
@@ -1926,7 +2290,9 @@ export default function SettingsPage() {
                 <button
                   onClick={() => setActiveSection("profile")}
                   className={`hover:text-primary transition-colors ${
-                    activeSection === "profile" ? "text-primary font-medium" : ""
+                    activeSection === "profile"
+                      ? "text-primary font-medium"
+                      : ""
                   }`}
                 >
                   Profile
@@ -1934,7 +2300,9 @@ export default function SettingsPage() {
                 <button
                   onClick={() => setActiveSection("privacy")}
                   className={`hover:text-primary transition-colors ${
-                    activeSection === "privacy" ? "text-primary font-medium" : ""
+                    activeSection === "privacy"
+                      ? "text-primary font-medium"
+                      : ""
                   }`}
                 >
                   Privacy
@@ -1942,7 +2310,9 @@ export default function SettingsPage() {
                 <button
                   onClick={() => setActiveSection("settings")}
                   className={`hover:text-primary transition-colors ${
-                    activeSection === "settings" ? "text-primary font-medium" : ""
+                    activeSection === "settings"
+                      ? "text-primary font-medium"
+                      : ""
                   }`}
                 >
                   Settings

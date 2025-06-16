@@ -228,10 +228,10 @@ const ThreadListItem = ({
   return (
     <>
       <div className={containerStyles} onClick={handleItemClick}>
-        <div className="flex min-w-0 pr-2 overflow-hidden ">
+        <div className="flex min-w-0 w-full justify-between pr-2 overflow-hidden ">
           <ThreadTitle threadData={threadData} />
 
-          <div className="flex md:hidden items-start justify-start gap-1 text-xs text-muted-foreground mt-0.5">
+          <div className="flex md:hidden  gap-1 text-xs text-muted-foreground">
             <DeleteButton onDelete={handleDeleteClick} />
             <ThreadMenuDropdown
               threadData={threadData}

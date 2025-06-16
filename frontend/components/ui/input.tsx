@@ -17,7 +17,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       data-slot="input"
       className={cn(
         // Base styles
-        "flex h-7 w-full min-w-0 px-3 py-1 text-base  outline-none",
+        "flex h-7 w-full min-w-0 px-3 py-3 text-base  outline-none",
         // Background and text colors
         " text-foreground placeholder:text-muted-foreground",
         // Light mode specific - better separation from background
