@@ -20,25 +20,35 @@ const AuthCallbackPage: React.FC = () => {
     const handleCallback = async () => {
       try {
         // Give Appwrite a moment to process the OAuth callback
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         // Check if user is now authenticated
         const user = await getCurrentUser();
-        
+
         if (user) {
           // Check if there's a stored redirect path
           const redirectPath = sessionStorage.getItem('auth_redirect');
           sessionStorage.removeItem('auth_redirect');
-          
-          // Redirect to intended page or default to chat
-          navigate(redirectPath || '/chat');
+
+          // Redirect to intended page or default to chat with replace to avoid back button issues
+          navigate(redirectPath || '/chat', { replace: true });
         } else {
-          // Authentication failed, redirect to login
-          navigate('/auth/login?error=Authentication failed');
+          // Try one more time after a longer delay
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const retryUser = await getCurrentUser();
+
+          if (retryUser) {
+            const redirectPath = sessionStorage.getItem('auth_redirect');
+            sessionStorage.removeItem('auth_redirect');
+            navigate(redirectPath || '/chat', { replace: true });
+          } else {
+            // Authentication failed, redirect to login
+            navigate('/auth/login?error=Authentication failed', { replace: true });
+          }
         }
       } catch (error) {
         console.error('Auth callback error:', error);
-        navigate('/auth/login?error=Authentication failed');
+        navigate('/auth/login?error=Authentication failed', { replace: true });
       }
     };
 

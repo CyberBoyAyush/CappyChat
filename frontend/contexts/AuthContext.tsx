@@ -147,20 +147,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         setLoading(true);
         const currentUser = await getCurrentUser();
-        
+
         if (currentUser) {
           setUser(currentUser);
+          setLoading(false); // Set loading to false immediately after user is set
+          setInitialized(true);
+
           // Initialize services in background - don't await to avoid blocking UI
-          initializeUserServices(currentUser.$id).catch(err => 
+          initializeUserServices(currentUser.$id).catch(err =>
             console.error('Background service initialization failed:', err)
           );
         } else {
           setUser(null);
+          setLoading(false);
+          setInitialized(true);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
         setUser(null);
-      } finally {
         setLoading(false);
         setInitialized(true);
       }
@@ -180,21 +184,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string): Promise<void> => {
     try {
       setLoading(true);
-      
+
       // Create session and get user data
       await account.createEmailPasswordSession(email, password);
       const currentUser = await account.get(); // Get fresh user data after session creation
       setUser(currentUser);
-      
+      setLoading(false); // Set loading to false immediately after user is set
+
       // Initialize services in background - don't block login completion
-      initializeUserServices(currentUser.$id).catch(err => 
+      initializeUserServices(currentUser.$id).catch(err =>
         console.error('Background service initialization failed:', err)
       );
     } catch (error) {
       console.error('Login error:', error);
-      throw new Error(getErrorMessage(error));
-    } finally {
       setLoading(false);
+      throw new Error(getErrorMessage(error));
     }
   };
 
@@ -202,29 +206,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (email: string, password: string, name: string): Promise<void> => {
     try {
       setLoading(true);
-      
+
       // Create user account
       const newUser = await account.create(ID.unique(), email, password, name);
       // Create session
       await account.createEmailPasswordSession(email, password);
-      
+
       // Send verification email in background
-      account.createVerification(APPWRITE_CONFIG.verificationUrl).catch(err => 
+      account.createVerification(APPWRITE_CONFIG.verificationUrl).catch(err =>
         console.warn('Failed to send verification email:', err)
       );
-      
+
       // Use the newUser object instead of making another API call
       setUser(newUser);
-      
+      setLoading(false); // Set loading to false immediately after user is set
+
       // Initialize services in background - don't block registration completion
-      initializeUserServices(newUser.$id).catch(err => 
+      initializeUserServices(newUser.$id).catch(err =>
         console.error('Background service initialization failed:', err)
       );
     } catch (error) {
       console.error('Registration error:', error);
-      throw new Error(getErrorMessage(error));
-    } finally {
       setLoading(false);
+      throw new Error(getErrorMessage(error));
     }
   };
 
