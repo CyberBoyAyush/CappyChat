@@ -23,15 +23,18 @@ import AuthErrorPage from "./routes/auth/AuthErrorPage";
 import EmailVerificationPage from "./routes/auth/EmailVerificationPage";
 import ResetPasswordPage from "./routes/auth/ResetPasswordPage";
 import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 export default function ChatAppRouter() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <GlobalKeyboardShortcuts>
-          <Routes>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <GlobalKeyboardShortcuts>
+            <Routes>
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
+          <Route path="/home" element={<HomePage />} />
           <Route path="/landing" element={<LandingPage />} />
 
           {/* Auth routes (only accessible when not authenticated) */}
@@ -174,9 +177,10 @@ export default function ChatAppRouter() {
               </div>
             }
           />
-          </Routes>
-        </GlobalKeyboardShortcuts>
-      </AuthProvider>
-    </BrowserRouter>
+            </Routes>
+          </GlobalKeyboardShortcuts>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

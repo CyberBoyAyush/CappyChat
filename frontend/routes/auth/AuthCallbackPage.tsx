@@ -17,8 +17,24 @@ const AuthCallbackPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Set a maximum timeout to prevent hanging
+    const timeoutId = setTimeout(() => {
+      console.log('Auth callback timeout, redirecting to home');
+      navigate('/', { replace: true });
+    }, 10000); // 10 second timeout
     const handleCallback = async () => {
       try {
+        // Check if this is actually an OAuth callback by looking for URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasOAuthParams = urlParams.has('code') || urlParams.has('state') || urlParams.has('error');
+
+        // If no OAuth parameters, this might be a direct visit - redirect to home
+        if (!hasOAuthParams) {
+          console.log('No OAuth parameters found, redirecting to home');
+          navigate('/', { replace: true });
+          return;
+        }
+
         // Give Appwrite a moment to process the OAuth callback
         await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -42,17 +58,22 @@ const AuthCallbackPage: React.FC = () => {
             sessionStorage.removeItem('auth_redirect');
             navigate(redirectPath || '/chat', { replace: true });
           } else {
-            // Authentication failed, redirect to login
-            navigate('/auth/login?error=Authentication failed', { replace: true });
+            // Authentication failed, redirect to home instead of login to avoid loops
+            navigate('/?error=Authentication failed', { replace: true });
           }
         }
       } catch (error) {
         console.error('Auth callback error:', error);
-        navigate('/auth/login?error=Authentication failed', { replace: true });
+        navigate('/?error=Authentication failed', { replace: true });
       }
     };
 
     handleCallback();
+
+    // Cleanup timeout on unmount
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, [getCurrentUser, navigate]);
 
   return (
