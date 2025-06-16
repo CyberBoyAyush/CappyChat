@@ -211,7 +211,7 @@ export default function ChatSidebarPanel() {
 
     return (
       <>
-        <div className="px-0 py-1 text-xs font-medium text-primary/85">
+        <div className="px-0 py-1 text-sm font-medium text-primary/85">
           {title}
         </div>
         {uniqueThreads.map((threadItem, index) => (
@@ -242,9 +242,9 @@ export default function ChatSidebarPanel() {
       <div className="flex-1 overflow-y-auto no-scrollbar px-3 pb-3 sm:px-4">
         <SidebarMenu className="space-y-2">
           {isLoading ? (
-            // Loading skeleton - removed to make it snappier
+            // Loading skeleton - centered properly
             <SidebarMenuItem>
-              <div className="h-9 flex items-center px-2 py-1 rounded-lg overflow-hidden w-full">
+              <div className="h-9 flex items-center justify-center px-2 py-1 rounded-lg overflow-hidden w-full">
                 <div className="h-4 bg-muted animate-pulse rounded w-3/4"></div>
               </div>
             </SidebarMenuItem>
@@ -252,7 +252,7 @@ export default function ChatSidebarPanel() {
             <>
               {/* Projects and Pinned Section */}
               <>
-                <div className="px-0 pt-1 flex items-center justify-between text-xs font-medium text-primary/85">
+                <div className="px-0 pt-1 flex items-center justify-between text-sm font-medium text-primary/85">
                   <div className="flex items-center gap-2 ">
                     <Folder className="h-4 w-4" />
                     <span>Projects</span>
@@ -297,7 +297,7 @@ export default function ChatSidebarPanel() {
                 {pinnedThreads.length > 0 && (
                   <div className="space-y-1">
                     {projects.length > 0 && (
-                      <div className="px-0 py-0.5 text-xs font-medium text-primary/70">
+                      <div className="px-0 py-0.5 text-sm font-medium text-primary/70">
                         <PinIcon className="h-4 w-4 inline-block mr-2" />
                         Pinned Chats
                       </div>

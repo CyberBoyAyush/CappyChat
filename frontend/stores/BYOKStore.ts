@@ -35,9 +35,12 @@ const validateOpenRouterKey = (key: string): boolean => {
 const validateOpenAIKey = (key: string): boolean => {
   if (!key || typeof key !== 'string') return false;
 
-  // OpenAI keys start with 'sk-' followed by base64-like characters
-  // Format: sk-[project-id-]?[base64-like characters]
-  const openAIKeyPattern = /^sk-(?:proj-)?[A-Za-z0-9]{20,}$/;
+  // OpenAI keys can have multiple formats:
+  // - sk-[base64-like characters] (legacy format)
+  // - sk-proj-[project-id][base64-like characters] (project-scoped keys)
+  // - sk-[org-id]-[base64-like characters] (organization keys)
+  // Characters can include: A-Z, a-z, 0-9, hyphens, underscores
+  const openAIKeyPattern = /^sk-[A-Za-z0-9_-]{20,}$/;
   return openAIKeyPattern.test(key.trim());
 };
 

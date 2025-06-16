@@ -195,7 +195,7 @@ const ThreadListItem = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const containerStyles = cn(
-    "cursor-pointer group/thread relative flex items-center px-3 py-2 sm:px-2 text-xs sm:py-1 rounded-md overflow-hidden w-full transition-colors",
+    "cursor-pointer group/thread relative flex items-center px-3 py-2 sm:px-2 text-base sm:py-1 rounded-md overflow-hidden w-full transition-colors",
     "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
     "border border-transparent hover:border-border/50",
     isActive && "bg-sidebar-accent text-sidebar-accent-foreground border-border"
