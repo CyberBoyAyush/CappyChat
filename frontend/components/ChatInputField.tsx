@@ -345,18 +345,32 @@ function PureInputField({
   );
 
   const handleSubmit = useCallback(async () => {
+    console.log("=== HANDLE SUBMIT CALLED ===");
+    console.log("Attachments state at submit:", attachments);
+    console.log("Attachments length at submit:", attachments.length);
+
     const currentInput = textareaRef.current?.value || input;
 
     if (
       (!currentInput.trim() && attachments.length === 0) ||
       status === "streaming" ||
       status === "submitted"
-    )
+    ) {
+      console.log("=== SUBMIT BLOCKED ===");
+      console.log("Current input:", currentInput);
+      console.log("Attachments length:", attachments.length);
+      console.log("Status:", status);
       return;
+    }
 
     // Use the input as-is without automatic file conversion
     let finalInput = currentInput.trim();
     let finalAttachments = [...attachments];
+
+    console.log("=== PROCESSING SUBMIT ===");
+    console.log("Final input:", finalInput);
+    console.log("Final attachments:", finalAttachments);
+    console.log("Final attachments length:", finalAttachments.length);
 
     const messageId = uuidv4();
     // Create user message with potentially updated content and attachments
@@ -371,8 +385,6 @@ function PureInputField({
       "User message being sent:",
       JSON.stringify(userMessage, null, 2)
     );
-    console.log("Attachments count:", finalAttachments.length);
-    console.log("Attachments:", finalAttachments);
 
     // Handle new vs existing conversations
     // Check if this is a new conversation by looking at message count
@@ -489,6 +501,7 @@ function PureInputField({
 
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      console.log("=== ENTER KEY PRESSED ===");
       handleSubmit();
     }
   };
@@ -836,11 +849,8 @@ function PureInputField({
   );
 }
 
-const InputField = memo(PureInputField, (prevProps, nextProps) => {
-  if (prevProps.input !== nextProps.input) return false;
-  if (prevProps.status !== nextProps.status) return false;
-  return true;
-});
+// Remove memo to prevent stale closure issues with internal state
+const InputField = PureInputField;
 
 function PureStopButton({ stop }: StopButtonProps) {
   return (
@@ -859,9 +869,15 @@ function PureStopButton({ stop }: StopButtonProps) {
 const StopButton = memo(PureStopButton);
 
 const PureSendButton = ({ onSubmit, disabled }: SendButtonProps) => {
+  const handleClick = () => {
+    console.log("=== SEND BUTTON CLICKED ===");
+    onSubmit();
+  };
+
   return (
     <Button
-      onClick={onSubmit}
+      type="button"
+      onClick={handleClick}
       variant="default"
       size="icon"
       className="h-10 w-10 sm:h-9 sm:w-9 mobile-touch"
@@ -873,8 +889,7 @@ const PureSendButton = ({ onSubmit, disabled }: SendButtonProps) => {
   );
 };
 
-const SendButton = memo(PureSendButton, (prevProps, nextProps) => {
-  return prevProps.disabled === nextProps.disabled;
-});
+// Remove memo to ensure SendButton always gets the latest onSubmit function
+const SendButton = PureSendButton;
 
 export default InputField;
