@@ -181,18 +181,29 @@ export class HybridDB {
   private static initialized = false;
   private static initializationPromise: Promise<void> | null = null;
   private static pendingMessageSyncs = new Set<string>(); // Track ongoing message syncs
+  private static isGuestMode = false; // Track if we're in guest mode
 
   // Initialize the hybrid database
-  static async initialize(userId: string): Promise<void> {
+  static async initialize(userId: string, isGuest: boolean = false): Promise<void> {
     if (this.initialized) return;
     if (this.initializationPromise) return this.initializationPromise;
 
-    this.initializationPromise = this.doInitialize(userId);
+    this.initializationPromise = this.doInitialize(userId, isGuest);
     return this.initializationPromise;
   }
 
-  private static async doInitialize(userId: string): Promise<void> {
-    console.log('[HybridDB] Starting initialization for user:', userId);
+  private static async doInitialize(userId: string, isGuest: boolean = false): Promise<void> {
+    console.log('[HybridDB] Starting initialization for user:', userId, 'Guest:', isGuest);
+
+    this.isGuestMode = isGuest;
+
+    // Skip all database operations for guest users
+    if (isGuest) {
+      console.log('[HybridDB] Guest user detected, skipping database initialization');
+      this.initialized = true;
+      return;
+    }
+
     LocalDB.setUserId(userId);
 
     // Set up realtime callbacks
@@ -220,6 +231,16 @@ export class HybridDB {
 
   // Perform initial sync from Appwrite - now async in background
   private static performInitialSyncInBackground(): void {
+    // Skip background sync for guest users
+    if (this.isGuestMode) {
+      // Just emit local data for guest users
+      const localThreads = LocalDB.getThreads();
+      const localProjects = LocalDB.getProjects();
+      debouncedEmitter.emitImmediate('threads_updated', localThreads);
+      debouncedEmitter.emitImmediate('projects_updated', localProjects);
+      return;
+    }
+
     // Use setTimeout to ensure this runs after the current call stack
     setTimeout(async () => {
       try {
@@ -245,7 +266,7 @@ export class HybridDB {
       } catch (error) {
         console.error('Background sync failed:', error);
         this.isOnline = false;
-        
+
         // Use local data if remote fails
         const localThreads = LocalDB.getThreads();
         if (localThreads.length > 0) {
@@ -281,6 +302,11 @@ export class HybridDB {
     LocalDB.upsertThread(thread);
     debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
 
+    // Skip remote sync for guest users
+    if (this.isGuestMode) {
+      return threadId;
+    }
+
     // Async remote update
     this.queueSync(async () => {
       try {
@@ -312,6 +338,11 @@ export class HybridDB {
       debouncedEmitter.emit('threads_updated', updatedThreads);
     }, 0);
 
+    // Skip remote sync for guest users
+    if (this.isGuestMode) {
+      return;
+    }
+
     // Async remote update
     this.queueSync(async () => {
       try {
@@ -339,6 +370,11 @@ export class HybridDB {
     setTimeout(() => {
       debouncedEmitter.emit('threads_updated', updatedThreads);
     }, 0);
+
+    // Skip remote sync for guest users
+    if (this.isGuestMode) {
+      return;
+    }
 
     // Async remote update
     this.queueSync(async () => {
@@ -368,6 +404,11 @@ export class HybridDB {
       debouncedEmitter.emit('threads_updated', updatedThreads);
     }, 0);
 
+    // Skip remote sync for guest users
+    if (this.isGuestMode) {
+      return;
+    }
+
     // Async remote update
     this.queueSync(async () => {
       try {
@@ -396,6 +437,11 @@ export class HybridDB {
       debouncedEmitter.emit('threads_updated', updatedThreads);
     }, 0);
 
+    // Skip remote sync for guest users
+    if (this.isGuestMode) {
+      return;
+    }
+
     // Async remote update
     this.queueSync(async () => {
       try {
@@ -411,6 +457,11 @@ export class HybridDB {
     // Instant local update
     LocalDB.deleteThread(threadId);
     debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
+
+    // Skip remote sync for guest users
+    if (this.isGuestMode) {
+      return;
+    }
 
     // Async remote update
     this.queueSync(async () => {
@@ -465,6 +516,11 @@ export class HybridDB {
     debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
     debouncedEmitter.emitImmediate('messages_updated', newThreadId, LocalDB.getMessagesByThread(newThreadId));
 
+    // Skip remote sync for guest users
+    if (this.isGuestMode) {
+      return newThreadId;
+    }
+
     // Async remote update
     this.queueSync(async () => {
       try {
@@ -502,6 +558,11 @@ export class HybridDB {
     LocalDB.upsertProject(project);
     debouncedEmitter.emitImmediate('projects_updated', LocalDB.getProjects());
 
+    // Skip remote sync for guest users
+    if (this.isGuestMode) {
+      return projectId;
+    }
+
     // Async remote update
     this.queueSync(async () => {
       try {
@@ -526,6 +587,11 @@ export class HybridDB {
     const updatedProjects = LocalDB.getProjects();
     debouncedEmitter.emit('projects_updated', updatedProjects);
 
+    // Skip remote sync for guest users
+    if (this.isGuestMode) {
+      return;
+    }
+
     // Async remote update
     this.queueSync(async () => {
       try {
@@ -546,6 +612,11 @@ export class HybridDB {
     // Get updated projects and emit event
     const updatedProjects = LocalDB.getProjects();
     debouncedEmitter.emit('projects_updated', updatedProjects);
+
+    // Skip remote sync for guest users
+    if (this.isGuestMode) {
+      return;
+    }
 
     // Async remote update
     this.queueSync(async () => {
@@ -584,6 +655,11 @@ export class HybridDB {
     // Emit immediate updates
     debouncedEmitter.emitImmediate('projects_updated', LocalDB.getProjects());
     debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
+
+    // Skip remote sync for guest users
+    if (this.isGuestMode) {
+      return;
+    }
 
     // Async remote update
     this.queueSync(async () => {
@@ -625,6 +701,11 @@ export class HybridDB {
     debouncedEmitter.emit('messages_updated', threadId, LocalDB.getMessagesByThread(threadId));
     debouncedEmitter.emit('threads_updated', LocalDB.getThreads()); // Thread order might change
 
+    // Skip remote sync for guest users
+    if (this.isGuestMode) {
+      return;
+    }
+
     // Async remote update
     this.queueSync(async () => {
       try {
@@ -641,7 +722,12 @@ export class HybridDB {
   static async loadMessagesFromRemote(threadId: string): Promise<DBMessage[]> {
     // First check local cache for instant loading
     const localMessages = LocalDB.getMessagesByThread(threadId);
-    
+
+    // For guest users, only return local messages
+    if (this.isGuestMode) {
+      return localMessages;
+    }
+
     // If we have local messages, return them immediately for better UX
     if (localMessages.length > 0) {
       // Sync in background for next time, but don't block current request
@@ -652,18 +738,18 @@ export class HybridDB {
     // If no local messages, fetch from remote
     try {
       const remoteMessages = await AppwriteDB.getMessagesByThreadId(threadId);
-      
+
       // Clear local messages for this thread and replace with remote
       LocalDB.clearMessagesByThread(threadId);
-      
+
       // Add all remote messages to local storage
       remoteMessages.forEach(message => {
         LocalDB.addMessage(message);
       });
-      
+
       // Emit update event
       debouncedEmitter.emit('messages_updated', threadId, remoteMessages);
-      
+
       return remoteMessages;
     } catch (error) {
       console.error('Failed to load messages from remote:', error);
@@ -674,6 +760,11 @@ export class HybridDB {
 
   // Background sync for messages - non-blocking with deduplication
   private static syncMessagesInBackground(threadId: string): void {
+    // Skip background sync for guest users
+    if (this.isGuestMode) {
+      return;
+    }
+
     // Prevent duplicate syncs for the same thread
     if (this.pendingMessageSyncs.has(threadId)) {
       return;
@@ -744,6 +835,11 @@ export class HybridDB {
     LocalDB.addSummary(summary);
     debouncedEmitter.emit('summaries_updated', threadId);
 
+    // Skip remote sync for guest users
+    if (this.isGuestMode) {
+      return summaryId;
+    }
+
     // Async remote update
     this.queueSync(async () => {
       try {
@@ -777,6 +873,11 @@ export class HybridDB {
     
     // Emit immediate update
     debouncedEmitter.emitImmediate('messages_updated', threadId, filteredMessages);
+
+    // Skip remote sync for guest users
+    if (this.isGuestMode) {
+      return;
+    }
 
     // Async remote update
     this.queueSync(async () => {
@@ -1039,6 +1140,11 @@ export class HybridDB {
 
   // Force sync messages for a specific thread (throttled to prevent abuse)
   static async forceSyncThread(threadId: string): Promise<void> {
+    // Skip force sync for guest users
+    if (this.isGuestMode) {
+      return;
+    }
+
     // Prevent excessive force syncs
     if (this.pendingMessageSyncs.has(`force_${threadId}`)) {
       return;

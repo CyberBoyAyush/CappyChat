@@ -17,6 +17,7 @@ import UserProfileDropdown from "../UserProfileDropdown";
 import { DeleteThreadDialog } from "./DeleteThreadDialog";
 import { ThreadSearch } from "./ThreadSearch";
 import { ThreadMenuDropdown } from "./ThreadMenuDropdown";
+import { useAuth } from "@/frontend/contexts/AuthContext";
 
 // ===============================================
 // Panel Header Components
@@ -80,6 +81,8 @@ const PanelHeaderComponent = ({
   threads = [],
   onFilteredThreadsChange,
 }: PanelHeaderProps) => {
+  const { isGuest } = useAuth();
+
   return (
     <div className="flex flex-col gap-3 p-3 sm:p-4">
       {/* Logo */}
@@ -90,8 +93,8 @@ const PanelHeaderComponent = ({
       {/* New Chat Button - Full Width */}
       <NewChatButton />
 
-      {/* Search Bar - Full Width */}
-      {onFilteredThreadsChange && (
+      {/* Search Bar - Full Width (hidden for guest users) */}
+      {!isGuest && onFilteredThreadsChange && (
         <ThreadSearch
           threads={threads}
           onFilteredThreadsChange={onFilteredThreadsChange}

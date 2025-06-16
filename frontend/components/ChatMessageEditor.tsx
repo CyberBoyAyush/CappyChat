@@ -38,13 +38,14 @@ export default function MessageEditor({
 }) {
   const [draftContent, setDraftContent] = useState(content);
   const { openRouterApiKey } = useBYOKStore();
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
 
   const { complete } = useCompletion({
     api: '/api/ai-text-generation',
     body: {
       userApiKey: openRouterApiKey,
       userId: user?.$id,
+      isGuest: isGuest,
     },
     onResponse: async (response) => {
       try {

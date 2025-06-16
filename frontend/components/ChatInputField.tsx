@@ -36,6 +36,9 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/frontend/contexts/AuthContext";
+import { useAuthDialog } from "@/frontend/hooks/useAuthDialog";
+import AuthDialog from "./auth/AuthDialog";
 
 // Extended UIMessage type to include attachments
 type ExtendedUIMessage = UIMessage & {
@@ -93,6 +96,9 @@ function PureInputField({
     minHeight: 72,
     maxHeight: 200,
   });
+
+  const { isGuest, canGuestSendMessage, incrementGuestMessages } = useAuth();
+  const authDialog = useAuthDialog();
 
   // File attachments state
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
@@ -363,6 +369,21 @@ function PureInputField({
       return;
     }
 
+    // Check guest user limits
+    if (isGuest) {
+      if (!canGuestSendMessage()) {
+        console.log("=== GUEST LIMIT REACHED ===");
+        authDialog.showGuestLimitDialog();
+        return;
+      }
+
+      // Check for restricted features for guests
+      if (attachments.length > 0) {
+        authDialog.showPremiumFeatureDialog("File attachments");
+        return;
+      }
+    }
+
     // Use the input as-is without automatic file conversion
     let finalInput = currentInput.trim();
     let finalAttachments = [...attachments];
@@ -394,8 +415,10 @@ function PureInputField({
       // New conversation - navigate first if not already there
       if (!id) {
         navigate(`/chat/${threadId}`);
-        // Create thread instantly with local update + async backend sync
-        HybridDB.createThread(threadId);
+        // Create thread instantly with local update + async backend sync (skip for guest users)
+        if (!isGuest) {
+          HybridDB.createThread(threadId);
+        }
       }
 
       // Start completion immediately for better UX
@@ -426,14 +449,22 @@ function PureInputField({
       onWebSearchMessage(messageId);
     }
 
-    // Store the user message immediately to the database
-    console.log(
-      "💾 Storing user message immediately:",
-      messageId,
-      "Has attachments:",
-      !!userMessage.attachments
-    );
-    HybridDB.createMessage(threadId, userMessage);
+    // Store the user message immediately to the database (skip for guest users)
+    if (!isGuest) {
+      console.log(
+        "💾 Storing user message immediately:",
+        messageId,
+        "Has attachments:",
+        !!userMessage.attachments
+      );
+      HybridDB.createMessage(threadId, userMessage);
+    }
+
+    // Increment guest message count if guest user
+    if (isGuest) {
+      incrementGuestMessages();
+      console.log("🎯 Guest message count incremented");
+    }
 
     // The message will be persisted to database in ChatInterface's onFinish callback
     // Pass attachments using experimental_attachments parameter AND include in message object for immediate UI display
@@ -470,6 +501,10 @@ function PureInputField({
     messages,
     isWebSearchEnabled,
     onWebSearchMessage,
+    isGuest,
+    canGuestSendMessage,
+    incrementGuestMessages,
+    authDialog,
   ]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -812,29 +847,42 @@ function PureInputField({
           <div className="min-h-[60px] sm:h-14 flex bg-transparent items-center px-2 sm:px-3 border-t border-border/50">
             <div className="flex items-center justify-between w-full gap-1 sm:gap-2 md:gap-3">
               <div className="flex items-center gap-1 sm:gap-2 flex-shrink min-w-0 overflow-hidden">
-                <div className="min-w-0 flex-shrink overflow-hidden">
-                  <ModelSelector />
-                </div>
-                <ConversationStyleSelector className="hidden md:flex flex-shrink-0" />
-                <WebSearchToggle
-                  isEnabled={isWebSearchEnabled}
-                  onToggle={setWebSearchEnabled}
-                  className="hidden md:flex flex-shrink-0"
-                />
+                {!isGuest && (
+                  <>
+                    <div className="min-w-0 flex-shrink overflow-hidden">
+                      <ModelSelector />
+                    </div>
+                    <ConversationStyleSelector className="hidden md:flex flex-shrink-0" />
+                    <WebSearchToggle
+                      isEnabled={isWebSearchEnabled}
+                      onToggle={setWebSearchEnabled}
+                      className="hidden md:flex flex-shrink-0"
+                    />
+                  </>
+                )}
+                {isGuest && (
+                  <div className="text-xs text-muted-foreground">
+                    Using Gemini 2.5 Flash • Sign up for more models
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 flex-shrink-0">
-                <ConversationStyleSelector className="flex md:hidden" />
-                <WebSearchToggle
-                  isEnabled={isWebSearchEnabled}
-                  onToggle={setWebSearchEnabled}
-                  className="flex md:hidden"
-                />
-                <FileUpload
-                  onFilesUploaded={handleFilesUploaded}
-                  onUploadStatusChange={handleUploadStatusChange}
-                  disabled={status === "streaming" || status === "submitted"}
-                />
+                {!isGuest && (
+                  <>
+                    <ConversationStyleSelector className="flex md:hidden" />
+                    <WebSearchToggle
+                      isEnabled={isWebSearchEnabled}
+                      onToggle={setWebSearchEnabled}
+                      className="flex md:hidden"
+                    />
+                    <FileUpload
+                      onFilesUploaded={handleFilesUploaded}
+                      onUploadStatusChange={handleUploadStatusChange}
+                      disabled={status === "streaming" || status === "submitted"}
+                    />
+                  </>
+                )}
                 {status === "submitted" || status === "streaming" ? (
                   <StopButton stop={stop} />
                 ) : (
@@ -845,6 +893,15 @@ function PureInputField({
           </div>
         </div>
       </div>
+
+      {/* Auth Dialog for guest users */}
+      <AuthDialog
+        isOpen={authDialog.isOpen}
+        onClose={authDialog.closeDialog}
+        initialMode={authDialog.mode}
+        title={authDialog.title}
+        description={authDialog.description}
+      />
     </div>
   );
 }

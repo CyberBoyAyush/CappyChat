@@ -25,6 +25,7 @@ import {
   ModelBadge,
   getModelIcon,
 } from "@/frontend/components/ui/ModelComponents";
+import { useAuth } from "@/frontend/contexts/AuthContext";
 
 interface ModelCardProps {
   model: AIModel;
@@ -189,6 +190,7 @@ const PureModelSelector = () => {
   const { selectedModel, setModel } = useModelStore();
   const { isWebSearchEnabled } = useWebSearchStore();
   const { hasOpenRouterKey } = useBYOKStore();
+  const { isGuest } = useAuth();
   const selectedModelConfig = getModelConfig(selectedModel);
   const [searchQuery, setSearchQuery] = useState("");
   const [tierValidations, setTierValidations] = useState<
@@ -196,8 +198,17 @@ const PureModelSelector = () => {
   >({} as Record<AIModel, TierValidationResult>);
 
   // When web search is enabled, lock to Gemini 2.5 Flash Search
-  const isLocked = isWebSearchEnabled;
+  // For guest users, lock to Gemini 2.5 Flash
+  const isLocked = isWebSearchEnabled || isGuest;
   const usingBYOK = hasOpenRouterKey();
+
+  // Force guest users to use Gemini 2.5 Flash
+  useEffect(() => {
+    if (isGuest && selectedModel !== "Gemini 2.5 Flash") {
+      console.log('[ModelSelector] Guest user detected, forcing model to Gemini 2.5 Flash');
+      setModel("Gemini 2.5 Flash");
+    }
+  }, [isGuest, selectedModel, setModel]);
 
   // Load tier validations for all models
   useEffect(() => {
@@ -228,12 +239,15 @@ const PureModelSelector = () => {
 
   const isModelEnabled = useCallback(
     (model: AIModel) => {
-      if (isLocked) {
+      if (isWebSearchEnabled) {
         return model === "Gemini 2.5 Flash Search";
+      }
+      if (isGuest) {
+        return model === "Gemini 2.5 Flash";
       }
       return true;
     },
-    [isLocked]
+    [isWebSearchEnabled, isGuest]
   );
 
   const handleModelSelect = useCallback(

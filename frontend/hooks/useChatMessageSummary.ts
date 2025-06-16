@@ -14,13 +14,14 @@ interface MessageSummaryPayload {
 
 export const useChatMessageSummary = () => {
   const { openRouterApiKey } = useBYOKStore();
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
 
   const { complete, isLoading } = useCompletion({
     api: '/api/ai-text-generation',
     body: {
       userApiKey: openRouterApiKey,
       userId: user?.$id,
+      isGuest: isGuest,
     },
     onResponse: async (response) => {
       try {

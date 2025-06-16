@@ -18,10 +18,18 @@ import { ensureUserTierInitialized } from '@/lib/tierSystem';
 
 interface User extends Models.User<Models.Preferences> {}
 
+interface GuestUser {
+  isGuest: true;
+  messagesUsed: number;
+  maxMessages: number;
+}
+
 interface AuthContextType {
   user: User | null;
+  guestUser: GuestUser | null;
   loading: boolean;
   isAuthenticated: boolean;
+  isGuest: boolean;
   isEmailVerified: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
@@ -40,6 +48,9 @@ interface AuthContextType {
   resetPassword: (userId: string, secret: string, newPassword: string) => Promise<void>;
   verifyEmail: (userId: string, secret: string) => Promise<void>;
   resendVerificationEmail: () => Promise<void>;
+  incrementGuestMessages: () => boolean; // Returns true if under limit, false if limit reached
+  canGuestSendMessage: () => boolean;
+  resetGuestUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -85,9 +96,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  const [guestUser, setGuestUser] = useState<GuestUser | null>(() => {
+    // Initialize guest user if no authenticated user
+    return {
+      isGuest: true,
+      messagesUsed: 0,
+      maxMessages: 2
+    };
+  });
 
   // Check if user's email is verified
   const isEmailVerified = user?.emailVerification ?? false;
+  const isGuest = !user && !!guestUser;
 
   // Cached user session to avoid repeated API calls
   const getCurrentUser = useCallback(async (): Promise<User | null> => {
@@ -133,7 +153,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Only initialize HybridDB - realtime will be handled inside it
       // This is now non-blocking and much faster
-      await HybridDB.initialize(userId);
+      await HybridDB.initialize(userId, false); // false = not guest mode
       console.log('[AuthContext] User services initialized successfully');
     } catch (error) {
       console.error('Failed to initialize user services:', error);
@@ -150,6 +170,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (currentUser) {
           setUser(currentUser);
+          setGuestUser(null); // Clear guest user when authenticated user is found
           setLoading(false); // Set loading to false immediately after user is set
           setInitialized(true);
 
@@ -159,8 +180,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           );
         } else {
           setUser(null);
+          // Keep guest user initialized for unauthenticated users
           setLoading(false);
           setInitialized(true);
+
+          // Initialize HybridDB for guest users
+          HybridDB.initialize('guest', true).catch(err =>
+            console.error('Guest HybridDB initialization failed:', err)
+          );
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -189,6 +216,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await account.createEmailPasswordSession(email, password);
       const currentUser = await account.get(); // Get fresh user data after session creation
       setUser(currentUser);
+      setGuestUser(null); // Clear guest user when logging in
       setLoading(false); // Set loading to false immediately after user is set
 
       // Initialize services in background - don't block login completion
@@ -219,6 +247,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Use the newUser object instead of making another API call
       setUser(newUser);
+      setGuestUser(null); // Clear guest user when registering
       setLoading(false); // Set loading to false immediately after user is set
 
       // Initialize services in background - don't block registration completion
@@ -271,9 +300,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Clear local database
       HybridDB.clearLocalData();
-      
+
       setUser(null);
-      
+      // Reset guest user when logging out
+      setGuestUser({
+        isGuest: true,
+        messagesUsed: 0,
+        maxMessages: 2
+      });
+
       // Clear any stored redirect
       sessionStorage.removeItem('auth_redirect');
     } catch (error) {
@@ -431,12 +466,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Guest user methods
+  const incrementGuestMessages = (): boolean => {
+    if (!guestUser || guestUser.messagesUsed >= guestUser.maxMessages) {
+      return false;
+    }
+
+    setGuestUser(prev => prev ? {
+      ...prev,
+      messagesUsed: prev.messagesUsed + 1
+    } : null);
+
+    return true;
+  };
+
+  const canGuestSendMessage = (): boolean => {
+    return guestUser ? guestUser.messagesUsed < guestUser.maxMessages : false;
+  };
+
+  const resetGuestUser = (): void => {
+    setGuestUser({
+      isGuest: true,
+      messagesUsed: 0,
+      maxMessages: 2
+    });
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
+        guestUser,
         loading,
         isAuthenticated: !!user,
+        isGuest,
         isEmailVerified,
         login,
         register,
@@ -455,6 +518,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         resendVerificationEmail,
         sendPasswordRecovery,
         resetPassword,
+        incrementGuestMessages,
+        canGuestSendMessage,
+        resetGuestUser,
       }}
     >
       {children}

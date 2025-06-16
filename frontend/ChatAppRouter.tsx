@@ -12,7 +12,6 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ChatLayoutWrapper from "./ChatLayoutWrapper";
 import ChatHomePage from "./routes/ChatHomePage";
-import HomePage from "./routes/HomePage";
 import LandingPage from "./routes/LandingPage";
 import ChatThreadPage from "./routes/ChatThreadPage";
 import SettingsPage from "./routes/SettingsPage";
@@ -32,9 +31,14 @@ export default function ChatAppRouter() {
         <AuthProvider>
           <GlobalKeyboardShortcuts>
             <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/home" element={<HomePage />} />
+          {/* Main chat routes - accessible to both guests and authenticated users */}
+          <Route path="/" element={<ChatLayoutWrapper />}>
+            <Route index element={<ChatHomePage />} />
+            <Route path="chat" element={<ChatHomePage />} />
+            <Route path="chat/:id" element={<ChatThreadPage />} />
+          </Route>
+
+          {/* Landing page for marketing (moved to separate route) */}
           <Route path="/landing" element={<LandingPage />} />
 
           {/* Auth routes (only accessible when not authenticated) */}
@@ -61,19 +65,7 @@ export default function ChatAppRouter() {
           <Route path="/auth/verify" element={<EmailVerificationPage />} />
           <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
 
-          {/* Protected routes (require authentication) */}
-          <Route
-            path="chat"
-            element={
-              <ProtectedRoute>
-                <ChatLayoutWrapper />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<ChatHomePage />} />
-            <Route path=":id" element={<ChatThreadPage />} />
-          </Route>
-
+          {/* Settings route (require authentication) */}
           <Route
             path="settings"
             element={

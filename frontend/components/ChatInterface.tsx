@@ -23,6 +23,8 @@ import { useAuth } from "@/frontend/contexts/AuthContext";
 import { useLocation } from "react-router-dom";
 import ThemeToggleButton from "./ui/ThemeComponents";
 import { Button } from "./ui/button";
+import AuthDialog from "./auth/AuthDialog";
+import { useAuthDialog } from "@/frontend/hooks/useAuthDialog";
 import {
   MessageSquareMore,
   PanelLeftIcon,
@@ -68,7 +70,8 @@ export default function ChatInterface({
   const { isWebSearchEnabled } = useWebSearchStore();
   const { selectedStyle } = useConversationStyleStore();
   const { openRouterApiKey } = useBYOKStore();
-  const { user } = useAuth();
+  const { user, isGuest, guestUser, incrementGuestMessages, canGuestSendMessage } = useAuth();
+  const authDialog = useAuthDialog();
   const {
     sidebarWidth,
     toggleSidebar,
@@ -131,6 +134,12 @@ export default function ChatInterface({
         pendingUserMessageRef.current = null;
       }
 
+      // Skip database operations for guest users
+      if (isGuest) {
+        console.log("🚫 Skipping database operations for guest user");
+        return;
+      }
+
       // Save the AI message (useChat already handles adding it to the messages array)
       // We just need to persist it to the database using the actual message ID from useChat
       const aiMessage: UIMessage & { webSearchResults?: string[] } = {
@@ -179,7 +188,10 @@ export default function ChatInterface({
         console.log("❌ No web search results needed for message:", message.id);
       }
 
-      HybridDB.createMessage(threadId, aiMessage);
+      // Skip database operations for guest users
+      if (!isGuest) {
+        HybridDB.createMessage(threadId, aiMessage);
+      }
 
       // Scroll to bottom when new message comes in
       scrollToBottom();
@@ -191,6 +203,7 @@ export default function ChatInterface({
       userApiKey: openRouterApiKey,
       userId: user?.$id,
       threadId: threadId,
+      isGuest: isGuest,
     },
   });
 
@@ -397,8 +410,14 @@ export default function ChatInterface({
     };
   }, []);
 
-  // Real-time message synchronization
+  // Real-time message synchronization (skip for guest users)
   useEffect(() => {
+    // Skip real-time sync for guest users
+    if (isGuest) {
+      console.log("[ChatInterface] Skipping real-time sync for guest user");
+      return;
+    }
+
     console.log(
       "[ChatInterface] Setting up real-time message sync for thread:",
       threadId
@@ -467,7 +486,7 @@ export default function ChatInterface({
       );
       dbEvents.off("messages_updated", handleMessagesUpdated);
     };
-  }, [threadId, messages, setMessages]);
+  }, [threadId, messages, setMessages, isGuest]);
 
   // Real-time streaming synchronization
   useEffect(() => {
@@ -743,6 +762,15 @@ export default function ChatInterface({
         scrollToMessage={scrollToMessage}
         isVisible={isNavigatorVisible}
         onClose={closeNavigator}
+      />
+
+      {/* Auth Dialog for guest users */}
+      <AuthDialog
+        isOpen={authDialog.isOpen}
+        onClose={authDialog.closeDialog}
+        initialMode={authDialog.mode}
+        title={authDialog.title}
+        description={authDialog.description}
       />
     </div>
   );

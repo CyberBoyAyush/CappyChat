@@ -184,8 +184,25 @@ export const getModelType = (model: AIModel): ModelType => {
 /**
  * Check if user can use a specific model
  */
-export const canUserUseModel = async (model: AIModel, usingBYOK: boolean = false, userId?: string): Promise<TierValidationResult> => {
-  console.log(`[TierSystem] Checking model access for: ${model}, BYOK: ${usingBYOK}`);
+export const canUserUseModel = async (model: AIModel, usingBYOK: boolean = false, userId?: string, isGuest: boolean = false): Promise<TierValidationResult> => {
+  console.log(`[TierSystem] Checking model access for: ${model}, BYOK: ${usingBYOK}, Guest: ${isGuest}`);
+
+  // Guest users can only use Gemini 2.5 Flash
+  if (isGuest) {
+    console.log('[TierSystem] Guest user detected');
+    if (model === 'Gemini 2.5 Flash') {
+      return {
+        canUseModel: true,
+        remainingCredits: -1, // Unlimited for guest users (no tracking)
+      };
+    } else {
+      return {
+        canUseModel: false,
+        remainingCredits: 0,
+        message: 'Guest users can only use Gemini 2.5 Flash. Please sign up for access to other models.',
+      };
+    }
+  }
 
   // BYOK users bypass tier restrictions
   if (usingBYOK) {
@@ -254,7 +271,13 @@ export const canUserUseModel = async (model: AIModel, usingBYOK: boolean = false
 /**
  * Consume credits for a model usage
  */
-export const consumeCredits = async (model: AIModel, usingBYOK: boolean = false, userId?: string): Promise<boolean> => {
+export const consumeCredits = async (model: AIModel, usingBYOK: boolean = false, userId?: string, isGuest: boolean = false): Promise<boolean> => {
+  // Guest users don't consume credits (no tracking)
+  if (isGuest) {
+    console.log('[TierSystem] Guest user, skipping credit consumption');
+    return true;
+  }
+
   // BYOK users don't consume credits
   if (usingBYOK) {
     return true;
