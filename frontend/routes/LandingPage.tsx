@@ -63,7 +63,7 @@ const LandingPage: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
                 <MessageSquare className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold">AtChat</span>
+              <span className="text-xl font-bold">AVChat</span>
             </div>
 
             <div className="flex items-center gap-3">
@@ -92,7 +92,7 @@ const LandingPage: React.FC = () => {
               Like Never Before
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Experience the future of AI conversation with AtChat. Access multiple AI models, 
+              Experience the future of AI conversation with AVChat. Access multiple AI models, 
               create unlimited conversations, and get intelligent responses instantly.
             </p>
           </div>
@@ -172,7 +172,7 @@ const LandingPage: React.FC = () => {
         {/* Demo Section */}
         <div className="mt-32 max-w-4xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">See AtChat in Action</h2>
+            <h2 className="text-3xl font-bold mb-4">See AVChat in Action</h2>
             <p className="text-muted-foreground">
               Experience the power of AI conversation with our intuitive interface
             </p>
@@ -213,7 +213,7 @@ const LandingPage: React.FC = () => {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
                   <MessageSquare className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <span className="text-xl font-bold">AtChat</span>
+                <span className="text-xl font-bold">AVChat</span>
               </div>
               <p className="text-muted-foreground">
                 The next generation AI chat platform for everyone.
@@ -265,7 +265,7 @@ const LandingPage: React.FC = () => {
 
           <div className="mt-8 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-muted-foreground">
-              © 2025 AtChat. All rights reserved.
+              © 2025 AVChat. All rights reserved.
             </p>
             <div className="flex items-center gap-4">
               <Link to="#" className="text-muted-foreground hover:text-foreground">

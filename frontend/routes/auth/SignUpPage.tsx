@@ -135,9 +135,9 @@ const SignUpPage: React.FC = () => {
               <span className="sr-only">Back to Home</span>
             </Link>
             <div className="flex items-center">
-              <img src="/logo.png" alt="AtChat Logo" className="h-8 w-8 mr-2" />
+              <img src="/logo.png" alt="AVChat Logo" className="h-8 w-8 mr-2" />
               <span className="text-lg font-semibold hidden sm:inline-block">
-                AtChat
+                AVChat
               </span>
             </div>
           </div>
@@ -161,7 +161,7 @@ const SignUpPage: React.FC = () => {
                 Create an Account
               </h1>
               <p className="text-muted-foreground text-sm">
-                Join AtChat and start conversations
+                Join AVChat and start conversations
               </p>
             </div>
 
@@ -421,9 +421,9 @@ const SignUpPage: React.FC = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center space-x-1.5">
-              <img src="/logo.png" alt="AtChat Logo" className="h-5 w-5" />
+              <img src="/logo.png" alt="AVChat Logo" className="h-5 w-5" />
               <span className="text-sm text-muted-foreground">
-                © {new Date().getFullYear()} AtChat. All rights reserved.
+                © {new Date().getFullYear()} AVChat. All rights reserved.
               </span>
             </div>
 

@@ -112,29 +112,25 @@ const ModelCard: React.FC<ModelCardProps> = ({
       </div>
 
       {/* Badges */}
-      <div className="flex items-center gap-0.5 sm:gap-1.5 flex-wrap">
+      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
         {modelConfig.isSuperPremium && (
-          <div className="flex items-center gap-0.5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md bg-primary/10 border border-primary/20">
-            <ModelBadge type="super-premium" size={8} />
-            <span className="text-xs font-medium text-primary hidden sm:inline">
-              Super Premium
-            </span>
+          <div title="Super Premium Model" className="cursor-default">
+            <ModelBadge type="super-premium" size={16} />
           </div>
         )}
         {modelConfig.isPremium && !modelConfig.isSuperPremium && (
-          <div className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md bg-primary/10 border border-primary/20">
-            <ModelBadge type="premium" size={8} />
-            <span className="text-xs font-medium text-primary hidden sm:inline">
-              Premium
-            </span>
+          <div title="Premium Model" className="cursor-default">
+            <ModelBadge type="premium" size={16} />
           </div>
         )}
         {modelConfig.hasReasoning && (
-          <div className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md bg-primary/10 border border-primary/20">
-            <ModelBadge type="reasoning" size={8} />
-            <span className="text-xs font-medium text-primary hidden sm:inline">
-              Reasoning
-            </span>
+          <div title="Reasoning Model - Advanced problem-solving capabilities" className="cursor-default">
+            <ModelBadge type="reasoning" size={16} />
+          </div>
+        )}
+        {modelConfig.isFileSupported && (
+          <div title="File Support - Can analyze images, documents, and other file types" className="cursor-default">
+            <ModelBadge type="file-support" size={16} />
           </div>
         )}
       </div>
@@ -250,14 +246,44 @@ const PureModelSelector = () => {
     [isModelEnabled, setModel, isLocked]
   );
 
+  // Define recommended models
+  const recommendedModels: AIModel[] = [
+    'Gemini 2.5 Flash',
+    'OpenAI 4.1 Mini',
+    'OpenAI o4-mini'
+  ];
+
+  // Categorize models
+  const categorizeModels = useMemo(() => {
+    const freeModels: AIModel[] = [];
+    const premiumModels: AIModel[] = [];
+    const superPremiumModels: AIModel[] = [];
+
+    AI_MODELS.forEach((model) => {
+      const config = getModelConfig(model);
+      if (config.isSuperPremium) {
+        superPremiumModels.push(model);
+      } else if (config.isPremium) {
+        premiumModels.push(model);
+      } else {
+        freeModels.push(model);
+      }
+    });
+
+    return { freeModels, premiumModels, superPremiumModels };
+  }, []);
+
   // Filter models based on search query
   const filteredModels = useMemo(() => {
     if (!searchQuery.trim()) {
-      return AI_MODELS;
+      return {
+        recommended: recommendedModels,
+        ...categorizeModels
+      };
     }
 
     const query = searchQuery.toLowerCase();
-    return AI_MODELS.filter((model) => {
+    const filterModels = (models: AIModel[]) => models.filter((model) => {
       const config = getModelConfig(model);
       return (
         config.displayName.toLowerCase().includes(query) ||
@@ -265,10 +291,18 @@ const PureModelSelector = () => {
         config.description.toLowerCase().includes(query) ||
         (config.isPremium && "premium".includes(query)) ||
         (config.isSuperPremium && "super premium".includes(query)) ||
-        (config.hasReasoning && "reasoning".includes(query))
+        (config.hasReasoning && "reasoning".includes(query)) ||
+        (config.isFileSupported && "file".includes(query))
       );
     });
-  }, [searchQuery]);
+
+    return {
+      recommended: filterModels(recommendedModels),
+      freeModels: filterModels(categorizeModels.freeModels),
+      premiumModels: filterModels(categorizeModels.premiumModels),
+      superPremiumModels: filterModels(categorizeModels.superPremiumModels)
+    };
+  }, [searchQuery, recommendedModels, categorizeModels]);
 
   return (
     <div className="flex items-center gap-2">
@@ -334,21 +368,102 @@ const PureModelSelector = () => {
             />
           </div>
 
-          {/* Grid of models */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            {filteredModels.length > 0 ? (
-              filteredModels.map((model) => (
-                <ModelCard
-                  key={model}
-                  model={model}
-                  isSelected={selectedModel === model}
-                  onSelect={handleModelSelect}
-                  showKeyIcon={hasOpenRouterKey()}
-                  tierValidation={tierValidations[model]}
-                />
-              ))
-            ) : (
-              <div className="col-span-2 text-center py-8">
+          {/* Models organized by sections */}
+          <div className="space-y-4">
+            {/* Recommended Models */}
+            {filteredModels.recommended.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <span className="text-primary">⭐</span>
+                  Recommended
+                </h3>
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  {filteredModels.recommended.map((model) => (
+                    <ModelCard
+                      key={model}
+                      model={model}
+                      isSelected={selectedModel === model}
+                      onSelect={handleModelSelect}
+                      showKeyIcon={hasOpenRouterKey()}
+                      tierValidation={tierValidations[model]}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Free Models */}
+            {filteredModels.freeModels.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <span className="text-green-500">🆓</span>
+                  Free
+                </h3>
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  {filteredModels.freeModels.map((model) => (
+                    <ModelCard
+                      key={model}
+                      model={model}
+                      isSelected={selectedModel === model}
+                      onSelect={handleModelSelect}
+                      showKeyIcon={hasOpenRouterKey()}
+                      tierValidation={tierValidations[model]}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Premium Models */}
+            {filteredModels.premiumModels.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <span className="text-primary">💎</span>
+                  Premium
+                </h3>
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  {filteredModels.premiumModels.map((model) => (
+                    <ModelCard
+                      key={model}
+                      model={model}
+                      isSelected={selectedModel === model}
+                      onSelect={handleModelSelect}
+                      showKeyIcon={hasOpenRouterKey()}
+                      tierValidation={tierValidations[model]}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Super Premium Models */}
+            {filteredModels.superPremiumModels.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <span className="text-primary">💎💎</span>
+                  Super Premium
+                </h3>
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  {filteredModels.superPremiumModels.map((model) => (
+                    <ModelCard
+                      key={model}
+                      model={model}
+                      isSelected={selectedModel === model}
+                      onSelect={handleModelSelect}
+                      showKeyIcon={hasOpenRouterKey()}
+                      tierValidation={tierValidations[model]}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* No results */}
+            {filteredModels.recommended.length === 0 &&
+             filteredModels.freeModels.length === 0 &&
+             filteredModels.premiumModels.length === 0 &&
+             filteredModels.superPremiumModels.length === 0 && (
+              <div className="text-center py-8">
                 <Search className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">No models found</p>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -365,7 +480,12 @@ const PureModelSelector = () => {
             </p>
             {searchQuery && (
               <p className="text-xs text-muted-foreground text-center mt-1">
-                Showing {filteredModels.length} of {AI_MODELS.length} models
+                Showing {
+                  filteredModels.recommended.length +
+                  filteredModels.freeModels.length +
+                  filteredModels.premiumModels.length +
+                  filteredModels.superPremiumModels.length
+                } of {AI_MODELS.length} models
               </p>
             )}
           </div>

@@ -2524,8 +2524,8 @@ export default function SettingsPage() {
           <footer className="w-full flex justify-center border-t border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 mt-8">
             <div className="container max-w-4xl flex flex-col sm:flex-row justify-between items-center gap-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <img src="/logo.png" alt="AtChat Logo" className="h-5 w-5" />
-                <span>© 2025 AtChat. All rights reserved.</span>
+                <img src="/logo.png" alt="AVChat Logo" className="h-5 w-5" />
+                <span>© 2025 AVChat. All rights reserved.</span>
               </div>
               <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
                 <button

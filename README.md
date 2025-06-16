@@ -1,4 +1,4 @@
-# AtChat
+# AVChat
 
 A realtime chat application with AI capabilities, IndexedDB local storage, and Appwrite DB synchronization.
 
@@ -107,7 +107,7 @@ A realtime chat application with AI capabilities, IndexedDB local storage, and A
 
 ## Architecture
 
-AtChat uses a local-first architecture:
+AVChat uses a local-first architecture:
 
 1. All data is stored locally in IndexedDB (using Dexie.js)
 2. Data is synchronized with Appwrite Database for cloud storage

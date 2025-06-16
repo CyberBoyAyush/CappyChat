@@ -16,7 +16,7 @@ import { ThemeToggleButton } from '@/frontend/components/ui/ThemeComponents';
 
 const EmailVerificationPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const { user, verifyEmail, resendVerificationEmail, isEmailVerified, loading } = useAuth();
+  const { user, verifyEmail, resendVerificationEmail, isEmailVerified, loading, refreshUser } = useAuth();
   const navigate = useNavigate();
   
   const [verificationStatus, setVerificationStatus] = useState<'pending' | 'success' | 'error' | 'resent'>('pending');
@@ -34,6 +34,24 @@ const EmailVerificationPage: React.FC = () => {
     }
   }, [userId, secret, isEmailVerified]);
 
+  // Periodically check verification status for users who are waiting
+  useEffect(() => {
+    if (!userId && !secret && user && !isEmailVerified && verificationStatus === 'pending') {
+      const checkInterval = setInterval(async () => {
+        await refreshUser();
+      }, 3000); // Check every 3 seconds
+
+      return () => clearInterval(checkInterval);
+    }
+  }, [userId, secret, user, isEmailVerified, verificationStatus, refreshUser]);
+
+  // Auto-update verification status when isEmailVerified changes
+  useEffect(() => {
+    if (isEmailVerified && verificationStatus !== 'success') {
+      setVerificationStatus('success');
+    }
+  }, [isEmailVerified, verificationStatus]);
+
   const handleVerification = async () => {
     if (!userId || !secret) return;
 
@@ -41,6 +59,9 @@ const EmailVerificationPage: React.FC = () => {
       await verifyEmail(userId, secret);
       setVerificationStatus('success');
       setError('');
+
+      // Refresh user data to ensure UI reflects the updated verification status
+      await refreshUser();
     } catch (err: any) {
       setVerificationStatus('error');
       setError(err.message || 'Verification failed. Please try again.');

@@ -23,6 +23,7 @@ export type ModelConfig = {
   isPremium: boolean;
   isSuperPremium: boolean;
   hasReasoning: boolean;
+  isFileSupported: boolean;
   description: string;
 };
 
@@ -36,6 +37,7 @@ export const MODEL_CONFIGS = {
     isPremium: false,
     isSuperPremium: false,
     hasReasoning: true,
+    isFileSupported: true,
     description: 'Fast and efficient model from Google',
   },
   'Gemini 2.5 Flash Search': {
@@ -47,6 +49,7 @@ export const MODEL_CONFIGS = {
     isPremium: false,
     isSuperPremium: true,
     hasReasoning: true,
+    isFileSupported: true,
     description: 'Fast and efficient model from Google with web search capabilities',
   },
   'OpenAI 4.1': {
@@ -58,6 +61,7 @@ export const MODEL_CONFIGS = {
     isPremium: true,
     isSuperPremium: false,
     hasReasoning: false,
+    isFileSupported: true,
     description: 'Latest OpenAI flagship model',
   },
   'OpenAI 4.1 Mini': {
@@ -69,6 +73,7 @@ export const MODEL_CONFIGS = {
     isPremium: false,
     isSuperPremium: false,
     hasReasoning: false,
+    isFileSupported: true,
     description: 'Efficient mini version of OpenAI 4.1',
   },
   'OpenAI o4-mini': {
@@ -80,6 +85,7 @@ export const MODEL_CONFIGS = {
     isPremium: true,
     isSuperPremium: false,
     hasReasoning: true,
+    isFileSupported: true,
     description: 'OpenAI\'s latest mini model with advanced reasoning capabilities and coding capabilities',
   },
   'Claude Sonnet 3.5 Haiku': {
@@ -91,6 +97,7 @@ export const MODEL_CONFIGS = {
     isPremium: true,
     isSuperPremium: false,
     hasReasoning: false,
+    isFileSupported: true,
     description: 'Anthropic\'s lightest model for fast responses',
   },
   'DeepSeek R1-0528': {
@@ -102,6 +109,7 @@ export const MODEL_CONFIGS = {
     isPremium: false,
     isSuperPremium: false,
     hasReasoning: true,
+    isFileSupported: false,
     description: 'Deepseek Best in the class latest advanced reasoning model',
   },
   'DeepSeek V3': {
@@ -113,6 +121,7 @@ export const MODEL_CONFIGS = {
     isPremium: false,
     isSuperPremium: false,
     hasReasoning: false,
+    isFileSupported: false,
     description: 'Deepseek Top in the class model for coding and fast responses',
   },
   'Qwen3 235B A22B': {
@@ -124,6 +133,7 @@ export const MODEL_CONFIGS = {
     isPremium: false,
     isSuperPremium: false,
     hasReasoning: true,
+    isFileSupported: false,
     description: 'Qwen3 235B A22B is a powerful model with advanced reasoning capabilities',
   },
   'Claude Sonnet 4': {
@@ -135,6 +145,7 @@ export const MODEL_CONFIGS = {
     isPremium: false,
     isSuperPremium: true,
     hasReasoning: true,
+    isFileSupported: true,
     description: 'Best in the class OpenAI model with advanced reasoning',
   },
   'Gemini 2.5 Pro': {
@@ -146,6 +157,7 @@ export const MODEL_CONFIGS = {
     isPremium: false,
     isSuperPremium: true,
     hasReasoning: true,
+    isFileSupported: true,
     description: 'Best in the class Google model with advanced reasoning and coding capabilities',
   },
 } as const satisfies Record<AIModel, ModelConfig>;
