@@ -37,6 +37,7 @@ import {
   Sparkles,
   Laptop,
   ChevronRight,
+  PlusIcon,
 } from "lucide-react";
 import { useChatMessageNavigator } from "@/frontend/hooks/useChatMessageNavigator";
 import { useOutletContext } from "react-router-dom";
@@ -759,10 +760,12 @@ const AppPanelTrigger = () => {
     toggleSidebar();
   };
 
+  const navigate = useNavigate();
+
   // Show trigger on mobile or when sidebar is collapsed on desktop
   return (
     <div
-      className={`fixed left-2 top-3 z-50 overflow-hidden ${
+      className={`fixed left-2 flex top-3 z-50 overflow-hidden ${
         state === "collapsed"
           ? "top-3 bg-background p-1.5 mr-6 ml-3 rounded-md"
           : "bg-background"
@@ -772,11 +775,26 @@ const AppPanelTrigger = () => {
         <Button
           size="icon"
           variant="outline"
-          className=" bg-background"
+          className="bg-background"
           onClick={handleToggle}
           aria-label="Toggle sidebar"
         >
           <PanelLeftIcon className="h-5 w-5" />
+        </Button>
+      </div>
+
+      <div className=" rounded-md">
+        <Button
+          onClick={() => {
+            navigate("/chat");
+          }}
+          size="icon"
+          variant="outline"
+          className={`hover:bg-zinc-600/10 ${
+            state === "collapsed" ? "ml-2" : "hidden"
+          }`}
+        >
+          <PlusIcon className="h-5 w-5" />
         </Button>
       </div>
     </div>

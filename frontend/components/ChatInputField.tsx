@@ -131,8 +131,6 @@ function PureInputField({
     }
   }, [input, textareaRef, isHomePage, adjustHeight]);
 
-
-
   // Handle file uploads
   const handleFilesUploaded = useCallback(
     (newAttachments: FileAttachment[]) => {
@@ -430,12 +428,22 @@ function PureInputField({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Allow normal navigation keys to work
-    if (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight") {
+    if (
+      e.key === "ArrowUp" ||
+      e.key === "ArrowDown" ||
+      e.key === "ArrowLeft" ||
+      e.key === "ArrowRight"
+    ) {
       // Don't prevent default for arrow keys - let them work normally
       return;
     }
 
-    if (e.key === "Home" || e.key === "End" || e.key === "PageUp" || e.key === "PageDown") {
+    if (
+      e.key === "Home" ||
+      e.key === "End" ||
+      e.key === "PageUp" ||
+      e.key === "PageDown"
+    ) {
       // Don't prevent default for navigation keys
       return;
     }
@@ -454,6 +462,9 @@ function PureInputField({
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
     adjustHeight();
+
+    // We don't need extra cursor position handling as React will maintain it automatically
+    // when using controlled input with the value property
   };
 
   // Expose handleSubmit function through ref for external access
@@ -669,7 +680,8 @@ function PureInputField({
                   "scrollbar-thumb-rounded-full",
                   "min-h-[44px] sm:min-h-[40px] text-base sm:text-base",
                   "selection:bg-primary selection:text-primary-foreground",
-                  "mobile-input leading-relaxed overflow-hidden transition-colors",
+                  "mobile-input leading-relaxed transition-colors",
+                  "overflow-y-auto overflow-x-hidden",
                   isDragOverTextarea && "bg-primary/5 border-primary/20",
                   isVoiceInputActive &&
                     "bg-red-500/5 border-red-300/30 backdrop-blur-sm"
@@ -718,7 +730,7 @@ function PureInputField({
                 className={cn(
                   isVoiceInputActive
                     ? "text-red-500 hover:text-red-600"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-foreground "
                 )}
                 size="md"
                 disabled={status === "streaming" || status === "submitted"}

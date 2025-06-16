@@ -5,7 +5,7 @@
  * Provides form validation and project creation functionality.
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,11 +13,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/frontend/components/ui/dialog';
-import { Button } from '@/frontend/components/ui/button';
-import { Input } from '@/frontend/components/ui/input';
-import { Textarea } from '@/frontend/components/ui/textarea';
-import { Label } from '@/frontend/components/ui/label';
+} from "@/frontend/components/ui/dialog";
+import { Button } from "@/frontend/components/ui/button";
+import { Input } from "@/frontend/components/ui/input";
+import { Textarea } from "@/frontend/components/ui/textarea";
+import { Label } from "@/frontend/components/ui/label";
 
 interface ProjectCreateDialogProps {
   isOpen: boolean;
@@ -30,47 +30,47 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({
   onOpenChange,
   onCreateProject,
 }) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name.trim()) {
-      setError('Project name is required');
+      setError("Project name is required");
       return;
     }
 
     setIsCreating(true);
-    setError('');
+    setError("");
 
     try {
       await onCreateProject(name.trim(), description.trim() || undefined);
-      
+
       // Reset form and close dialog
-      setName('');
-      setDescription('');
+      setName("");
+      setDescription("");
       onOpenChange(false);
     } catch (error) {
-      console.error('Failed to create project:', error);
-      setError('Failed to create project. Please try again.');
+      console.error("Failed to create project:", error);
+      setError("Failed to create project. Please try again.");
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleCancel = () => {
-    setName('');
-    setDescription('');
-    setError('');
+    setName("");
+    setDescription("");
+    setError("");
     onOpenChange(false);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[625px] p-5 max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Project</DialogTitle>
           <DialogDescription>
@@ -84,6 +84,7 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({
             <Input
               id="project-name"
               placeholder="Enter project name..."
+              className="bg-border/20 rounded-md py-1 w-full"
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={isCreating}
@@ -100,14 +101,11 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               disabled={isCreating}
               rows={3}
+              className="min-h-[100px] max-h-[180px] bg-border/50 resize-none w-full"
             />
           </div>
 
-          {error && (
-            <div className="text-sm text-destructive">
-              {error}
-            </div>
-          )}
+          {error && <div className="text-sm text-destructive">{error}</div>}
 
           <DialogFooter>
             <Button
@@ -118,11 +116,8 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isCreating || !name.trim()}
-            >
-              {isCreating ? 'Creating...' : 'Create Project'}
+            <Button type="submit" disabled={isCreating || !name.trim()}>
+              {isCreating ? "Creating..." : "Create Project"}
             </Button>
           </DialogFooter>
         </form>

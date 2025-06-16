@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 @plugin '@tailwindcss/typography';
 @plugin 'tailwind-scrollbar';
 
@@ -40,7 +40,7 @@
   --sidebar-border: #d6d3c6;
   --sidebar-ring: #f76f52;
   --font-sans: Geist, sans-serif;
-  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: Geist Mono, monospace;
   --radius: 0.625rem;
   --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
@@ -92,7 +92,7 @@
   --sidebar-border: #3a3a3a;
   --sidebar-ring: #f76f52;
   --font-sans: Geist, sans-serif;
-  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: Geist Mono, monospace;
   --radius: 0.625rem;
   --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
@@ -186,7 +186,7 @@
   }
 
   .mobile-text {
-    @apply text-sm sm:text-base;
+    @apply text-sm sm:text-sm;
   }
 
   .mobile-container {
@@ -598,7 +598,8 @@ body.sidebar-open {
 }
 
 @keyframes errorShake {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateX(0);
   }
   25% {

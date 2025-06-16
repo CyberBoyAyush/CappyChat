@@ -15,7 +15,7 @@ import {
   ThreadListItem,
 } from "./panel";
 import { ThreadData } from "./panel/ThreadManager";
-import { Pin, FolderPlus } from "lucide-react";
+import { Pin, FolderPlus, Folder, PinIcon } from "lucide-react";
 import { useProjectManager } from "@/frontend/hooks/useProjectManager";
 import ProjectFolder from "./projects/ProjectFolder";
 import ProjectCreateDialog from "./projects/ProjectCreateDialog";
@@ -63,19 +63,18 @@ export default function ChatSidebarPanel() {
   } = useThreadManager();
 
   // Project management
-  const {
-    projects,
-    createProject,
-    updateProject,
-    deleteProject,
-  } = useProjectManager();
+  const { projects, createProject, updateProject, deleteProject } =
+    useProjectManager();
 
   // Handle project color change
-  const handleProjectColorChange = async (projectId: string, colorIndex: number) => {
+  const handleProjectColorChange = async (
+    projectId: string,
+    colorIndex: number
+  ) => {
     try {
       await HybridDB.updateProjectColor(projectId, colorIndex);
     } catch (error) {
-      console.error('Error updating project color:', error);
+      console.error("Error updating project color:", error);
     }
   };
 
@@ -90,19 +89,23 @@ export default function ChatSidebarPanel() {
     : threadCollection || [];
 
   // Remove duplicates at the source level to prevent React key conflicts
-  const threadsToDisplay = rawThreadsToDisplay.filter((thread, index, arr) =>
-    arr.findIndex(t => t.id === thread.id) === index
+  const threadsToDisplay = rawThreadsToDisplay.filter(
+    (thread, index, arr) => arr.findIndex((t) => t.id === thread.id) === index
   );
 
   // Log warning if duplicates were found at the source
   if (rawThreadsToDisplay.length !== threadsToDisplay.length) {
     const duplicateCount = rawThreadsToDisplay.length - threadsToDisplay.length;
-    console.warn(`[ChatSidebarPanel] Removed ${duplicateCount} duplicate threads from source data`);
+    console.warn(
+      `[ChatSidebarPanel] Removed ${duplicateCount} duplicate threads from source data`
+    );
 
     // Log the duplicate IDs for debugging
-    const threadIds = rawThreadsToDisplay.map(t => t.id);
-    const duplicateIds = threadIds.filter((id, index) => threadIds.indexOf(id) !== index);
-    console.warn('Duplicate thread IDs:', [...new Set(duplicateIds)]);
+    const threadIds = rawThreadsToDisplay.map((t) => t.id);
+    const duplicateIds = threadIds.filter(
+      (id, index) => threadIds.indexOf(id) !== index
+    );
+    console.warn("Duplicate thread IDs:", [...new Set(duplicateIds)]);
   }
 
   // Handle search filter changes
@@ -120,8 +123,12 @@ export default function ChatSidebarPanel() {
   const regularThreads = threadsToDisplay.filter((thread) => !thread.isPinned);
 
   // Group threads by projects
-  const threadsWithProjects = regularThreads.filter((thread) => thread.projectId);
-  const threadsWithoutProjects = regularThreads.filter((thread) => !thread.projectId);
+  const threadsWithProjects = regularThreads.filter(
+    (thread) => thread.projectId
+  );
+  const threadsWithoutProjects = regularThreads.filter(
+    (thread) => !thread.projectId
+  );
 
   // Group threads by project ID
   const threadsByProject = threadsWithProjects.reduce((acc, thread) => {
@@ -172,8 +179,9 @@ export default function ChatSidebarPanel() {
   };
 
   // Group threads without projects by date
-  const { today, yesterday, lastSevenDays, previous } =
-    groupThreadsByDate(threadsWithoutProjects);
+  const { today, yesterday, lastSevenDays, previous } = groupThreadsByDate(
+    threadsWithoutProjects
+  );
 
   // Render a category of threads with a header
   const ThreadCategory = ({
@@ -188,13 +196,17 @@ export default function ChatSidebarPanel() {
     }
 
     // Remove duplicates and add defensive key generation
-    const uniqueThreads = threads.filter((thread, index, arr) =>
-      arr.findIndex(t => t.id === thread.id) === index
+    const uniqueThreads = threads.filter(
+      (thread, index, arr) => arr.findIndex((t) => t.id === thread.id) === index
     );
 
     // Log warning if duplicates were found
     if (uniqueThreads.length !== threads.length) {
-      console.warn(`[${title}] Removed ${threads.length - uniqueThreads.length} duplicate threads`);
+      console.warn(
+        `[${title}] Removed ${
+          threads.length - uniqueThreads.length
+        } duplicate threads`
+      );
     }
 
     return (
@@ -240,10 +252,10 @@ export default function ChatSidebarPanel() {
             <>
               {/* Projects and Pinned Section */}
               <>
-                <div className="px-0 py-2 flex items-center justify-between text-xs font-medium text-primary/85">
-                  <div className="flex items-center gap-2">
-                    <Pin className="h-4 w-4" />
-                    <span>Projects & Pinned</span>
+                <div className="px-0 pt-1 flex items-center justify-between text-xs font-medium text-primary/85">
+                  <div className="flex items-center gap-2 ">
+                    <Folder className="h-4 w-4" />
+                    <span>Projects</span>
                   </div>
                   <Button
                     variant="ghost"
@@ -256,43 +268,49 @@ export default function ChatSidebarPanel() {
                   </Button>
                 </div>
 
-                  {/* Projects */}
-                  {projects.map((project) => {
-                    const projectThreads = threadsByProject[project.id] || [];
-                    return (
-                      <ProjectFolder
-                        key={project.id}
-                        project={project}
-                        threads={projectThreads}
-                        threadOperations={{
-                          onNavigate: navigateToThread,
-                          onDelete: removeThread,
-                          onTogglePin: toggleThreadPin,
-                          onRename: renameThread,
-                          onUpdateTags: updateThreadTags,
-                          onBranch: branchThread,
-                          isActive: false, // This will be set per thread
-                        }}
-                        onProjectUpdate={updateProject}
-                        onProjectDelete={deleteProject}
-                        onProjectColorChange={handleProjectColorChange}
-                        isActive={isActiveThread}
-                      />
-                    );
-                  })}
+                {/* Projects */}
+                {projects.map((project) => {
+                  const projectThreads = threadsByProject[project.id] || [];
+                  return (
+                    <ProjectFolder
+                      key={project.id}
+                      project={project}
+                      threads={projectThreads}
+                      threadOperations={{
+                        onNavigate: navigateToThread,
+                        onDelete: removeThread,
+                        onTogglePin: toggleThreadPin,
+                        onRename: renameThread,
+                        onUpdateTags: updateThreadTags,
+                        onBranch: branchThread,
+                        isActive: false, // This will be set per thread
+                      }}
+                      onProjectUpdate={updateProject}
+                      onProjectDelete={deleteProject}
+                      onProjectColorChange={handleProjectColorChange}
+                      isActive={isActiveThread}
+                    />
+                  );
+                })}
 
-                  {/* Pinned Threads */}
-                  {pinnedThreads.length > 0 && (
-                    <div className="space-y-1">
-                      {projects.length > 0 && (
-                        <div className="px-0 py-1 text-xs font-medium text-primary/70">
-                          Pinned Conversations
-                        </div>
-                      )}
-                      {pinnedThreads
-                        .filter((thread, index, arr) => arr.findIndex(t => t.id === thread.id) === index)
-                        .map((threadItem, index) => (
-                        <SidebarMenuItem key={`pinned-${threadItem.id}-${index}`}>
+                {/* Pinned Threads */}
+                {pinnedThreads.length > 0 && (
+                  <div className="space-y-1">
+                    {projects.length > 0 && (
+                      <div className="px-0 py-0.5 text-xs font-medium text-primary/70">
+                        <PinIcon className="h-4 w-4 inline-block mr-2" />
+                        Pinned Chats
+                      </div>
+                    )}
+                    {pinnedThreads
+                      .filter(
+                        (thread, index, arr) =>
+                          arr.findIndex((t) => t.id === thread.id) === index
+                      )
+                      .map((threadItem, index) => (
+                        <SidebarMenuItem
+                          key={`pinned-${threadItem.id}-${index}`}
+                        >
                           <ThreadListItem
                             threadData={threadItem}
                             isActive={isActiveThread(threadItem.id)}
@@ -305,8 +323,8 @@ export default function ChatSidebarPanel() {
                           />
                         </SidebarMenuItem>
                       ))}
-                    </div>
-                  )}
+                  </div>
+                )}
               </>
 
               {/* Regular Threads Section - Organized by Date (threads without projects) */}
@@ -329,7 +347,9 @@ export default function ChatSidebarPanel() {
                   {/* Previous Threads */}
                   <ThreadCategory title="Previous" threads={previous} />
                 </>
-              ) : pinnedThreads.length === 0 && projects.length === 0 && threadsWithoutProjects.length === 0 ? (
+              ) : pinnedThreads.length === 0 &&
+                projects.length === 0 &&
+                threadsWithoutProjects.length === 0 ? (
                 <SidebarMenuItem>
                   <div className="h-9 flex items-center px-2 py-1 text-muted-foreground text-sm">
                     No conversations yet

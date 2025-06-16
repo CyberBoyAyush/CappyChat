@@ -205,6 +205,8 @@ export const ThreadSearch = ({
           className="pl-10 pr-10 h-9 sm:h-9 text-sm w-full"
         />
 
+        <div className="w-full bg-foreground/20 h-[1px] mt-1"></div>
+
         {searchQuery && !isSearching && (
           <Button
             variant="ghost"

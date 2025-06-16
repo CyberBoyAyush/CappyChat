@@ -341,10 +341,10 @@ export default function VoiceInputButton({
         title: "Processing speech...",
         className: cn(
           baseSize,
-          "rounded-full flex items-center justify-center transition-all bg-blue-500",
+          "rounded-full flex items-center justify-center transition-all bg-primary/60",
           className
         ),
-        icon: <Loader2 size={iconSize} className="animate-spin" />,
+        icon: <Loader2 size={iconSize} className="animate-spin text-white" />,
       };
     }
 
@@ -354,10 +354,10 @@ export default function VoiceInputButton({
         title: "Recording... Release to stop",
         className: cn(
           baseSize,
-          "rounded-full flex items-center justify-center transition-all bg-red-500 hover:bg-red-600",
+          "rounded-full flex items-center justify-center transition-all bg-primary/60",
           className
         ),
-        icon: <MicOff size={iconSize} />,
+        icon: <MicOff size={iconSize} className="text-white" />,
         style: pulseStyle,
       };
     }
@@ -367,10 +367,10 @@ export default function VoiceInputButton({
       title: "Hold to record voice input",
       className: cn(
         baseSize,
-        "rounded-full flex items-center justify-center transition-all bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed",
+        "rounded-full flex items-center justify-center transition-all bg-primary hover:bg-primary/60 disabled:opacity-50 disabled:cursor-not-allowed",
         className
       ),
-      icon: <Mic size={iconSize} />,
+      icon: <Mic size={iconSize} className="text-white" />,
     };
   };
 
