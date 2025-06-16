@@ -11,6 +11,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/frontend/components/ui/button";
 import { useAuth } from "@/frontend/contexts/AuthContext";
+import AuthRedirectGuard from "@/frontend/components/AuthRedirectGuard";
 import { Moon } from "lucide-react";
 import { Check } from "lucide-react";
 import { Building2, Mail } from "lucide-react";
@@ -94,9 +95,7 @@ const floatingIcons = [
 ];
 
 const HomePage: React.FC = () => {
-  const { isAuthenticated, loading, loginWithGoogle, loginWithGitHub } =
-    useAuth();
-  const navigate = useNavigate();
+  const { loading, loginWithGoogle, loginWithGitHub } = useAuth();
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
@@ -117,12 +116,7 @@ const HomePage: React.FC = () => {
     };
   }, []);
 
-  // Redirect authenticated users to chat
-  useEffect(() => {
-    if (isAuthenticated && !loading) {
-      navigate("/chat");
-    }
-  }, [isAuthenticated, loading, navigate]);
+  // Remove manual redirection logic - handled by AuthRedirectGuard
 
   const handleGoogleLogin = async () => {
     try {
@@ -149,7 +143,8 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <AuthRedirectGuard>
+      <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Fixed gradient elements */}
       <div className="absolute top-0 left-0 w-full h-full z-0">
         <div className="absolute top-0 left-1/4 w-[30rem] h-[30rem] rounded-full bg-primary/5 blur-[8rem] -translate-y-1/2" />
@@ -1885,6 +1880,7 @@ const HomePage: React.FC = () => {
         </footer>
       </main>
     </div>
+    </AuthRedirectGuard>
   );
 };
 

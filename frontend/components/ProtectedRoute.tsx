@@ -52,6 +52,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // If authentication is not required but user is authenticated (like login/signup pages)
   if (!requireAuth && isAuthenticated) {
+    // Check for stored redirect path first
+    const redirectPath = sessionStorage.getItem('auth_redirect');
+    if (redirectPath) {
+      sessionStorage.removeItem('auth_redirect');
+      return <Navigate to={redirectPath} replace />;
+    }
     return <Navigate to="/chat" replace />;
   }
 
