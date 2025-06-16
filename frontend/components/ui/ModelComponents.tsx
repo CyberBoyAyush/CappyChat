@@ -15,44 +15,62 @@ import qwen from "@/public/qwen-color.svg";
 // ===============================================
 
 interface ModelBadgeProps {
-  type: "premium" | "super-premium" | "reasoning";
+  type: "premium" | "super-premium" | "reasoning" | "file-support";
   size?: number;
   className?: string;
 }
 
 // Icons8 Diamond Icon for Premium
 const DiamondIcon: React.FC<{ size?: number; className?: string }> = ({
-  size = 16,
+  size = 22,
   className = "",
 }) => (
   <img
     width={size}
     height={size}
-    src="https://img.icons8.com/ios/50/diamond.png"
+    src="https://img.icons8.com/ios-filled/50/diamond.png"
     alt="premium"
     className={className}
     style={{
       filter:
-        "brightness(0) saturate(100%) invert(47%) sepia(69%) saturate(959%) hue-rotate(334deg) brightness(103%) contrast(97%)",
-    }} // Convert to theme primary color #f76f52
+        "brightness(0) saturate(100%) invert(65%) sepia(80%) saturate(2000%) hue-rotate(25deg) brightness(120%) contrast(110%)",
+    }} // Convert to bright orange color #ff9500
   />
 );
 
 // Icons8 Brain Icon for Reasoning
 const BrainIcon: React.FC<{ size?: number; className?: string }> = ({
+  size = 26,
+  className = "",
+}) => (
+  <img
+    width={size}
+    height={size}
+    src="https://img.icons8.com/ios-filled/50/brain--v1.png"
+    alt="reasoning"
+    className={className}
+    style={{
+      filter:
+        "brightness(0) saturate(100%) invert(65%) sepia(80%) saturate(2000%) hue-rotate(25deg) brightness(120%) contrast(110%)",
+    }} // Convert to bright orange color #ff9500
+  />
+);
+
+// Icons8 File Icon for File Support
+const FileIcon: React.FC<{ size?: number; className?: string }> = ({
   size = 16,
   className = "",
 }) => (
   <img
     width={size}
     height={size}
-    src="https://img.icons8.com/ios/50/brain--v1.png"
-    alt="reasoning"
+    src="https://img.icons8.com/ios-filled/50/file.png"
+    alt="file-support"
     className={className}
     style={{
       filter:
-        "brightness(0) saturate(100%) invert(47%) sepia(69%) saturate(959%) hue-rotate(334deg) brightness(103%) contrast(97%)",
-    }} // Convert to theme primary color #f76f52
+        "brightness(0) saturate(100%) invert(65%) sepia(80%) saturate(2000%) hue-rotate(25deg) brightness(120%) contrast(110%)",
+    }} // Convert to bright orange color #ff9500
   />
 );
 
@@ -73,6 +91,8 @@ export const ModelBadge: React.FC<ModelBadgeProps> = ({
         return <DiamondIcon size={size} />;
       case "reasoning":
         return <BrainIcon size={size} />;
+      case "file-support":
+        return <FileIcon size={size} />;
       case "super-premium":
         return (
           <>
