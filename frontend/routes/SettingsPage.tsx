@@ -1690,7 +1690,7 @@ export default function SettingsPage() {
                               size="sm"
                               onClick={() =>
                                 window.open(
-                                  "mailto:ayush@atchat.app?subject=Upgrade Plan Request",
+                                  "mailto:connect@ayush-sharma.in?subject=Upgrade Plan Request",
                                   "_blank"
                                 )
                               }
