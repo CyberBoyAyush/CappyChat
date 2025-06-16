@@ -35,6 +35,11 @@ import {
   Trash2,
   ArrowLeft,
   Folder,
+  Keyboard,
+  Command,
+  Search,
+  MessageSquareMore,
+  PanelLeftIcon,
 } from "lucide-react";
 import ThemeToggleButton from "../components/ui/ThemeComponents";
 import { useTheme } from "next-themes";
@@ -60,6 +65,10 @@ export default function SettingsPage() {
   const chatId = searchParams.get("from");
   const { setTheme, theme } = useTheme();
   const { user, updateProfile, logout } = useAuth();
+
+  // Platform detection helper
+  const isMac = typeof window !== 'undefined' &&
+    (window.navigator.userAgent.includes('Mac') || window.navigator.userAgent.includes('iPhone'));
 
   // Section navigation state
   const [activeSection, setActiveSection] = useState("profile");
@@ -1845,6 +1854,132 @@ export default function SettingsPage() {
                       </p>
                     </div>
                   )}
+                </div>
+
+                {/* Keyboard Shortcuts Card */}
+                <div className="p-6 border rounded-xl bg-card shadow-sm">
+                  <div className="space-y-1 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Keyboard className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-medium">Keyboard Shortcuts</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Speed up your workflow with these keyboard shortcuts
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Shortcuts List */}
+                    <div className="grid grid-cols-1 gap-3">
+                      {/* Global Search */}
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-md bg-primary/10">
+                            <Search className="h-4 w-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">Global Search</p>
+                            <p className="text-xs text-muted-foreground">
+                              Search across all threads, messages, and summaries
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <kbd className="px-2 py-1 text-xs font-mono bg-background border border-border rounded">
+                            {isMac ? '⌘' : 'Ctrl'}
+                          </kbd>
+                          {isMac ? null : (
+                            <>
+                              <span className="text-muted-foreground">+</span>
+                              <kbd className="px-2 py-1 text-xs font-mono bg-background border border-border rounded">
+                                Shift
+                              </kbd>
+                            </>
+                          )}
+                          <span className="text-muted-foreground">+</span>
+                          <kbd className="px-2 py-1 text-xs font-mono bg-background border border-border rounded">
+                            K
+                          </kbd>
+                        </div>
+                      </div>
+
+                      {/* New Chat */}
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-md bg-primary/10">
+                            <MessageSquareMore className="h-4 w-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">New Chat</p>
+                            <p className="text-xs text-muted-foreground">
+                              Start a new conversation
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <kbd className="px-2 py-1 text-xs font-mono bg-background border border-border rounded">
+                            {isMac ? '⌘' : 'Ctrl'}
+                          </kbd>
+                          <span className="text-muted-foreground">+</span>
+                          <kbd className="px-2 py-1 text-xs font-mono bg-background border border-border rounded">
+                            Shift
+                          </kbd>
+                          <span className="text-muted-foreground">+</span>
+                          <kbd className="px-2 py-1 text-xs font-mono bg-background border border-border rounded">
+                            O
+                          </kbd>
+                        </div>
+                      </div>
+
+                      {/* Toggle Sidebar */}
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-md bg-primary/10">
+                            <PanelLeftIcon className="h-4 w-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">Toggle Sidebar</p>
+                            <p className="text-xs text-muted-foreground">
+                              Show or hide the sidebar
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <kbd className="px-2 py-1 text-xs font-mono bg-background border border-border rounded">
+                            {isMac ? '⌘' : 'Ctrl'}
+                          </kbd>
+                          {isMac ? null : (
+                            <>
+                              <span className="text-muted-foreground">+</span>
+                              <kbd className="px-2 py-1 text-xs font-mono bg-background border border-border rounded">
+                                Shift
+                              </kbd>
+                            </>
+                          )}
+                          <span className="text-muted-foreground">+</span>
+                          <kbd className="px-2 py-1 text-xs font-mono bg-background border border-border rounded">
+                            B
+                          </kbd>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Additional Info */}
+                    <div className="rounded-lg bg-muted/50 p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-full bg-muted">
+                          <Command className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium mb-1">Platform Detection</p>
+                          <p className="text-xs text-muted-foreground">
+                            Shortcuts automatically adapt to your platform. Mac users see ⌘ (Command) key combinations,
+                            while Windows and Linux users see Ctrl+Shift combinations.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
