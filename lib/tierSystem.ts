@@ -6,8 +6,8 @@
  */
 
 import { AIModel, getModelConfig } from './models';
-import { getUserPreferences, updateUserPreferences, initializeUserTier, TIER_LIMITS, UserTierPreferences } from './appwrite';
-import { Client, Users, Query } from 'node-appwrite';
+import { getUserPreferences, updateUserPreferences, initializeUserTier, TIER_LIMITS, UserTierPreferences, UserCustomProfile } from './appwrite';
+import { Client, Users, Query, Databases } from 'node-appwrite';
 
 export type TierType = 'free' | 'premium' | 'admin';
 export type ModelType = 'free' | 'premium' | 'superPremium';
@@ -77,6 +77,81 @@ export const updateUserPreferencesServer = async (userId: string, preferences: P
   } catch (error) {
     console.error('[Server] Failed to update user preferences:', error);
     throw error;
+  }
+};
+
+/**
+ * Get user custom profile using server-side API (for API routes)
+ */
+export const getUserCustomProfileServer = async (userId: string): Promise<UserCustomProfile | null> => {
+  try {
+    const users = getServerClient();
+    const user = await users.get(userId);
+    const prefs = user.prefs as Record<string, unknown>;
+
+    if (prefs && prefs.customProfile) {
+      return prefs.customProfile as UserCustomProfile;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('[Server] Failed to get user custom profile:', error);
+    return null;
+  }
+};
+
+/**
+ * Get project prompt for a thread using server-side API (for API routes)
+ */
+export const getProjectPromptServer = async (userId: string, threadId: string): Promise<string | null> => {
+  try {
+    const client = new Client()
+      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
+      .setKey(process.env.APPWRITE_API_KEY!);
+
+    const databases = new Databases(client);
+
+    // First get the thread to find its project ID
+    const threadsResponse = await databases.listDocuments(
+      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+      process.env.NEXT_PUBLIC_APPWRITE_THREADS_COLLECTION_ID!,
+      [
+        Query.equal('threadId', threadId),
+        Query.equal('userId', userId)
+      ]
+    );
+
+    if (threadsResponse.documents.length === 0) {
+      return null;
+    }
+
+    const thread = threadsResponse.documents[0] as any;
+    const projectId = thread.projectId;
+
+    if (!projectId) {
+      return null;
+    }
+
+    // Get the project to find its prompt
+    const projectsResponse = await databases.listDocuments(
+      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+      process.env.NEXT_PUBLIC_APPWRITE_PROJECTS_COLLECTION_ID!,
+      [
+        Query.equal('projectId', projectId),
+        Query.equal('userId', userId)
+      ]
+    );
+
+    if (projectsResponse.documents.length === 0) {
+      return null;
+    }
+
+    const project = projectsResponse.documents[0] as any;
+    return project.prompt || null;
+  } catch (error) {
+    console.error('[Server] Failed to get project prompt:', error);
+    return null;
   }
 };
 

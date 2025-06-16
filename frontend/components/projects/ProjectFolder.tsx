@@ -15,6 +15,7 @@ import {
   Plus,
   Palette,
   Edit,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProjectData } from "@/frontend/hooks/useProjectManager";
@@ -39,6 +40,7 @@ import { useNavigate } from "react-router";
 import { v4 as uuidv4 } from "uuid";
 import { HybridDB } from "@/lib/hybridDB";
 import ProjectRenameDialog from "./ProjectRenameDialog";
+import ProjectPromptDialog from "./ProjectPromptDialog";
 import {
   Dialog,
   DialogContent,
@@ -56,7 +58,8 @@ interface ProjectFolderProps {
   onProjectUpdate: (
     projectId: string,
     name: string,
-    description?: string
+    description?: string,
+    prompt?: string
   ) => Promise<void>;
   onProjectDelete: (
     projectId: string,
@@ -154,6 +157,7 @@ export const ProjectFolder: React.FC<ProjectFolderProps> = ({
 
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isPromptDialogOpen, setIsPromptDialogOpen] = useState(false);
 
   const handleProjectRename = () => {
     setIsRenameDialogOpen(true);
@@ -163,12 +167,16 @@ export const ProjectFolder: React.FC<ProjectFolderProps> = ({
     setIsDeleteDialogOpen(true);
   };
 
+  const handleProjectPrompt = () => {
+    setIsPromptDialogOpen(true);
+  };
+
   const handleRenameConfirm = async (
     newName: string,
     newDescription?: string
   ) => {
     try {
-      await onProjectUpdate(project.id, newName, newDescription);
+      await onProjectUpdate(project.id, newName, newDescription, project.prompt);
       setIsRenameDialogOpen(false);
     } catch (error) {
       console.error("Error renaming project:", error);
@@ -272,6 +280,11 @@ export const ProjectFolder: React.FC<ProjectFolderProps> = ({
                   Rename Project
                 </DropdownMenuItem>
 
+                <DropdownMenuItem onClick={handleProjectPrompt}>
+                  <MessageSquare className="dark:text-white h-4 w-4" />
+                  Edit Prompt
+                </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
 
                 <DropdownMenuSub>
@@ -353,6 +366,14 @@ export const ProjectFolder: React.FC<ProjectFolderProps> = ({
         onConfirm={handleRenameConfirm}
         currentName={project.name}
         currentDescription={project.description}
+      />
+
+      {/* Prompt Dialog */}
+      <ProjectPromptDialog
+        isOpen={isPromptDialogOpen}
+        onOpenChange={setIsPromptDialogOpen}
+        project={project}
+        onUpdateProject={onProjectUpdate}
       />
 
       {/* Delete Dialog */}

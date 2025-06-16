@@ -22,7 +22,7 @@ import { Label } from "@/frontend/components/ui/label";
 interface ProjectCreateDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateProject: (name: string, description?: string) => Promise<string>;
+  onCreateProject: (name: string, description?: string, prompt?: string) => Promise<string>;
 }
 
 export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({
@@ -32,6 +32,7 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({
 }) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [prompt, setPrompt] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
 
@@ -47,11 +48,16 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({
     setError("");
 
     try {
-      await onCreateProject(name.trim(), description.trim() || undefined);
+      await onCreateProject(
+        name.trim(),
+        description.trim() || undefined,
+        prompt.trim() || undefined
+      );
 
       // Reset form and close dialog
       setName("");
       setDescription("");
+      setPrompt("");
       onOpenChange(false);
     } catch (error) {
       console.error("Failed to create project:", error);
@@ -64,6 +70,7 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({
   const handleCancel = () => {
     setName("");
     setDescription("");
+    setPrompt("");
     setError("");
     onOpenChange(false);
   };
@@ -103,6 +110,27 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({
               rows={3}
               className="min-h-[100px] max-h-[180px] bg-border/50 resize-none w-full"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="project-prompt">Custom Prompt (Optional)</Label>
+            <Textarea
+              id="project-prompt"
+              placeholder="Enter custom instructions for AI when working on this project..."
+              value={prompt}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value.length <= 500) {
+                  setPrompt(value);
+                }
+              }}
+              disabled={isCreating}
+              rows={3}
+              className="min-h-[100px] max-h-[180px] bg-border/50 resize-none w-full"
+            />
+            <p className="text-xs text-muted-foreground">
+              Custom instructions for AI responses in this project ({prompt.length}/500 characters)
+            </p>
           </div>
 
           {error && <div className="text-sm text-destructive">{error}</div>}

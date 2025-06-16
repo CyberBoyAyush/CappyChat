@@ -43,6 +43,17 @@ export interface UserTierPreferences {
   tier_cache?: string;
 }
 
+// Custom Profile Interface
+export interface UserCustomProfile {
+  customName?: string;
+  aboutUser?: string;
+}
+
+// Combined User Preferences Interface
+export interface UserPreferences extends UserTierPreferences {
+  customProfile?: UserCustomProfile;
+}
+
 // Default tier limits
 export const TIER_LIMITS = {
   free: {
@@ -104,6 +115,57 @@ export const updateUserPreferences = async (preferences: Partial<UserTierPrefere
     await account.updatePrefs(updatedPrefs);
   } catch (error) {
     console.error('Failed to update user preferences:', error);
+    throw error;
+  }
+};
+
+// Custom Profile Management Functions
+export const getUserCustomProfile = async (): Promise<UserCustomProfile | null> => {
+  try {
+    const user = await account.get();
+    const prefs = user.prefs as Record<string, unknown>;
+
+    if (prefs && prefs.customProfile) {
+      return prefs.customProfile as UserCustomProfile;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Failed to get user custom profile:', error);
+    return null;
+  }
+};
+
+export const updateUserCustomProfile = async (customProfile: UserCustomProfile): Promise<void> => {
+  try {
+    const currentUser = await account.get();
+    const currentPrefs = currentUser.prefs as Record<string, unknown>;
+
+    const updatedPrefs = {
+      ...currentPrefs,
+      customProfile,
+    };
+
+    await account.updatePrefs(updatedPrefs);
+  } catch (error) {
+    console.error('Failed to update user custom profile:', error);
+    throw error;
+  }
+};
+
+export const clearUserCustomProfile = async (): Promise<void> => {
+  try {
+    const currentUser = await account.get();
+    const currentPrefs = currentUser.prefs as Record<string, unknown>;
+
+    const updatedPrefs = {
+      ...currentPrefs,
+      customProfile: undefined,
+    };
+
+    await account.updatePrefs(updatedPrefs);
+  } catch (error) {
+    console.error('Failed to clear user custom profile:', error);
     throw error;
   }
 };
