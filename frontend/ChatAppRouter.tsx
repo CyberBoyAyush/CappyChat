@@ -7,7 +7,7 @@
  * Includes authentication protection and providers.
  */
 
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ChatLayoutWrapper from "./ChatLayoutWrapper";
@@ -21,8 +21,6 @@ import SignUpPage from "./routes/auth/SignUpPage";
 import AuthCallbackPage from "./routes/auth/AuthCallbackPage";
 import AuthErrorPage from "./routes/auth/AuthErrorPage";
 import EmailVerificationPage from "./routes/auth/EmailVerificationPage";
-import PrivacyPage from "./routes/PrivacyPage";
-import ProfilePage from "./routes/ProfilePage";
 
 export default function ChatAppRouter() {
   return (
@@ -78,22 +76,15 @@ export default function ChatAppRouter() {
             }
           />
 
+          {/* Redirect old routes to unified settings */}
           <Route
             path="privacy"
-            element={
-              <ProtectedRoute>
-                <PrivacyPage />
-              </ProtectedRoute>
-            }
+            element={<Navigate to="/settings#privacy" replace />}
           />
 
           <Route
             path="/profile"
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            }
+            element={<Navigate to="/settings#profile" replace />}
           />
 
           {/* 404 page */}

@@ -15,7 +15,12 @@ import {
   ThreadListItem,
 } from "./panel";
 import { ThreadData } from "./panel/ThreadManager";
-import { Pin } from "lucide-react";
+import { Pin, FolderPlus, Folder, PinIcon } from "lucide-react";
+import { useProjectManager } from "@/frontend/hooks/useProjectManager";
+import ProjectFolder from "./projects/ProjectFolder";
+import ProjectCreateDialog from "./projects/ProjectCreateDialog";
+import { Button } from "./ui/button";
+import { HybridDB } from "@/lib/hybridDB";
 
 // Helper functions to categorize dates
 const isToday = (date: Date) => {
@@ -52,18 +57,56 @@ export default function ChatSidebarPanel() {
     toggleThreadPin,
     renameThread,
     updateThreadTags,
+    branchThread,
     isActiveThread,
     isLoading,
   } = useThreadManager();
 
+  // Project management
+  const { projects, createProject, updateProject, deleteProject } =
+    useProjectManager();
+
+  // Handle project color change
+  const handleProjectColorChange = async (
+    projectId: string,
+    colorIndex: number
+  ) => {
+    try {
+      await HybridDB.updateProjectColor(projectId, colorIndex);
+    } catch (error) {
+      console.error("Error updating project color:", error);
+    }
+  };
+
   // State for filtered threads (used by search)
   const [filteredThreads, setFilteredThreads] = useState<ThreadData[]>([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
 
   // Use filtered threads if search is active, otherwise use all threads
-  const threadsToDisplay = isSearchActive
+  const rawThreadsToDisplay = isSearchActive
     ? filteredThreads
     : threadCollection || [];
+
+  // Remove duplicates at the source level to prevent React key conflicts
+  const threadsToDisplay = rawThreadsToDisplay.filter(
+    (thread, index, arr) => arr.findIndex((t) => t.id === thread.id) === index
+  );
+
+  // Log warning if duplicates were found at the source
+  if (rawThreadsToDisplay.length !== threadsToDisplay.length) {
+    const duplicateCount = rawThreadsToDisplay.length - threadsToDisplay.length;
+    console.warn(
+      `[ChatSidebarPanel] Removed ${duplicateCount} duplicate threads from source data`
+    );
+
+    // Log the duplicate IDs for debugging
+    const threadIds = rawThreadsToDisplay.map((t) => t.id);
+    const duplicateIds = threadIds.filter(
+      (id, index) => threadIds.indexOf(id) !== index
+    );
+    console.warn("Duplicate thread IDs:", [...new Set(duplicateIds)]);
+  }
 
   // Handle search filter changes
   const handleFilteredThreadsChange = (filtered: ThreadData[]) => {
@@ -78,6 +121,24 @@ export default function ChatSidebarPanel() {
   // Separate pinned and regular threads from the displayed threads
   const pinnedThreads = threadsToDisplay.filter((thread) => thread.isPinned);
   const regularThreads = threadsToDisplay.filter((thread) => !thread.isPinned);
+
+  // Group threads by projects
+  const threadsWithProjects = regularThreads.filter(
+    (thread) => thread.projectId
+  );
+  const threadsWithoutProjects = regularThreads.filter(
+    (thread) => !thread.projectId
+  );
+
+  // Group threads by project ID
+  const threadsByProject = threadsWithProjects.reduce((acc, thread) => {
+    const projectId = thread.projectId!;
+    if (!acc[projectId]) {
+      acc[projectId] = [];
+    }
+    acc[projectId].push(thread);
+    return acc;
+  }, {} as Record<string, ThreadData[]>);
 
   // Group regular threads by date category
   const groupThreadsByDate = (threads: ThreadData[]) => {
@@ -117,9 +178,10 @@ export default function ChatSidebarPanel() {
     };
   };
 
-  // Group regular threads by date
-  const { today, yesterday, lastSevenDays, previous } =
-    groupThreadsByDate(regularThreads);
+  // Group threads without projects by date
+  const { today, yesterday, lastSevenDays, previous } = groupThreadsByDate(
+    threadsWithoutProjects
+  );
 
   // Render a category of threads with a header
   const ThreadCategory = ({
@@ -133,13 +195,27 @@ export default function ChatSidebarPanel() {
       return null;
     }
 
+    // Remove duplicates and add defensive key generation
+    const uniqueThreads = threads.filter(
+      (thread, index, arr) => arr.findIndex((t) => t.id === thread.id) === index
+    );
+
+    // Log warning if duplicates were found
+    if (uniqueThreads.length !== threads.length) {
+      console.warn(
+        `[${title}] Removed ${
+          threads.length - uniqueThreads.length
+        } duplicate threads`
+      );
+    }
+
     return (
       <>
-        <div className="px-0 py-1 text-xs font-medium text-primary/85">
+        <div className="px-0 py-1 text-sm font-medium text-primary/85">
           {title}
         </div>
-        {threads.map((threadItem) => (
-          <SidebarMenuItem key={threadItem.id}>
+        {uniqueThreads.map((threadItem, index) => (
+          <SidebarMenuItem key={`${title}-${threadItem.id}-${index}`}>
             <ThreadListItem
               threadData={threadItem}
               isActive={isActiveThread(threadItem.id)}
@@ -148,6 +224,7 @@ export default function ChatSidebarPanel() {
               onTogglePin={toggleThreadPin}
               onRename={renameThread}
               onUpdateTags={updateThreadTags}
+              onBranch={branchThread}
             />
           </SidebarMenuItem>
         ))}
@@ -165,38 +242,93 @@ export default function ChatSidebarPanel() {
       <div className="flex-1 overflow-y-auto no-scrollbar px-3 pb-3 sm:px-4">
         <SidebarMenu className="space-y-2">
           {isLoading ? (
-            // Loading skeleton - removed to make it snappier
+            // Loading skeleton - centered properly
             <SidebarMenuItem>
-              <div className="h-9 flex items-center px-2 py-1 rounded-lg overflow-hidden w-full">
+              <div className="h-9 flex items-center justify-center px-2 py-1 rounded-lg overflow-hidden w-full">
                 <div className="h-4 bg-muted animate-pulse rounded w-3/4"></div>
               </div>
             </SidebarMenuItem>
           ) : (
             <>
-              {/* Pinned Threads Section */}
-              {pinnedThreads.length > 0 && (
-                <>
-                  <div className="px-0 py-2 flex text-xs font-medium text-muted-foreground">
-                    <Pin className="h-4 w-4 mr-2" /> Pinned
+              {/* Projects and Pinned Section */}
+              <>
+                <div className="px-0 pt-1 flex items-center justify-between text-sm font-medium text-primary/85">
+                  <div className="flex items-center gap-2 ">
+                    <Folder className="h-4 w-4" />
+                    <span>Projects</span>
                   </div>
-                  {pinnedThreads.map((threadItem) => (
-                    <SidebarMenuItem key={threadItem.id}>
-                      <ThreadListItem
-                        threadData={threadItem}
-                        isActive={isActiveThread(threadItem.id)}
-                        onNavigate={navigateToThread}
-                        onDelete={removeThread}
-                        onTogglePin={toggleThreadPin}
-                        onRename={renameThread}
-                        onUpdateTags={updateThreadTags}
-                      />
-                    </SidebarMenuItem>
-                  ))}
-                </>
-              )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 w-5 p-0 hover:bg-accent/50 border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50"
+                    onClick={() => setIsProjectDialogOpen(true)}
+                    title="Create new project"
+                  >
+                    <FolderPlus className="h-3 w-3" />
+                  </Button>
+                </div>
 
-              {/* Regular Threads Section - Organized by Date */}
-              {regularThreads.length > 0 ? (
+                {/* Projects */}
+                {projects.map((project) => {
+                  const projectThreads = threadsByProject[project.id] || [];
+                  return (
+                    <ProjectFolder
+                      key={project.id}
+                      project={project}
+                      threads={projectThreads}
+                      threadOperations={{
+                        onNavigate: navigateToThread,
+                        onDelete: removeThread,
+                        onTogglePin: toggleThreadPin,
+                        onRename: renameThread,
+                        onUpdateTags: updateThreadTags,
+                        onBranch: branchThread,
+                        isActive: false, // This will be set per thread
+                      }}
+                      onProjectUpdate={updateProject}
+                      onProjectDelete={deleteProject}
+                      onProjectColorChange={handleProjectColorChange}
+                      isActive={isActiveThread}
+                    />
+                  );
+                })}
+
+                {/* Pinned Threads */}
+                {pinnedThreads.length > 0 && (
+                  <div className="space-y-1">
+                    {projects.length > 0 && (
+                      <div className="px-0 py-0.5 text-sm font-medium text-primary/70">
+                        <PinIcon className="h-4 w-4 inline-block mr-2" />
+                        Pinned Chats
+                      </div>
+                    )}
+                    {pinnedThreads
+                      .filter(
+                        (thread, index, arr) =>
+                          arr.findIndex((t) => t.id === thread.id) === index
+                      )
+                      .map((threadItem, index) => (
+                        <SidebarMenuItem
+                          key={`pinned-${threadItem.id}-${index}`}
+                        >
+                          <ThreadListItem
+                            threadData={threadItem}
+                            isActive={isActiveThread(threadItem.id)}
+                            onNavigate={navigateToThread}
+                            onDelete={removeThread}
+                            onTogglePin={toggleThreadPin}
+                            onRename={renameThread}
+                            onUpdateTags={updateThreadTags}
+                            onBranch={branchThread}
+                          />
+                        </SidebarMenuItem>
+                      ))}
+                  </div>
+                )}
+              </>
+
+              {/* Regular Threads Section - Organized by Date (threads without projects) */}
+              {threadsWithoutProjects.length > 0 ? (
                 <>
                   {/* Today's Threads */}
                   <ThreadCategory title="Today" threads={today} />
@@ -215,7 +347,9 @@ export default function ChatSidebarPanel() {
                   {/* Previous Threads */}
                   <ThreadCategory title="Previous" threads={previous} />
                 </>
-              ) : pinnedThreads.length === 0 ? (
+              ) : pinnedThreads.length === 0 &&
+                projects.length === 0 &&
+                threadsWithoutProjects.length === 0 ? (
                 <SidebarMenuItem>
                   <div className="h-9 flex items-center px-2 py-1 text-muted-foreground text-sm">
                     No conversations yet
@@ -227,6 +361,13 @@ export default function ChatSidebarPanel() {
         </SidebarMenu>
       </div>
       <PanelFooter />
+
+      {/* Project Creation Dialog */}
+      <ProjectCreateDialog
+        isOpen={isProjectDialogOpen}
+        onOpenChange={setIsProjectDialogOpen}
+        onCreateProject={createProject}
+      />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import { Models, AppwriteException } from 'appwrite';
 import { AppwriteDB } from '@/lib/appwriteDB';
 import { HybridDB } from '@/lib/hybridDB';
 import { AppwriteRealtime } from '@/lib/appwriteRealtime';
+import { ensureUserTierInitialized } from '@/lib/tierSystem';
 
 interface User extends Models.User<Models.Preferences> {}
 
@@ -25,6 +26,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  loginWithGitHub: () => Promise<void>;
   logout: () => Promise<void>;
   getCurrentUser: () => Promise<User | null>;
   refreshSession: () => Promise<void>;
@@ -107,6 +109,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const initializeUserServices = useCallback(async (userId: string) => {
     try {
       console.log('[AuthContext] Initializing user services for user:', userId);
+
+      // Initialize tier system for new users only - don't reset existing users
+      await ensureUserTierInitialized();
+      console.log('[AuthContext] User tier initialization completed');
+
       // Only initialize HybridDB - realtime will be handled inside it
       // This is now non-blocking and much faster
       await HybridDB.initialize(userId);
@@ -214,6 +221,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       );
     } catch (error) {
       console.error('Google login error:', error);
+      throw new Error(getErrorMessage(error));
+    }
+  };
+
+  // Login with GitHub OAuth
+  const loginWithGitHub = async (): Promise<void> => {
+    try {
+      account.createOAuth2Session(
+        OAuthProvider.Github,
+        APPWRITE_CONFIG.successUrl,
+        APPWRITE_CONFIG.failureUrl
+      );
+    } catch (error) {
+      console.error('GitHub login error:', error);
       throw new Error(getErrorMessage(error));
     }
   };
@@ -366,6 +387,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         login,
         register,
         loginWithGoogle,
+        loginWithGitHub,
         logout,
         getCurrentUser,
         refreshSession,

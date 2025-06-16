@@ -6,13 +6,14 @@
  * Allows users to quickly find specific conversations.
  */
 
-import { useState, useCallback, useMemo } from "react";
-import { Search, X } from "lucide-react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { Search, X, Tag, Hash } from "lucide-react";
 import { Input } from "@/frontend/components/ui/input";
 import { Button } from "@/frontend/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ThreadData } from "./ThreadManager";
 import { HybridDB } from "@/lib/hybridDB";
+import { useTheme } from "next-themes";
 
 interface ThreadSearchProps {
   threads: ThreadData[];
@@ -27,6 +28,22 @@ export const ThreadSearch = ({
 }: ThreadSearchProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
+  const isDarkTheme = theme === "dark";
+
+  // Extract all unique tags from threads
+  const allTags = useMemo(() => {
+    const tagsSet = new Set<string>();
+    threads.forEach((thread) => {
+      if (thread.tags && thread.tags.length > 0) {
+        thread.tags.forEach((tag) => tagsSet.add(tag));
+      }
+    });
+    return Array.from(tagsSet).sort();
+  }, [threads]);
 
   // Perform search across threads, summaries, and tags
   const performSearch = useCallback(
@@ -124,19 +141,72 @@ export const ThreadSearch = ({
     onFilteredThreadsChange(threads);
   }, [onFilteredThreadsChange, threads]);
 
+  // Handle focus on search input
+  const handleSearchFocus = () => {
+    setIsDialogOpen(true);
+  };
+
+  // Handle selecting a quick search option
+  const handleQuickSearchSelect = (term: string) => {
+    setSearchQuery(term);
+    debouncedSearch(term);
+    setIsDialogOpen(false);
+    searchInputRef.current?.focus();
+  };
+
+  // Close dialog when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dialogRef.current &&
+        !dialogRef.current.contains(event.target as Node) &&
+        !searchInputRef.current?.contains(event.target as Node)
+      ) {
+        setIsDialogOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Generate a consistent color for each tag based on tag name
+  const getTagColor = (tag: string) => {
+    const colors = [
+      "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800",
+      "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
+      "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800",
+      "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800",
+      "bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800",
+      "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800",
+    ];
+
+    // Simple hash function to get consistent color for same tag
+    let hash = 0;
+    for (let i = 0; i < tag.length; i++) {
+      hash = ((hash << 5) - hash + tag.charCodeAt(i)) & 0xffffffff;
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
   return (
-    <div className={cn("relative w-full", className)}>
+    <div className="relative">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
+          ref={searchInputRef}
           type="text"
-          placeholder="Search "
+          placeholder="Search your chat.."
           value={searchQuery}
           onChange={handleSearchChange}
-          className="pl-10 pr-10 h-11 sm:h-9 text-sm w-full "
+          onFocus={handleSearchFocus}
+          className="pl-10 pr-10 h-9 sm:h-9 text-sm w-full"
         />
 
-        <div className="h-[1px] bg-zinc-600 w-full mt-2" />
+        <div className="w-full bg-foreground/20 h-[1px] mt-1"></div>
+
         {searchQuery && !isSearching && (
           <Button
             variant="ghost"
@@ -153,6 +223,65 @@ export const ThreadSearch = ({
           </div>
         )}
       </div>
+
+      {/* Quick Search Dialog */}
+      {isDialogOpen && (
+        <div
+          ref={dialogRef}
+          className={cn(
+            "absolute z-10 mt-1 w-full rounded-md border shadow-md",
+            "bg-background border-border",
+            "animate-in fade-in-50 zoom-in-95 slide-in-from-top-2",
+            "max-h-[300px] overflow-y-auto"
+          )}
+        >
+          {/* Close Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-1 top-1 h-6 w-6 text-muted-foreground hover:text-foreground"
+            onClick={() => setIsDialogOpen(false)}
+            aria-label="Close search suggestions"
+          >
+            <X className="h-3 w-3" />
+          </Button>
+
+          {/* Tags Section */}
+          {allTags.length > 0 ? (
+            <div className="p-2">
+              <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground mb-2 px-2">
+                <Tag className="h-3 w-3" />
+                <span>Tags</span>
+              </div>
+              <div className="flex flex-wrap gap-2 px-2">
+                {allTags.map((tag, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleQuickSearchSelect(tag)}
+                    className={cn(
+                      "inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border",
+                      getTagColor(tag),
+                      "hover:opacity-80 transition-opacity"
+                    )}
+                  >
+                    <Hash className="h-2.5 w-2.5" />
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="p-3 text-center">
+              <p className="text-sm text-muted-foreground">
+                Type to search for conversations
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Search by title, content, or tags
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -9,7 +9,7 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, conversationStyle } = body;
+    const { messages, conversationStyle, userApiKey } = body;
 
     // Validate required fields
     if (!messages || !Array.isArray(messages)) {
@@ -35,12 +35,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get OpenRouter API key from environment variable
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    // Use user's API key if provided, otherwise fall back to system key
+    const apiKey = userApiKey || process.env.OPENROUTER_API_KEY;
 
     if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: 'OpenRouter API key not configured' }),
+        JSON.stringify({ error: 'OpenRouter API key not configured. Please add your API key in Settings.' }),
         {
           status: 500,
           headers: { 'Content-Type': 'application/json' },

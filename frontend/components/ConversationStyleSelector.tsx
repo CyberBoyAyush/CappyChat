@@ -16,23 +16,32 @@ import {
   DropdownMenuTrigger,
 } from "@/frontend/components/ui/dropdown-menu";
 import { useConversationStyleStore } from "@/frontend/stores/ConversationStyleStore";
-import { getAllConversationStyles, ConversationStyleConfig } from "@/lib/conversationStyles";
+import {
+  getAllConversationStyles,
+  ConversationStyleConfig,
+} from "@/lib/conversationStyles";
 
 interface ConversationStyleSelectorProps {
   className?: string;
 }
 
-function PureConversationStyleSelector({ className }: ConversationStyleSelectorProps) {
-  const { selectedStyle, setStyle, getStyleConfig } = useConversationStyleStore();
+function PureConversationStyleSelector({
+  className,
+}: ConversationStyleSelectorProps) {
+  const { selectedStyle, setStyle, getStyleConfig } =
+    useConversationStyleStore();
   const [isOpen, setIsOpen] = useState(false);
 
   const currentStyleConfig = getStyleConfig();
   const allStyles = getAllConversationStyles();
 
-  const handleStyleSelect = useCallback((style: ConversationStyleConfig) => {
-    setStyle(style.id);
-    setIsOpen(false);
-  }, [setStyle]);
+  const handleStyleSelect = useCallback(
+    (style: ConversationStyleConfig) => {
+      setStyle(style.id);
+      setIsOpen(false);
+    },
+    [setStyle]
+  );
 
   const CurrentIcon = currentStyleConfig.icon;
 
@@ -53,8 +62,12 @@ function PureConversationStyleSelector({ className }: ConversationStyleSelectorP
           )}
           aria-label={`Current conversation style: ${currentStyleConfig.name}`}
         >
-          <CurrentIcon className={cn("h-3.5 w-3.5", currentStyleConfig.color)} />
-          <span className="hidden sm:inline text-xs truncate">{currentStyleConfig.name}</span>
+          <CurrentIcon
+            className={cn("h-3.5 w-3.5", currentStyleConfig.color)}
+          />
+          <span className="hidden sm:inline text-xs truncate">
+            {currentStyleConfig.name}
+          </span>
           <ChevronDown
             className={cn(
               "h-3 w-3 transition-transform duration-200 hidden sm:block",
@@ -66,7 +79,7 @@ function PureConversationStyleSelector({ className }: ConversationStyleSelectorP
 
       <DropdownMenuContent
         align="start"
-        className="w-56 p-1.5"
+        className="w-56 max-h-72 p-1.5"
         sideOffset={8}
       >
         <div className="space-y-0.5">
@@ -85,7 +98,9 @@ function PureConversationStyleSelector({ className }: ConversationStyleSelectorP
                 )}
                 aria-label={`Select ${style.name} conversation style`}
               >
-                <StyleIcon className={cn("h-3.5 w-3.5 flex-shrink-0", style.color)} />
+                <StyleIcon
+                  className={cn("h-3.5 w-3.5 flex-shrink-0", style.color)}
+                />
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">

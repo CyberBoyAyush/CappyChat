@@ -13,17 +13,25 @@ import { Link } from 'react-router';
 import { Button } from '@/frontend/components/ui/button';
 import { useAuth } from '@/frontend/contexts/AuthContext';
 import { MessageSquare, Sparkles, Zap, Shield, ArrowRight, Github, Twitter } from 'lucide-react';
-import { GoogleIcon } from '@/frontend/components/ui/icons';
+import { GoogleIcon, GitHubIcon } from '@/frontend/components/ui/icons';
 import ThemeToggleButton from '@/frontend/components/ui/ThemeComponents';
 
 const LandingPage: React.FC = () => {
-  const { isAuthenticated, loginWithGoogle, loading } = useAuth();
+  const { isAuthenticated, loginWithGoogle, loginWithGitHub, loading } = useAuth();
 
   const handleGoogleLogin = async () => {
     try {
       await loginWithGoogle();
     } catch (error) {
       console.error('Google login failed:', error);
+    }
+  };
+
+  const handleGitHubLogin = async () => {
+    try {
+      await loginWithGitHub();
+    } catch (error) {
+      console.error('GitHub login failed:', error);
     }
   };
 
@@ -91,15 +99,27 @@ const LandingPage: React.FC = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button 
-              size="lg" 
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full sm:w-auto"
-            >
-              <GoogleIcon className="h-5 w-5 mr-2" />
-              Continue with Google
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                size="lg"
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="w-full sm:w-auto"
+              >
+                <GoogleIcon className="h-5 w-5 mr-2" />
+                Continue with Google
+              </Button>
+              <Button
+                size="lg"
+                onClick={handleGitHubLogin}
+                disabled={loading}
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
+                <GitHubIcon className="h-5 w-5 mr-2" />
+                Continue with GitHub
+              </Button>
+            </div>
             <Button variant="outline" size="lg" asChild className="w-full sm:w-auto">
               <Link to="/auth/signup">
                 Create Account
@@ -233,7 +253,7 @@ const LandingPage: React.FC = () => {
             <div className="space-y-4">
               <h4 className="font-semibold">Legal</h4>
               <div className="space-y-2 text-sm">
-                <Link to="/privacy" className="block text-muted-foreground hover:text-foreground">
+                <Link to="/settings#privacy" className="block text-muted-foreground hover:text-foreground">
                   Privacy Policy
                 </Link>
                 <Link to="/terms" className="block text-muted-foreground hover:text-foreground">

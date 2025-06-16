@@ -18,6 +18,8 @@ import { streamingSync, StreamingState } from "@/lib/streamingSync";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 import { useConversationStyleStore } from "@/frontend/stores/ConversationStyleStore";
+import { useBYOKStore } from "@/frontend/stores/BYOKStore";
+import { useAuth } from "@/frontend/contexts/AuthContext";
 import { useLocation } from "react-router-dom";
 import ThemeToggleButton from "./ui/ThemeComponents";
 import { Button } from "./ui/button";
@@ -36,6 +38,7 @@ import {
   Sparkles,
   Laptop,
   ChevronRight,
+  PlusIcon,
 } from "lucide-react";
 import { useChatMessageNavigator } from "@/frontend/hooks/useChatMessageNavigator";
 import { useOutletContext } from "react-router-dom";
@@ -46,10 +49,12 @@ import { Plus } from "lucide-react";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
+import { v4 as uuidv4 } from "uuid";
 
 interface ChatInterfaceProps {
   threadId: string;
   initialMessages: UIMessage[];
+  searchQuery?: string | null;
 }
 
 // Define domain categories for suggested prompts with more specific questions
@@ -57,10 +62,13 @@ interface ChatInterfaceProps {
 export default function ChatInterface({
   threadId,
   initialMessages,
+  searchQuery,
 }: ChatInterfaceProps) {
   const selectedModel = useModelStore((state) => state.selectedModel);
   const { isWebSearchEnabled } = useWebSearchStore();
   const { selectedStyle } = useConversationStyleStore();
+  const { openRouterApiKey } = useBYOKStore();
+  const { user } = useAuth();
   const {
     sidebarWidth,
     toggleSidebar,
@@ -73,7 +81,10 @@ export default function ChatInterface({
   const isMobile = useIsMobile();
   const mainRef = useRef<HTMLElement>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
   const pendingUserMessageRef = useRef<UIMessage | null>(null);
+  const isAutoScrollingRef = useRef(false);
+  const chatInputSubmitRef = useRef<(() => void) | null>(null);
   const { theme } = useTheme();
   const isDarkTheme = theme === "dark";
   const location = useLocation();
@@ -106,12 +117,17 @@ export default function ChatInterface({
     initialMessages,
     experimental_throttle: 30, // Reduced for smoother streaming
     onFinish: async (message) => {
+      console.log("🏁 onFinish callback called for message:", message.id);
+
       // End streaming synchronization
       streamingSync.endStreaming(threadId, message.id, message.content);
 
-      // Save the pending user message if it exists
+      // Clear the pending user message ref (user message is now stored immediately in ChatInputField)
       if (pendingUserMessageRef.current) {
-        HybridDB.createMessage(threadId, pendingUserMessageRef.current);
+        console.log(
+          "🧹 Clearing pending user message ref:",
+          pendingUserMessageRef.current.id
+        );
         pendingUserMessageRef.current = null;
       }
 
@@ -172,6 +188,8 @@ export default function ChatInterface({
     body: {
       model: selectedModel,
       conversationStyle: selectedStyle,
+      userApiKey: openRouterApiKey,
+      userId: user?.$id,
     },
   });
 
@@ -183,27 +201,101 @@ export default function ChatInterface({
     }
   }, [selectedPrompt, setInput]);
 
-  // Check if user has scrolled up
+  // Effect to handle search query from URL parameter - only run once
+  useEffect(() => {
+    if (searchQuery && searchQuery.trim() && messages.length === 0) {
+      console.log("🔍 Search query detected:", searchQuery);
+      setInput(searchQuery);
+
+      // Auto-submit the search query through ChatInputField's submit function
+      const timer = setTimeout(() => {
+        if (chatInputSubmitRef.current) {
+          console.log(
+            "🚀 Auto-submitting search query through ChatInputField:",
+            searchQuery
+          );
+          chatInputSubmitRef.current();
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchQuery, setInput]); // Only depend on searchQuery and setInput
+
+  // Simple scroll detection - track if user manually scrolled up
   useEffect(() => {
     const mainElement = mainRef.current;
     if (!mainElement) return;
 
     const handleScroll = () => {
+      // Skip if we're auto-scrolling
+      if (isAutoScrollingRef.current) {
+        return;
+      }
+
       const { scrollHeight, scrollTop, clientHeight } = mainElement;
-      const isNotAtBottom = scrollHeight - scrollTop - clientHeight > 100;
-      setShowScrollToBottom(isNotAtBottom);
+      const isAtBottom = scrollHeight - scrollTop - clientHeight <= 50;
+
+      setShowScrollToBottom(!isAtBottom);
+
+      // If user scrolled up manually, mark it
+      if (!isAtBottom) {
+        setUserHasScrolledUp(true);
+      } else {
+        // User is back at bottom, reset the flag
+        setUserHasScrolledUp(false);
+      }
     };
 
     mainElement.addEventListener("scroll", handleScroll);
     return () => mainElement.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Auto-scroll to bottom when new message is added
+  // Force scroll to bottom during streaming - this runs on every message content change
   useEffect(() => {
-    if (status === "streaming" || messages.length > 0) {
+    if (status === "streaming" && !userHasScrolledUp && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === "assistant") {
+        // Force immediate scroll to bottom during streaming
+        if (mainRef.current) {
+          mainRef.current.scrollTop = mainRef.current.scrollHeight;
+        }
+      }
+    }
+  }, [messages, status, userHasScrolledUp]);
+
+  // Auto-scroll when new messages arrive (not during streaming)
+  useEffect(() => {
+    if (status !== "streaming" && messages.length > 0 && !userHasScrolledUp) {
       scrollToBottom();
     }
-  }, [messages.length, status]);
+  }, [messages.length, status, userHasScrolledUp]);
+
+  // Reset user scroll flag when streaming starts (so it sticks to bottom by default)
+  useEffect(() => {
+    if (status === "streaming") {
+      setUserHasScrolledUp(false);
+    }
+  }, [status]);
+
+  // Continuous scroll during streaming - more aggressive approach
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+
+    if (status === "streaming" && !userHasScrolledUp) {
+      intervalId = setInterval(() => {
+        if (mainRef.current && !userHasScrolledUp) {
+          mainRef.current.scrollTop = mainRef.current.scrollHeight;
+        }
+      }, 50); // Scroll every 50ms during streaming
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [status, userHasScrolledUp]);
 
   // Track streaming status and sync across sessions
   const lastStreamingMessageRef = useRef<{
@@ -329,14 +421,18 @@ export default function ChatInterface({
         );
 
         // Convert DB messages to UI messages format
-        const uiMessages: UIMessage[] = updatedMessages.map((msg) => ({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          parts: msg.parts || [{ type: "text", text: msg.content }],
-          createdAt: msg.createdAt,
-          webSearchResults: msg.webSearchResults,
-        }));
+        const uiMessages: UIMessage[] = updatedMessages.map(
+          (msg) =>
+            ({
+              id: msg.id,
+              role: msg.role,
+              content: msg.content,
+              parts: msg.parts || [{ type: "text", text: msg.content }],
+              createdAt: msg.createdAt,
+              webSearchResults: msg.webSearchResults,
+              attachments: msg.attachments,
+            } as any)
+        );
 
         // Lightweight comparison - check count and last message ID
         const hasChanged =
@@ -350,8 +446,10 @@ export default function ChatInterface({
           console.log("[ChatInterface] Messages changed, updating UI");
           setMessages(uiMessages);
 
-          // Auto-scroll to bottom for new messages
-          setTimeout(() => scrollToBottom(), 30); // Further reduced for smoother experience
+          // Auto-scroll to bottom for new messages unless user scrolled up
+          if (!userHasScrolledUp) {
+            setTimeout(() => scrollToBottom(), 30);
+          }
         } else {
           console.log("[ChatInterface] Messages unchanged, skipping UI update");
         }
@@ -427,8 +525,10 @@ export default function ChatInterface({
             return updatedMessages;
           });
 
-          // Auto-scroll during streaming with minimal delay
-          setTimeout(() => scrollToBottom(), 5);
+          // Auto-scroll during streaming with minimal delay unless user scrolled up
+          if (!userHasScrolledUp) {
+            setTimeout(() => scrollToBottom(), 5);
+          }
         }
       }
     };
@@ -465,12 +565,22 @@ export default function ChatInterface({
 
   const scrollToBottom = () => {
     if (mainRef.current) {
+      // Set flag to prevent scroll event from triggering during auto-scroll
+      isAutoScrollingRef.current = true;
+
       mainRef.current.scrollTo({
         top: mainRef.current.scrollHeight,
         behavior: "smooth",
       });
+
+      // Reset flag after scroll completes
+      setTimeout(() => {
+        isAutoScrollingRef.current = false;
+      }, 100);
     }
     setShowScrollToBottom(false);
+    // Reset user scroll flag when manually scrolling to bottom
+    setUserHasScrolledUp(false);
   };
 
   const sidebarOpen = localStorage.getItem("sidebarOpen") === "true";
@@ -483,10 +593,17 @@ export default function ChatInterface({
     setSelectedDomain(domainId === selectedDomain ? null : domainId);
   };
 
+  const { state } = useOutletContext<{
+    state: "open" | "collapsed";
+  }>();
+
   return (
     <div
       className={cn(
-        "relative w-full h-screen border-primary/30 flex flex-col bg-background dark:bg-card  border-t-[1px] border-l-[1px] rounded-tl-xl mt-5"
+        "relative w-full h-screen border-primary/30 flex flex-col bg-background dark:bg-card   ",
+        state === "open"
+          ? "mt-5 border-t-[1px] border-l-[1px] rounded-tl-xl"
+          : ""
       )}
     >
       <AppPanelTrigger />
@@ -580,16 +697,26 @@ export default function ChatInterface({
               stop={stop}
               pendingUserMessageRef={pendingUserMessageRef}
               onWebSearchMessage={handleWebSearchMessage}
+              submitRef={chatInputSubmitRef}
+              messages={messages}
             />
           </div>
         </div>
       </div>
 
       {/* Fixed action buttons */}
-      <div className={cn("fixed top-8 right-0 z-50")}>
+      <div
+        className={cn(
+          "fixed z-20",
+          state === "open" ? " top-5 right-0" : "top-3 right-0"
+        )}
+      >
         <div
           className={cn(
-            "flex gap-2 bg-background mr-6 ml-3 rounded-md px-2 py-2"
+            "flex gap-2 bg-background ml-3  px-2 ",
+            state === "open"
+              ? "border-l-[1px] pr-3 border-b-[1px] pb-2 rounded-bl-md border-primary/30"
+              : "border-none mr-6 rounded-md py-2"
           )}
         >
           <Button
@@ -636,23 +763,41 @@ const AppPanelTrigger = () => {
     toggleSidebar();
   };
 
+  const navigate = useNavigate();
+
   // Show trigger on mobile or when sidebar is collapsed on desktop
   return (
     <div
-      className={`fixed left-2 top-3 z-50   ${
+      className={`fixed left-2 flex top-3 z-50 overflow-hidden ${
         state === "collapsed"
-          ? "top-8 bg-zinc-900 mr-6 ml-3 rounded-md"
-          : "bg-transparent"
+          ? "top-3 bg-background p-1.5 mr-6 ml-3 rounded-md"
+          : "bg-background"
       }`}
     >
-      <div className="hover:bg-zinc-600/10">
+      <div className="hover:bg-zinc-600/10 rounded-md">
         <Button
           size="icon"
           variant="outline"
+          className="bg-background"
           onClick={handleToggle}
           aria-label="Toggle sidebar"
         >
           <PanelLeftIcon className="h-5 w-5" />
+        </Button>
+      </div>
+
+      <div className=" rounded-md">
+        <Button
+          onClick={() => {
+            navigate("/chat");
+          }}
+          size="icon"
+          variant="outline"
+          className={`hover:bg-zinc-600/10 ${
+            state === "collapsed" ? "ml-2" : "hidden"
+          }`}
+        >
+          <PlusIcon className="h-5 w-5" />
         </Button>
       </div>
     </div>

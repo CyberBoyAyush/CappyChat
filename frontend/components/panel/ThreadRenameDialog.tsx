@@ -6,7 +6,7 @@
  * Allows users to edit thread names with validation and confirmation.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,10 +14,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/frontend/components/ui/dialog';
-import { Button } from '@/frontend/components/ui/button';
-import { Input } from '@/frontend/components/ui/input';
-import { Label } from '@/frontend/components/ui/BasicComponents';
+} from "@/frontend/components/ui/dialog";
+import { Button } from "@/frontend/components/ui/button";
+import { Input } from "@/frontend/components/ui/input";
+import { Label } from "@/frontend/components/ui/BasicComponents";
 
 interface ThreadRenameDialogProps {
   isOpen: boolean;
@@ -42,31 +42,35 @@ export const ThreadRenameDialog = ({
     }
   }, [isOpen, currentTitle]);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const trimmedTitle = newTitle.trim();
-    if (!trimmedTitle || trimmedTitle === currentTitle) {
-      onOpenChange(false);
-      return;
-    }
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
 
-    setIsSubmitting(true);
-    try {
-      await onConfirm(trimmedTitle);
-    } catch (error) {
-      console.error('Error renaming thread:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [newTitle, currentTitle, onConfirm, onOpenChange]);
+      const trimmedTitle = newTitle.trim();
+      if (!trimmedTitle || trimmedTitle === currentTitle) {
+        onOpenChange(false);
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        await onConfirm(trimmedTitle);
+      } catch (error) {
+        console.error("Error renaming thread:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [newTitle, currentTitle, onConfirm, onOpenChange]
+  );
 
   const handleCancel = useCallback(() => {
     setNewTitle(currentTitle);
     onOpenChange(false);
   }, [currentTitle, onOpenChange]);
 
-  const isValid = newTitle.trim().length > 0 && newTitle.trim() !== currentTitle;
+  const isValid =
+    newTitle.trim().length > 0 && newTitle.trim() !== currentTitle;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -90,6 +94,7 @@ export const ThreadRenameDialog = ({
                 maxLength={100}
                 autoFocus
                 disabled={isSubmitting}
+                className="bg-border/50 rounded-md py-1 w-full"
               />
             </div>
           </div>
@@ -103,11 +108,8 @@ export const ThreadRenameDialog = ({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={!isValid || isSubmitting}
-            >
-              {isSubmitting ? 'Renaming...' : 'Rename'}
+            <Button type="submit" disabled={!isValid || isSubmitting}>
+              {isSubmitting ? "Renaming..." : "Rename"}
             </Button>
           </DialogFooter>
         </form>
