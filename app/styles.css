@@ -544,6 +544,105 @@ body.sidebar-open {
   overflow: hidden;
 }
 
+/* Optimized gradient animation for homepage */
+.animate-gradient-x {
+  background-size: 200% auto;
+  animation: gradient-x 6s ease-in-out infinite;
+  will-change: background-position;
+}
+
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Performance optimizations for homepage animations */
+.homepage-optimized {
+  /* Enable hardware acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .animate-gradient-x {
+    animation: none;
+  }
+
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* GPU acceleration for floating elements */
+.floating-element {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Optimized blur effects */
+.optimized-blur {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  will-change: backdrop-filter;
+}
+
+/* Mobile-first responsive optimizations */
+@media (max-width: 768px) {
+  .homepage-optimized {
+    /* Reduce blur effects on mobile for better performance */
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  /* Optimize animations for mobile */
+  .floating-element {
+    animation-duration: 8s !important;
+  }
+
+  /* Reduce shadow complexity on mobile */
+  .shadow-xl {
+    box-shadow: 0 10px 25px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+  }
+}
+
+/* High-performance button styles */
+.btn-optimized {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-optimized:hover {
+  transform: translateZ(0) scale(1.02);
+}
+
+/* Smooth scrolling for better UX */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Optimize table rendering on mobile */
+@media (max-width: 1024px) {
+  .comparison-table {
+    font-size: 0.875rem;
+  }
+
+  .comparison-table th,
+  .comparison-table td {
+    padding: 0.75rem 0.5rem;
+  }
+}
+
 /* File Upload Component Animations */
 .upload-progress-enter {
   animation: slideInFromBottom 0.3s ease-out;
