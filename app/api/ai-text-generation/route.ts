@@ -1,10 +1,37 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateText } from 'ai';
 import { NextResponse } from 'next/server';
+import { canUserUseModel, consumeCredits } from '@/lib/tierSystem';
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { prompt, isTitle, messageId, threadId, userApiKey } = body;
+  const { prompt, isTitle, messageId, threadId, userApiKey, userId } = body;
+
+  // Check tier validation for title generation (uses Gemini 2.5 Flash)
+  const usingBYOK = !!userApiKey;
+  const tierValidation = await canUserUseModel('Gemini 2.5 Flash', usingBYOK, userId);
+
+  if (!tierValidation.canUseModel) {
+    return NextResponse.json(
+      {
+        error: tierValidation.message || 'Model access denied',
+        code: 'TIER_LIMIT_EXCEEDED'
+      },
+      { status: 403 }
+    );
+  }
+
+  // Consume credits for title generation
+  const creditsConsumed = await consumeCredits('Gemini 2.5 Flash', usingBYOK, userId);
+  if (!creditsConsumed && !usingBYOK) {
+    return NextResponse.json(
+      {
+        error: 'Insufficient credits for title generation',
+        code: 'INSUFFICIENT_CREDITS'
+      },
+      { status: 403 }
+    );
+  }
 
   // Use user's API key if provided, otherwise fall back to system key
   const apiKey = userApiKey || process.env.OPENROUTER_API_KEY;

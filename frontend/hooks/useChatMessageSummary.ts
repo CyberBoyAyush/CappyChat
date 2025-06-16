@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { AppwriteDB } from '@/lib/appwriteDB';
 import { HybridDB } from '@/lib/hybridDB';
 import { useBYOKStore } from '@/frontend/stores/BYOKStore';
+import { useAuth } from '@/frontend/contexts/AuthContext';
 
 interface MessageSummaryPayload {
   title: string;
@@ -13,11 +14,13 @@ interface MessageSummaryPayload {
 
 export const useChatMessageSummary = () => {
   const { openRouterApiKey } = useBYOKStore();
+  const { user } = useAuth();
 
   const { complete, isLoading } = useCompletion({
     api: '/api/ai-text-generation',
     body: {
       userApiKey: openRouterApiKey,
+      userId: user?.$id,
     },
     onResponse: async (response) => {
       try {

@@ -6,7 +6,7 @@
  */
 
 import { ChevronDown, Check, Search, Lock, Key } from "lucide-react";
-import { memo, useCallback, useState, useMemo } from "react";
+import { memo, useCallback, useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
@@ -20,6 +20,7 @@ import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 import { useBYOKStore } from "@/frontend/stores/BYOKStore";
 import { AI_MODELS, AIModel, getModelConfig } from "@/lib/models";
+import { canUserUseModel, TierValidationResult } from "@/lib/tierSystem";
 import {
   ModelBadge,
   getModelIcon,
@@ -30,6 +31,7 @@ interface ModelCardProps {
   isSelected: boolean;
   onSelect: (model: AIModel) => void;
   showKeyIcon?: boolean;
+  tierValidation?: TierValidationResult;
 }
 
 const ModelCard: React.FC<ModelCardProps> = ({
@@ -37,20 +39,27 @@ const ModelCard: React.FC<ModelCardProps> = ({
   isSelected,
   onSelect,
   showKeyIcon = false,
+  tierValidation,
 }) => {
   const modelConfig = getModelConfig(model);
+  const isDisabled = tierValidation && !tierValidation.canUseModel;
 
   return (
     <div
-      onClick={() => onSelect(model)}
+      onClick={() => !isDisabled && onSelect(model)}
       className={cn(
-        "relative group cursor-pointer p-2 sm:p-4 rounded-lg border-2 transition-all duration-200",
-        "hover:shadow-md hover:border-primary/50 hover:bg-accent/50",
+        "relative group p-2 sm:p-4 rounded-lg border-2 transition-all duration-200",
         "flex flex-col gap-1.5 sm:gap-3 min-h-[80px] sm:min-h-[120px]",
-        isSelected
+        isDisabled
+          ? "cursor-not-allowed opacity-50 border-muted bg-muted/20"
+          : "cursor-pointer hover:shadow-md hover:border-primary/50 hover:bg-accent/50",
+        isSelected && !isDisabled
           ? "border-primary bg-primary/5 shadow-sm"
-          : "border-border bg-card hover:bg-accent/30"
+          : !isDisabled
+          ? "border-border bg-card hover:bg-accent/30"
+          : "border-muted"
       )}
+      title={isDisabled ? tierValidation?.message : undefined}
     >
       {/* Selection indicator */}
       {isSelected && (
@@ -71,20 +80,29 @@ const ModelCard: React.FC<ModelCardProps> = ({
             <h3
               className={cn(
                 "font-semibold text-xs sm:text-sm leading-tight truncate",
-                isSelected ? "text-primary" : "text-foreground"
+                isSelected && !isDisabled ? "text-primary" :
+                isDisabled ? "text-muted-foreground" : "text-foreground"
               )}
             >
               {modelConfig.displayName}
             </h3>
-            {showKeyIcon && (
+            {showKeyIcon && !isDisabled && (
               <div className="flex-shrink-0" title="Using your API key">
                 <Key className="w-3 h-3 text-primary" />
               </div>
             )}
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5 sm:mt-1 font-medium hidden sm:block">
+          <p className={cn(
+            "text-xs mt-0.5 sm:mt-1 font-medium hidden sm:block",
+            isDisabled ? "text-muted-foreground/70" : "text-muted-foreground"
+          )}>
             {modelConfig.company}
           </p>
+          {isDisabled && tierValidation?.message && (
+            <p className="text-xs text-red-500 mt-1 font-medium">
+              Credits exhausted
+            </p>
+          )}
         </div>
       </div>
 
@@ -170,9 +188,35 @@ const PureModelSelector = () => {
   const { hasOpenRouterKey } = useBYOKStore();
   const selectedModelConfig = getModelConfig(selectedModel);
   const [searchQuery, setSearchQuery] = useState("");
+  const [tierValidations, setTierValidations] = useState<Record<AIModel, TierValidationResult>>({} as Record<AIModel, TierValidationResult>);
 
   // When web search is enabled, lock to Gemini 2.5 Flash Search
   const isLocked = isWebSearchEnabled;
+  const usingBYOK = hasOpenRouterKey();
+
+  // Load tier validations for all models
+  useEffect(() => {
+    const loadTierValidations = async () => {
+      const validations: Record<AIModel, TierValidationResult> = {} as Record<AIModel, TierValidationResult>;
+
+      for (const model of AI_MODELS) {
+        try {
+          validations[model] = await canUserUseModel(model, usingBYOK);
+        } catch (error) {
+          console.error(`Error validating model ${model}:`, error);
+          validations[model] = {
+            canUseModel: false,
+            remainingCredits: 0,
+            message: 'Error checking model access',
+          };
+        }
+      }
+
+      setTierValidations(validations);
+    };
+
+    loadTierValidations();
+  }, [usingBYOK]);
 
   const isModelEnabled = useCallback(
     (model: AIModel) => {
@@ -288,6 +332,7 @@ const PureModelSelector = () => {
                   isSelected={selectedModel === model}
                   onSelect={handleModelSelect}
                   showKeyIcon={hasOpenRouterKey()}
+                  tierValidation={tierValidations[model]}
                 />
               ))
             ) : (

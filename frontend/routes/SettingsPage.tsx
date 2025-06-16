@@ -42,6 +42,7 @@ import { useState, useEffect } from "react";
 import { useBYOKStore } from "@/frontend/stores/BYOKStore";
 import { useAuth } from "../contexts/AuthContext";
 import { format } from "date-fns";
+import { getUserTierInfo, getTierDisplayInfo } from "@/lib/tierSystem";
 
 // Notification type
 type NotificationType = {
@@ -86,6 +87,23 @@ export default function SettingsPage() {
   const [keySaved, setKeySaved] = useState(false);
   const [openAIKeySaved, setOpenAIKeySaved] = useState(false);
 
+  // Tier management state
+  const [tierInfo, setTierInfo] = useState<any>(null);
+  const [loadingTier, setLoadingTier] = useState(true);
+
+  // Admin dashboard state
+  const [adminKey, setAdminKey] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [selectedUser, setSelectedUser] = useState<{
+    $id: string;
+    email: string;
+    name?: string;
+    preferences?: any;
+  } | null>(null);
+  const [isAdminLoading, setIsAdminLoading] = useState(false);
+  const [adminStats, setAdminStats] = useState<any>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+
   // Initialize profile data and handle section navigation
   useEffect(() => {
     if (user?.name) {
@@ -98,6 +116,26 @@ export default function SettingsPage() {
       setActiveSection(hash);
     }
   }, [user, location.hash]);
+
+  // Load tier information - NO AUTOMATIC UPDATES
+  useEffect(() => {
+    const loadTierInfo = async () => {
+      if (!user) return;
+
+      try {
+        setLoadingTier(true);
+        // Just get current tier info without any modifications
+        const info = await getUserTierInfo();
+        setTierInfo(info);
+      } catch (error) {
+        console.error('Error loading tier info:', error);
+      } finally {
+        setLoadingTier(false);
+      }
+    };
+
+    loadTierInfo();
+  }, [user]);
 
   // Profile handlers
   const handleUpdateProfile = async () => {
@@ -170,6 +208,8 @@ export default function SettingsPage() {
     setKeyError("");
   };
 
+
+
   const handleSaveOpenAIKey = () => {
     if (!openAIKeyInput.trim()) {
       setOpenAIKeyError("Please enter an OpenAI API key");
@@ -197,6 +237,256 @@ export default function SettingsPage() {
   const maskKey = (key: string) => {
     if (!key) return "";
     return key.substring(0, 8) + "..." + key.substring(key.length - 4);
+  };
+
+  // Admin functions
+  const handleSearchUser = async () => {
+    if (!adminKey.trim() || !userEmail.trim()) {
+      setNotification({
+        type: "error",
+        message: "Please enter admin key and user email",
+      });
+      return;
+    }
+
+    setIsAdminLoading(true);
+    try {
+      const response = await fetch('/api/admin/manage-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          adminKey: adminKey.trim(),
+          action: 'getUserByEmail',
+          email: userEmail.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSelectedUser(data.user);
+        setNotification({
+          type: "success",
+          message: "User found successfully",
+        });
+      } else {
+        setNotification({
+          type: "error",
+          message: data.error || "Failed to find user",
+        });
+      }
+    } catch (error) {
+      console.error('Error searching user:', error);
+      setNotification({
+        type: "error",
+        message: "Network error occurred",
+      });
+    } finally {
+      setIsAdminLoading(false);
+    }
+  };
+
+  const handleUpdateUserTier = async (newTier: 'free' | 'premium' | 'admin') => {
+    if (!selectedUser || !adminKey.trim()) {
+      setNotification({
+        type: "error",
+        message: "Please select a user and enter admin key",
+      });
+      return;
+    }
+
+    setIsAdminLoading(true);
+    try {
+      const response = await fetch('/api/admin/manage-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          adminKey: adminKey.trim(),
+          action: 'updateTier',
+          userId: selectedUser.$id,
+          tier: newTier,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setNotification({
+          type: "success",
+          message: `User tier updated to ${newTier}`,
+        });
+        // Refresh user data
+        handleSearchUser();
+      } else {
+        setNotification({
+          type: "error",
+          message: data.error || "Failed to update user tier",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating user tier:', error);
+      setNotification({
+        type: "error",
+        message: "Network error occurred",
+      });
+    } finally {
+      setIsAdminLoading(false);
+    }
+  };
+
+  const handleResetUserCredits = async () => {
+    if (!selectedUser || !adminKey.trim()) {
+      setNotification({
+        type: "error",
+        message: "Please select a user and enter admin key",
+      });
+      return;
+    }
+
+    setIsAdminLoading(true);
+    try {
+      const response = await fetch('/api/admin/manage-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          adminKey: adminKey.trim(),
+          action: 'resetCredits',
+          userId: selectedUser.$id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setNotification({
+          type: "success",
+          message: "User credits reset successfully",
+        });
+        // Refresh user data
+        handleSearchUser();
+      } else {
+        setNotification({
+          type: "error",
+          message: data.error || "Failed to reset user credits",
+        });
+      }
+    } catch (error) {
+      console.error('Error resetting user credits:', error);
+      setNotification({
+        type: "error",
+        message: "Network error occurred",
+      });
+    } finally {
+      setIsAdminLoading(false);
+    }
+  };
+
+  // Load admin stats
+  const handleLoadStats = async () => {
+    if (!adminKey.trim()) {
+      setNotification({
+        type: "error",
+        message: "Please enter admin key",
+      });
+      return;
+    }
+
+    setLoadingStats(true);
+    try {
+      const response = await fetch('/api/admin/stats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          adminKey: adminKey.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setAdminStats(data.stats);
+        setNotification({
+          type: "success",
+          message: "Statistics loaded successfully",
+        });
+      } else {
+        setNotification({
+          type: "error",
+          message: data.error || "Failed to load statistics",
+        });
+      }
+    } catch (error) {
+      console.error('Error loading stats:', error);
+      setNotification({
+        type: "error",
+        message: "Network error occurred",
+      });
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  // Monthly reset
+  const handleMonthlyReset = async () => {
+    if (!adminKey.trim()) {
+      setNotification({
+        type: "error",
+        message: "Please enter admin key",
+      });
+      return;
+    }
+
+    if (!confirm("Are you sure you want to reset all user credits? This action cannot be undone.")) {
+      return;
+    }
+
+    setIsAdminLoading(true);
+    try {
+      const response = await fetch('/api/admin/manage-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          adminKey: adminKey.trim(),
+          action: 'monthlyReset',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setNotification({
+          type: "success",
+          message: data.message || "Monthly reset completed successfully",
+        });
+        // Refresh stats if they're loaded
+        if (adminStats) {
+          handleLoadStats();
+        }
+      } else {
+        setNotification({
+          type: "error",
+          message: data.error || "Failed to perform monthly reset",
+        });
+      }
+    } catch (error) {
+      console.error('Error performing monthly reset:', error);
+      setNotification({
+        type: "error",
+        message: "Network error occurred",
+      });
+    } finally {
+      setIsAdminLoading(false);
+    }
   };
 
   return (
@@ -259,6 +549,7 @@ export default function SettingsPage() {
               { id: "profile", label: "Profile", icon: User },
               { id: "privacy", label: "Privacy & Security", icon: Shield },
               { id: "settings", label: "Application", icon: SettingsIcon },
+              ...(tierInfo?.tier === 'admin' ? [{ id: "admin", label: "Admin Dashboard", icon: Shield }] : []),
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -798,6 +1089,421 @@ export default function SettingsPage() {
                 </div>
                   )}
                 </div>
+
+                {/* Tier Management Card */}
+                <div className="p-6 border rounded-xl bg-card shadow-sm">
+                  <div className="space-y-1 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-medium">Usage & Plan</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      View your current plan and usage limits
+                    </p>
+                  </div>
+
+                  {loadingTier ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : tierInfo ? (
+                    <div className="space-y-4">
+                      {/* Current Plan */}
+                      <div className="rounded-lg bg-primary/5 border border-primary/20 p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <h4 className="font-semibold text-primary capitalize">
+                              {getTierDisplayInfo(tierInfo.tier).name} Plan
+                            </h4>
+                            <p className="text-sm text-muted-foreground">
+                              {tierInfo.tier === 'admin' ? 'Unlimited access to all models' : 'Monthly credit limits'}
+                            </p>
+                          </div>
+                          {tierInfo.tier !== 'admin' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open('mailto:ayush@atchat.app?subject=Upgrade Plan Request', '_blank')}
+                              className="text-primary border-primary hover:bg-primary hover:text-primary-foreground"
+                            >
+                              Upgrade Plan
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Usage Stats */}
+                        {tierInfo.tier !== 'admin' && (
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Free Models</span>
+                                <span className="font-medium">
+                                  {tierInfo.freeCredits} / {getTierDisplayInfo(tierInfo.tier).limits.freeCredits}
+                                </span>
+                              </div>
+                              <div className="w-full bg-muted rounded-full h-2">
+                                <div
+                                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                                  style={{
+                                    width: `${Math.max(0, Math.min(100, (tierInfo.freeCredits / getTierDisplayInfo(tierInfo.tier).limits.freeCredits) * 100))}%`
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Premium Models</span>
+                                <span className="font-medium">
+                                  {tierInfo.premiumCredits} / {getTierDisplayInfo(tierInfo.tier).limits.premiumCredits}
+                                </span>
+                              </div>
+                              <div className="w-full bg-muted rounded-full h-2">
+                                <div
+                                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                                  style={{
+                                    width: `${Math.max(0, Math.min(100, (tierInfo.premiumCredits / getTierDisplayInfo(tierInfo.tier).limits.premiumCredits) * 100))}%`
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Super Premium</span>
+                                <span className="font-medium">
+                                  {tierInfo.superPremiumCredits} / {getTierDisplayInfo(tierInfo.tier).limits.superPremiumCredits}
+                                </span>
+                              </div>
+                              <div className="w-full bg-muted rounded-full h-2">
+                                <div
+                                  className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                                  style={{
+                                    width: `${Math.max(0, Math.min(100, (tierInfo.superPremiumCredits / getTierDisplayInfo(tierInfo.tier).limits.superPremiumCredits) * 100))}%`
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {tierInfo.tier === 'admin' && (
+                          <div className="text-center py-4">
+                            <p className="text-sm text-muted-foreground">
+                              ✨ You have unlimited access to all models
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Plan Information */}
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>• Credits reset monthly on the 1st of each month</p>
+                        <p>• Free models include basic AI models without premium features</p>
+                        <p>• Premium models include advanced AI models with enhanced capabilities</p>
+                        <p>• Super Premium models include the most advanced AI models with cutting-edge features</p>
+                        {tierInfo.lastResetDate && (
+                          <p>• Last reset: {format(new Date(tierInfo.lastResetDate), "MMMM d, yyyy")}</p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-muted-foreground">
+                        Unable to load tier information. Please refresh the page.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Admin Dashboard Section */}
+            {activeSection === "admin" && tierInfo?.tier === 'admin' && (
+              <div className="space-y-6">
+                {/* Admin Dashboard Header */}
+                <div className="p-6 border rounded-xl bg-card shadow-sm">
+                  <h3 className="text-lg font-medium mb-4 pb-2 border-b border-border">
+                    Admin Dashboard
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Manage user accounts, tiers, and credits. Use with caution.
+                  </p>
+
+                  {/* Admin Key Input */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Admin Key</label>
+                      <Input
+                        type="password"
+                        placeholder="Enter admin secret key"
+                        value={adminKey}
+                        onChange={(e) => setAdminKey(e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Statistics Dashboard */}
+                <div className="p-6 border rounded-xl bg-card shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-md font-medium">Platform Statistics</h4>
+                    <Button
+                      onClick={handleLoadStats}
+                      disabled={loadingStats || !adminKey.trim()}
+                      size="sm"
+                    >
+                      {loadingStats ? "Loading..." : "Load Stats"}
+                    </Button>
+                  </div>
+
+                  {adminStats ? (
+                    <div className="space-y-6">
+                      {/* User Statistics */}
+                      <div>
+                        <h5 className="text-sm font-medium mb-3 text-muted-foreground">User Statistics</h5>
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                          <div className="bg-muted/30 p-3 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-primary">{adminStats.users.total}</p>
+                            <p className="text-xs text-muted-foreground">Total Users</p>
+                          </div>
+                          <div className="bg-muted/30 p-3 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-green-600">{adminStats.users.verified}</p>
+                            <p className="text-xs text-muted-foreground">Verified</p>
+                          </div>
+                          <div className="bg-muted/30 p-3 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-amber-600">{adminStats.users.unverified}</p>
+                            <p className="text-xs text-muted-foreground">Unverified</p>
+                          </div>
+                          <div className="bg-muted/30 p-3 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-blue-600">{adminStats.users.recentlyRegistered}</p>
+                            <p className="text-xs text-muted-foreground">Last 30 Days</p>
+                          </div>
+                          <div className="bg-muted/30 p-3 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-purple-600">{adminStats.users.registeredToday}</p>
+                            <p className="text-xs text-muted-foreground">Today</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Database Statistics */}
+                      <div>
+                        <h5 className="text-sm font-medium mb-3 text-muted-foreground">Database Statistics</h5>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <div className="bg-muted/30 p-3 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-indigo-600">{adminStats.database.threads}</p>
+                            <p className="text-xs text-muted-foreground">Total Threads</p>
+                          </div>
+                          <div className="bg-muted/30 p-3 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-emerald-600">{adminStats.database.messages}</p>
+                            <p className="text-xs text-muted-foreground">Total Messages</p>
+                          </div>
+                          <div className="bg-muted/30 p-3 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-orange-600">{adminStats.database.projects}</p>
+                            <p className="text-xs text-muted-foreground">Total Projects</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tier Distribution */}
+                      <div>
+                        <h5 className="text-sm font-medium mb-3 text-muted-foreground">Tier Distribution</h5>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                          <div className="bg-muted/30 p-3 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-gray-600">{adminStats.tiers.distribution.free}</p>
+                            <p className="text-xs text-muted-foreground">Free Users</p>
+                          </div>
+                          <div className="bg-muted/30 p-3 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-blue-600">{adminStats.tiers.distribution.premium}</p>
+                            <p className="text-xs text-muted-foreground">Premium Users</p>
+                          </div>
+                          <div className="bg-muted/30 p-3 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-purple-600">{adminStats.tiers.distribution.admin}</p>
+                            <p className="text-xs text-muted-foreground">Admin Users</p>
+                          </div>
+                          <div className="bg-muted/30 p-3 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-red-600">{adminStats.tiers.distribution.uninitialized}</p>
+                            <p className="text-xs text-muted-foreground">Uninitialized</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Credit Statistics */}
+                      <div>
+                        <h5 className="text-sm font-medium mb-3 text-muted-foreground">Total Credits Remaining</h5>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <div className="bg-muted/30 p-3 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-green-600">{adminStats.tiers.credits.totalFreeCredits.toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">Free Credits</p>
+                          </div>
+                          <div className="bg-muted/30 p-3 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-blue-600">{adminStats.tiers.credits.totalPremiumCredits.toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">Premium Credits</p>
+                          </div>
+                          <div className="bg-muted/30 p-3 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-purple-600">{adminStats.tiers.credits.totalSuperPremiumCredits.toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">Super Premium Credits</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-muted-foreground">
+                        Last updated: {new Date(adminStats.lastUpdated).toLocaleString()}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-muted-foreground">
+                        Click "Load Stats" to view platform statistics
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* System Operations */}
+                <div className="p-6 border rounded-xl bg-card shadow-sm">
+                  <h4 className="text-md font-medium mb-4">System Operations</h4>
+                  <div className="space-y-4">
+                    <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 rounded-full bg-red-100 dark:bg-red-900/30">
+                          <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                            Monthly Credit Reset
+                          </p>
+                          <p className="text-xs text-red-600 dark:text-red-400">
+                            Reset all user credits to their tier limits
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleMonthlyReset}
+                        disabled={isAdminLoading || !adminKey.trim()}
+                      >
+                        {isAdminLoading ? "Resetting..." : "Perform Monthly Reset"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* User Search */}
+                <div className="p-6 border rounded-xl bg-card shadow-sm">
+                  <h4 className="text-md font-medium mb-4">Search User</h4>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter user email"
+                      value={userEmail}
+                      onChange={(e) => setUserEmail(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleSearchUser}
+                      disabled={isAdminLoading || !adminKey.trim() || !userEmail.trim()}
+                    >
+                      {isAdminLoading ? "Searching..." : "Search"}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* User Management */}
+                {selectedUser && (
+                  <div className="p-6 border rounded-xl bg-card shadow-sm">
+                    <h4 className="text-md font-medium mb-4">User Management</h4>
+
+                    {/* User Info */}
+                    <div className="bg-muted/30 p-4 rounded-lg mb-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Email</p>
+                          <p className="font-medium">{selectedUser.email}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Name</p>
+                          <p className="font-medium">{selectedUser.name || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">User ID</p>
+                          <p className="font-mono text-xs">{selectedUser.$id}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Current Tier</p>
+                          <p className="font-medium capitalize">{selectedUser.preferences?.tier || 'N/A'}</p>
+                        </div>
+                      </div>
+
+                      {/* Credits Info */}
+                      {selectedUser.preferences && (
+                        <div className="mt-4 pt-4 border-t border-border">
+                          <p className="text-sm text-muted-foreground mb-2">Current Credits</p>
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Free</p>
+                              <p className="font-medium">{selectedUser.preferences.freeCredits}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Premium</p>
+                              <p className="font-medium">{selectedUser.preferences.premiumCredits}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Super Premium</p>
+                              <p className="font-medium">{selectedUser.preferences.superPremiumCredits}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm font-medium mb-2">Update Tier</p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleUpdateUserTier('free')}
+                            disabled={isAdminLoading}
+                          >
+                            Set Free
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleUpdateUserTier('premium')}
+                            disabled={isAdminLoading}
+                          >
+                            Set Premium
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleUpdateUserTier('admin')}
+                            disabled={isAdminLoading}
+                          >
+                            Set Admin
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-medium mb-2">Reset Credits</p>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleResetUserCredits}
+                          disabled={isAdminLoading}
+                        >
+                          {isAdminLoading ? "Resetting..." : "Reset Credits to Tier Limits"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -19,6 +19,7 @@ import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 import { useConversationStyleStore } from "@/frontend/stores/ConversationStyleStore";
 import { useBYOKStore } from "@/frontend/stores/BYOKStore";
+import { useAuth } from "@/frontend/contexts/AuthContext";
 import { useLocation } from "react-router-dom";
 import ThemeToggleButton from "./ui/ThemeComponents";
 import { Button } from "./ui/button";
@@ -67,6 +68,7 @@ export default function ChatInterface({
   const { isWebSearchEnabled } = useWebSearchStore();
   const { selectedStyle } = useConversationStyleStore();
   const { openRouterApiKey } = useBYOKStore();
+  const { user } = useAuth();
   const {
     sidebarWidth,
     toggleSidebar,
@@ -187,6 +189,7 @@ export default function ChatInterface({
       model: selectedModel,
       conversationStyle: selectedStyle,
       userApiKey: openRouterApiKey,
+      userId: user?.$id,
     },
   });
 

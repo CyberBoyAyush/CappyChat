@@ -14,6 +14,7 @@ import { Models, AppwriteException } from 'appwrite';
 import { AppwriteDB } from '@/lib/appwriteDB';
 import { HybridDB } from '@/lib/hybridDB';
 import { AppwriteRealtime } from '@/lib/appwriteRealtime';
+import { ensureUserTierInitialized } from '@/lib/tierSystem';
 
 interface User extends Models.User<Models.Preferences> {}
 
@@ -108,6 +109,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const initializeUserServices = useCallback(async (userId: string) => {
     try {
       console.log('[AuthContext] Initializing user services for user:', userId);
+
+      // Initialize tier system for new users only - don't reset existing users
+      await ensureUserTierInitialized();
+      console.log('[AuthContext] User tier initialization completed');
+
       // Only initialize HybridDB - realtime will be handled inside it
       // This is now non-blocking and much faster
       await HybridDB.initialize(userId);
