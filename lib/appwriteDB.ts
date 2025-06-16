@@ -24,6 +24,7 @@ export interface AppwriteProject extends Models.Document {
   userId: string;
   name: string;
   description?: string;
+  prompt?: string;
   colorIndex?: number;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
@@ -34,6 +35,7 @@ export interface Project {
   id: string;
   name: string;
   description?: string;
+  prompt?: string;
   colorIndex?: number;
   createdAt: Date;
   updatedAt: Date;
@@ -511,6 +513,7 @@ export class AppwriteDB {
           id: projectDoc.projectId,
           name: projectDoc.name,
           description: projectDoc.description,
+          prompt: projectDoc.prompt,
           colorIndex: projectDoc.colorIndex,
           createdAt: new Date(doc.$createdAt),
           updatedAt: new Date(projectDoc.updatedAt)
@@ -525,7 +528,7 @@ export class AppwriteDB {
   }
 
   // Create a new project
-  static async createProject(projectId: string, name: string, description?: string): Promise<string> {
+  static async createProject(projectId: string, name: string, description?: string, prompt?: string): Promise<string> {
     try {
       const userId = await this.getCurrentUserId();
       const now = new Date();
@@ -535,6 +538,7 @@ export class AppwriteDB {
         userId: userId,
         name: name,
         description: description || '',
+        prompt: prompt || '',
         createdAt: now.toISOString(),
         updatedAt: now.toISOString()
       };
@@ -554,7 +558,7 @@ export class AppwriteDB {
   }
 
   // Update project
-  static async updateProject(projectId: string, name: string, description?: string): Promise<void> {
+  static async updateProject(projectId: string, name: string, description?: string, prompt?: string): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
       const now = new Date();
@@ -580,6 +584,7 @@ export class AppwriteDB {
           {
             name: name,
             description: description || '',
+            prompt: prompt || '',
             updatedAt: now.toISOString()
           }
         );

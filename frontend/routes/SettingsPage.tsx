@@ -40,11 +40,13 @@ import ThemeToggleButton from "../components/ui/ThemeComponents";
 import { useTheme } from "next-themes";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
 import { useState, useEffect } from "react";
 import { useBYOKStore } from "@/frontend/stores/BYOKStore";
 import { useAuth } from "../contexts/AuthContext";
 import { format } from "date-fns";
 import { getUserTierInfo, getTierDisplayInfo } from "@/lib/tierSystem";
+import { getUserCustomProfile, updateUserCustomProfile, clearUserCustomProfile, UserCustomProfile } from "@/lib/appwrite";
 
 // Notification type
 type NotificationType = {
@@ -69,6 +71,13 @@ export default function SettingsPage() {
     null
   );
   const [isLoading, setIsLoading] = useState(false);
+
+  // Custom Profile State
+  const [customProfile, setCustomProfile] = useState<UserCustomProfile>({});
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [tempCustomName, setTempCustomName] = useState("");
+  const [tempAboutUser, setTempAboutUser] = useState("");
 
   // BYOK state
   const {
@@ -141,6 +150,26 @@ export default function SettingsPage() {
     loadTierInfo();
   }, [user]);
 
+  // Load custom profile data
+  useEffect(() => {
+    const loadCustomProfile = async () => {
+      if (!user) return;
+
+      try {
+        const profile = await getUserCustomProfile();
+        if (profile) {
+          setCustomProfile(profile);
+          setTempCustomName(profile.customName || "");
+          setTempAboutUser(profile.aboutUser || "");
+        }
+      } catch (error) {
+        console.error("Error loading custom profile:", error);
+      }
+    };
+
+    loadCustomProfile();
+  }, [user]);
+
   // Profile handlers
   const handleUpdateProfile = async () => {
     if (!displayName.trim()) {
@@ -177,6 +206,75 @@ export default function SettingsPage() {
   const handleCancel = () => {
     setDisplayName(user?.name || "");
     setIsEditing(false);
+  };
+
+  // Custom Profile handlers
+  const handleUpdateCustomProfile = async () => {
+    setProfileLoading(true);
+    try {
+      const profileData: UserCustomProfile = {
+        customName: tempCustomName.trim() || undefined,
+        aboutUser: tempAboutUser.trim() || undefined,
+      };
+
+      await updateUserCustomProfile(profileData);
+      setCustomProfile(profileData);
+      setIsEditingProfile(false);
+
+      setNotification({
+        type: "success",
+        message: "Custom profile updated successfully",
+      });
+
+      // Clear notification after 3 seconds
+      setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+    } catch (error) {
+      setNotification({
+        type: "error",
+        message: (error as Error).message || "Failed to update custom profile",
+      });
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const handleCancelCustomProfile = () => {
+    setTempCustomName(customProfile.customName || "");
+    setTempAboutUser(customProfile.aboutUser || "");
+    setIsEditingProfile(false);
+  };
+
+  const handleClearCustomProfile = async () => {
+    if (!confirm("Are you sure you want to clear your custom profile? This will remove all personalization from AI responses.")) {
+      return;
+    }
+
+    setProfileLoading(true);
+    try {
+      await clearUserCustomProfile();
+      setCustomProfile({});
+      setTempCustomName("");
+      setTempAboutUser("");
+
+      setNotification({
+        type: "success",
+        message: "Custom profile cleared successfully",
+      });
+
+      // Clear notification after 3 seconds
+      setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+    } catch (error) {
+      setNotification({
+        type: "error",
+        message: (error as Error).message || "Failed to clear custom profile",
+      });
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -927,6 +1025,149 @@ export default function SettingsPage() {
                   )}
                 </div>
 
+                {/* Custom Profile Section */}
+                <div className="p-6 border rounded-xl bg-card shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <User className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-medium">Custom Profile</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Personalize your AI chat experience with custom information
+                      </p>
+                    </div>
+                    {!isEditingProfile && (customProfile.customName || customProfile.aboutUser) && (
+                      <Button
+                        onClick={handleClearCustomProfile}
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                        disabled={profileLoading}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Clear Profile
+                      </Button>
+                    )}
+                  </div>
+
+                  {isEditingProfile ? (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                          Preferred Name
+                        </label>
+                        <Input
+                          value={tempCustomName}
+                          onChange={(e) => setTempCustomName(e.target.value)}
+                          placeholder="How would you like the AI to address you?"
+                          disabled={profileLoading}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          The AI will use this name when addressing you in conversations
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                          About You
+                        </label>
+                        <Textarea
+                          value={tempAboutUser}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value.length <= 500) {
+                              setTempAboutUser(value);
+                            }
+                          }}
+                          placeholder="Tell the AI about yourself, your interests, profession, or anything that would help personalize responses..."
+                          className="min-h-[100px] resize-none"
+                          disabled={profileLoading}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          This information helps the AI provide more personalized and relevant responses ({tempAboutUser.length}/500 characters)
+                        </p>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleUpdateCustomProfile}
+                          disabled={profileLoading}
+                          className="flex items-center gap-1"
+                        >
+                          <Save className="w-4 h-4" />
+                          {profileLoading ? "Saving..." : "Save Profile"}
+                        </Button>
+                        <Button
+                          onClick={handleCancelCustomProfile}
+                          variant="outline"
+                          disabled={profileLoading}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {customProfile.customName || customProfile.aboutUser ? (
+                        <div className="space-y-3">
+                          {customProfile.customName && (
+                            <div className="p-3 rounded-lg bg-muted/30">
+                              <div className="text-sm font-medium text-foreground mb-1">
+                                Preferred Name
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {customProfile.customName}
+                              </div>
+                            </div>
+                          )}
+
+                          {customProfile.aboutUser && (
+                            <div className="p-3 rounded-lg bg-muted/30">
+                              <div className="text-sm font-medium text-foreground mb-1">
+                                About You
+                              </div>
+                              <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                {customProfile.aboutUser}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Custom profile is active - AI responses will be personalized</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg bg-muted/50 p-4">
+                          <div className="flex items-start gap-4">
+                            <div className="p-2 rounded-full bg-muted">
+                              <User className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm">
+                                Set up a custom profile to personalize your AI chat experience.
+                              </p>
+                              <p className="text-sm text-muted-foreground mt-2">
+                                Add your preferred name and information about yourself to help the AI provide more relevant and personalized responses.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <Button
+                        onClick={() => setIsEditingProfile(true)}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        {customProfile.customName || customProfile.aboutUser ? "Edit Profile" : "Set Up Profile"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
                 {/* Account Actions */}
                 <div className="p-6 border rounded-xl bg-card shadow-sm">
                   <h3 className="text-lg font-medium mb-4 pb-2 border-b border-border">
@@ -1449,7 +1690,7 @@ export default function SettingsPage() {
                               size="sm"
                               onClick={() =>
                                 window.open(
-                                  "mailto:ayush@atchat.app?subject=Upgrade Plan Request",
+                                  "mailto:connect@ayush-sharma.in?subject=Upgrade Plan Request",
                                   "_blank"
                                 )
                               }

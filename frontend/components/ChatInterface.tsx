@@ -190,6 +190,7 @@ export default function ChatInterface({
       conversationStyle: selectedStyle,
       userApiKey: openRouterApiKey,
       userId: user?.$id,
+      threadId: threadId,
     },
   });
 

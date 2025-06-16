@@ -35,11 +35,63 @@ import {
   BarChart3,
   Layers,
   ExternalLink,
+  MessageSquare,
+  Code,
+  Database,
+  Wifi,
+  Settings,
+  Search,
+  Heart,
+  Lightbulb,
+  Target,
+  Rocket,
+  Palette,
+  Music,
+  Camera,
+  FileText,
+  Download,
+  Upload,
+  Share2,
+  Lock,
+  Unlock,
+  Eye,
+  EyeOff,
+  Volume2,
+  VolumeX,
+  Sun,
+  CloudRain,
+  Wind,
+  Snowflake,
 } from "lucide-react";
 import { GoogleIcon, GitHubIcon } from "@/frontend/components/ui/icons";
 import { ThemeToggleButton } from "@/frontend/components/ui/ThemeComponents";
 import { useTheme } from "next-themes";
 import { motion } from "framer-motion";
+import LLMMarquee from "@/frontend/components/ui/marquee";
+
+// Floating background icons data
+const floatingIcons = [
+  { Icon: MessageSquare, delay: 0, duration: 20, x: 10 },
+  { Icon: Code, delay: 2, duration: 25, x: 85, y: 15 },
+  { Icon: Database, delay: 4, duration: 30, x: 15, y: 70 },
+  { Icon: Wifi, delay: 1, duration: 22, x: 90, y: 80 },
+  { Icon: Settings, delay: 3, duration: 28, x: 70, y: 30 },
+  { Icon: Search, delay: 5, duration: 24, x: 25, y: 50 },
+  { Icon: Heart, delay: 1.5, duration: 26, x: 80, y: 60 },
+  { Icon: Lightbulb, delay: 3.5, duration: 32, x: 40, y: 10 },
+  { Icon: Target, delay: 2.5, duration: 27, x: 60, y: 85 },
+  { Icon: Rocket, delay: 4.5, duration: 23, x: 5, y: 40 },
+  { Icon: Palette, delay: 0.5, duration: 29, x: 95, y: 25 },
+  { Icon: Music, delay: 6, duration: 21, x: 35, y: 90 },
+  { Icon: Camera, delay: 1.8, duration: 31, x: 75, y: 5 },
+  { Icon: FileText, delay: 3.2, duration: 26, x: 20, y: 35 },
+  { Icon: Share2, delay: 4.8, duration: 24, x: 85, y: 45 },
+  { Icon: Lock, delay: 2.2, duration: 28, x: 50, y: 75 },
+  { Icon: Eye, delay: 5.5, duration: 25, x: 65 },
+  { Icon: Volume2, delay: 0.8, duration: 30, x: 30, y: 65 },
+  { Icon: Sun, delay: 3.8, duration: 22, x: 10, y: 55 },
+  { Icon: Wind, delay: 4.2, duration: 27, x: 90, y: 35 },
+];
 
 const HomePage: React.FC = () => {
   const { isAuthenticated, loading, loginWithGoogle, loginWithGitHub } =
@@ -49,14 +101,13 @@ const HomePage: React.FC = () => {
   const isDark = theme === "dark";
 
   // For animated background blobs
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [mousePosition, setMousePosition] = useState({ x: 0 });
 
   // Handle mouse movement for interactive gradients
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({
         x: e.clientX / window.innerWidth,
-        y: e.clientY / window.innerHeight,
       });
     };
 
@@ -99,35 +150,89 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Interactive gradient background */}
-      <div
-        className="absolute inset-0 z-0 opacity-30 dark:opacity-20"
-        style={{
-          background: isDark
-            ? `radial-gradient(circle at ${mousePosition.x * 100}% ${
-                mousePosition.y * 100
-              }%, rgba(247, 111, 82, 0.15) 0%, rgba(0, 0, 0, 0) 50%),
-               radial-gradient(circle at ${100 - mousePosition.x * 100}% ${
-                100 - mousePosition.y * 100
-              }%, rgba(30, 64, 175, 0.1) 0%, rgba(0, 0, 0, 0) 50%)`
-            : `radial-gradient(circle at ${mousePosition.x * 100}% ${
-                mousePosition.y * 100
-              }%, rgba(247, 111, 82, 0.2) 0%, rgba(0, 0, 0, 0) 60%),
-               radial-gradient(circle at ${100 - mousePosition.x * 100}% ${
-                100 - mousePosition.y * 100
-              }%, rgba(79, 70, 229, 0.15) 0%, rgba(0, 0, 0, 0) 50%)`,
-        }}
-      />
-
       {/* Fixed gradient elements */}
       <div className="absolute top-0 left-0 w-full h-full z-0">
         <div className="absolute top-0 left-1/4 w-[30rem] h-[30rem] rounded-full bg-primary/5 blur-[8rem] -translate-y-1/2" />
-        <div className="absolute bottom-0 right-1/4 w-[30rem] h-[30rem] rounded-full bg-blue-500/5 blur-[8rem] translate-y-1/3" />
+        <div className="absolute bottom-0 right-1/4 w-[30rem] h-[30rem] rounded-full bg-primary/3 blur-[8rem] translate-y-1/3" />
+
+        {/* Additional gradient orbs for more depth */}
+        <div className="absolute top-1/3 right-1/3 w-[20rem] h-[20rem] rounded-full bg-primary/2 blur-[6rem]" />
+        <div className="absolute bottom-1/3 left-1/3 w-[25rem] h-[25rem] rounded-full bg-primary/3 blur-[7rem]" />
+        <div className="absolute top-2/3 left-1/2 w-[15rem] h-[15rem] rounded-full bg-primary/4 blur-[5rem]" />
+      </div>
+
+      {/* Floating Background Icons */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        {floatingIcons.map((item, index) => (
+          <motion.div
+            key={index}
+            className="absolute opacity-10 dark:opacity-[0.05]"
+            style={{
+              left: `${item.x}%`,
+              top: `${item.y}%`,
+            }}
+            animate={{
+              y: [0, -30, 0],
+              x: [0, 15, 0],
+              rotate: [0, 360],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: item.duration,
+              delay: item.delay,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
+            <item.Icon className="h-8 w-8 sm:h-12 sm:w-12 lg:h-16 lg:w-16 text-primary" />
+          </motion.div>
+        ))}
+
+        {/* Additional floating elements for more visual interest */}
+        <motion.div
+          className="absolute top-1/4 left-1/4 w-2 h-2 bg-primary/20 rounded-full"
+          animate={{
+            scale: [1, 2, 1],
+            opacity: [0.2, 0.8, 0.2],
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute top-3/4 right-1/3 w-3 h-3 bg-primary/15 rounded-full"
+          animate={{
+            scale: [1, 1.5, 1],
+            opacity: [0.3, 0.7, 0.3],
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 2,
+          }}
+        />
+        <motion.div
+          className="absolute top-1/2 right-1/4 w-1.5 h-1.5 bg-primary/10 rounded-full"
+          animate={{
+            scale: [1, 3, 1],
+            opacity: [0.1, 0.6, 0.1],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 4,
+          }}
+        />
       </div>
 
       {/* Enhanced Navigation Header */}
-      <nav className="fixed top-0 w-full z-50 bg-background/90 backdrop-blur-xl border-b border-border/50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav className="fixed top-0 w-full z-50 bg-gradient-to-r from-background/95 via-background/90 to-background/95 backdrop-blur-lg border-b border-border/50 shadow-lg shadow-primary/5">
+        <div className="absolute inset-0  opacity-50" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="flex justify-between items-center h-16 sm:h-18">
             <motion.div
               className="flex items-center space-x-3"
@@ -167,7 +272,7 @@ const HomePage: React.FC = () => {
             </motion.div>
 
             <motion.div
-              className="flex items-center space-x-2 sm:space-x-4"
+              className="flex items-center space-x-1 xs:space-x-2 sm:space-x-3 lg:space-x-4"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
@@ -181,10 +286,10 @@ const HomePage: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="flex items-center space-x-2 text-sm font-medium px-4 py-2 rounded-xl hover:bg-secondary/80 transition-all duration-300"
+                    className="flex items-center space-x-1 xs:space-x-1.5 sm:space-x-2 text-xs sm:text-sm font-medium px-2 xs:px-3 sm:px-4 py-1.5 md:py-5 rounded-sm sm:rounded-md hover:bg-secondary/80 transition-all duration-300"
                   >
-                    <LogIn className="h-4 w-4" />
-                    <span className="hidden sm:block">Login</span>
+                    <LogIn className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden md:block">Login</span>
                   </Button>
                 </motion.div>
               </Link>
@@ -195,10 +300,10 @@ const HomePage: React.FC = () => {
                 >
                   <Button
                     size="sm"
-                    className="flex items-center space-x-2 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground text-sm font-semibold px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="flex items-center justify-center space-x-1 xs:space-x-1.5 sm:space-x-2 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground text-xs sm:text-sm font-semibold px-2 md:px-7 py-1.5 md:py-5 rounded-sm sm:rounded-md shadow-lg hover:shadow-xl transition-all duration-300"
                   >
-                    <UserPlus className="h-4 w-4" />
-                    <span className="hidden sm:block">Sign Up</span>
+                    <UserPlus className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden md:flex">Sign Up</span>
                   </Button>
                 </motion.div>
               </Link>
@@ -208,9 +313,11 @@ const HomePage: React.FC = () => {
       </nav>
 
       {/* Enhanced Hero Section */}
-      <main className="pt-16 sm:pt-8 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-24">
-          <div className="text-center">
+      <main className="pt-12 sm:pt-20 relative z-10">
+        <div className=" max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-12 md:py-20 lg:py-20">
+          <div className="text-center relative">
+            {/* Hero background glow */}
+            <div className="absolute inset-0  blur-3xl opacity-30 rounded-full transform scale-150" />
             <motion.div
               className="flex justify-center mb-4 sm:mb-8"
               initial={{ opacity: 0, scale: 0.5 }}
@@ -258,15 +365,15 @@ const HomePage: React.FC = () => {
 
             <motion.div
               className="space-y-3 sm:space-y-6 mb-8 sm:mb-12"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ duration: 0.7, delay: 0.2 }}
             >
               <h1 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-foreground leading-tight px-1 sm:px-0">
                 The Future of{" "}
                 <span className="relative inline-block">
                   <motion.span
-                    className="bg-gradient-to-r from-primary via-primary/35 dark:via-primary-foreground/75 to-primary bg-clip-text text-transparent"
+                    className="bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent"
                     animate={{
                       backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
                     }}
@@ -287,8 +394,8 @@ const HomePage: React.FC = () => {
 
               <motion.p
                 className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl text-muted-foreground max-w-4xl mx-auto leading-relaxed px-2 sm:px-4"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ duration: 0.7, delay: 0.4 }}
               >
                 Experience{" "}
@@ -331,16 +438,38 @@ const HomePage: React.FC = () => {
             {/* Enhanced Feature Pills */}
             <motion.div
               className="flex flex-wrap justify-center gap-2 xs:gap-3 sm:gap-4 mb-8 sm:mb-12 lg:mb-16 px-2 sm:px-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ duration: 0.7, delay: 0.6 }}
             >
+              {/* Floating particles around pills */}
+              <div className="absolute inset-0 pointer-events-none">
+                {[...Array(6)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-1 h-1 bg-primary/30 rounded-full"
+                    style={{
+                      left: `${20 + i * 15}%`,
+                      top: `${40 + (i % 2) * 20}%`,
+                    }}
+                    animate={{
+                      y: [0, -20, 0],
+                      opacity: [0.3, 0.8, 0.3],
+                    }}
+                    transition={{
+                      duration: 3 + i,
+                      repeat: Infinity,
+                      delay: i * 0.5,
+                    }}
+                  />
+                ))}
+              </div>
               <motion.div
                 whileHover={{ scale: 1.05, y: -3 }}
                 whileTap={{ scale: 0.95 }}
-                className="group relative overflow-hidden bg-gradient-to-r from-primary/10 to-primary/20 hover:from-primary/20 hover:to-primary/30 text-primary px-3 xs:px-4 sm:px-6 py-2 xs:py-2.5 sm:py-3 rounded-full text-xs sm:text-sm lg:text-base font-semibold border border-primary/30 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/25"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
+                className="group relative overflow-hidden bg-gradient-to-r from-primary/10 via-primary/15 to-primary/20 hover:from-primary/20 hover:via-primary/25 hover:to-primary/30 text-primary px-3 xs:px-4 sm:px-6 py-2 xs:py-2.5 sm:py-3 rounded-full text-xs sm:text-sm lg:text-base font-semibold border border-primary/30 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/25 backdrop-blur-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.7 }}
               >
                 <motion.div
@@ -348,187 +477,130 @@ const HomePage: React.FC = () => {
                   animate={{ x: ["-100%", "100%"] }}
                   transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
                 />
-                <Zap className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2 group-hover:animate-pulse" />
-                <span className="hidden xs:inline">10x</span> Faster Response
+                <motion.div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-primary/3 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <Zap className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2 group-hover:animate-pulse relative z-10" />
+                <span className="hidden xs:inline relative z-10">10x</span>{" "}
+                <span className="relative z-10">Faster Response</span>
               </motion.div>
 
               <motion.div
                 whileHover={{ scale: 1.05, y: -3 }}
                 whileTap={{ scale: 0.95 }}
-                className="group bg-gradient-to-r from-secondary/40 to-secondary/60 hover:from-secondary/60 hover:to-secondary/80 text-foreground px-3 xs:px-4 sm:px-6 py-2 xs:py-2.5 sm:py-3 rounded-full text-xs sm:text-sm lg:text-base font-semibold border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                className="group relative overflow-hidden bg-gradient-to-r from-secondary/40 via-secondary/50 to-secondary/60 hover:from-secondary/60 hover:via-secondary/70 hover:to-secondary/80 text-foreground px-3 xs:px-4 sm:px-6 py-2 xs:py-2.5 sm:py-3 rounded-full text-xs sm:text-sm lg:text-base font-semibold border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg backdrop-blur-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.8 }}
               >
-                <Brain className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2 group-hover:animate-bounce" />
-                Multi-Model AI
+                <motion.div className="absolute inset-0 bg-gradient-to-r from-primary/3 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <Brain className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2  relative z-10" />
+                <span className="relative z-10">Multi-Model AI</span>
               </motion.div>
 
               <motion.div
                 whileHover={{ scale: 1.05, y: -3 }}
                 whileTap={{ scale: 0.95 }}
-                className="group bg-gradient-to-r from-secondary/40 to-secondary/60 hover:from-secondary/60 hover:to-secondary/80 text-foreground px-3 xs:px-4 sm:px-6 py-2 xs:py-2.5 sm:py-3 rounded-full text-xs sm:text-sm lg:text-base font-semibold border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                className="group relative overflow-hidden bg-gradient-to-r from-secondary/40 via-secondary/50 to-secondary/60 hover:from-secondary/60 hover:via-secondary/70 hover:to-secondary/80 text-foreground px-3 xs:px-4 sm:px-6 py-2 xs:py-2.5 sm:py-3 rounded-full text-xs sm:text-sm lg:text-base font-semibold border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg backdrop-blur-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.9 }}
               >
-                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2 group-hover:animate-spin" />
-                Real-time Sync
+                <motion.div className="absolute inset-0 bg-gradient-to-r from-primary/3 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2 group-hover:animate-spin relative z-10" />
+                <span className="relative z-10">Real-time Sync</span>
               </motion.div>
 
               <motion.div
                 whileHover={{ scale: 1.05, y: -3 }}
                 whileTap={{ scale: 0.95 }}
-                className="group bg-gradient-to-r from-secondary/40 to-secondary/60 hover:from-secondary/60 hover:to-secondary/80 text-foreground px-3 xs:px-4 sm:px-6 py-2 xs:py-2.5 sm:py-3 rounded-full text-xs sm:text-sm lg:text-base font-semibold border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg"
+                className="group relative overflow-hidden bg-gradient-to-r from-secondary/40 via-secondary/50 to-secondary/60 hover:from-secondary/60 hover:via-secondary/70 hover:to-secondary/80 text-foreground px-3 xs:px-4 sm:px-6 py-2 xs:py-2.5 sm:py-3 rounded-full text-xs sm:text-sm lg:text-base font-semibold border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg backdrop-blur-sm"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 1.0 }}
               >
-                <Shield className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2 group-hover:animate-pulse" />
-                Privacy First
+                <motion.div className="absolute inset-0 bg-gradient-to-r from-primary/3 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <Shield className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2 group-hover:animate-pulse relative z-10" />
+                <span className="relative z-10">Privacy First</span>
               </motion.div>
             </motion.div>
 
             {/* Enhanced Authentication Buttons */}
             <motion.div
-              className="flex flex-col items-center gap-4 sm:gap-8 mb-8 sm:mb-12 px-2 sm:px-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center gap-4 sm:gap-6 lg:gap-8 mb-8 sm:mb-12 px-2 sm:px-4 relative"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ duration: 0.7, delay: 0.8 }}
             >
+              {/* Glow effect behind buttons */}
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/10 blur-2xl opacity-50 rounded-3xl" />
               {/* Primary CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 w-full justify-center max-w-2xl">
+              <div className="flex flex-col md:flex-row gap-3 sm:gap-4 w-full align-middle justify-center max-w-4xl">
                 <motion.div
-                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full flex justify-center sm:w-auto"
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.9 }}
+                  className="w-fit sm:w-auto self-center align-middle"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6 }}
                 >
                   <Button
                     onClick={handleGoogleLogin}
                     size="lg"
-                    className="group relative py-5 w-full sm:w-auto min-w-[280px] flex items-center justify-center space-x-3 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-xl hover:shadow-2xl transition-all duration-500 transform px-6  text-base lg:text-lg font-semibold rounded-md md:rounded-2xl overflow-hidden"
+                    className="group relative w-full sm:w-auto sm:min-w-[260px] md:min-w-[280px] lg:min-w-[300px] flex items-center justify-center space-x-2 sm:space-x-3 bg-gradient-to-r from-primary via-primary/95 to-primary/90 hover:from-primary/95 hover:via-primary hover:to-primary text-primary-foreground shadow-xl hover:shadow-2xl hover:shadow-primary/25 transition-all duration-500 transform px-4 sm:px-6 py-4 md:py-7 text-sm sm:text-base lg:text-lg font-semibold rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden backdrop-blur-sm border border-primary/20"
                     disabled={loading}
                   >
                     <motion.div
                       className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                      animate={{ x: ["-100%", "100%"] }}
                       transition={{
                         duration: 2,
                         repeat: Infinity,
                         repeatDelay: 4,
                       }}
                     />
-                    <GoogleIcon className="h-6 w-6 relative z-10" />
-                    <span className="relative z-10">
-                      Start Chatting with Google
+                    <GoogleIcon className="h-5 w-5 sm:h-6 sm:w-6 relative z-10 flex-shrink-0" />
+                    <span className="relative z-10 text-center leading-tight">
+                      Google
                     </span>
-                    <ArrowRight className="h-5 w-5 relative z-10 group-hover:translate-x-1 transition-transform duration-300" />
+                    <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 relative z-10 group-hover:translate-x-1 transition-transform duration-300 flex-shrink-0" />
                   </Button>
                 </motion.div>
 
                 <motion.div
-                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full flex justify-center sm:w-auto"
-                  initial={{ opacity: 0, x: 30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 1.0 }}
+                  className="w-fit sm:w-auto self-center align-middle"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6 }}
                 >
                   <Button
                     onClick={handleGitHubLogin}
                     size="lg"
                     variant="outline"
-                    className="group relative w-full sm:w-auto min-w-[280px] flex items-center justify-center space-x-3 border-2 border-primary/50 hover:border-primary bg-background/50 hover:bg-primary/5 text-foreground shadow-xl hover:shadow-2xl transition-all duration-500 transform px-6 py-5 text-base lg:text-lg font-semibold rounded-md md:rounded-2xl backdrop-blur-sm"
+                    className="group relative w-full sm:w-auto sm:min-w-[260px] md:min-w-[280px] lg:min-w-[300px] flex items-center justify-center space-x-2 sm:space-x-3 border-2 border-primary/50 hover:border-primary bg-gradient-to-r from-background/80 via-background/90 to-background/80 hover:from-primary/5 hover:via-primary/10 hover:to-primary/5 text-foreground shadow-xl hover:shadow-2xl hover:shadow-primary/15 transition-all duration-500 transform px-4 sm:px-6 py-4 md:py-7 text-sm sm:text-base lg:text-lg font-semibold rounded-lg sm:rounded-xl md:rounded-2xl backdrop-blur-sm"
                     disabled={loading}
                   >
-                    <GitHubIcon className="h-6 w-6" />
-                    <span>Start Chatting with GitHub</span>
-                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+                    <GitHubIcon className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
+                    <span className="text-center leading-tight">GitHub</span>
+                    <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-300 flex-shrink-0" />
                   </Button>
                 </motion.div>
               </div>
-
-              {/* Secondary Options */}
-              <motion.div
-                className="flex items-center gap-3 sm:gap-6"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 1.1 }}
-              >
-                <Link to="/auth/login">
-                  <motion.div
-                    whileHover={{ scale: 1.05, y: -1 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button
-                      variant="ghost"
-                      className="flex items-center space-x-2 hover:bg-secondary/80 transition-all duration-300 px-4 py-2 rounded-xl text-sm sm:text-base font-medium"
-                    >
-                      <LogIn className="h-4 w-4" />
-                      <span>Sign In</span>
-                    </Button>
-                  </motion.div>
-                </Link>
-
-                <div className="w-px h-6 bg-border"></div>
-
-                <Link to="/auth/signup">
-                  <motion.div
-                    whileHover={{ scale: 1.05, y: -1 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button
-                      variant="ghost"
-                      className="flex items-center space-x-2 text-primary hover:bg-primary/10 transition-all duration-300 px-4 py-2 rounded-xl text-sm sm:text-base font-medium"
-                    >
-                      <UserPlus className="h-4 w-4" />
-                      <span>Create Account</span>
-                    </Button>
-                  </motion.div>
-                </Link>
-              </motion.div>
             </motion.div>
 
             {/* Enhanced Trust Indicators */}
-            <motion.div
-              className="flex flex-col md:flex-row items-center justify-center gap-3 xs:gap-4 sm:gap-8 text-xs sm:text-sm text-muted-foreground/80"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 1.2 }}
-            >
-              <motion.div
-                className="flex items-center space-x-2 bg-green-500/10 px-3 py-1.5 rounded-full border border-green-500/20"
-                whileHover={{ scale: 1.05 }}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 1.3 }}
-              >
-                <CheckCircle className="h-4 w-4 text-green-500" />
+            <motion.div className="flex flex-col md:flex-row items-center justify-center gap-3 xs:gap-4 sm:gap-8 text-xs sm:text-sm text-muted-foreground/80">
+              <motion.div className="flex items-center space-x-2 bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20">
+                <CheckCircle className="h-4 w-4 text-primary" />
                 <span className="font-medium">Free to start</span>
               </motion.div>
 
-              <motion.div
-                className="flex items-center space-x-2 bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20"
-                whileHover={{ scale: 1.05 }}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 1.4 }}
-              >
-                <CheckCircle className="h-4 w-4 text-blue-500" />
+              <motion.div className="flex items-center space-x-2 bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20">
+                <CheckCircle className="h-4 w-4 text-primary" />
                 <span className="font-medium">No credit card required</span>
               </motion.div>
 
-              <motion.div
-                className="flex items-center space-x-2 bg-purple-500/10 px-3 py-1.5 rounded-full border border-purple-500/20"
-                whileHover={{ scale: 1.05 }}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 1.5 }}
-              >
-                <CheckCircle className="h-4 w-4 text-purple-500" />
+              <motion.div className="flex items-center space-x-2 bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20">
+                <CheckCircle className="h-4 w-4 text-primary" />
                 <span className="font-medium">Trusted by 50K+ users</span>
               </motion.div>
             </motion.div>
@@ -536,134 +608,174 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* Performance Metrics */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Performance That Speaks for Itself
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Real metrics from real users. See why AVChat is the fastest AI
-              platform.
-            </p>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative">
+          {/* Enhanced background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/3 via-transparent to-primary/5 rounded-3xl" />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-            {/* Response Time */}
-            <div className="text-center p-4 md:p-8 bg-card/50 backdrop-blur-sm border border-border rounded-3xl hover:shadow-lg transition-all duration-300">
-              <div className="bg-primary/10 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
-                <Clock className="h-8 w-8 text-primary" />
-              </div>
-              <div className="text-lg md:text-4xl font-bold text-foreground mb-2">
-                0.8s
-              </div>
-              <div className="text-lg font-medium text-primary mb-1">
-                Average Response Time
-              </div>
-              <div className="text-sm text-muted-foreground">
-                vs 8.2s on ChatGPT
-              </div>
-            </div>
-
-            {/* Accuracy */}
-            <div className="text-center p-4 md:p-8 bg-card/50 backdrop-blur-sm border border-border rounded-3xl hover:shadow-lg transition-all duration-300">
-              <div className="bg-primary/10 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
-                <BarChart3 className="h-8 w-8 text-primary" />
-              </div>
-              <div className="text-lg md:text-4xl font-bold text-foreground mb-2">
-                98.5%
-              </div>
-              <div className="text-lg font-medium text-primary mb-1">
-                Accuracy Score
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Consistently high quality
-              </div>
-            </div>
-
-            {/* Models Supported */}
-            <div className="text-center p-4 md:p-8 bg-card/50 backdrop-blur-sm border border-border rounded-3xl hover:shadow-lg transition-all duration-300">
-              <div className="bg-primary/10 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
-                <Layers className="h-8 w-8 text-primary" />
-              </div>
-              <div className="text-lg md:text-4xl font-bold text-foreground mb-2">
-                15+
-              </div>
-              <div className="text-lg font-medium text-primary mb-1">
-                AI Models
-              </div>
-              <div className="text-sm text-muted-foreground">
-                GPT-4, Claude, Gemini & more
-              </div>
-            </div>
-          </div>
-
-          {/* Speed Comparison Chart */}
-          <div className="bg-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8">
-            <h3 className="text-xl font-semibold text-foreground mb-6 text-center">
-              Response Speed Comparison
-            </h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-primary rounded-full"></div>
-                  <span className="text-foreground font-medium">AVChat</span>
-                </div>
-                <div className="flex-1 mx-4 bg-secondary rounded-full h-2 relative overflow-hidden">
-                  <div
-                    className="absolute left-0 top-0 h-full bg-primary rounded-full animate-pulse"
-                    style={{ width: "8%" }}
-                  ></div>
-                </div>
-                <span className="text-primary font-medium text-sm w-12">
-                  0.8s
+          <div className="relative z-10">
+            <motion.div
+              className="text-center mb-12"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4">
+                Performance That{" "}
+                <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                  Speaks for Itself
                 </span>
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Real metrics from real users. See why AVChat is the fastest AI
+                platform.
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+              {/* Response Time */}
+              <div className="text-center p-4 md:p-8 bg-card/50 backdrop-blur-sm border border-border rounded-3xl hover:shadow-lg transition-all duration-300">
+                <div className="bg-primary/10 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
+                  <Clock className="h-8 w-8 text-primary" />
+                </div>
+                <div className="text-lg md:text-4xl font-bold text-foreground mb-2">
+                  0.8s
+                </div>
+                <div className="text-lg font-medium text-primary mb-1">
+                  Average Response Time
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  vs 8.2s on ChatGPT
+                </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-muted-foreground rounded-full"></div>
-                  <span className="text-muted-foreground">ChatGPT</span>
+              {/* Accuracy */}
+              <div className="text-center p-4 md:p-8 bg-card/50 backdrop-blur-sm border border-border rounded-3xl hover:shadow-lg transition-all duration-300">
+                <div className="bg-primary/10 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
+                  <BarChart3 className="h-8 w-8 text-primary" />
                 </div>
-                <div className="flex-1 mx-4 bg-secondary rounded-full h-2 relative overflow-hidden">
-                  <div
-                    className="absolute left-0 top-0 h-full bg-muted-foreground rounded-full"
-                    style={{ width: "82%" }}
-                  ></div>
+                <div className="text-lg md:text-4xl font-bold text-foreground mb-2">
+                  98.5%
                 </div>
-                <span className="text-muted-foreground text-sm w-12">8.2s</span>
+                <div className="text-lg font-medium text-primary mb-1">
+                  Accuracy Score
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Consistently high quality
+                </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-muted-foreground rounded-full"></div>
-                  <span className="text-muted-foreground">Claude</span>
+              {/* Models Supported */}
+              <div className="text-center p-4 md:p-8 bg-card/50 backdrop-blur-sm border border-border rounded-3xl hover:shadow-lg transition-all duration-300">
+                <div className="bg-primary/10 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
+                  <Layers className="h-8 w-8 text-primary" />
                 </div>
-                <div className="flex-1 mx-4 bg-secondary rounded-full h-2 relative overflow-hidden">
-                  <div
-                    className="absolute left-0 top-0 h-full bg-muted-foreground rounded-full"
-                    style={{ width: "65%" }}
-                  ></div>
+                <div className="text-lg md:text-4xl font-bold text-foreground mb-2">
+                  15+
                 </div>
-                <span className="text-muted-foreground text-sm w-12">6.5s</span>
+                <div className="text-lg font-medium text-primary mb-1">
+                  AI Models
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  GPT-4, Claude, Gemini & more
+                </div>
+              </div>
+            </div>
+
+            {/* Speed Comparison Chart */}
+            <div className="bg-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8">
+              <h3 className="text-xl font-semibold text-foreground mb-6 text-center">
+                Response Speed Comparison
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-primary rounded-full"></div>
+                    <span className="text-foreground font-medium">AVChat</span>
+                  </div>
+                  <div className="flex-1 mx-4 bg-secondary rounded-full h-2 relative overflow-hidden">
+                    <div
+                      className="absolute left-0 top-0 h-full bg-primary rounded-full animate-pulse"
+                      style={{ width: "8%" }}
+                    ></div>
+                  </div>
+                  <span className="text-primary font-medium text-sm w-12">
+                    0.8s
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-muted-foreground rounded-full"></div>
+                    <span className="text-muted-foreground">ChatGPT</span>
+                  </div>
+                  <div className="flex-1 mx-4 bg-secondary rounded-full h-2 relative overflow-hidden">
+                    <div
+                      className="absolute left-0 top-0 h-full bg-muted-foreground rounded-full"
+                      style={{ width: "82%" }}
+                    ></div>
+                  </div>
+                  <span className="text-muted-foreground text-sm w-12">
+                    8.2s
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-muted-foreground rounded-full"></div>
+                    <span className="text-muted-foreground">Claude</span>
+                  </div>
+                  <div className="flex-1 mx-4 bg-secondary rounded-full h-2 relative overflow-hidden">
+                    <div
+                      className="absolute left-0 top-0 h-full bg-muted-foreground rounded-full"
+                      style={{ width: "65%" }}
+                    ></div>
+                  </div>
+                  <span className="text-muted-foreground text-sm w-12">
+                    6.5s
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Enhanced Key Features Grid */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Everything You Need in One Platform
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative">
+          {/* Background gradient */}
+          <div className="absolute inset-0 " />
+
+          <motion.div
+            className="text-center mb-16 relative z-10"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4">
+              Everything You Need in{" "}
+              <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                One Platform
+              </span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Powerful features designed for the future of AI conversations
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative z-10">
             {/* Speed */}
-            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
+            <motion.div
+              className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -5 }}
+            >
+              {/* Card glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
               <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl h-16 w-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Zap className="h-8 w-8 text-primary" />
               </div>
@@ -678,10 +790,18 @@ const HomePage: React.FC = () => {
                 <TrendingUp className="h-4 w-4 mr-1" />
                 Average 0.8s response time
               </div>
-            </div>
+            </motion.div>
 
             {/* Multi-Model */}
-            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
+            <motion.div
+              className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -5 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
               <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl h-16 w-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Brain className="h-8 w-8 text-primary" />
               </div>
@@ -696,10 +816,18 @@ const HomePage: React.FC = () => {
                 <Layers className="h-4 w-4 mr-1" />
                 15+ AI models available
               </div>
-            </div>
+            </motion.div>
 
             {/* Sync */}
-            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
+            <motion.div
+              className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -5 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
               <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl h-16 w-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <RefreshCw className="h-8 w-8 text-primary" />
               </div>
@@ -714,10 +842,18 @@ const HomePage: React.FC = () => {
                 <Smartphone className="h-4 w-4 mr-1" />
                 Works on all devices
               </div>
-            </div>
+            </motion.div>
 
             {/* Privacy */}
-            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
+            <motion.div
+              className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -5 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
               <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl h-16 w-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Shield className="h-8 w-8 text-primary" />
               </div>
@@ -732,10 +868,18 @@ const HomePage: React.FC = () => {
                 <CheckCircle className="h-4 w-4 mr-1" />
                 GDPR compliant
               </div>
-            </div>
+            </motion.div>
 
             {/* Advanced Features */}
-            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
+            <motion.div
+              className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -5 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
               <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl h-16 w-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Cpu className="h-8 w-8 text-primary" />
               </div>
@@ -750,10 +894,18 @@ const HomePage: React.FC = () => {
                 <Star className="h-4 w-4 mr-1" />
                 Pro features included
               </div>
-            </div>
+            </motion.div>
 
             {/* Team Collaboration */}
-            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
+            <motion.div
+              className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -5 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
               <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl h-16 w-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Users2 className="h-8 w-8 text-primary" />
               </div>
@@ -768,9 +920,11 @@ const HomePage: React.FC = () => {
                 <Globe className="h-4 w-4 mr-1" />
                 Enterprise ready
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
+
+        <LLMMarquee />
 
         {/* Comparison Section */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -783,111 +937,194 @@ const HomePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="bg-card/30 backdrop-blur-sm border border-border rounded-3xl p-8 shadow-xl">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-4 text-foreground font-semibold">
-                      Feature
-                    </th>
-                    <th className="text-center py-4 text-primary font-semibold">
-                      AVChat
-                    </th>
-                    <th className="text-center py-4 text-muted-foreground">
-                      ChatGPT
-                    </th>
-                    <th className="text-center py-4 text-muted-foreground">
-                      Claude
-                    </th>
-                    <th className="text-center py-4 text-muted-foreground">
-                      Others
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="text-sm">
-                  <tr className="border-b border-border/50">
-                    <td className="py-4 text-foreground">Response Speed</td>
-                    <td className="text-center py-4">
-                      <div className="flex items-center justify-center">
-                        <Zap className="h-4 w-4 text-primary mr-1" />
-                        <span className="text-primary font-medium">
-                          10x Faster
-                        </span>
-                      </div>
-                    </td>
-                    <td className="text-center py-4 text-muted-foreground">
-                      Standard
-                    </td>
-                    <td className="text-center py-4 text-muted-foreground">
-                      Slow
-                    </td>
-                    <td className="text-center py-4 text-muted-foreground">
-                      Varies
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border/50">
-                    <td className="py-4 text-foreground">Model Access</td>
-                    <td className="text-center py-4">
-                      <div className="flex items-center justify-center">
-                        <Brain className="h-4 w-4 text-primary mr-1" />
-                        <span className="text-primary font-medium">
-                          All Models
-                        </span>
-                      </div>
-                    </td>
-                    <td className="text-center py-4 text-muted-foreground">
-                      GPT Only
-                    </td>
-                    <td className="text-center py-4 text-muted-foreground">
-                      Claude Only
-                    </td>
-                    <td className="text-center py-4 text-muted-foreground">
-                      Limited
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border/50">
-                    <td className="py-4 text-foreground">Device Sync</td>
-                    <td className="text-center py-4">
-                      <div className="flex items-center justify-center">
-                        <RefreshCw className="h-4 w-4 text-primary mr-1" />
-                        <span className="text-primary font-medium">
-                          Real-time
-                        </span>
-                      </div>
-                    </td>
-                    <td className="text-center py-4 text-muted-foreground">
-                      Basic
-                    </td>
-                    <td className="text-center py-4 text-muted-foreground">
-                      None
-                    </td>
-                    <td className="text-center py-4 text-muted-foreground">
-                      Limited
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-4 text-foreground">Privacy Level</td>
-                    <td className="text-center py-4">
-                      <div className="flex items-center justify-center">
-                        <Shield className="h-4 w-4 text-primary mr-1" />
-                        <span className="text-primary font-medium">
-                          Maximum
-                        </span>
-                      </div>
-                    </td>
-                    <td className="text-center py-4 text-muted-foreground">
-                      Standard
-                    </td>
-                    <td className="text-center py-4 text-muted-foreground">
-                      Good
-                    </td>
-                    <td className="text-center py-4 text-muted-foreground">
-                      Varies
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+          {/* Table view for desktop/tablet */}
+          <div className="hidden sm:block overflow-x-auto bg-accent/20 p-11 rounded-3xl border-[1px] border-border">
+            <table className="w-full min-w-[600px] text-xs sm:text-base">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-4 text-foreground font-semibold">
+                    Feature
+                  </th>
+                  <th className="text-center py-4 text-primary font-semibold">
+                    AVChat
+                  </th>
+                  <th className="text-center py-4 text-muted-foreground">
+                    ChatGPT
+                  </th>
+                  <th className="text-center py-4 text-muted-foreground">
+                    Claude
+                  </th>
+                  <th className="text-center py-4 text-muted-foreground">
+                    Others
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                <tr className="border-b border-border/50">
+                  <td className="py-4 text-foreground">Response Speed</td>
+                  <td className="text-center py-4">
+                    <div className="flex items-center justify-center">
+                      <Zap className="h-4 w-4 text-primary mr-1" />
+                      <span className="text-primary font-medium">
+                        10x Faster
+                      </span>
+                    </div>
+                  </td>
+                  <td className="text-center py-4 text-muted-foreground">
+                    Standard
+                  </td>
+                  <td className="text-center py-4 text-muted-foreground">
+                    Slow
+                  </td>
+                  <td className="text-center py-4 text-muted-foreground">
+                    Varies
+                  </td>
+                </tr>
+                <tr className="border-b border-border/50">
+                  <td className="py-4 text-foreground">Model Access</td>
+                  <td className="text-center py-4">
+                    <div className="flex items-center justify-center">
+                      <Brain className="h-4 w-4 text-primary mr-1" />
+                      <span className="text-primary font-medium">
+                        All Models
+                      </span>
+                    </div>
+                  </td>
+                  <td className="text-center py-4 text-muted-foreground">
+                    GPT Only
+                  </td>
+                  <td className="text-center py-4 text-muted-foreground">
+                    Claude Only
+                  </td>
+                  <td className="text-center py-4 text-muted-foreground">
+                    Limited
+                  </td>
+                </tr>
+                <tr className="border-b border-border/50">
+                  <td className="py-4 text-foreground">Device Sync</td>
+                  <td className="text-center py-4">
+                    <div className="flex items-center justify-center">
+                      <RefreshCw className="h-4 w-4 text-primary mr-1" />
+                      <span className="text-primary font-medium">
+                        Real-time
+                      </span>
+                    </div>
+                  </td>
+                  <td className="text-center py-4 text-muted-foreground">
+                    Basic
+                  </td>
+                  <td className="text-center py-4 text-muted-foreground">
+                    None
+                  </td>
+                  <td className="text-center py-4 text-muted-foreground">
+                    Limited
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-4 text-foreground">Privacy Level</td>
+                  <td className="text-center py-4">
+                    <div className="flex items-center justify-center">
+                      <Shield className="h-4 w-4 text-primary mr-1" />
+                      <span className="text-primary font-medium">Maximum</span>
+                    </div>
+                  </td>
+                  <td className="text-center py-4 text-muted-foreground">
+                    Standard
+                  </td>
+                  <td className="text-center py-4 text-muted-foreground">
+                    Good
+                  </td>
+                  <td className="text-center py-4 text-muted-foreground">
+                    Varies
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Card view for mobile */}
+          <div className="block sm:hidden space-y-4">
+            {/* Response Speed */}
+            <div className="bg-card/30 border border-border rounded-2xl p-4 flex flex-col gap-2 shadow">
+              <div className="text-foreground font-semibold">
+                Response Speed
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-primary">AVChat</span>
+                <span className="flex items-center text-primary font-medium">
+                  <Zap className="h-4 w-4 mr-1" />
+                  10x Faster
+                </span>
+              </div>
+              <div className="flex justify-between text-muted-foreground text-sm">
+                <span>ChatGPT</span> <span>Standard</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground text-sm">
+                <span>Claude</span> <span>Slow</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground text-sm">
+                <span>Others</span> <span>Varies</span>
+              </div>
+            </div>
+            {/* Model Access */}
+            <div className="bg-card/30 border border-border rounded-2xl p-4 flex flex-col gap-2 shadow">
+              <div className="text-foreground font-semibold">Model Access</div>
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-primary">AVChat</span>
+                <span className="flex items-center text-primary font-medium">
+                  <Brain className="h-4 w-4 mr-1" />
+                  All Models
+                </span>
+              </div>
+              <div className="flex justify-between text-muted-foreground text-sm">
+                <span>ChatGPT</span> <span>GPT Only</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground text-sm">
+                <span>Claude</span> <span>Claude Only</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground text-sm">
+                <span>Others</span> <span>Limited</span>
+              </div>
+            </div>
+            {/* Device Sync */}
+            <div className="bg-card/30 border border-border rounded-2xl p-4 flex flex-col gap-2 shadow">
+              <div className="text-foreground font-semibold">Device Sync</div>
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-primary">AVChat</span>
+                <span className="flex items-center text-primary font-medium">
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  Real-time
+                </span>
+              </div>
+              <div className="flex justify-between text-muted-foreground text-sm">
+                <span>ChatGPT</span> <span>Basic</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground text-sm">
+                <span>Claude</span> <span>None</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground text-sm">
+                <span>Others</span> <span>Limited</span>
+              </div>
+            </div>
+            {/* Privacy Level */}
+            <div className="bg-card/30 border border-border rounded-2xl p-4 flex flex-col gap-2 shadow">
+              <div className="text-foreground font-semibold">Privacy Level</div>
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-primary">AVChat</span>
+                <span className="flex items-center text-primary font-medium">
+                  <Shield className="h-4 w-4 mr-1" />
+                  Maximum
+                </span>
+              </div>
+              <div className="flex justify-between text-muted-foreground text-sm">
+                <span>ChatGPT</span> <span>Standard</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground text-sm">
+                <span>Claude</span> <span>Good</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground text-sm">
+                <span>Others</span> <span>Varies</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1032,7 +1269,7 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* Demo Preview Section */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 bg-gradient-to-br from-primary/5 via-transparent to-primary/5">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 bg-gradient-to-br rounded-2xl from-primary/5 via-transparent to-primary/5">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
               See AV<span className="text-primary">Chat</span> in Action
@@ -1042,7 +1279,7 @@ const HomePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="relative bg-card/80 backdrop-blur-md border border-border rounded-3xl p-8 shadow-2xl">
+          <div className="relative bg-card/80 backdrop-blur-md border border-border rounded-3xl p-4 md:p-8 shadow-2xl">
             <div className="absolute top-4 left-4 flex space-x-2">
               <div className="w-3 h-3 bg-red-400 rounded-full"></div>
               <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
@@ -1059,9 +1296,10 @@ const HomePage: React.FC = () => {
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 min-w-8 min-h-8 aspect-square shrink-0 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
                     <Brain className="h-4 w-4 text-primary-foreground" />
                   </div>
+
                   <div className="bg-secondary/50 text-foreground rounded-2xl rounded-tl-sm px-4 py-3 max-w-lg">
                     <div className="flex items-center space-x-2 mb-2">
                       <span className="text-xs font-medium text-primary">
@@ -1137,7 +1375,7 @@ const HomePage: React.FC = () => {
                       <Check className="h-5 w-5" />
                     </div>
                     <span className="text-muted-foreground text-sm">
-                      <strong className="text-foreground">40</strong> premium
+                      <strong className="text-foreground">20</strong> premium
                       model credits
                       <span className="block text-xs mt-1">
                         (Gemini, OpenAI)
@@ -1149,7 +1387,7 @@ const HomePage: React.FC = () => {
                       <Check className="h-5 w-5" />
                     </div>
                     <span className="text-muted-foreground text-sm">
-                      <strong className="text-foreground">5</strong> super
+                      <strong className="text-foreground">2</strong> super
                       premium model credits
                       <span className="block text-xs mt-1">
                         (Claude and Gemini 2.5 Pro)
@@ -1217,7 +1455,9 @@ const HomePage: React.FC = () => {
                 </div>
 
                 <div className="mb-6">
-                  <span className="text-foreground text-3xl font-bold">$8</span>
+                  <span className="text-foreground text-3xl font-bold">
+                    $10
+                  </span>
                   <span className="text-muted-foreground">/month</span>
                 </div>
 
@@ -1227,8 +1467,8 @@ const HomePage: React.FC = () => {
                       <Check className="h-5 w-5" />
                     </div>
                     <span className="text-muted-foreground text-sm">
-                      <strong className="text-foreground">Unlimited</strong>{" "}
-                      prompts with free models
+                      <strong className="text-foreground">1500</strong> prompts
+                      with free models
                       <span className="block text-xs mt-1">
                         (DeepSeek and Sarvam)
                       </span>
@@ -1239,7 +1479,7 @@ const HomePage: React.FC = () => {
                       <Check className="h-5 w-5" />
                     </div>
                     <span className="text-muted-foreground text-sm">
-                      <strong className="text-foreground">1500</strong> premium
+                      <strong className="text-foreground">600</strong> premium
                       model credits
                       <span className="block text-xs mt-1">
                         (Gemini, OpenAI)
@@ -1251,7 +1491,7 @@ const HomePage: React.FC = () => {
                       <Check className="h-5 w-5" />
                     </div>
                     <span className="text-muted-foreground text-sm">
-                      <strong className="text-foreground">100</strong> super
+                      <strong className="text-foreground">30</strong> super
                       premium model credits
                       <span className="block text-xs mt-1">
                         (Claude and Gemini 2.5 Pro)
@@ -1401,7 +1641,7 @@ const HomePage: React.FC = () => {
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-              <div className="bg-card/50 border border-border rounded-xl p-6">
+              <div className="bg-card/50 hover:scale-105 transition-transform duration-300 border border-border rounded-xl p-6">
                 <h4 className="text-foreground font-medium mb-2">
                   How do model credits work?
                 </h4>
@@ -1412,7 +1652,7 @@ const HomePage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="bg-card/50 border border-border rounded-xl p-6">
+              <div className="bg-card/50 hover:scale-105 transition-transform duration-300 border border-border rounded-xl p-6">
                 <h4 className="text-foreground font-medium mb-2">
                   Can I upgrade or downgrade my plan?
                 </h4>
@@ -1423,7 +1663,7 @@ const HomePage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="bg-card/50 border border-border rounded-xl p-6">
+              <div className="bg-card/50 hover:scale-105 transition-transform duration-300 border border-border rounded-xl p-6">
                 <h4 className="text-foreground font-medium mb-2">
                   Do credits roll over to the next month?
                 </h4>
@@ -1433,7 +1673,7 @@ const HomePage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="bg-card/50 border border-border rounded-xl p-6">
+              <div className="bg-card/50 hover:scale-105 transition-transform duration-300 border border-border rounded-xl p-6">
                 <h4 className="text-foreground font-medium mb-2">
                   What happens if I run out of credits?
                 </h4>
@@ -1529,8 +1769,8 @@ const HomePage: React.FC = () => {
               <div className="justify-center flex flex-col md:flex-row gap-2.5 md:justify-between w-full md:px-10">
                 <motion.div
                   className="flex justify-center items-center space-x-2"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   transition={{ duration: 0.5 }}
                 >
                   <img
@@ -1546,8 +1786,8 @@ const HomePage: React.FC = () => {
                 {/* Social Icons */}
                 <motion.div
                   className="flex items-center justify-center space-x-4 sm:space-x-6"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   transition={{ duration: 0.5, delay: 0.1 }}
                 >
                   <motion.a
@@ -1626,8 +1866,8 @@ const HomePage: React.FC = () => {
               {/* Copyright */}
               <motion.div
                 className="text-center"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
               >
                 <p className="text-xs sm:text-sm text-muted-foreground">

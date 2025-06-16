@@ -14,14 +14,15 @@ export interface ProjectData {
   id: string;
   name: string;
   description?: string;
+  prompt?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 // Project operations interface
 export interface ProjectOperations {
-  onCreate: (name: string, description?: string) => Promise<string>;
-  onUpdate: (projectId: string, name: string, description?: string) => Promise<void>;
+  onCreate: (name: string, description?: string, prompt?: string) => Promise<string>;
+  onUpdate: (projectId: string, name: string, description?: string, prompt?: string) => Promise<void>;
   onDelete: (projectId: string, reassignThreadsToProjectId?: string) => Promise<void>;
 }
 
@@ -54,9 +55,9 @@ export const useProjectManager = () => {
   }, []);
 
   // Create project
-  const createProject = useCallback(async (name: string, description?: string): Promise<string> => {
+  const createProject = useCallback(async (name: string, description?: string, prompt?: string): Promise<string> => {
     try {
-      const projectId = await HybridDB.createProject(name, description);
+      const projectId = await HybridDB.createProject(name, description, prompt);
       return projectId;
     } catch (error) {
       console.error('Error creating project:', error);
@@ -65,9 +66,9 @@ export const useProjectManager = () => {
   }, []);
 
   // Update project
-  const updateProject = useCallback(async (projectId: string, name: string, description?: string): Promise<void> => {
+  const updateProject = useCallback(async (projectId: string, name: string, description?: string, prompt?: string): Promise<void> => {
     try {
-      await HybridDB.updateProject(projectId, name, description);
+      await HybridDB.updateProject(projectId, name, description, prompt);
     } catch (error) {
       console.error('Error updating project:', error);
       throw error;

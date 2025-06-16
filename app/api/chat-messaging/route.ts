@@ -3,7 +3,7 @@ import { streamText, smoothStream } from 'ai';
 import { getModelConfig, AIModel } from '@/lib/models';
 import { getConversationStyleConfig, ConversationStyle, DEFAULT_CONVERSATION_STYLE } from '@/lib/conversationStyles';
 import { NextRequest, NextResponse } from 'next/server';
-import { canUserUseModel, consumeCredits } from '@/lib/tierSystem';
+import { canUserUseModel, consumeCredits, getUserCustomProfileServer, getProjectPromptServer } from '@/lib/tierSystem';
 
 export const maxDuration = 60;
 
@@ -12,7 +12,7 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, model, conversationStyle, userApiKey, experimental_attachments, userId } = body;
+    const { messages, model, conversationStyle, userApiKey, experimental_attachments, userId, threadId } = body;
 
     console.log('=== CHAT MESSAGING API DEBUG ===');
     console.log('Number of messages received:', messages?.length);
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     const openrouter = createOpenRouter({
       apiKey,
       headers: {
-        'HTTP-Referer': 'https://atchat.app',
+        'HTTP-Referer': 'https://avchat.ayush-sharma.in/',
         'X-Title': 'AVChat - AI Chat Application',
         'User-Agent': 'AVChat/1.0.0'
       }
@@ -116,6 +116,20 @@ export async function POST(req: NextRequest) {
     const styleConfig = getConversationStyleConfig(
       (conversationStyle as ConversationStyle) || DEFAULT_CONVERSATION_STYLE
     );
+
+    // Get user custom profile for personalization
+    let customProfile = null;
+    let projectPrompt = null;
+    if (userId) {
+      try {
+        customProfile = await getUserCustomProfileServer(userId);
+        if (threadId) {
+          projectPrompt = await getProjectPromptServer(userId, threadId);
+        }
+      } catch (error) {
+        console.error('Failed to get custom profile or project prompt:', error);
+      }
+    }
 
     // Process messages to handle experimental_attachments
     const processedMessages = messages.map((message: Record<string, unknown>) => {
@@ -144,16 +158,12 @@ export async function POST(req: NextRequest) {
     console.log('Sending request to AI SDK with model:', modelConfig.modelId);
     console.log('Number of processed messages:', processedMessages?.length);
 
-    const result = streamText({
-      model: aiModel,
-      messages: processedMessages,
-      onError: (error) => {
-        console.error('OpenRouter API error:', error);
-      },
-      system: `
+    // Build system prompt with custom profile information
+    let systemPrompt = `
       ${styleConfig.systemPrompt}
 
       You are AVChat, an ai assistant that can answer questions and help with tasks.
+      Your developer's name are Ayush Sharma and Vranda Garg
       Be helpful and provide relevant information about any documents, images, or files that are shared with you.
       Be respectful and polite in all interactions.
       Always use LaTeX for mathematical expressions -
@@ -166,8 +176,39 @@ export async function POST(req: NextRequest) {
       - Display:
       $$\\frac{d}{dx}\\sin(x) = \\cos(x)$$
 
-      When analyzing documents or files, provide detailed and helpful information about their contents.
-      `,
+      When analyzing documents or files, provide detailed and helpful information about their contents.`;
+
+    // Add custom profile information if available
+    if (customProfile && (customProfile.customName || customProfile.aboutUser)) {
+      systemPrompt += `\n\n--- USER PROFILE ---`;
+
+      if (customProfile.customName) {
+        systemPrompt += `\nUser's preferred name: ${customProfile.customName}`;
+        systemPrompt += `\nPlease address the user as "${customProfile.customName}" in your responses.`;
+      }
+
+      if (customProfile.aboutUser) {
+        systemPrompt += `\nAbout the user: ${customProfile.aboutUser}`;
+        systemPrompt += `\nUse this information to provide more personalized and relevant responses that align with the user's background, interests, and context.`;
+      }
+
+      systemPrompt += `\n--- END USER PROFILE ---`;
+    }
+
+    // Add project prompt if available
+    if (projectPrompt) {
+      systemPrompt += `\n\n--- PROJECT CONTEXT ---`;
+      systemPrompt += `\n${projectPrompt}`;
+      systemPrompt += `\n--- END PROJECT CONTEXT ---`;
+    }
+
+    const result = streamText({
+      model: aiModel,
+      messages: processedMessages,
+      onError: (error) => {
+        console.error('OpenRouter API error:', error);
+      },
+      system: systemPrompt,
       experimental_transform: [smoothStream({ chunking: 'word' })],
       abortSignal: req.signal,
     });

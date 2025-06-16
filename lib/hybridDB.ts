@@ -486,13 +486,14 @@ export class HybridDB {
   }
 
   // Create project (instant local + async remote)
-  static async createProject(name: string, description?: string): Promise<string> {
+  static async createProject(name: string, description?: string, prompt?: string): Promise<string> {
     const projectId = `project_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     const now = new Date();
     const project: Project = {
       id: projectId,
       name: name,
       description: description,
+      prompt: prompt,
       createdAt: now,
       updatedAt: now
     };
@@ -504,7 +505,7 @@ export class HybridDB {
     // Async remote update
     this.queueSync(async () => {
       try {
-        await AppwriteDB.createProject(projectId, name, description);
+        await AppwriteDB.createProject(projectId, name, description, prompt);
       } catch (error) {
         console.error('Failed to sync project creation:', error);
         // On failure, we keep the local version as it will sync later
@@ -515,11 +516,11 @@ export class HybridDB {
   }
 
   // Update project (instant local + async remote)
-  static async updateProject(projectId: string, name: string, description?: string): Promise<void> {
+  static async updateProject(projectId: string, name: string, description?: string, prompt?: string): Promise<void> {
     const now = new Date();
 
     // Instant local update
-    LocalDB.updateProject(projectId, { name, description, updatedAt: now });
+    LocalDB.updateProject(projectId, { name, description, prompt, updatedAt: now });
 
     // Get updated projects and emit event
     const updatedProjects = LocalDB.getProjects();
@@ -528,7 +529,7 @@ export class HybridDB {
     // Async remote update
     this.queueSync(async () => {
       try {
-        await AppwriteDB.updateProject(projectId, name, description);
+        await AppwriteDB.updateProject(projectId, name, description, prompt);
       } catch (error) {
         console.error('Failed to sync project update:', error);
       }

@@ -441,7 +441,7 @@ const SignUpPage: React.FC = () => {
                 Terms of Service
               </Link>
               <a
-                href="mailto:support@atchat.com"
+                href="mailto:connect@ayush-sharma.in"
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 Contact Support
