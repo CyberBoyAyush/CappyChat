@@ -9,6 +9,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import qwen from "@/public/qwen-color.svg";
+import { Brain, Diamond, File, Gem } from "lucide-react";
 
 // ===============================================
 // Model Badge Components
@@ -24,55 +25,19 @@ interface ModelBadgeProps {
 const DiamondIcon: React.FC<{ size?: number; className?: string }> = ({
   size = 22,
   className = "",
-}) => (
-  <img
-    width={size}
-    height={size}
-    src="https://img.icons8.com/ios-filled/50/diamond.png"
-    alt="premium"
-    className={className}
-    style={{
-      filter:
-        "brightness(0) saturate(100%) invert(65%) sepia(80%) saturate(2000%) hue-rotate(25deg) brightness(120%) contrast(110%)",
-    }} // Convert to bright orange color #ff9500
-  />
-);
+}) => <Gem width={size} height={size} className={className} />;
 
 // Icons8 Brain Icon for Reasoning
 const BrainIcon: React.FC<{ size?: number; className?: string }> = ({
   size = 26,
   className = "",
-}) => (
-  <img
-    width={size}
-    height={size}
-    src="https://img.icons8.com/ios-filled/50/brain--v1.png"
-    alt="reasoning"
-    className={className}
-    style={{
-      filter:
-        "brightness(0) saturate(100%) invert(65%) sepia(80%) saturate(2000%) hue-rotate(25deg) brightness(120%) contrast(110%)",
-    }} // Convert to bright orange color #ff9500
-  />
-);
+}) => <Brain width={size} height={size} className={className} />;
 
 // Icons8 File Icon for File Support
 const FileIcon: React.FC<{ size?: number; className?: string }> = ({
   size = 16,
   className = "",
-}) => (
-  <img
-    width={size}
-    height={size}
-    src="https://img.icons8.com/ios-filled/50/file.png"
-    alt="file-support"
-    className={className}
-    style={{
-      filter:
-        "brightness(0) saturate(100%) invert(65%) sepia(80%) saturate(2000%) hue-rotate(25deg) brightness(120%) contrast(110%)",
-    }} // Convert to bright orange color #ff9500
-  />
-);
+}) => <File width={size} height={size} className={className} />;
 
 export const ModelBadge: React.FC<ModelBadgeProps> = ({
   type,
@@ -96,9 +61,9 @@ export const ModelBadge: React.FC<ModelBadgeProps> = ({
       case "super-premium":
         return (
           <>
-        <DiamondIcon size={size} />
-        <span className="w-1"></span>
-        <DiamondIcon size={size} />
+            <DiamondIcon size={size} />
+            <span className="w-1"></span>
+            <DiamondIcon size={size} />
           </>
         );
       default:
