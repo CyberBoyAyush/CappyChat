@@ -10,6 +10,8 @@ export const AI_MODELS = [
   'Qwen3 235B A22B',
   'Claude Sonnet 4',
   'Gemini 2.5 Pro',
+  'Meta: Llama 4 Maverick',
+  'OpenAI 4.1 Nano'
 ] as const;
 
 export type AIModel = (typeof AI_MODELS)[number];
@@ -18,7 +20,7 @@ export type ModelConfig = {
   modelId: string;
   provider: 'openrouter';
   displayName: string;
-  iconType: 'google' | 'openai' | 'anthropic' | 'deepseek' | 'huggingface' | 'qwen';
+  iconType: 'google' | 'openai' | 'anthropic' | 'deepseek' | 'huggingface' | 'qwen' | 'meta';
   company: string;
   isPremium: boolean;
   isSuperPremium: boolean;
@@ -101,7 +103,7 @@ export const MODEL_CONFIGS = {
     description: 'Anthropic\'s lightest model for fast responses',
   },
   'DeepSeek R1-0528': {
-    modelId: 'deepseek/deepseek-r1-0528',
+    modelId: 'deepseek/deepseek-r1-0528:free',
     provider: 'openrouter',
     displayName: 'DeepSeek R1-0528',
     iconType: 'deepseek',
@@ -113,7 +115,7 @@ export const MODEL_CONFIGS = {
     description: 'Deepseek Best in the class latest advanced reasoning model',
   },
   'DeepSeek V3': {
-    modelId: 'deepseek/deepseek-chat-v3-0324',
+    modelId: 'deepseek/deepseek-chat-v3-0324:free',
     provider: 'openrouter',
     displayName: 'DeepSeek V3',
     iconType: 'deepseek',
@@ -125,7 +127,7 @@ export const MODEL_CONFIGS = {
     description: 'Deepseek Top in the class model for coding and fast responses',
   },
   'Qwen3 235B A22B': {
-    modelId: 'qwen/qwen3-235b-a22b',
+    modelId: 'qwen/qwen3-235b-a22b:free',
     provider: 'openrouter',
     displayName: 'Qwen3 235B A22B',
     iconType: 'qwen',
@@ -157,6 +159,30 @@ export const MODEL_CONFIGS = {
     isPremium: false,
     isSuperPremium: true,
     hasReasoning: true,
+    isFileSupported: true,
+    description: 'Best in the class Google model with advanced reasoning and coding capabilities',
+  },
+  'Meta: Llama 4 Maverick': {
+    modelId: 'meta-llama/llama-4-maverick',
+    provider: 'openrouter',
+    displayName: 'Meta: Llama 4 Maverick',
+    iconType: 'meta',
+    company: 'meta',
+    isPremium: false,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: true,
+    description: 'Best in the class Google model with advanced reasoning and coding capabilities',
+  },
+  'OpenAI 4.1 Nano': {
+    modelId: 'openai/gpt-4.1-nano',
+    provider: 'openrouter',
+    displayName: 'OpenAI 4.1 Nano',
+    iconType: 'openai',
+    company: 'OpenAI',
+    isPremium: false,
+    isSuperPremium: false,
+    hasReasoning: false,
     isFileSupported: true,
     description: 'Best in the class Google model with advanced reasoning and coding capabilities',
   },
