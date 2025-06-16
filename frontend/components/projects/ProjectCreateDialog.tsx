@@ -109,6 +109,7 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({
 
           <DialogFooter>
             <Button
+              size="default"
               type="button"
               variant="outline"
               onClick={handleCancel}
@@ -116,7 +117,11 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isCreating || !name.trim()}>
+            <Button
+              size="default"
+              type="submit"
+              disabled={isCreating || !name.trim()}
+            >
               {isCreating ? "Creating..." : "Create Project"}
             </Button>
           </DialogFooter>

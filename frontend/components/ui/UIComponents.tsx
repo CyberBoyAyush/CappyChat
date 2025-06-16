@@ -6,9 +6,9 @@
  * Contains custom SVG icons, loading states, and error components not available in external libraries.
  */
 
-import { CircleAlert, Globe } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/frontend/components/ui/button';
+import { CircleAlert, Cross, Globe, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/frontend/components/ui/button";
 
 // ===============================================
 // Custom Icons
@@ -20,7 +20,7 @@ export const StopIcon = ({ size = 16 }: { size?: number }) => {
       height={size}
       viewBox="0 0 16 16"
       width={size}
-      style={{ color: 'currentcolor' }}
+      style={{ color: "currentcolor" }}
     >
       <path
         fillRule="evenodd"
@@ -125,7 +125,11 @@ interface WebSearchToggleProps {
   className?: string;
 }
 
-export function WebSearchToggle({ isEnabled, onToggle, className }: WebSearchToggleProps) {
+export function WebSearchToggle({
+  isEnabled,
+  onToggle,
+  className,
+}: WebSearchToggleProps) {
   return (
     <Button
       variant={isEnabled ? "default" : "outline"}
@@ -134,7 +138,7 @@ export function WebSearchToggle({ isEnabled, onToggle, className }: WebSearchTog
       className={cn(
         "flex items-center gap-2 text-xs font-medium transition-all duration-200",
         isEnabled
-          ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+          ? "bg-primary/80 hover:bg-primary text-white border-primary/40"
           : "hover:bg-muted border-border/50",
         className
       )}
@@ -142,6 +146,7 @@ export function WebSearchToggle({ isEnabled, onToggle, className }: WebSearchTog
     >
       <Globe className="h-3.5 w-3.5" />
       <span className="hidden sm:inline">Web Search</span>
+
       {isEnabled && (
         <div className="h-1.5 w-1.5 rounded-full bg-white/80 animate-pulse" />
       )}
@@ -166,7 +171,11 @@ interface WebSearchCitationsProps {
   className?: string;
 }
 
-export function WebSearchCitations({ results, searchQuery = "search query", className }: WebSearchCitationsProps) {
+export function WebSearchCitations({
+  results,
+  searchQuery = "search query",
+  className,
+}: WebSearchCitationsProps) {
   if (!results || results.length === 0) return null;
 
   return (
@@ -184,27 +193,36 @@ export function WebSearchCitations({ results, searchQuery = "search query", clas
         {results.map((url, index) => {
           try {
             const urlObj = new URL(url);
-            const domain = urlObj.hostname.replace('www.', '');
+            const domain = urlObj.hostname.replace("www.", "");
 
             // Create titles based on domain
             const titles: Record<string, string> = {
-              'makemytrip.com': '44 Places to Visit in Delhi in 2025 | Top Tourist Attraction...',
-              'planetware.com': 'Tourist Attractions in Delhi & New Delhi',
-              'delhitourism.gov.in': ': Delhi Tourism :: Tourist places',
-              'holidify.com': '52 Best Places to visit in Delhi | Top Tourist Attractions',
-              'traveltriangle.com': '79 Best Tourist places in delhi - 2023 (A Detailed Guide)',
+              "makemytrip.com":
+                "44 Places to Visit in Delhi in 2025 | Top Tourist Attraction...",
+              "planetware.com": "Tourist Attractions in Delhi & New Delhi",
+              "delhitourism.gov.in": ": Delhi Tourism :: Tourist places",
+              "holidify.com":
+                "52 Best Places to visit in Delhi | Top Tourist Attractions",
+              "traveltriangle.com":
+                "79 Best Tourist places in delhi - 2023 (A Detailed Guide)",
             };
 
             const descriptions: Record<string, string> = {
-              'makemytrip.com': 'New Delhi is the capital city of India with vibrancy in cultures, cuisines and history. Travellers also love to indulge i...',
-              'planetware.com': 'The Red Fort, Qutub Minar, and Lodi Gardens are some of the top tourist attractions in Delhi. Delhi offers a rich...',
-              'delhitourism.gov.in': 'Delhi Tourism provides comprehensive information on tourist places, accommodation, transport, and...',
-              'holidify.com': 'Connaught Place, officially known as Rajiv Chowk, is one of the largest commercial and business centers in...',
-              'traveltriangle.com': 'This guide provides details about the best tourist places in Delhi that you cannot miss on your trip. It aims to offe...',
+              "makemytrip.com":
+                "New Delhi is the capital city of India with vibrancy in cultures, cuisines and history. Travellers also love to indulge i...",
+              "planetware.com":
+                "The Red Fort, Qutub Minar, and Lodi Gardens are some of the top tourist attractions in Delhi. Delhi offers a rich...",
+              "delhitourism.gov.in":
+                "Delhi Tourism provides comprehensive information on tourist places, accommodation, transport, and...",
+              "holidify.com":
+                "Connaught Place, officially known as Rajiv Chowk, is one of the largest commercial and business centers in...",
+              "traveltriangle.com":
+                "This guide provides details about the best tourist places in Delhi that you cannot miss on your trip. It aims to offe...",
             };
 
             const title = titles[domain] || `Visit ${domain}`;
-            const description = descriptions[domain] || `Explore content from ${domain}`;
+            const description =
+              descriptions[domain] || `Explore content from ${domain}`;
 
             return (
               <a
