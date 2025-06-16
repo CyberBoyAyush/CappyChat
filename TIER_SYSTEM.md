@@ -1,6 +1,6 @@
 # Tier System Implementation
 
-This document describes the robust tier system implemented for AtChat, which manages user access to AI models based on credit limits.
+This document describes the robust tier system implemented for AVChat, which manages user access to AI models based on credit limits.
 
 ## Overview
 

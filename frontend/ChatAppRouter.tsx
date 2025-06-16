@@ -21,6 +21,7 @@ import SignUpPage from "./routes/auth/SignUpPage";
 import AuthCallbackPage from "./routes/auth/AuthCallbackPage";
 import AuthErrorPage from "./routes/auth/AuthErrorPage";
 import EmailVerificationPage from "./routes/auth/EmailVerificationPage";
+import ResetPasswordPage from "./routes/auth/ResetPasswordPage";
 
 export default function ChatAppRouter() {
   return (
@@ -53,6 +54,7 @@ export default function ChatAppRouter() {
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/auth/error" element={<AuthErrorPage />} />
           <Route path="/auth/verify" element={<EmailVerificationPage />} />
+          <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
 
           {/* Protected routes (require authentication) */}
           <Route

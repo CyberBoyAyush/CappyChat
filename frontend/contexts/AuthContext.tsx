@@ -30,11 +30,14 @@ interface AuthContextType {
   logout: () => Promise<void>;
   getCurrentUser: () => Promise<User | null>;
   refreshSession: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   updateProfile: (name: string) => Promise<void>;
   updateEmail: (email: string, password: string) => Promise<void>;
   updatePassword: (newPassword: string, oldPassword: string) => Promise<void>;
   sendVerificationEmail: () => Promise<void>;
+  sendPasswordRecovery: (email: string) => Promise<void>;
+  resetPassword: (userId: string, secret: string, newPassword: string) => Promise<void>;
   verifyEmail: (userId: string, secret: string) => Promise<void>;
   resendVerificationEmail: () => Promise<void>;
 }
@@ -105,6 +108,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  // Refresh user data
+  const refreshUser = useCallback(async (): Promise<void> => {
+    try {
+      const currentUser = await account.get();
+      setUser(currentUser);
+      console.log('[AuthContext] User data refreshed:', {
+        emailVerified: currentUser?.emailVerification,
+        userId: currentUser?.$id
+      });
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+    }
+  }, []);
+
   // Initialize user services (DB and realtime) - optimized for performance
   const initializeUserServices = useCallback(async (userId: string) => {
     try {
@@ -164,9 +181,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       
-      // Create session and get user in one call - session creation returns user info
-      const session = await account.createEmailPasswordSession(email, password);
-      const currentUser = await account.get(); // Only one get call needed after session
+      // Create session and get user data
+      await account.createEmailPasswordSession(email, password);
+      const currentUser = await account.get(); // Get fresh user data after session creation
       setUser(currentUser);
       
       // Initialize services in background - don't block login completion
@@ -358,16 +375,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Send password recovery email
+  const sendPasswordRecovery = async (email: string): Promise<void> => {
+    try {
+      setLoading(true);
+      await account.createRecovery(email, APPWRITE_CONFIG.passwordResetUrl);
+    } catch (error) {
+      console.error('Password recovery error:', error);
+      throw new Error(getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reset password with recovery token
+  const resetPassword = async (userId: string, secret: string, newPassword: string): Promise<void> => {
+    try {
+      setLoading(true);
+      await account.updateRecovery(userId, secret, newPassword);
+    } catch (error) {
+      console.error('Password reset error:', error);
+      throw new Error(getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Verify email
   const verifyEmail = async (userId: string, secret: string): Promise<void> => {
     try {
       setLoading(true);
       await account.updateVerification(userId, secret);
-      
-      // Refresh user data to update email verification status
-      const currentUser = await getCurrentUser();
+
+      // Add a small delay to ensure Appwrite has processed the verification
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Directly call account.get() to ensure we get fresh user data
+      const currentUser = await account.get();
       if (currentUser) {
         setUser(currentUser);
+        console.log('[AuthContext] Email verification successful, user updated:', {
+          emailVerified: currentUser.emailVerification,
+          userId: currentUser.$id
+        });
       }
     } catch (error) {
       console.error('Email verification error:', error);
@@ -391,6 +441,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         logout,
         getCurrentUser,
         refreshSession,
+        refreshUser,
         deleteAccount,
         updateProfile,
         updateEmail,
@@ -398,6 +449,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         sendVerificationEmail,
         verifyEmail,
         resendVerificationEmail,
+        sendPasswordRecovery,
+        resetPassword,
       }}
     >
       {children}

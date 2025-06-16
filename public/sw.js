@@ -1,4 +1,4 @@
-// AtChat Service Worker for Performance Optimization
+// AVChat Service Worker for Performance Optimization
 // This service worker caches static assets and API responses for faster loading
 
 const CACHE_NAME = 'atchat-v1';

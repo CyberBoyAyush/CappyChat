@@ -1,4 +1,4 @@
-# AtChat Performance Optimization Summary
+# AVChat Performance Optimization Summary
 
 ## 🚀 Performance Improvements Implemented
 

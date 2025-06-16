@@ -198,6 +198,8 @@ export const APPWRITE_CONFIG = {
     (typeof window !== 'undefined' ? `${window.location.origin}/auth/error` : ''),
   verificationUrl: process.env.NEXT_PUBLIC_VERIFICATION_URL ||
     (typeof window !== 'undefined' ? `${window.location.origin}/auth/verify` : ''),
+  passwordResetUrl: process.env.NEXT_PUBLIC_PASSWORD_RESET_URL ||
+    (typeof window !== 'undefined' ? `${window.location.origin}/auth/reset-password` : ''),
 } as const;
 
 export default client;
