@@ -22,12 +22,14 @@ import AuthCallbackPage from "./routes/auth/AuthCallbackPage";
 import AuthErrorPage from "./routes/auth/AuthErrorPage";
 import EmailVerificationPage from "./routes/auth/EmailVerificationPage";
 import ResetPasswordPage from "./routes/auth/ResetPasswordPage";
+import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts";
 
 export default function ChatAppRouter() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
+        <GlobalKeyboardShortcuts>
+          <Routes>
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/landing" element={<LandingPage />} />
@@ -172,7 +174,8 @@ export default function ChatAppRouter() {
               </div>
             }
           />
-        </Routes>
+          </Routes>
+        </GlobalKeyboardShortcuts>
       </AuthProvider>
     </BrowserRouter>
   );

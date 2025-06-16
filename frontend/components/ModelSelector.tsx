@@ -250,7 +250,8 @@ const PureModelSelector = () => {
   const recommendedModels: AIModel[] = [
     'Gemini 2.5 Flash',
     'OpenAI 4.1 Mini',
-    'OpenAI o4-mini'
+    'OpenAI o4-mini',
+    'DeepSeek R1-0528'
   ];
 
   // Categorize models
