@@ -7,7 +7,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import {
@@ -20,12 +20,30 @@ import {
 } from "@/frontend/components/ui/dropdown-menu";
 import { Button } from "@/frontend/components/ui/button";
 import { User, Settings, LogOut, Shield, ChevronDown } from "lucide-react";
+import { getUserTierInfo } from "@/lib/tierSystem";
 
 const UserProfileDropdown: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [tierInfo, setTierInfo] = useState<any>(null);
+
+  // Load tier information
+  useEffect(() => {
+    const loadTierInfo = async () => {
+      if (!user) return;
+
+      try {
+        const info = await getUserTierInfo();
+        setTierInfo(info);
+      } catch (error) {
+        console.error('Error loading tier info:', error);
+      }
+    };
+
+    loadTierInfo();
+  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -81,9 +99,21 @@ const UserProfileDropdown: React.FC = () => {
 
           {/* User Info */}
           <div className="flex flex-col items-start min-w-0">
-            <span className="text-sm font-medium text-sidebar-foreground truncate max-w-32">
-              {displayName}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-sidebar-foreground truncate max-w-24">
+                {displayName}
+              </span>
+              {tierInfo?.tier === 'premium' && (
+                <span className="px-1.5 py-0.5 text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
+                  PRO
+                </span>
+              )}
+              {tierInfo?.tier === 'admin' && (
+                <span className="px-1.5 py-0.5 text-xs font-medium bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full">
+                  ADMIN
+                </span>
+              )}
+            </div>
           </div>
 
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -102,9 +132,21 @@ const UserProfileDropdown: React.FC = () => {
               {userInitials}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="font-medium text-foreground truncate">
-                {displayName}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-foreground truncate">
+                  {displayName}
+                </span>
+                {tierInfo?.tier === 'premium' && (
+                  <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
+                    PRO
+                  </span>
+                )}
+                {tierInfo?.tier === 'admin' && (
+                  <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full">
+                    ADMIN
+                  </span>
+                )}
+              </div>
               <span className="text-sm text-muted-foreground truncate">
                 {displayEmail}
               </span>

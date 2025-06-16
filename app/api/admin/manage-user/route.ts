@@ -96,6 +96,14 @@ export async function POST(req: NextRequest) {
           message: `Monthly reset completed for ${resetCount} users`
         });
 
+      case 'logoutAllUsers':
+        const logoutCount = await logoutAllUsers();
+
+        return NextResponse.json({
+          success: true,
+          message: `Successfully logged out ${logoutCount} users`
+        });
+
       default:
         return NextResponse.json(
           { error: 'Invalid action' },
@@ -156,6 +164,54 @@ async function performMonthlyReset(): Promise<number> {
     return resetCount;
   } catch (error) {
     console.error('Error performing monthly reset:', error);
+    throw error;
+  }
+}
+
+async function logoutAllUsers(): Promise<number> {
+  let logoutCount = 0;
+  let offset = 0;
+  const limit = 100; // Process users in batches
+
+  try {
+    while (true) {
+      // Get batch of users
+      const usersList = await users.list([Query.limit(limit), Query.offset(offset)]);
+
+      if (usersList.users.length === 0) {
+        break; // No more users
+      }
+
+      // Delete all sessions for each user in the batch
+      for (const user of usersList.users) {
+        try {
+          // Get all sessions for the user
+          const sessions = await users.listSessions(user.$id);
+
+          // Delete each session
+          for (const session of sessions.sessions) {
+            try {
+              await users.deleteSession(user.$id, session.$id);
+            } catch (sessionError) {
+              console.error(`Failed to delete session ${session.$id} for user ${user.$id}:`, sessionError);
+              // Continue with other sessions
+            }
+          }
+
+          logoutCount++;
+        } catch (error) {
+          console.error(`Failed to logout user ${user.$id}:`, error);
+          // Continue with other users
+        }
+      }
+
+      offset += limit;
+    }
+
+    console.log(`Logout all users completed for ${logoutCount} users`);
+    return logoutCount;
+  } catch (error) {
+    console.error('Error logging out all users:', error);
     throw error;
   }
 }
