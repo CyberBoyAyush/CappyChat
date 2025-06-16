@@ -5,8 +5,9 @@
  * Features: Responsive grid layout, enhanced badges, better visual hierarchy
  */
 
-import { ChevronDown, Check, Search, Lock } from "lucide-react";
-import { memo, useCallback, useState, useMemo } from "react";
+import { ChevronDown, Check, Search, Lock, Key } from "lucide-react";
+import { memo, useCallback, useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
 import { Input } from "@/frontend/components/ui/input";
@@ -17,7 +18,9 @@ import {
 } from "@/frontend/components/ui/dropdown-menu";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
+import { useBYOKStore } from "@/frontend/stores/BYOKStore";
 import { AI_MODELS, AIModel, getModelConfig } from "@/lib/models";
+import { canUserUseModel, TierValidationResult } from "@/lib/tierSystem";
 import {
   ModelBadge,
   getModelIcon,
@@ -27,26 +30,36 @@ interface ModelCardProps {
   model: AIModel;
   isSelected: boolean;
   onSelect: (model: AIModel) => void;
+  showKeyIcon?: boolean;
+  tierValidation?: TierValidationResult;
 }
 
 const ModelCard: React.FC<ModelCardProps> = ({
   model,
   isSelected,
   onSelect,
+  showKeyIcon = false,
+  tierValidation,
 }) => {
   const modelConfig = getModelConfig(model);
+  const isDisabled = tierValidation && !tierValidation.canUseModel;
 
   return (
     <div
-      onClick={() => onSelect(model)}
+      onClick={() => !isDisabled && onSelect(model)}
       className={cn(
-        "relative group cursor-pointer p-2 sm:p-4 rounded-lg border-2 transition-all duration-200",
-        "hover:shadow-md hover:border-primary/50 hover:bg-accent/50",
+        "relative group p-2 sm:p-4 rounded-lg border-2 transition-all duration-200",
         "flex flex-col gap-1.5 sm:gap-3 min-h-[80px] sm:min-h-[120px]",
-        isSelected
+        isDisabled
+          ? "cursor-not-allowed opacity-50 border-muted bg-muted/20"
+          : "cursor-pointer hover:shadow-md hover:border-primary/50 hover:bg-accent/50",
+        isSelected && !isDisabled
           ? "border-primary bg-primary/5 shadow-sm"
-          : "border-border bg-card hover:bg-accent/30"
+          : !isDisabled
+          ? "border-border bg-card hover:bg-accent/30"
+          : "border-muted"
       )}
+      title={isDisabled ? tierValidation?.message : undefined}
     >
       {/* Selection indicator */}
       {isSelected && (
@@ -63,17 +76,33 @@ const ModelCard: React.FC<ModelCardProps> = ({
           {getModelIcon(modelConfig.iconType, 16)}
         </div>
         <div className="flex-1 min-w-0">
-          <h3
-            className={cn(
-              "font-semibold text-xs sm:text-sm leading-tight truncate",
-              isSelected ? "text-primary" : "text-foreground"
+          <div className="flex items-center gap-1.5">
+            <h3
+              className={cn(
+                "font-semibold text-xs sm:text-sm leading-tight truncate",
+                isSelected && !isDisabled ? "text-primary" :
+                isDisabled ? "text-muted-foreground" : "text-foreground"
+              )}
+            >
+              {modelConfig.displayName}
+            </h3>
+            {showKeyIcon && !isDisabled && (
+              <div className="flex-shrink-0" title="Using your API key">
+                <Key className="w-3 h-3 text-primary" />
+              </div>
             )}
-          >
-            {modelConfig.displayName}
-          </h3>
-          <p className="text-xs text-muted-foreground mt-0.5 sm:mt-1 font-medium hidden sm:block">
+          </div>
+          <p className={cn(
+            "text-xs mt-0.5 sm:mt-1 font-medium hidden sm:block",
+            isDisabled ? "text-muted-foreground/70" : "text-muted-foreground"
+          )}>
             {modelConfig.company}
           </p>
+          {isDisabled && tierValidation?.message && (
+            <p className="text-xs text-red-500 mt-1 font-medium">
+              Credits exhausted
+            </p>
+          )}
         </div>
       </div>
 
@@ -122,14 +151,72 @@ const ModelCard: React.FC<ModelCardProps> = ({
   );
 };
 
+// BYOK Status Indicator Component
+const BYOKIndicator = () => {
+  const { hasOpenRouterKey } = useBYOKStore();
+  const navigate = useNavigate();
+  const hasByok = hasOpenRouterKey();
+
+  const handleClick = () => {
+    navigate('/settings#settings');
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleClick}
+      className={cn(
+        "h-7 px-2 text-xs font-medium transition-all duration-200",
+        hasByok
+          ? "text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-950/20"
+          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+      )}
+      title={hasByok ? "BYOK is ON - Unlimited access to all models" : "Configure your own API key for unlimited access"}
+    >
+      <Key className="w-3 h-3 mr-1" />
+      <span className="hidden sm:inline">
+        {hasByok ? "BYOK ON" : "BYOK"}
+      </span>
+    </Button>
+  );
+};
+
 const PureModelSelector = () => {
   const { selectedModel, setModel } = useModelStore();
   const { isWebSearchEnabled } = useWebSearchStore();
+  const { hasOpenRouterKey } = useBYOKStore();
   const selectedModelConfig = getModelConfig(selectedModel);
   const [searchQuery, setSearchQuery] = useState("");
+  const [tierValidations, setTierValidations] = useState<Record<AIModel, TierValidationResult>>({} as Record<AIModel, TierValidationResult>);
 
   // When web search is enabled, lock to Gemini 2.5 Flash Search
   const isLocked = isWebSearchEnabled;
+  const usingBYOK = hasOpenRouterKey();
+
+  // Load tier validations for all models
+  useEffect(() => {
+    const loadTierValidations = async () => {
+      const validations: Record<AIModel, TierValidationResult> = {} as Record<AIModel, TierValidationResult>;
+
+      for (const model of AI_MODELS) {
+        try {
+          validations[model] = await canUserUseModel(model, usingBYOK);
+        } catch (error) {
+          console.error(`Error validating model ${model}:`, error);
+          validations[model] = {
+            canUseModel: false,
+            remainingCredits: 0,
+            message: 'Error checking model access',
+          };
+        }
+      }
+
+      setTierValidations(validations);
+    };
+
+    loadTierValidations();
+  }, [usingBYOK]);
 
   const isModelEnabled = useCallback(
     (model: AIModel) => {
@@ -178,10 +265,10 @@ const PureModelSelector = () => {
           <Button
             variant="ghost"
             className={cn(
-              "flex items-center gap-2 h-9 sm:h-8 pl-2 pr-2 text-xs rounded-md",
+              "flex items-center gap-1 sm:gap-2 h-10 sm:h-9 md:h-8 pl-2 pr-1.5 sm:pr-2 text-xs rounded-md min-w-0",
               "text-foreground hover:bg-accent hover:text-accent-foreground",
               "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-              "transition-all duration-200",
+              "transition-all duration-200 mobile-touch",
               isLocked && "opacity-75 cursor-not-allowed hover:bg-transparent"
             )}
             aria-label={`Selected model: ${selectedModel}${
@@ -189,15 +276,15 @@ const PureModelSelector = () => {
             }`}
             disabled={isLocked}
           >
-            <div className="flex max-w-[160px] sm:max-w-[180px] md:max-w-sm items-center gap-1.5 sm:gap-2">
+            <div className="flex max-w-[120px] sm:max-w-[160px] md:max-w-sm items-center gap-1 sm:gap-1.5">
               {isLocked && (
-                <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-60" />
+                <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-60 flex-shrink-0" />
               )}
-              <span className="mobile-text truncate max-w-sm font-medium text-xs sm:text-sm">
+              <span className="mobile-text truncate font-medium text-xs sm:text-sm min-w-0">
                 {selectedModelConfig.displayName}
               </span>
               {!isLocked && (
-                <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-50 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-50 transition-transform duration-200 group-data-[state=open]:rotate-180 flex-shrink-0" />
               )}
             </div>
           </Button>
@@ -205,7 +292,7 @@ const PureModelSelector = () => {
         <DropdownMenuContent
           className={cn(
             "w-[320px] sm:w-[480px] max-w-[95vw] p-3 sm:p-4",
-            "border-border bg-zinc-900/50 backdrop-blur-3xl",
+            "border-border dark:bg-zinc-900/50 backdrop-blur-3xl",
             "max-h-[70vh] overflow-y-auto",
             "scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent scrollbar-thumb-rounded-full",
             "shadow-lg"
@@ -244,6 +331,8 @@ const PureModelSelector = () => {
                   model={model}
                   isSelected={selectedModel === model}
                   onSelect={handleModelSelect}
+                  showKeyIcon={hasOpenRouterKey()}
+                  tierValidation={tierValidations[model]}
                 />
               ))
             ) : (
@@ -270,6 +359,7 @@ const PureModelSelector = () => {
           </div>
         </DropdownMenuContent>
       </DropdownMenu>
+      <BYOKIndicator />
     </div>
   );
 };

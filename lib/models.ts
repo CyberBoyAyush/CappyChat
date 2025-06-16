@@ -8,7 +8,7 @@ export const AI_MODELS = [
   'DeepSeek R1-0528',
   'DeepSeek V3',
   'Qwen3 235B A22B',
-  'OpenAI o3',
+  'Claude Sonnet 4',
   'Gemini 2.5 Pro',
 ] as const;
 
@@ -45,7 +45,7 @@ export const MODEL_CONFIGS = {
     iconType: 'google',
     company: 'Google',
     isPremium: false,
-    isSuperPremium: false,
+    isSuperPremium: true,
     hasReasoning: true,
     description: 'Fast and efficient model from Google with web search capabilities',
   },
@@ -126,12 +126,12 @@ export const MODEL_CONFIGS = {
     hasReasoning: true,
     description: 'Qwen3 235B A22B is a powerful model with advanced reasoning capabilities',
   },
-  'OpenAI o3': {
-    modelId: 'openai/o3',
+  'Claude Sonnet 4': {
+    modelId: 'anthropic/claude-sonnet-4',
     provider: 'openrouter',
-    displayName: 'OpenAI o3',
-    iconType: 'openai',
-    company: 'OpenAI',
+    displayName: 'Claude Sonnet 4',
+    iconType: 'anthropic',
+    company: 'Anthropic',
     isPremium: false,
     isSuperPremium: true,
     hasReasoning: true,

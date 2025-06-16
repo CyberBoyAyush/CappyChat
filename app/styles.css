@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 @plugin '@tailwindcss/typography';
 @plugin 'tailwind-scrollbar';
 
@@ -40,7 +40,7 @@
   --sidebar-border: #d6d3c6;
   --sidebar-ring: #f76f52;
   --font-sans: Geist, sans-serif;
-  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: Geist Mono, monospace;
   --radius: 0.625rem;
   --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
@@ -92,7 +92,7 @@
   --sidebar-border: #3a3a3a;
   --sidebar-ring: #f76f52;
   --font-sans: Geist, sans-serif;
-  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: Geist Mono, monospace;
   --radius: 0.625rem;
   --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
@@ -186,7 +186,7 @@
   }
 
   .mobile-text {
-    @apply text-sm sm:text-base;
+    @apply text-sm sm:text-sm;
   }
 
   .mobile-container {
@@ -542,4 +542,70 @@ html.dark .shiki span[style*="color:#f85149"] {
 /* Prevent scrolling when mobile sidebar is open */
 body.sidebar-open {
   overflow: hidden;
+}
+
+/* File Upload Component Animations */
+.upload-progress-enter {
+  animation: slideInFromBottom 0.3s ease-out;
+}
+
+.upload-progress-exit {
+  animation: slideOutToBottom 0.2s ease-in;
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideOutToBottom {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+}
+
+/* Upload success animation */
+.upload-success {
+  animation: successPulse 0.6s ease-out;
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Upload error shake animation */
+.upload-error {
+  animation: errorShake 0.5s ease-in-out;
+}
+
+@keyframes errorShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
 }

@@ -15,7 +15,6 @@ import { Moon } from "lucide-react";
 import { Check } from "lucide-react";
 import { Building2, Mail } from "lucide-react";
 import {
-  MessageSquare,
   Sparkles,
   Shield,
   ArrowRight,
@@ -30,28 +29,21 @@ import {
   Star,
   TrendingUp,
   Cpu,
-  Database,
   Smartphone,
-  Monitor,
   CheckCircle,
   Play,
   BarChart3,
   Layers,
-  Bot,
-  Laptop,
-  CloudLightning,
-  Code,
-  MessagesSquare,
-  Command,
+  ExternalLink,
 } from "lucide-react";
-import { GoogleIcon } from "@/frontend/components/ui/icons";
+import { GoogleIcon, GitHubIcon } from "@/frontend/components/ui/icons";
 import { ThemeToggleButton } from "@/frontend/components/ui/ThemeComponents";
 import { useTheme } from "next-themes";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 const HomePage: React.FC = () => {
-  const { isAuthenticated, loading, loginWithGoogle } = useAuth();
+  const { isAuthenticated, loading, loginWithGoogle, loginWithGitHub } =
+    useAuth();
   const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -89,6 +81,14 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const handleGitHubLogin = async () => {
+    try {
+      await loginWithGitHub();
+    } catch (error) {
+      console.error("GitHub login failed:", error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -96,58 +96,6 @@ const HomePage: React.FC = () => {
       </div>
     );
   }
-
-  // Floating icons properties
-  const floatingIcons = [
-    {
-      icon: <Bot className="w-full h-full" />,
-      size: "5rem",
-      opacity: 0.05,
-      animationDuration: 20,
-    },
-    {
-      icon: <MessageSquare className="w-full h-full" />,
-      size: "4rem",
-      opacity: 0.04,
-      animationDuration: 15,
-    },
-    {
-      icon: <Brain className="w-full h-full" />,
-      size: "6rem",
-      opacity: 0.03,
-      animationDuration: 25,
-    },
-    {
-      icon: <Laptop className="w-full h-full" />,
-      size: "3.5rem",
-      opacity: 0.06,
-      animationDuration: 18,
-    },
-    {
-      icon: <CloudLightning className="w-full h-full" />,
-      size: "4.5rem",
-      opacity: 0.04,
-      animationDuration: 22,
-    },
-    {
-      icon: <Code className="w-full h-full" />,
-      size: "3rem",
-      opacity: 0.05,
-      animationDuration: 17,
-    },
-    {
-      icon: <MessagesSquare className="w-full h-full" />,
-      size: "5.5rem",
-      opacity: 0.03,
-      animationDuration: 23,
-    },
-    {
-      icon: <Command className="w-full h-full" />,
-      size: "4rem",
-      opacity: 0.05,
-      animationDuration: 19,
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -177,106 +125,80 @@ const HomePage: React.FC = () => {
         <div className="absolute bottom-0 right-1/4 w-[30rem] h-[30rem] rounded-full bg-blue-500/5 blur-[8rem] translate-y-1/3" />
       </div>
 
-      {/* Floating icons background
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        {floatingIcons.map((item, index) => (
-          <motion.div
-            key={index}
-            className={cn(
-              "absolute text-primary dark:text-primary/70",
-              isDark ? "opacity-20" : "opacity-10"
-            )}
-            style={{
-              width: item.size,
-              height: item.size,
-            }}
-            initial={{
-              x: `${Math.random() * 100}%`,
-              y: `${Math.random() * 100}%`,
-              opacity: item.opacity,
-              rotate: Math.random() * 360,
-            }}
-            animate={{
-              x: [
-                `${Math.random() * 100}%`,
-                `${Math.random() * 100}%`,
-                `${Math.random() * 100}%`,
-              ],
-              y: [
-                `${Math.random() * 100}%`,
-                `${Math.random() * 100}%`,
-                `${Math.random() * 100}%`,
-              ],
-              rotate: [0, 180, 360],
-            }}
-            transition={{
-              duration: item.animationDuration,
-              repeat: Infinity,
-              repeatType: "reverse",
-              ease: "easeInOut",
-            }}
-          >
-            {item.icon}
-          </motion.div>
-        ))}
-      </div> */}
-
-      {/* Navigation Header - Improved responsiveness */}
-      <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      {/* Enhanced Navigation Header */}
+      <nav className="fixed top-0 w-full z-50 bg-background/90 backdrop-blur-xl border-b border-border/50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-14 sm:h-16">
+          <div className="flex justify-between items-center h-16 sm:h-18">
             <motion.div
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-3"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.6 }}
             >
               <motion.div
                 whileHover={{
                   scale: 1.1,
-                  rotate: [0, 5, -5, 0],
-                  transition: { duration: 0.5 },
+                  rotate: [0, 10, -10, 0],
+                  transition: { duration: 0.6 },
                 }}
+                className="relative"
               >
+                <motion.div
+                  className="absolute inset-0 bg-primary/20 rounded-full blur-md"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.3, 0.6, 0.3],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    repeatType: "reverse",
+                  }}
+                />
                 <img
                   src="/logo.png"
                   alt="Logo"
-                  className="h-7 w-7 sm:h-8 sm:w-8"
+                  className="h-8 w-8 sm:h-10 sm:w-10 relative z-10"
                 />
               </motion.div>
-              <span className="text-lg sm:text-xl font-bold text-foreground">
+              <span className="text-xl sm:text-2xl font-bold text-foreground">
                 AV<span className="text-primary">Chat</span>
               </span>
             </motion.div>
 
             <motion.div
-              className="flex items-center space-x-1.5 sm:space-x-4"
+              className="flex items-center space-x-2 sm:space-x-4"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.6 }}
             >
               <ThemeToggleButton variant="inline" />
               <Link to="/auth/login">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm p-2 sm:p-2.5"
-                >
-                  <LogIn className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span className="hidden md:block">Login</span>
-                </Button>
-              </Link>
-              <Link to="/auth/signup">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   <Button
+                    variant="ghost"
                     size="sm"
-                    className="flex items-center space-x-1 sm:space-x-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs sm:text-sm p-2 sm:p-2.5"
+                    className="flex items-center space-x-2 text-sm font-medium px-4 py-2 rounded-xl hover:bg-secondary/80 transition-all duration-300"
                   >
-                    <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    <span className="hidden md:block">Sign Up</span>
+                    <LogIn className="h-4 w-4" />
+                    <span className="hidden sm:block">Login</span>
+                  </Button>
+                </motion.div>
+              </Link>
+              <Link to="/auth/signup">
+                <motion.div
+                  whileHover={{ scale: 1.05, y: -1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    size="sm"
+                    className="flex items-center space-x-2 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground text-sm font-semibold px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    <span className="hidden sm:block">Sign Up</span>
                   </Button>
                 </motion.div>
               </Link>
@@ -285,9 +207,9 @@ const HomePage: React.FC = () => {
         </div>
       </nav>
 
-      {/* Hero Section - Enhanced responsiveness */}
-      <main className="pt-14 sm:pt-16 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-20">
+      {/* Enhanced Hero Section */}
+      <main className="pt-16 sm:pt-8 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-24">
           <div className="text-center">
             <motion.div
               className="flex justify-center mb-4 sm:mb-8"
@@ -335,30 +257,27 @@ const HomePage: React.FC = () => {
             </motion.div>
 
             <motion.div
-              className="space-y-2 sm:space-y-4 mb-6 sm:mb-8"
+              className="space-y-3 sm:space-y-6 mb-8 sm:mb-12"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.2 }}
             >
-              <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-foreground leading-tight px-1 sm:px-0">
+              <h1 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-foreground leading-tight px-1 sm:px-0">
                 The Future of{" "}
-                <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent inline-block">
+                <span className="relative inline-block">
                   <motion.span
+                    className="bg-gradient-to-r from-primary via-primary/35 dark:via-primary-foreground/75 to-primary bg-clip-text text-transparent"
                     animate={{
                       backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
                     }}
                     transition={{
-                      duration: 5,
+                      duration: 4,
                       repeat: Infinity,
                       repeatType: "reverse",
+                      ease: "easeInOut",
                     }}
                     style={{
-                      display: "inline-block",
                       backgroundSize: "200% auto",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundImage:
-                        "linear-gradient(90deg, var(--primary) 30%, var(--primary-foreground) 50%, var(--primary) 100%)",
                     }}
                   >
                     AI Conversations
@@ -366,153 +285,252 @@ const HomePage: React.FC = () => {
                 </span>
               </h1>
 
-              <p className="text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-2 sm:px-4">
-                Experience lightning-fast AI interactions with multiple models.
+              <motion.p
+                className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl text-muted-foreground max-w-4xl mx-auto leading-relaxed px-2 sm:px-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.4 }}
+              >
+                Experience{" "}
+                <motion.span
+                  className="text-primary font-semibold"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  lightning-fast
+                </motion.span>{" "}
+                AI interactions with multiple models.
                 <br className="hidden md:block" />
-                <span className="text-primary font-medium">
+                <motion.span
+                  className="text-primary font-semibold"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
                   10x faster
-                </span>{" "}
+                </motion.span>{" "}
                 than ChatGPT,{" "}
-                <span className="text-primary font-medium">smarter</span> than
-                Claude, and{" "}
-                <span className="text-primary font-medium">synced</span> across
-                all your devices.
-              </p>
+                <motion.span
+                  className="text-primary font-semibold"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  smarter
+                </motion.span>{" "}
+                than Claude, and{" "}
+                <motion.span
+                  className="text-primary font-semibold"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  synced
+                </motion.span>{" "}
+                across all your devices.
+              </motion.p>
             </motion.div>
 
-            {/* Feature Pills - Better spacing and sizing */}
+            {/* Enhanced Feature Pills */}
             <motion.div
-              className="flex flex-wrap justify-center gap-1.5 xs:gap-2 sm:gap-3 mb-6 sm:mb-8 lg:mb-12 px-1 sm:px-2"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.4 }}
-            >
-              <motion.div
-                whileHover={{ scale: 1.1, y: -5 }}
-                className="group bg-primary/10 hover:bg-primary/20 text-primary px-2 xs:px-3 sm:px-5 py-1.5 xs:py-2 sm:py-3 rounded-full text-xs sm:text-sm font-medium border border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-lg"
-              >
-                <Zap className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1 sm:mr-2 group-hover:animate-pulse" />
-                <span className="hidden xs:inline">10x</span> Faster Response
-              </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.1, y: -5 }}
-                className="group bg-secondary/50 hover:bg-secondary/70 text-foreground px-2 xs:px-3 sm:px-5 py-1.5 xs:py-2 sm:py-3 rounded-full text-xs sm:text-sm font-medium border border-border hover:border-primary/30 transition-all duration-300"
-              >
-                <Brain className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1 sm:mr-2 group-hover:animate-bounce" />
-                Multi-Model AI
-              </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.1, y: -5 }}
-                className="group bg-secondary/50 hover:bg-secondary/70 text-foreground px-2 xs:px-3 sm:px-5 py-1.5 xs:py-2 sm:py-3 rounded-full text-xs sm:text-sm font-medium border border-border hover:border-primary/30 transition-all duration-300"
-              >
-                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1 sm:mr-2 group-hover:animate-spin" />
-                Real-time Sync
-              </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.1, y: -5 }}
-                className="group bg-secondary/50 hover:bg-secondary/70 text-foreground px-2 xs:px-3 sm:px-5 py-1.5 xs:py-2 sm:py-3 rounded-full text-xs sm:text-sm font-medium border border-border hover:border-primary/30 transition-all duration-300"
-              >
-                <Shield className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1 sm:mr-2 group-hover:animate-pulse" />
-                Privacy First
-              </motion.div>
-            </motion.div>
-
-            {/* Authentication Buttons - Improved responsiveness */}
-            <motion.div
-              className="flex flex-col items-center gap-3 sm:gap-6 mb-6 sm:mb-10 px-2 sm:px-4"
+              className="flex flex-wrap justify-center gap-2 xs:gap-3 sm:gap-4 mb-8 sm:mb-12 lg:mb-16 px-2 sm:px-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.6 }}
             >
-              {/* Primary CTA */}
               <motion.div
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ scale: 1.05, y: -3 }}
                 whileTap={{ scale: 0.95 }}
-                className="w-full flex justify-center xs:w-auto"
+                className="group relative overflow-hidden bg-gradient-to-r from-primary/10 to-primary/20 hover:from-primary/20 hover:to-primary/30 text-primary px-3 xs:px-4 sm:px-6 py-2 xs:py-2.5 sm:py-3 rounded-full text-xs sm:text-sm lg:text-base font-semibold border border-primary/30 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/25"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.7 }}
               >
-                <Button
-                  onClick={handleGoogleLogin}
-                  size="lg"
-                  className="group w-full xs:w-auto max-w-xs flex items-center space-x-2 sm:space-x-3 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 transform px-3 xs:px-4 sm:px-8 py-2.5 xs:py-3 sm:py-4 text-xs xs:text-sm sm:text-base lg:text-lg font-medium rounded-xl relative overflow-hidden"
-                  disabled={loading}
-                >
-                  <motion.span
-                    className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-primary-foreground/10 to-transparent"
-                    animate={{
-                      x: ["-100%", "100%"],
-                    }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 1.5,
-                      ease: "linear",
-                    }}
-                  />
-                  <GoogleIcon className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
-                  <span className="truncate">
-                    <span className="hidden xs:inline">Start Chatting</span>
-                    <span className="xs:hidden">Chat</span> with Google
-                  </span>
-                  <ArrowRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-200" />
-                </Button>
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                  animate={{ x: ["-100%", "100%"] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                />
+                <Zap className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2 group-hover:animate-pulse" />
+                <span className="hidden xs:inline">10x</span> Faster Response
               </motion.div>
 
+              <motion.div
+                whileHover={{ scale: 1.05, y: -3 }}
+                whileTap={{ scale: 0.95 }}
+                className="group bg-gradient-to-r from-secondary/40 to-secondary/60 hover:from-secondary/60 hover:to-secondary/80 text-foreground px-3 xs:px-4 sm:px-6 py-2 xs:py-2.5 sm:py-3 rounded-full text-xs sm:text-sm lg:text-base font-semibold border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.8 }}
+              >
+                <Brain className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2 group-hover:animate-bounce" />
+                Multi-Model AI
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.05, y: -3 }}
+                whileTap={{ scale: 0.95 }}
+                className="group bg-gradient-to-r from-secondary/40 to-secondary/60 hover:from-secondary/60 hover:to-secondary/80 text-foreground px-3 xs:px-4 sm:px-6 py-2 xs:py-2.5 sm:py-3 rounded-full text-xs sm:text-sm lg:text-base font-semibold border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.9 }}
+              >
+                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2 group-hover:animate-spin" />
+                Real-time Sync
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.05, y: -3 }}
+                whileTap={{ scale: 0.95 }}
+                className="group bg-gradient-to-r from-secondary/40 to-secondary/60 hover:from-secondary/60 hover:to-secondary/80 text-foreground px-3 xs:px-4 sm:px-6 py-2 xs:py-2.5 sm:py-3 rounded-full text-xs sm:text-sm lg:text-base font-semibold border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 1.0 }}
+              >
+                <Shield className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2 group-hover:animate-pulse" />
+                Privacy First
+              </motion.div>
+            </motion.div>
+
+            {/* Enhanced Authentication Buttons */}
+            <motion.div
+              className="flex flex-col items-center gap-4 sm:gap-8 mb-8 sm:mb-12 px-2 sm:px-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.8 }}
+            >
+              {/* Primary CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 w-full justify-center max-w-2xl">
+                <motion.div
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full flex justify-center sm:w-auto"
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.9 }}
+                >
+                  <Button
+                    onClick={handleGoogleLogin}
+                    size="lg"
+                    className="group relative py-5 w-full sm:w-auto min-w-[280px] flex items-center justify-center space-x-3 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-xl hover:shadow-2xl transition-all duration-500 transform px-6  text-base lg:text-lg font-semibold rounded-md md:rounded-2xl overflow-hidden"
+                    disabled={loading}
+                  >
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                      animate={{ x: ["-100%", "100%"] }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        repeatDelay: 4,
+                      }}
+                    />
+                    <GoogleIcon className="h-6 w-6 relative z-10" />
+                    <span className="relative z-10">
+                      Start Chatting with Google
+                    </span>
+                    <ArrowRight className="h-5 w-5 relative z-10 group-hover:translate-x-1 transition-transform duration-300" />
+                  </Button>
+                </motion.div>
+
+                <motion.div
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full flex justify-center sm:w-auto"
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 1.0 }}
+                >
+                  <Button
+                    onClick={handleGitHubLogin}
+                    size="lg"
+                    variant="outline"
+                    className="group relative w-full sm:w-auto min-w-[280px] flex items-center justify-center space-x-3 border-2 border-primary/50 hover:border-primary bg-background/50 hover:bg-primary/5 text-foreground shadow-xl hover:shadow-2xl transition-all duration-500 transform px-6 py-5 text-base lg:text-lg font-semibold rounded-md md:rounded-2xl backdrop-blur-sm"
+                    disabled={loading}
+                  >
+                    <GitHubIcon className="h-6 w-6" />
+                    <span>Start Chatting with GitHub</span>
+                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+                  </Button>
+                </motion.div>
+              </div>
+
               {/* Secondary Options */}
-              <div className="flex items-center gap-2 xs:gap-3 sm:gap-4">
+              <motion.div
+                className="flex items-center gap-3 sm:gap-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 1.1 }}
+              >
                 <Link to="/auth/login">
                   <motion.div
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ scale: 1.05, y: -1 }}
                     whileTap={{ scale: 0.95 }}
                   >
                     <Button
-                      variant="outline"
-                      className="flex items-center space-x-1.5 sm:space-x-2 hover:bg-secondary/80 transition-all duration-200 px-2.5 xs:px-3 sm:px-6 py-1.5 xs:py-2 sm:py-3 rounded-xl border-2 text-xs xs:text-sm sm:text-base"
+                      variant="ghost"
+                      className="flex items-center space-x-2 hover:bg-secondary/80 transition-all duration-300 px-4 py-2 rounded-xl text-sm sm:text-base font-medium"
                     >
-                      <LogIn className="h-3.5 w-3.5 xs:h-4 xs:w-4" />
+                      <LogIn className="h-4 w-4" />
                       <span>Sign In</span>
                     </Button>
                   </motion.div>
                 </Link>
 
-                <span className="text-muted-foreground text-xs xs:text-sm">
-                  or
-                </span>
+                <div className="w-px h-6 bg-border"></div>
 
                 <Link to="/auth/signup">
                   <motion.div
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ scale: 1.05, y: -1 }}
                     whileTap={{ scale: 0.95 }}
                   >
                     <Button
-                      variant="outline"
-                      className="flex items-center space-x-1.5 sm:space-x-2 border-primary/50 text-primary hover:bg-primary/5 transition-all duration-200 px-2.5 xs:px-3 sm:px-6 py-1.5 xs:py-2 sm:py-3 rounded-xl border-2 text-xs xs:text-sm sm:text-base"
+                      variant="ghost"
+                      className="flex items-center space-x-2 text-primary hover:bg-primary/10 transition-all duration-300 px-4 py-2 rounded-xl text-sm sm:text-base font-medium"
                     >
-                      <UserPlus className="h-3.5 w-3.5 xs:h-4 xs:w-4" />
+                      <UserPlus className="h-4 w-4" />
                       <span>Create Account</span>
                     </Button>
                   </motion.div>
                 </Link>
-              </div>
+              </motion.div>
             </motion.div>
 
-            {/* Trust Indicators - Better alignment */}
+            {/* Enhanced Trust Indicators */}
             <motion.div
-              className="flex flex-col xs:flex-row items-center justify-center gap-1.5 xs:gap-2 sm:gap-6 text-[10px] xs:text-xs sm:text-sm text-muted-foreground/70"
+              className="flex flex-col md:flex-row items-center justify-center gap-3 xs:gap-4 sm:gap-8 text-xs sm:text-sm text-muted-foreground/80"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.8 }}
+              transition={{ duration: 0.7, delay: 1.2 }}
             >
-              <div className="flex items-center space-x-1.5">
-                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
-                <span>Free to start</span>
-              </div>
-              <div className="flex items-center space-x-1.5">
-                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
-                <span>No credit card required</span>
-              </div>
-              <div className="flex items-center space-x-1.5">
-                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
-                <span>Trusted by 50K+ users</span>
-              </div>
+              <motion.div
+                className="flex items-center space-x-2 bg-green-500/10 px-3 py-1.5 rounded-full border border-green-500/20"
+                whileHover={{ scale: 1.05 }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 1.3 }}
+              >
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <span className="font-medium">Free to start</span>
+              </motion.div>
+
+              <motion.div
+                className="flex items-center space-x-2 bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20"
+                whileHover={{ scale: 1.05 }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 1.4 }}
+              >
+                <CheckCircle className="h-4 w-4 text-blue-500" />
+                <span className="font-medium">No credit card required</span>
+              </motion.div>
+
+              <motion.div
+                className="flex items-center space-x-2 bg-purple-500/10 px-3 py-1.5 rounded-full border border-purple-500/20"
+                whileHover={{ scale: 1.05 }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 1.5 }}
+              >
+                <CheckCircle className="h-4 w-4 text-purple-500" />
+                <span className="font-medium">Trusted by 50K+ users</span>
+              </motion.div>
             </motion.div>
           </div>
         </div>
@@ -531,7 +549,7 @@ const HomePage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             {/* Response Time */}
-            <div className="text-center p-8 bg-card/50 backdrop-blur-sm border border-border rounded-3xl hover:shadow-lg transition-all duration-300">
+            <div className="text-center p-4 md:p-8 bg-card/50 backdrop-blur-sm border border-border rounded-3xl hover:shadow-lg transition-all duration-300">
               <div className="bg-primary/10 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
                 <Clock className="h-8 w-8 text-primary" />
               </div>
@@ -547,7 +565,7 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* Accuracy */}
-            <div className="text-center p-8 bg-card/50 backdrop-blur-sm border border-border rounded-3xl hover:shadow-lg transition-all duration-300">
+            <div className="text-center p-4 md:p-8 bg-card/50 backdrop-blur-sm border border-border rounded-3xl hover:shadow-lg transition-all duration-300">
               <div className="bg-primary/10 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
                 <BarChart3 className="h-8 w-8 text-primary" />
               </div>
@@ -563,7 +581,7 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* Models Supported */}
-            <div className="text-center p-8 bg-card/50 backdrop-blur-sm border border-border rounded-3xl hover:shadow-lg transition-all duration-300">
+            <div className="text-center p-4 md:p-8 bg-card/50 backdrop-blur-sm border border-border rounded-3xl hover:shadow-lg transition-all duration-300">
               <div className="bg-primary/10 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
                 <Layers className="h-8 w-8 text-primary" />
               </div>
@@ -580,7 +598,7 @@ const HomePage: React.FC = () => {
           </div>
 
           {/* Speed Comparison Chart */}
-          <div className="bg-card/30 backdrop-blur-sm border border-border rounded-3xl p-8">
+          <div className="bg-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8">
             <h3 className="text-xl font-semibold text-foreground mb-6 text-center">
               Response Speed Comparison
             </h3>
@@ -645,7 +663,7 @@ const HomePage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Speed */}
-            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
+            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
               <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl h-16 w-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Zap className="h-8 w-8 text-primary" />
               </div>
@@ -663,7 +681,7 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* Multi-Model */}
-            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
+            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
               <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl h-16 w-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Brain className="h-8 w-8 text-primary" />
               </div>
@@ -681,7 +699,7 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* Sync */}
-            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
+            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
               <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl h-16 w-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <RefreshCw className="h-8 w-8 text-primary" />
               </div>
@@ -699,7 +717,7 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* Privacy */}
-            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
+            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
               <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl h-16 w-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Shield className="h-8 w-8 text-primary" />
               </div>
@@ -717,7 +735,7 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* Advanced Features */}
-            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
+            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
               <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl h-16 w-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Cpu className="h-8 w-8 text-primary" />
               </div>
@@ -735,7 +753,7 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* Team Collaboration */}
-            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
+            <div className="group relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border border-border rounded-3xl p-4 md:p-8 hover:bg-card/80 transition-all duration-500 hover:shadow-2xl hover:scale-105">
               <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl h-16 w-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Users2 className="h-8 w-8 text-primary" />
               </div>
@@ -1056,16 +1074,6 @@ const HomePage: React.FC = () => {
                       Implement useMemo for expensive calculations...
                     </p>
                   </div>
-                </div>
-
-                <div className="text-center">
-                  <Button
-                    variant="outline"
-                    className="flex items-center space-x-2 mx-auto"
-                  >
-                    <Play className="h-4 w-4" />
-                    <span>Try Interactive Demo</span>
-                  </Button>
                 </div>
               </div>
             </div>
@@ -1452,33 +1460,52 @@ const HomePage: React.FC = () => {
             </p>
 
             <div className="flex flex-col xs:flex-row items-center justify-center gap-3 sm:gap-4">
-              <Button
-                onClick={handleGoogleLogin}
-                size="lg"
-                className="group w-full xs:w-auto flex items-center space-x-2 xs:space-x-3 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 px-4 xs:px-5 sm:px-8 py-2.5 xs:py-3 sm:py-4 text-xs xs:text-sm sm:text-base lg:text-lg font-medium rounded-xl"
-                disabled={loading}
-              >
-                <GoogleIcon className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
-                <span>Get Started Now</span>
-                <ArrowRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-200" />
-              </Button>
-
-              <Link to="/auth/signup" className="w-full xs:w-auto">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-full"
+              <div className="flex justify-center flex-wrap gap-3">
+                <Button
+                  onClick={handleGoogleLogin}
+                  size="lg"
+                  className="group px-5 xs:w-auto flex items-center space-x-2 xs:space-x-3 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105  xs:px-5 sm:px-8 py-2.5 xs:py-3 sm:py-5 text-xs xs:text-sm sm:text-base lg:text-lg font-medium rounded-md md:rounded-xl"
+                  disabled={loading}
                 >
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full xs:w-auto flex items-center space-x-1.5 xs:space-x-2 border-primary/50 text-primary hover:bg-primary/5 transition-all duration-200 px-4 xs:px-5 sm:px-8 py-2.5 xs:py-3 sm:py-4 text-xs xs:text-sm sm:text-base lg:text-lg rounded-xl border-2"
+                  <GoogleIcon className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
+                  <span>Get Started Now</span>
+                  <ArrowRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-200" />
+                </Button>
+
+                <Button
+                  onClick={handleGitHubLogin}
+                  size="lg"
+                  variant="outline"
+                  className="group px-5 xs:w-auto flex items-center space-x-2 xs:space-x-3 border-2 border-primary/50 hover:bg-primary/5 text-foreground shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105  xs:px-5 sm:px-8 py-2.5 xs:py-3 sm:py-5 text-xs xs:text-sm sm:text-base lg:text-lg font-medium rounded-md md:rounded-xl"
+                  disabled={loading}
+                >
+                  <GitHubIcon className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
+                  <span>Get Started Now</span>
+                  <ArrowRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-200" />
+                </Button>
+              </div>
+
+              <div className="w-full flex justify-center items-center">
+                <Link
+                  to="/auth/signup"
+                  className="w-full  flex justify-center items-center xs:w-auto"
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-full  flex justify-center items-center"
                   >
-                    <UserPlus className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5" />
-                    <span>Create Free Account</span>
-                  </Button>
-                </motion.div>
-              </Link>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="px-5 flex items-center space-x-1.5 xs:space-x-2 border-primary/50 text-primary hover:bg-primary/5 transition-all duration-200 xs:px-5 sm:px-8 py-2.5 xs:py-3 sm:py-4 text-xs xs:text-sm sm:text-base lg:text-lg rounded-xl border-2"
+                    >
+                      <UserPlus className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5" />
+                      <span>Create Free Account</span>
+                    </Button>
+                  </motion.div>
+                </Link>
+              </div>
             </div>
 
             <div className="flex flex-col xs:flex-row items-center justify-center gap-2 xs:gap-3 sm:gap-6 mt-4 xs:mt-5 sm:mt-6 text-[10px] xs:text-xs sm:text-sm text-muted-foreground/70">
@@ -1494,175 +1521,125 @@ const HomePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Footer - Enhanced responsiveness */}
-        <footer className="bg-card/50 backdrop-blur-sm border-t border-border">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-5 md:gap-8 mb-6 sm:mb-8">
-              {/* Brand */}
-              <div className="col-span-2 sm:col-span-2 md:col-span-1">
-                <div className="flex items-center space-x-2 mb-3 sm:mb-4">
+        {/* Minimalistic Footer */}
+        <footer className="bg-card/30 backdrop-blur-sm border-t border-border/50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="flex flex-col items-center space-y-4 sm:space-y-6">
+              {/* Logo and Brand */}
+              <div className="justify-center flex flex-col md:flex-row gap-2.5 md:justify-between w-full md:px-10">
+                <motion.div
+                  className="flex justify-center items-center space-x-2"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
                   <img
                     src="/logo.png"
                     alt="AVChat Logo"
-                    className="h-5 w-5 xs:h-6 xs:w-6 sm:h-8 sm:w-8"
+                    className="h-6 w-6 sm:h-8 sm:w-8"
                   />
-                  <span className="text-base xs:text-lg sm:text-xl font-bold text-foreground">
+                  <span className="text-lg sm:text-xl font-bold text-foreground">
                     AV<span className="text-primary">Chat</span>
                   </span>
-                </div>
-                <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  The fastest AI conversation platform. Experience
-                  lightning-fast responses with multiple AI models in one
-                  unified interface.
+                </motion.div>
+
+                {/* Social Icons */}
+                <motion.div
+                  className="flex items-center justify-center space-x-4 sm:space-x-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                >
+                  <motion.a
+                    href="https://github.com/CyberBoyAyush/AVChat"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group p-2 rounded-full bg-secondary/50 hover:bg-primary/10 transition-all duration-300"
+                    whileHover={{ scale: 1.1, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <GitHubIcon className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </motion.a>
+
+                  <motion.a
+                    href="https://x.com/CyberBoyAyush"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group p-2 rounded-full bg-secondary/50 hover:bg-primary/10 transition-all duration-300"
+                    whileHover={{ scale: 1.1, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <svg
+                      className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground group-hover:text-primary transition-colors"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                  </motion.a>
+
+                  <motion.a
+                    href="mailto:connect@ayush-sharma.in"
+                    className="group p-2 rounded-full bg-secondary/50 hover:bg-primary/10 transition-all duration-300"
+                    whileHover={{ scale: 1.1, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Mail className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </motion.a>
+
+                  <motion.a
+                    href="mailto:connect@ayush-sharma.in"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group p-2 rounded-full bg-secondary/50 hover:bg-primary/10 transition-all duration-300"
+                    whileHover={{ scale: 1.1, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <svg
+                      className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground group-hover:text-primary transition-colors"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                      />
+                    </svg>
+                  </motion.a>
+
+                  {/* <motion.a
+                    href="https://github.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group p-2 rounded-full bg-secondary/50 hover:bg-primary/10 transition-all duration-300"
+                    whileHover={{ scale: 1.1, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <ExternalLink className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </motion.a> */}
+                </motion.div>
+              </div>
+
+              {/* Copyright */}
+              <motion.div
+                className="text-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  © 2025 AVChat. Built with ❤️ for the AI community.
                 </p>
-                <div className="flex items-center space-x-4 mt-3 xs:mt-4">
-                  <div className="flex items-center space-x-1 text-[9px] xs:text-xs text-muted-foreground">
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span>All systems operational</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer link columns - Better sizing */}
-              <div>
-                <h3 className="font-semibold text-foreground mb-3 sm:mb-4 text-sm sm:text-base">
-                  Product
-                </h3>
-                <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-muted-foreground">
-                  <li>
-                    <a
-                      href="#"
-                      className="hover:text-primary transition-colors"
-                    >
-                      Features
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      className="hover:text-primary transition-colors"
-                    >
-                      Pricing
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      className="hover:text-primary transition-colors"
-                    >
-                      AI Models
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      className="hover:text-primary transition-colors"
-                    >
-                      API Access
-                    </a>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Resources (Combined for mobile layout) */}
-              <div>
-                <h3 className="font-semibold text-foreground mb-3 sm:mb-4 text-sm sm:text-base">
-                  Resources
-                </h3>
-                <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-muted-foreground">
-                  <li>
-                    <a
-                      href="#"
-                      className="hover:text-primary transition-colors"
-                    >
-                      Documentation
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      className="hover:text-primary transition-colors"
-                    >
-                      Tutorials
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      className="hover:text-primary transition-colors"
-                    >
-                      Blog
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      className="hover:text-primary transition-colors"
-                    >
-                      Support
-                    </a>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Company (Hidden on smallest screens) */}
-              <div className="hidden sm:block">
-                <h3 className="font-semibold text-foreground mb-3 sm:mb-4 text-sm sm:text-base">
-                  Company
-                </h3>
-                <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-muted-foreground">
-                  <li>
-                    <a
-                      href="#"
-                      className="hover:text-primary transition-colors"
-                    >
-                      About
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      className="hover:text-primary transition-colors"
-                    >
-                      Privacy
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      className="hover:text-primary transition-colors"
-                    >
-                      Terms
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      className="hover:text-primary transition-colors"
-                    >
-                      Contact
-                    </a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Bottom Bar */}
-            <div className="border-t border-border pt-3 sm:pt-6">
-              <div className="flex flex-col sm:flex-row justify-between items-center">
-                <div className="text-[9px] xs:text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-0 text-center sm:text-left">
-                  © 2025 AVChat. All rights reserved. Built with ❤️ for the AI
-                  community.
-                </div>
-
-                <div className="flex items-center space-x-2 sm:space-x-4 text-[9px] xs:text-xs text-muted-foreground">
-                  <span className="hidden xs:inline">
-                    Status: All systems operational
+                <div className="flex items-center justify-center space-x-2 mt-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-muted-foreground">
+                    All systems operational
                   </span>
-                  <div className="hidden xs:block w-1 h-1 bg-muted-foreground rounded-full"></div>
-                  <span>Version 2.1.0</span>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         </footer>

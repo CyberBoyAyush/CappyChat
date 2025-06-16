@@ -13,9 +13,31 @@ export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
 export const THREADS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_THREADS_COLLECTION_ID || 'threads';
 export const MESSAGES_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID || 'messages';
 export const MESSAGE_SUMMARIES_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_MESSAGE_SUMMARIES_COLLECTION_ID || 'message_summaries';
+export const PROJECTS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECTS_COLLECTION_ID || 'projects';
 
 // Initialize Appwrite databases service
 const databases = new Databases(client);
+
+// Interface for Appwrite Project document
+export interface AppwriteProject extends Models.Document {
+  projectId: string;
+  userId: string;
+  name: string;
+  description?: string;
+  colorIndex?: number;
+  createdAt: string; // ISO date string
+  updatedAt: string; // ISO date string
+}
+
+// Define Project interface for internal use
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  colorIndex?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // Interface for Appwrite Thread document
 // These interfaces strictly follow the provided schema requirements
@@ -27,6 +49,8 @@ export interface AppwriteThread extends Models.Document {
   lastMessageAt: string; // ISO date string
   isPinned: boolean; // Pin status for thread organization
   tags?: string[]; // Optional tags array for thread categorization
+  isBranched?: boolean; // Branch status for thread organization
+  projectId?: string; // Optional project ID for thread organization
 }
 
 // Define Thread interface for internal use
@@ -38,6 +62,21 @@ export interface Thread {
   lastMessageAt: Date;
   isPinned: boolean; // Pin status for thread organization
   tags?: string[]; // Optional tags array for thread categorization
+  isBranched?: boolean; // Branch status for thread organization
+  projectId?: string; // Optional project ID for thread organization
+}
+
+// Interface for file attachments
+export interface FileAttachment {
+  id: string;
+  filename: string;
+  originalName: string;
+  fileType: 'image' | 'pdf';
+  mimeType: string;
+  size: number;
+  url: string;
+  publicId: string; // Cloudinary public ID
+  createdAt: Date;
 }
 
 // Interface for Appwrite Message document
@@ -49,6 +88,7 @@ export interface AppwriteMessage extends Models.Document {
   role: 'user' | 'assistant' | 'system' | 'data';
   createdAt: string; // ISO date string
   webSearchResults?: string[]; // URLs from web search results
+  attachments?: string | FileAttachment[]; // File attachments (stored as JSON string in Appwrite)
 }
 
 // Define Message interface for internal use
@@ -60,6 +100,7 @@ export interface DBMessage {
   role: 'user' | 'assistant' | 'system' | 'data';
   createdAt: Date;
   webSearchResults?: string[]; // URLs from web search results
+  attachments?: FileAttachment[]; // File attachments
 }
 
 // Interface for Appwrite Message Summary document
@@ -122,7 +163,9 @@ export class AppwriteDB {
           updatedAt: new Date(threadDoc.updatedAt),
           lastMessageAt: new Date(threadDoc.lastMessageAt),
           isPinned: threadDoc.isPinned || false, // Default to false for existing threads
-          tags: threadDoc.tags || [] // Default to empty array for existing threads
+          tags: threadDoc.tags || [], // Default to empty array for existing threads
+          isBranched: threadDoc.isBranched || false, // Default to false for existing threads
+          projectId: threadDoc.projectId // Optional project ID
         };
       });
       
@@ -134,19 +177,25 @@ export class AppwriteDB {
   }
 
   // Create a new thread (with duplicate check) - optimized for speed
-  static async createThread(threadId: string): Promise<string> {
+  static async createThread(threadId: string, projectId?: string): Promise<string> {
     try {
       const userId = await this.getCurrentUserId();
       const now = new Date();
-      
-      const threadData = {
+
+      const threadData: any = {
         threadId: threadId,
         userId: userId,
         title: 'New Chat',
         updatedAt: now.toISOString(),
         lastMessageAt: now.toISOString(),
-        isPinned: false // New threads are not pinned by default
+        isPinned: false, // New threads are not pinned by default
+        isBranched: false // New threads are not branched by default
       };
+
+      // Add projectId if provided
+      if (projectId) {
+        threadData.projectId = projectId;
+      }
       
       // Use upsert-like behavior by trying to create and handling duplicates
       try {
@@ -298,6 +347,53 @@ export class AppwriteDB {
     }
   }
 
+  // Update thread project
+  static async updateThreadProject(threadId: string, projectId?: string): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const now = new Date();
+
+      // Find the Appwrite document ID by threadId
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('threadId', threadId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (response.documents.length > 0) {
+        const doc = response.documents[0] as AppwriteThread;
+
+        // Update project in Appwrite
+        const updateData: any = {
+          updatedAt: now.toISOString(),
+          // We maintain lastMessageAt unchanged as this is just a project update
+        };
+
+        if (projectId) {
+          updateData.projectId = projectId;
+        } else {
+          // Remove project association by setting to null
+          updateData.projectId = null;
+        }
+
+        await databases.updateDocument(
+          DATABASE_ID,
+          THREADS_COLLECTION_ID,
+          doc.$id,
+          updateData
+        );
+      } else {
+        throw new Error(`Thread with ID ${threadId} not found`);
+      }
+    } catch (error) {
+      console.error('Error updating thread project:', error);
+      throw error;
+    }
+  }
+
   // Delete a thread and all associated messages and summaries
   static async deleteThread(threadId: string): Promise<void> {
     try {
@@ -391,6 +487,213 @@ export class AppwriteDB {
     }
   }
 
+  // -------------- Project Operations --------------
+
+  // Get all projects for current user
+  static async getProjects(): Promise<Project[]> {
+    try {
+      const userId = await this.getCurrentUserId();
+
+      // Get projects from Appwrite
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.equal('userId', userId),
+          Query.orderDesc('updatedAt')
+        ]
+      );
+
+      // Map Appwrite projects to Project format
+      const projects = response.documents.map((doc) => {
+        const projectDoc = doc as unknown as AppwriteProject;
+        return {
+          id: projectDoc.projectId,
+          name: projectDoc.name,
+          description: projectDoc.description,
+          colorIndex: projectDoc.colorIndex,
+          createdAt: new Date(doc.$createdAt),
+          updatedAt: new Date(projectDoc.updatedAt)
+        };
+      });
+
+      return projects;
+    } catch (error) {
+      console.error('Error fetching projects from Appwrite:', error);
+      return [];
+    }
+  }
+
+  // Create a new project
+  static async createProject(projectId: string, name: string, description?: string): Promise<string> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const now = new Date();
+
+      const projectData = {
+        projectId: projectId,
+        userId: userId,
+        name: name,
+        description: description || '',
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString()
+      };
+
+      await databases.createDocument(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        ID.unique(),
+        projectData
+      );
+
+      return projectId;
+    } catch (error) {
+      console.error('Error creating project:', error);
+      throw error;
+    }
+  }
+
+  // Update project
+  static async updateProject(projectId: string, name: string, description?: string): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const now = new Date();
+
+      // Find the Appwrite document ID by projectId
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.equal('projectId', projectId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (response.documents.length > 0) {
+        const doc = response.documents[0] as AppwriteProject;
+
+        // Update project in Appwrite
+        await databases.updateDocument(
+          DATABASE_ID,
+          PROJECTS_COLLECTION_ID,
+          doc.$id,
+          {
+            name: name,
+            description: description || '',
+            updatedAt: now.toISOString()
+          }
+        );
+      } else {
+        throw new Error(`Project with ID ${projectId} not found`);
+      }
+    } catch (error) {
+      console.error('Error updating project:', error);
+      throw error;
+    }
+  }
+
+  // Update project color
+  static async updateProjectColor(projectId: string, colorIndex: number): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const now = new Date();
+
+      // Find the Appwrite document ID by projectId
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.equal('projectId', projectId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (response.documents.length > 0) {
+        const doc = response.documents[0] as AppwriteProject;
+
+        // Update project color in Appwrite
+        await databases.updateDocument(
+          DATABASE_ID,
+          PROJECTS_COLLECTION_ID,
+          doc.$id,
+          {
+            colorIndex: colorIndex,
+            updatedAt: now.toISOString()
+          }
+        );
+      } else {
+        throw new Error(`Project with ID ${projectId} not found`);
+      }
+    } catch (error) {
+      console.error('Error updating project color:', error);
+      throw error;
+    }
+  }
+
+  // Delete project and optionally reassign threads
+  static async deleteProject(projectId: string, reassignThreadsToProjectId?: string): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+
+      // Find the project document
+      const projectsResponse = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.equal('projectId', projectId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (projectsResponse.documents.length === 0) {
+        console.warn(`Project ${projectId} not found, may already be deleted`);
+        return;
+      }
+
+      // Handle threads in this project
+      const threadsResponse = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('projectId', projectId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      // Update threads - either reassign to another project or remove project association
+      for (const threadDoc of threadsResponse.documents) {
+        const updateData: any = {
+          updatedAt: new Date().toISOString()
+        };
+
+        if (reassignThreadsToProjectId) {
+          updateData.projectId = reassignThreadsToProjectId;
+        } else {
+          // Remove project association by setting to null/undefined
+          updateData.projectId = null;
+        }
+
+        await databases.updateDocument(
+          DATABASE_ID,
+          THREADS_COLLECTION_ID,
+          threadDoc.$id,
+          updateData
+        );
+      }
+
+      // Delete the project itself
+      const projectDoc = projectsResponse.documents[0] as AppwriteProject;
+      await databases.deleteDocument(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        projectDoc.$id
+      );
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      throw error;
+    }
+  }
+
   // -------------- Message Operations --------------
 
   // Get messages by thread ID
@@ -412,6 +715,36 @@ export class AppwriteDB {
       // Map Appwrite messages to local DBMessage format
       const messages = response.documents.map((doc) => {
         const messageDoc = doc as unknown as AppwriteMessage;
+
+        // Parse attachments from JSON string if present
+        let attachments: FileAttachment[] | undefined = undefined;
+        if (messageDoc.attachments) {
+          console.log('🔍 Raw attachments from Appwrite:', messageDoc.attachments, 'Type:', typeof messageDoc.attachments);
+          try {
+            // If it's already an object, use it directly (backward compatibility)
+            if (typeof messageDoc.attachments === 'object') {
+              attachments = messageDoc.attachments as FileAttachment[];
+              console.log('✅ Using attachments as object:', attachments);
+            } else {
+              // If it's a string, parse it
+              attachments = JSON.parse(messageDoc.attachments as string);
+              console.log('✅ Parsed attachments from JSON string:', attachments);
+            }
+
+            // Ensure createdAt is a Date object for each attachment
+            if (attachments && Array.isArray(attachments)) {
+              attachments = attachments.map(att => ({
+                ...att,
+                createdAt: typeof att.createdAt === 'string' ? new Date(att.createdAt) : att.createdAt
+              }));
+              console.log('✅ Final processed attachments:', attachments);
+            }
+          } catch (error) {
+            console.error('❌ Error parsing attachments:', error);
+            attachments = undefined;
+          }
+        }
+
         return {
           id: messageDoc.messageId,
           threadId: messageDoc.threadId,
@@ -419,7 +752,8 @@ export class AppwriteDB {
           role: messageDoc.role,
           parts: messageDoc.content ? [{ type: "text", text: messageDoc.content }] : [],
           createdAt: new Date(messageDoc.createdAt),
-          webSearchResults: messageDoc.webSearchResults || undefined
+          webSearchResults: messageDoc.webSearchResults || undefined,
+          attachments: attachments
         };
       });
       
@@ -450,6 +784,13 @@ export class AppwriteDB {
       // Add webSearchResults if present
       if (message.webSearchResults && message.webSearchResults.length > 0) {
         messageData.webSearchResults = message.webSearchResults;
+      }
+
+      // Add attachments if present (serialize to JSON string for Appwrite)
+      if (message.attachments && message.attachments.length > 0) {
+        console.log('💾 Storing attachments to Appwrite:', message.attachments);
+        messageData.attachments = JSON.stringify(message.attachments);
+        console.log('💾 Serialized attachments:', messageData.attachments);
       }
 
       const messagePromise = databases.createDocument(
@@ -675,6 +1016,91 @@ export class AppwriteDB {
     } catch (error) {
       console.error('Error fetching message summaries with role from Appwrite:', error);
       return []; // Return empty array instead of using localDb as fallback
+    }
+  }
+
+  // Branch a thread (copy thread and all its messages)
+  static async branchThread(originalThreadId: string, newThreadId: string, newTitle?: string): Promise<string> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const now = new Date();
+
+      // Get the original thread
+      const originalThreadResponse = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('threadId', originalThreadId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (originalThreadResponse.documents.length === 0) {
+        throw new Error('Original thread not found');
+      }
+
+      const originalThread = originalThreadResponse.documents[0] as AppwriteThread;
+
+      // Create the new branched thread
+      const branchedThreadData = {
+        threadId: newThreadId,
+        userId: userId,
+        title: newTitle || `${originalThread.title} (Branch)`,
+        updatedAt: now.toISOString(),
+        lastMessageAt: now.toISOString(),
+        isPinned: false, // Branched threads are not pinned by default
+        isBranched: true, // Mark as branched
+        tags: originalThread.tags || [] // Copy tags from original thread
+      };
+
+      await databases.createDocument(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        ID.unique(),
+        branchedThreadData
+      );
+
+      // Get all messages from the original thread
+      const messagesResponse = await databases.listDocuments(
+        DATABASE_ID,
+        MESSAGES_COLLECTION_ID,
+        [
+          Query.equal('threadId', originalThreadId),
+          Query.equal('userId', userId),
+          Query.orderAsc('createdAt')
+        ]
+      );
+
+      // Copy all messages to the new thread
+      for (const messageDoc of messagesResponse.documents) {
+        const originalMessage = messageDoc as AppwriteMessage;
+        const newMessageData: any = {
+          messageId: ID.unique(), // Generate new message ID
+          threadId: newThreadId,
+          userId: userId,
+          content: originalMessage.content,
+          role: originalMessage.role,
+          createdAt: originalMessage.createdAt,
+          webSearchResults: originalMessage.webSearchResults || undefined
+        };
+
+        // Handle attachments properly
+        if (originalMessage.attachments) {
+          newMessageData.attachments = originalMessage.attachments;
+        }
+
+        await databases.createDocument(
+          DATABASE_ID,
+          MESSAGES_COLLECTION_ID,
+          ID.unique(),
+          newMessageData
+        );
+      }
+
+      return newThreadId;
+    } catch (error) {
+      console.error('Error branching thread:', error);
+      throw error;
     }
   }
 

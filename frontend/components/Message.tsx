@@ -16,6 +16,7 @@ import { UseChatHelpers } from "@ai-sdk/react";
 import ChatMessageEditor from "./ChatMessageEditor";
 import ChatMessageReasoning from "./ChatMessageReasoning";
 import WebSearchCitations from "./WebSearchCitations";
+import MessageAttachments from "./MessageAttachments";
 
 function PureMessage({
   threadId,
@@ -36,6 +37,11 @@ function PureMessage({
 }) {
   const [mode, setMode] = useState<"view" | "edit">("view");
 
+  // Debug: Log message attachments
+  if ((message as any).attachments && (message as any).attachments.length > 0) {
+    console.log('🖼️ Message has attachments:', message.id, 'Attachments:', (message as any).attachments);
+  }
+
   return (
     <div
       role="article"
@@ -44,7 +50,7 @@ function PureMessage({
         message.role === "user" ? "items-end" : "items-start"
       )}
     >
-      {message.parts.map((part, index) => {
+      {(message.parts || [{ type: "text", text: message.content || "" }]).map((part, index) => {
         const { type } = part;
         const key = `message-${message.id}-part-${index}`;
 
@@ -52,7 +58,7 @@ function PureMessage({
           return (
             <ChatMessageReasoning
               key={key}
-              reasoning={part.reasoning}
+              reasoning={(part as any).reasoning || ""}
               id={message.id}
             />
           );
@@ -63,13 +69,13 @@ function PureMessage({
             <div
               key={key}
               className="relative group px-2 py-1.5 rounded-xl bg-card border border-border shadow-sm max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%]"
-              ref={(el) => registerRef(message.id, el)}
+              ref={(el) => registerRef?.(message.id, el)}
             >
               {mode === "edit" && (
                 <ChatMessageEditor
                   threadId={threadId}
                   message={message}
-                  content={part.text}
+                  content={(part as any).text || ""}
                   setMessages={setMessages}
                   reload={reload}
                   setMode={setMode}
@@ -77,12 +83,20 @@ function PureMessage({
                 />
               )}
               {mode === "view" && (
-                <p className="break-words whitespace-pre-wrap">{part.text}</p>
+                <>
+                  <p className="break-words whitespace-pre-wrap">{(part as any).text || ""}</p>
+                  {/* Show attachments for user messages */}
+                  {(message as any).attachments && (message as any).attachments.length > 0 && (
+                    <div className="mt-2">
+                      <MessageAttachments attachments={(message as any).attachments} />
+                    </div>
+                  )}
+                </>
               )}
               {mode === "view" && (
                 <ChatMessageControls
                   threadId={threadId}
-                  content={part.text}
+                  content={(part as any).text || ""}
                   message={message}
                   setMode={setMode}
                   setMessages={setMessages}
@@ -96,11 +110,11 @@ function PureMessage({
               key={key}
               className="group flex flex-col gap-2 w-full max-w-3xl"
             >
-              <MarkdownRenderer content={part.text} id={message.id} />
+              <MarkdownRenderer content={(part as any).text || ""} id={message.id} />
               {!isStreaming && (
                 <ChatMessageControls
                   threadId={threadId}
-                  content={part.text}
+                  content={(part as any).text || ""}
                   message={message}
                   setMessages={setMessages}
                   reload={reload}
