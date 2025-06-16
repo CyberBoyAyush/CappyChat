@@ -708,3 +708,42 @@ html {
     transform: translateX(4px);
   }
 }
+
+
+
+/* LLM Marquee Animation - Perfect Infinite Continuous Scroll */
+.marquee-wrapper {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.marquee-content {
+  display: flex;
+  width: max-content;
+  animation: infiniteMarquee 30s linear infinite;
+  will-change: transform;
+}
+
+@keyframes infiniteMarquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-12.5%);
+  }
+}
+
+/* Smooth performance optimizations */
+.marquee-wrapper,
+.marquee-content {
+  backface-visibility: hidden;
+  perspective: 1000px;
+  transform: translateZ(0);
+}
+
+/* Ensure smooth rendering */
+.marquee-content > * {
+  transform: translateZ(0);
+}
+
