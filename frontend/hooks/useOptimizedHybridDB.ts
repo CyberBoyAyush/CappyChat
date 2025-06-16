@@ -6,7 +6,6 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { flushSync } from 'react-dom';
 import { HybridDB, dbEvents } from '@/lib/hybridDB';
 import { Thread, DBMessage } from '@/lib/appwriteDB';
 
@@ -25,12 +24,14 @@ export const useOptimizedThreads = () => {
   const handleThreadsUpdated = useCallback((updatedThreads: Thread[]) => {
     console.log('[useOptimizedThreads] Received threads_updated event with', updatedThreads.length, 'threads');
     if (mountedRef.current) {
-      // Force synchronous update to avoid React batching issues
-      flushSync(() => {
-        setThreads(updatedThreads);
-        setIsLoading(false);
-      });
-      console.log('[useOptimizedThreads] State updated with flushSync');
+      // Use scheduler task to avoid lifecycle method issues
+      setTimeout(() => {
+        if (mountedRef.current) {
+          setThreads(updatedThreads);
+          setIsLoading(false);
+          console.log('[useOptimizedThreads] State updated via scheduler task');
+        }
+      }, 0);
     }
   }, []);
 

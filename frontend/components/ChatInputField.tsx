@@ -97,7 +97,7 @@ function PureInputField({
     maxHeight: 200,
   });
 
-  const { isGuest, canGuestSendMessage, incrementGuestMessages } = useAuth();
+  const { isGuest, canGuestSendMessage, incrementGuestMessages, loading: authLoading } = useAuth();
   const authDialog = useAuthDialog();
 
   // File attachments state
@@ -354,6 +354,13 @@ function PureInputField({
     console.log("=== HANDLE SUBMIT CALLED ===");
     console.log("Attachments state at submit:", attachments);
     console.log("Attachments length at submit:", attachments.length);
+    console.log("Auth loading state:", authLoading);
+
+    // Wait for authentication to be fully loaded before proceeding
+    if (authLoading) {
+      console.log("=== SUBMIT BLOCKED - AUTH LOADING ===");
+      return;
+    }
 
     const currentInput = textareaRef.current?.value || input;
 
@@ -416,8 +423,17 @@ function PureInputField({
       if (!id) {
         navigate(`/chat/${threadId}`);
         // Create thread instantly with local update + async backend sync (skip for guest users)
+        // Use createThreadIfNotExists to avoid duplicate creation errors
         if (!isGuest) {
-          HybridDB.createThread(threadId);
+          console.log('👤 Authenticated user - creating thread in ChatInputField:', threadId);
+          HybridDB.createThread(threadId).then(() => {
+            console.log('✅ Thread created successfully in ChatInputField:', threadId);
+          }).catch((error) => {
+            // Thread might already exist (e.g., from URL search pre-creation)
+            console.log('Thread creation handled or already exists:', error.message || error);
+          });
+        } else {
+          console.log('🎯 Guest user - skipping thread creation in ChatInputField');
         }
       }
 
@@ -505,6 +521,7 @@ function PureInputField({
     canGuestSendMessage,
     incrementGuestMessages,
     authDialog,
+    authLoading,
   ]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

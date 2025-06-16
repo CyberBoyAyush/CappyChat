@@ -8,6 +8,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { account, APPWRITE_CONFIG, ID } from '@/lib/appwrite';
 import { OAuthProvider } from 'appwrite';
 import { Models, AppwriteException } from 'appwrite';
@@ -92,12 +93,62 @@ const getErrorMessage = (error: any): string => {
   return error?.message || 'An unexpected error occurred.';
 };
 
+// Cache keys for localStorage
+const AUTH_CACHE_KEY = 'avchat_auth_cache';
+const AUTH_CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+const AUTH_QUICK_CHECK_EXPIRY = 30 * 1000; // 30 seconds for quick checks
+
+// Helper to get cached auth state
+const getCachedAuthState = (): { user: User | null; timestamp: number } | null => {
+  try {
+    const cached = localStorage.getItem(AUTH_CACHE_KEY);
+    if (!cached) return null;
+
+    const parsed = JSON.parse(cached);
+    const now = Date.now();
+
+    // Check if cache is expired
+    if (now - parsed.timestamp > AUTH_CACHE_EXPIRY) {
+      localStorage.removeItem(AUTH_CACHE_KEY);
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    localStorage.removeItem(AUTH_CACHE_KEY);
+    return null;
+  }
+};
+
+// Helper to cache auth state
+const setCachedAuthState = (user: User | null) => {
+  try {
+    const cacheData = {
+      user,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(cacheData));
+  } catch {
+    // Ignore localStorage errors
+  }
+};
+
+// Helper to check if cached state needs verification
+const shouldVerifyCachedState = (cachedState: { user: User | null; timestamp: number } | null): boolean => {
+  if (!cachedState) return true;
+  const now = Date.now();
+  return (now - cachedState.timestamp) > AUTH_QUICK_CHECK_EXPIRY;
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
+  // Initialize with cached state to prevent flash of unauthenticated content
+  const cachedState = getCachedAuthState();
+  const [user, setUser] = useState<User | null>(cachedState?.user || null);
+  const [loading, setLoading] = useState(!cachedState); // Only show loading if no cache
+  const [initialized, setInitialized] = useState(!!cachedState); // Mark as initialized if we have cache
   const [guestUser, setGuestUser] = useState<GuestUser | null>(() => {
-    // Initialize guest user if no authenticated user
+    // Only initialize guest user if no cached authenticated user
+    if (cachedState?.user) return null;
     return {
       isGuest: true,
       messagesUsed: 0,
@@ -132,6 +183,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const refreshUser = useCallback(async (): Promise<void> => {
     try {
       const currentUser = await account.get();
+      // Update cache with fresh user data
+      setCachedAuthState(currentUser);
       setUser(currentUser);
       console.log('[AuthContext] User data refreshed:', {
         emailVerified: currentUser?.emailVerification,
@@ -139,6 +192,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
     } catch (error) {
       console.error('Failed to refresh user data:', error);
+      // Clear cache if refresh fails
+      setCachedAuthState(null);
+      setUser(null);
     }
   }, []);
 
@@ -157,28 +213,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (initialized) return; // Prevent multiple initializations
+    if (initialized && !shouldVerifyCachedState(cachedState)) return; // Skip if we have recent cached state
 
     const initAuth = async () => {
       try {
-        setLoading(true);
+        // If we have recent cached state, skip loading state
+        const needsVerification = shouldVerifyCachedState(cachedState);
+        if (needsVerification && !cachedState) {
+          setLoading(true);
+        }
+
         const currentUser = await getCurrentUser();
 
         if (currentUser) {
-          setUser(currentUser);
-          setGuestUser(null); // Clear guest user when authenticated user is found
-          setLoading(false); // Set loading to false immediately after user is set
-          setInitialized(true);
+          // Update cache with fresh user data
+          setCachedAuthState(currentUser);
+
+          // Use flushSync to ensure immediate synchronous updates
+          flushSync(() => {
+            setUser(currentUser);
+            setGuestUser(null); // Clear guest user when authenticated user is found
+            setLoading(false); // Set loading to false immediately after user is set
+            setInitialized(true);
+          });
 
           // Initialize services in background - don't await to avoid blocking UI
           initializeUserServices(currentUser.$id).catch(err =>
             console.error('Background service initialization failed:', err)
           );
         } else {
-          setUser(null);
-          // Keep guest user initialized for unauthenticated users
-          setLoading(false);
-          setInitialized(true);
+          // Clear cache if no user found
+          setCachedAuthState(null);
+
+          // Use flushSync to ensure immediate synchronous updates
+          flushSync(() => {
+            setUser(null);
+            // Keep guest user initialized for unauthenticated users
+            if (!guestUser) {
+              setGuestUser({
+                isGuest: true,
+                messagesUsed: 0,
+                maxMessages: 2
+              });
+            }
+            setLoading(false);
+            setInitialized(true);
+          });
 
           // Initialize HybridDB for guest users
           HybridDB.initialize('guest', true).catch(err =>
@@ -187,6 +267,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
+        // Clear cache on error
+        setCachedAuthState(null);
         setUser(null);
         setLoading(false);
         setInitialized(true);
@@ -201,7 +283,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         AppwriteRealtime.unsubscribeFromAll();
       }
     };
-  }, [getCurrentUser, initializeUserServices, initialized]);
+  }, [getCurrentUser, initializeUserServices, initialized, cachedState, guestUser]);
 
   // Login with email and password
   const login = async (email: string, password: string): Promise<void> => {
@@ -211,9 +293,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Create session and get user data
       await account.createEmailPasswordSession(email, password);
       const currentUser = await account.get(); // Get fresh user data after session creation
-      setUser(currentUser);
-      setGuestUser(null); // Clear guest user when logging in
-      setLoading(false); // Set loading to false immediately after user is set
+
+      // Update cache immediately
+      setCachedAuthState(currentUser);
+
+      // Use flushSync for immediate UI update
+      flushSync(() => {
+        setUser(currentUser);
+        setGuestUser(null); // Clear guest user when logging in
+        setLoading(false); // Set loading to false immediately after user is set
+      });
 
       // Initialize services in background - don't block login completion
       initializeUserServices(currentUser.$id).catch(err =>
@@ -241,6 +330,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Get fresh user data after session creation to ensure correct verification status
       const currentUser = await account.get();
+
+      // Update cache immediately
+      setCachedAuthState(currentUser);
       setUser(currentUser);
       setGuestUser(null); // Clear guest user when registering
       setLoading(false); // Set loading to false immediately after user is set
@@ -289,13 +381,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       await account.deleteSessions();
-      
+
       // Unsubscribe from all Appwrite Realtime channels
       AppwriteRealtime.unsubscribeFromAll();
-      
+
       // Clear local database
       HybridDB.clearLocalData();
 
+      // Clear cache immediately
+      setCachedAuthState(null);
       setUser(null);
       // Reset guest user when logging out
       setGuestUser({
@@ -347,6 +441,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       const updatedUser = await account.updateName(name);
+      // Update cache with updated user data
+      setCachedAuthState(updatedUser);
       setUser(updatedUser);
     } catch (error) {
       console.error('Profile update error:', error);
@@ -361,6 +457,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       const updatedUser = await account.updateEmail(email, password);
+      // Update cache with updated user data
+      setCachedAuthState(updatedUser);
       setUser(updatedUser);
     } catch (error) {
       console.error('Email update error:', error);
@@ -447,6 +545,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Directly call account.get() to ensure we get fresh user data
       const currentUser = await account.get();
       if (currentUser) {
+        // Update cache with verified user data
+        setCachedAuthState(currentUser);
         setUser(currentUser);
       }
     } catch (error) {

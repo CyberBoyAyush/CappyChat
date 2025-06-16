@@ -6,9 +6,9 @@
  * Loads messages from database and renders the chat interface for the specific thread.
  */
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import ChatInterface from "@/frontend/components/ChatInterface";
-import { useParams } from "react-router";
+import { useParams, useLocation } from "react-router";
 import { useOptimizedMessages } from "@/frontend/hooks/useOptimizedHybridDB";
 import { UIMessage } from "ai";
 import { Skeleton } from "@/frontend/components/ui/BasicComponents";
@@ -16,7 +16,31 @@ import { MessageLoading } from "@/frontend/components/ui/UIComponents";
 
 export default function ChatThreadPage() {
   const { id } = useParams();
+  const location = useLocation();
   if (!id) throw new Error("Thread ID is required");
+
+  // Check if this thread was created from a URL search query
+  // This can happen when navigating from ChatHomePage with a search query
+  const searchQuery = useMemo(() => {
+    // Check if we have search query in location state (from navigation)
+    if (location.state?.searchQuery) {
+      return location.state.searchQuery;
+    }
+
+    // Also check current URL params as fallback
+    const urlParams = new URLSearchParams(location.search);
+    const q = urlParams.get('q');
+    if (q) {
+      try {
+        return decodeURIComponent(q);
+      } catch (error) {
+        console.warn('Failed to decode search query:', error);
+        return q;
+      }
+    }
+
+    return null;
+  }, [location.state, location.search]);
 
   // Use optimized hook for better performance
   const { messages, isLoading } = useOptimizedMessages(id);
@@ -133,6 +157,7 @@ export default function ChatThreadPage() {
       key={id}
       threadId={id}
       initialMessages={convertToUIMessages(messages) || []}
+      searchQuery={searchQuery}
     />
   );
 }
