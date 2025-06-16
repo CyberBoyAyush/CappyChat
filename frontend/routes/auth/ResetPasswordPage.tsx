@@ -87,7 +87,7 @@ const ResetPasswordPage: React.FC = () => {
   };
 
   const handleBackToLogin = () => {
-    navigate("/auth/login");
+    navigate("/");
   };
 
   if (loading) {
@@ -108,11 +108,11 @@ const ResetPasswordPage: React.FC = () => {
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
-              to="/auth/login"
+              to="/"
               className="flex items-center justify-center h-9 w-9 rounded-full border border-border bg-background hover:bg-muted transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span className="sr-only">Back to Login</span>
+              <span className="sr-only">Back to Home</span>
             </Link>
             <div className="flex items-center">
               <img src="/logo.png" alt="AVChat Logo" className="h-8 w-8 mr-2" />

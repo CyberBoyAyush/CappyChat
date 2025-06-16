@@ -72,7 +72,7 @@ const AuthErrorPage: React.FC = () => {
 
           <div className="space-y-3">
             <Button asChild className="w-full">
-              <Link to="/auth/login">
+              <Link to="/">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Try Again
               </Link>

@@ -100,7 +100,7 @@ const EmailVerificationPage: React.FC = () => {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       {/* Navigation */}
       <div className="fixed top-4 left-4 z-50">
-        <Link to="/auth/login">
+        <Link to="/">
           <Button variant="outline" size="icon" className="focus-enhanced">
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -234,7 +234,7 @@ const EmailVerificationPage: React.FC = () => {
                   )}
                 </Button>
                 <Button variant="outline" asChild className="w-full">
-                  <Link to="/auth/login">Back to Login</Link>
+                  <Link to="/">Back to Home</Link>
                 </Button>
               </div>
             </>
@@ -249,7 +249,7 @@ const EmailVerificationPage: React.FC = () => {
                 Please log in to verify your email address.
               </p>
               <Button asChild className="w-full">
-                <Link to="/auth/login">Go to Login</Link>
+                <Link to="/">Go to Home</Link>
               </Button>
             </>
           )}

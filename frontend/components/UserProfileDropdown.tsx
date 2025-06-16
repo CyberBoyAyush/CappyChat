@@ -65,10 +65,7 @@ const UserProfileDropdown: React.FC = () => {
   };
 
   // Don't render on authentication pages
-  const isAuthPage =
-    location.pathname.startsWith("/auth/") ||
-    location.pathname === "/auth/login" ||
-    location.pathname === "/auth/signup";
+  const isAuthPage = location.pathname.startsWith("/auth/");
   if (isAuthPage) return null;
 
   // Show guest user interface if not authenticated

@@ -14,12 +14,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { messages, model, conversationStyle, userApiKey, experimental_attachments, userId, threadId, isGuest } = body;
 
-    console.log('=== CHAT MESSAGING API DEBUG ===');
-    console.log('Number of messages received:', messages?.length);
-    console.log('Model received:', model);
-    console.log('Experimental attachments:', experimental_attachments);
-    console.log('Is guest user:', isGuest);
-
     // Validate required fields
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -46,7 +40,6 @@ export async function POST(req: NextRequest) {
     if (isGuest) {
       // Force guest users to use Gemini 2.5 Flash regardless of what model is sent
       actualModel = 'Gemini 2.5 Flash';
-      console.log('[ChatAPI] Guest user detected, forcing model to Gemini 2.5 Flash');
     }
 
     const modelConfig = getModelConfig(actualModel as AIModel);
@@ -96,13 +89,10 @@ export async function POST(req: NextRequest) {
     if (!isGuest) {
       // Check if user can use this model (tier validation)
       const usingBYOK = !!userApiKey;
-      console.log(`[ChatAPI] Model: ${actualModel}, BYOK: ${usingBYOK}, UserApiKey: ${userApiKey ? 'present' : 'not present'}`);
 
       const tierValidation = await canUserUseModel(actualModel as AIModel, usingBYOK, userId, isGuest);
-      console.log('[ChatAPI] Tier validation result:', tierValidation);
 
       if (!tierValidation.canUseModel) {
-        console.log('[ChatAPI] Model access denied, returning 403');
         return new Response(
           JSON.stringify({
             error: tierValidation.message || 'Model access denied',
@@ -129,8 +119,6 @@ export async function POST(req: NextRequest) {
           }
         );
       }
-    } else {
-      console.log('[ChatAPI] Guest user detected, skipping tier validation and credit consumption');
     }
 
     // Use user's API key if provided, otherwise fall back to system key

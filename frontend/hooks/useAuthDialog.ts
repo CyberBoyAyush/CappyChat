@@ -44,15 +44,15 @@ export const useAuthDialog = () => {
 
   const showGuestLimitDialog = useCallback(() => {
     showSignupDialog(
-      '🎉 Hey there, superstar! Ready to unlock the magic? Sign up and get 200 basic prompts, 20 premium prompts, and 2 super premium prompts every month - totally FREE! 🚀',
-      'Takes just 30 seconds, and your future self will thank you! ✨'
+      '🚀 Ready for unlimited AI magic?',
+      'Join free: 200 basic + 20 premium + 2 super premium prompts monthly!'
     );
   }, [showSignupDialog]);
 
   const showPremiumFeatureDialog = useCallback((featureName: string) => {
     showLoginDialog(
-      `🔐 ${featureName} is waiting for you!`,
-      'Join the club (it\'s free!) and unlock this awesome feature plus so much more! 🎯'
+      `🔐 ${featureName} awaits!`,
+      'Sign in to unlock this feature and more premium tools.'
     );
   }, [showLoginDialog]);
 

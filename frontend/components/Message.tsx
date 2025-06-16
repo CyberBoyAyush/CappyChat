@@ -37,11 +37,6 @@ function PureMessage({
 }) {
   const [mode, setMode] = useState<"view" | "edit">("view");
 
-  // Debug: Log message attachments
-  if ((message as any).attachments && (message as any).attachments.length > 0) {
-    console.log('🖼️ Message has attachments:', message.id, 'Attachments:', (message as any).attachments);
-  }
-
   return (
     <div
       role="article"
@@ -124,18 +119,10 @@ function PureMessage({
               {/* Show web search citations for assistant messages with search results */}
               {message.role === "assistant" &&
                 (message as any).webSearchResults && (
-                  <>
-                    {console.log(
-                      "🎯 Rendering citations for message:",
-                      message.id,
-                      "Results:",
-                      (message as any).webSearchResults
-                    )}
-                    <WebSearchCitations
-                      results={(message as any).webSearchResults}
-                      searchQuery="web search"
-                    />
-                  </>
+                  <WebSearchCitations
+                    results={(message as any).webSearchResults}
+                    searchQuery="web search"
+                  />
                 )}
             </div>
           );

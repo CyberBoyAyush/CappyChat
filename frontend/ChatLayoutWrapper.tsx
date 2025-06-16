@@ -14,11 +14,14 @@ import { useIsMobile } from "@/hooks/useMobileDetection";
 import { Button } from "@/frontend/components/ui/button";
 import { PanelLeftIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/frontend/contexts/AuthContext";
+import EmailVerificationGuard from "@/frontend/components/EmailVerificationGuard";
 
 export default function ChatLayoutWrapper() {
   const [sidebarWidth, setSidebarWidth] = useState(300); // Default width
   const [isDragging, setIsDragging] = useState(false);
   const isMobile = useIsMobile();
+  const { isAuthenticated, isEmailVerified } = useAuth();
 
   // Default sidebar open state - only close by default on mobile
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
@@ -100,6 +103,15 @@ export default function ChatLayoutWrapper() {
       document.body.style.userSelect = "none";
     };
   }, [isDragging]);
+
+  // If user is authenticated but email is not verified, show verification guard
+  if (isAuthenticated && !isEmailVerified) {
+    return (
+      <EmailVerificationGuard>
+        <div></div> {/* This will never render because EmailVerificationGuard blocks unverified users */}
+      </EmailVerificationGuard>
+    );
+  }
 
   return (
     <SidebarProvider

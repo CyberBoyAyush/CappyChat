@@ -7,16 +7,13 @@
  * Includes authentication protection and providers.
  */
 
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ChatLayoutWrapper from "./ChatLayoutWrapper";
 import ChatHomePage from "./routes/ChatHomePage";
-import LandingPage from "./routes/LandingPage";
 import ChatThreadPage from "./routes/ChatThreadPage";
 import SettingsPage from "./routes/SettingsPage";
-import LoginPage from "./routes/auth/LoginPage";
-import SignUpPage from "./routes/auth/SignUpPage";
 import AuthCallbackPage from "./routes/auth/AuthCallbackPage";
 import AuthErrorPage from "./routes/auth/AuthErrorPage";
 import EmailVerificationPage from "./routes/auth/EmailVerificationPage";
@@ -38,26 +35,7 @@ export default function ChatAppRouter() {
             <Route path="chat/:id" element={<ChatThreadPage />} />
           </Route>
 
-          {/* Landing page for marketing (moved to separate route) */}
-          <Route path="/landing" element={<LandingPage />} />
 
-          {/* Auth routes (only accessible when not authenticated) */}
-          <Route
-            path="/auth/login"
-            element={
-              <ProtectedRoute requireAuth={false}>
-                <LoginPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/auth/signup"
-            element={
-              <ProtectedRoute requireAuth={false}>
-                <SignUpPage />
-              </ProtectedRoute>
-            }
-          />
 
           {/* Auth callback and error routes (always accessible) */}
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
@@ -75,16 +53,7 @@ export default function ChatAppRouter() {
             }
           />
 
-          {/* Redirect old routes to unified settings */}
-          <Route
-            path="privacy"
-            element={<Navigate to="/settings#privacy" replace />}
-          />
 
-          <Route
-            path="/profile"
-            element={<Navigate to="/settings#profile" replace />}
-          />
 
           {/* 404 page */}
           <Route

@@ -145,16 +145,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Initialize user services (DB and realtime) - optimized for performance
   const initializeUserServices = useCallback(async (userId: string) => {
     try {
-      console.log('[AuthContext] Initializing user services for user:', userId);
-
       // Initialize tier system for new users only - don't reset existing users
       await ensureUserTierInitialized();
-      console.log('[AuthContext] User tier initialization completed');
 
       // Only initialize HybridDB - realtime will be handled inside it
       // This is now non-blocking and much faster
       await HybridDB.initialize(userId, false); // false = not guest mode
-      console.log('[AuthContext] User services initialized successfully');
     } catch (error) {
       console.error('Failed to initialize user services:', error);
     }
@@ -236,22 +232,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(true);
 
       // Create user account
-      const newUser = await account.create(ID.unique(), email, password, name);
+      await account.create(ID.unique(), email, password, name);
       // Create session
       await account.createEmailPasswordSession(email, password);
 
-      // Send verification email in background
-      account.createVerification(APPWRITE_CONFIG.verificationUrl).catch(err =>
-        console.warn('Failed to send verification email:', err)
-      );
+      // Send verification email immediately (not in background)
+      await account.createVerification(APPWRITE_CONFIG.verificationUrl);
 
-      // Use the newUser object instead of making another API call
-      setUser(newUser);
+      // Get fresh user data after session creation to ensure correct verification status
+      const currentUser = await account.get();
+      setUser(currentUser);
       setGuestUser(null); // Clear guest user when registering
       setLoading(false); // Set loading to false immediately after user is set
 
       // Initialize services in background - don't block registration completion
-      initializeUserServices(newUser.$id).catch(err =>
+      initializeUserServices(currentUser.$id).catch(err =>
         console.error('Background service initialization failed:', err)
       );
     } catch (error) {
@@ -453,10 +448,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const currentUser = await account.get();
       if (currentUser) {
         setUser(currentUser);
-        console.log('[AuthContext] Email verification successful, user updated:', {
-          emailVerified: currentUser.emailVerification,
-          userId: currentUser.$id
-        });
       }
     } catch (error) {
       console.error('Email verification error:', error);

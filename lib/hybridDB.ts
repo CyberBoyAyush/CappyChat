@@ -193,13 +193,10 @@ export class HybridDB {
   }
 
   private static async doInitialize(userId: string, isGuest: boolean = false): Promise<void> {
-    console.log('[HybridDB] Starting initialization for user:', userId, 'Guest:', isGuest);
-
     this.isGuestMode = isGuest;
 
     // Skip all database operations for guest users
     if (isGuest) {
-      console.log('[HybridDB] Guest user detected, skipping database initialization');
       this.initialized = true;
       return;
     }
@@ -207,7 +204,6 @@ export class HybridDB {
     LocalDB.setUserId(userId);
 
     // Set up realtime callbacks
-    console.log('[HybridDB] Setting up realtime callbacks');
     AppwriteRealtime.setCallbacks({
       onThreadCreated: this.handleRemoteThreadCreated.bind(this),
       onThreadUpdated: this.handleRemoteThreadUpdated.bind(this),
@@ -219,14 +215,11 @@ export class HybridDB {
     });
 
     // Subscribe to realtime updates immediately for better UX
-    console.log('[HybridDB] Subscribing to realtime updates');
     AppwriteRealtime.subscribeToAll(userId);
 
     // Non-blocking background sync - instant UI, sync in background
-    console.log('[HybridDB] Starting background sync');
     this.performInitialSyncInBackground();
     this.initialized = true;
-    console.log('[HybridDB] Initialization complete');
   }
 
   // Perform initial sync from Appwrite - now async in background
@@ -324,14 +317,11 @@ export class HybridDB {
   static async updateThread(threadId: string, title: string): Promise<void> {
     const now = new Date();
 
-    console.log('[HybridDB] Updating thread title:', { threadId, title });
-
     // Instant local update
     LocalDB.updateThread(threadId, { title, updatedAt: now });
 
     // Get updated threads and emit event with a small delay to avoid batching issues
     const updatedThreads = LocalDB.getThreads();
-    console.log('[HybridDB] Emitting threads_updated event with', updatedThreads.length, 'threads');
 
     // Use setTimeout to ensure this runs after any pending React updates
     setTimeout(() => {
@@ -357,14 +347,11 @@ export class HybridDB {
   static async updateThreadPinStatus(threadId: string, isPinned: boolean): Promise<void> {
     const now = new Date();
 
-    console.log('[HybridDB] Updating thread pin status:', { threadId, isPinned });
-
     // Instant local update
     LocalDB.updateThread(threadId, { isPinned, updatedAt: now });
 
     // Get updated threads and emit event
     const updatedThreads = LocalDB.getThreads();
-    console.log('[HybridDB] Emitting threads_updated event with', updatedThreads.length, 'threads');
 
     // Use setTimeout to ensure this runs after any pending React updates
     setTimeout(() => {
@@ -390,14 +377,11 @@ export class HybridDB {
   static async updateThreadTags(threadId: string, tags: string[]): Promise<void> {
     const now = new Date();
 
-    console.log('[HybridDB] Updating thread tags:', { threadId, tags });
-
     // Instant local update
     LocalDB.updateThread(threadId, { tags, updatedAt: now });
 
     // Get updated threads and emit event
     const updatedThreads = LocalDB.getThreads();
-    console.log('[HybridDB] Emitting threads_updated event with', updatedThreads.length, 'threads');
 
     // Use setTimeout to ensure this runs after any pending React updates
     setTimeout(() => {
@@ -423,14 +407,11 @@ export class HybridDB {
   static async updateThreadProject(threadId: string, projectId?: string): Promise<void> {
     const now = new Date();
 
-    console.log('[HybridDB] Updating thread project:', { threadId, projectId });
-
     // Instant local update
     LocalDB.updateThread(threadId, { projectId, updatedAt: now });
 
     // Get updated threads and emit event
     const updatedThreads = LocalDB.getThreads();
-    console.log('[HybridDB] Emitting threads_updated event with', updatedThreads.length, 'threads');
 
     // Use setTimeout to ensure this runs after any pending React updates
     setTimeout(() => {
@@ -680,10 +661,6 @@ export class HybridDB {
 
   // Create message (instant local + async remote)
   static async createMessage(threadId: string, message: any): Promise<void> {
-    console.log('🔄 HybridDB.createMessage called for:', message.id, 'Has attachments:', !!message.attachments);
-    if (message.attachments) {
-      console.log('📎 Attachments in HybridDB.createMessage:', message.attachments);
-    }
 
     const dbMessage: DBMessage = {
       id: message.id,
@@ -709,11 +686,9 @@ export class HybridDB {
     // Async remote update
     this.queueSync(async () => {
       try {
-        console.log('🔄 Syncing message to Appwrite:', message.id, 'Has attachments:', !!message.attachments);
         await AppwriteDB.createMessage(threadId, message);
-        console.log('✅ Message synced to Appwrite successfully:', message.id);
       } catch (error) {
-        console.error('❌ Failed to sync message creation:', error);
+        console.error('Failed to sync message creation:', error);
       }
     });
   }
@@ -940,14 +915,11 @@ export class HybridDB {
   }
 
   private static handleRemoteMessageCreated(appwriteMessage: any): void {
-    console.log('[HybridDB] Handling remote message created:', appwriteMessage.messageId);
-
     // Check if message already exists locally to avoid duplicates
     const existingMessages = LocalDB.getMessagesByThread(appwriteMessage.threadId);
     const existsLocally = existingMessages.some(m => m.id === appwriteMessage.messageId);
 
     if (existsLocally) {
-      console.log('[HybridDB] Message already exists locally, skipping:', appwriteMessage.messageId);
       return;
     }
 
@@ -989,13 +961,11 @@ export class HybridDB {
 
     LocalDB.addMessage(message);
     const updatedMessages = LocalDB.getMessagesByThread(message.threadId);
-    console.log('[HybridDB] Message added locally, emitting update. Total messages:', updatedMessages.length);
     debouncedEmitter.emit('messages_updated', message.threadId, updatedMessages);
     debouncedEmitter.emit('threads_updated', LocalDB.getThreads());
   }
 
   private static handleRemoteMessageUpdated(appwriteMessage: any): void {
-    console.log('[HybridDB] Handling remote message updated:', appwriteMessage.messageId);
 
     // Parse attachments from JSON string if present
     let attachments: FileAttachment[] | undefined = undefined;
@@ -1035,14 +1005,11 @@ export class HybridDB {
 
     LocalDB.addMessage(message); // addMessage handles both create and update
     const updatedMessages = LocalDB.getMessagesByThread(message.threadId);
-    console.log('[HybridDB] Message updated locally, emitting update. Total messages:', updatedMessages.length);
     debouncedEmitter.emit('messages_updated', message.threadId, updatedMessages);
     debouncedEmitter.emit('threads_updated', LocalDB.getThreads());
   }
 
   private static handleRemoteMessageDeleted(appwriteMessage: any): void {
-    console.log('[HybridDB] Handling remote message deleted:', appwriteMessage.messageId);
-
     // Remove message from local storage
     const data = localStorage.getItem('atchat_messages');
     if (data) {
@@ -1051,7 +1018,6 @@ export class HybridDB {
       localStorage.setItem('atchat_messages', JSON.stringify(filteredMessages));
 
       const updatedMessages = LocalDB.getMessagesByThread(appwriteMessage.threadId);
-      console.log('[HybridDB] Message deleted locally, emitting update. Total messages:', updatedMessages.length);
       debouncedEmitter.emit('messages_updated', appwriteMessage.threadId, updatedMessages);
       debouncedEmitter.emit('threads_updated', LocalDB.getThreads());
     }
