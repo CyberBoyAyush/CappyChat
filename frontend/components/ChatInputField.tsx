@@ -8,7 +8,7 @@
  */
 
 import { ArrowUpIcon } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Textarea } from "@/frontend/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
@@ -117,17 +117,51 @@ function PureInputField({
   // Web search state
   const { isWebSearchEnabled, setWebSearchEnabled } = useWebSearchStore();
 
-  // Focus textarea when input changes (especially for prompt selections)
+  // Track if input change was from user typing vs external source (like prompt selection)
+  const lastInputRef = useRef("");
+  const isUserTypingRef = useRef(false);
+
+  // Focus textarea when input changes from external sources (like prompt selections)
   useEffect(() => {
     if (input && textareaRef.current && isHomePage) {
-      textareaRef.current.focus();
+      const lastInput = lastInputRef.current;
+      const textareaHasFocus = document.activeElement === textareaRef.current;
+      const isUserTyping = isUserTypingRef.current;
 
-      // Set cursor at the end of the text
-      const length = input.length;
-      textareaRef.current.setSelectionRange(length, length);
+      // Skip cursor manipulation if this is from user typing
+      if (isUserTyping) {
+        adjustHeight();
+        lastInputRef.current = input;
+        return;
+      }
 
-      // Also adjust height for the new content
+      // Check if this is a complete replacement of text (prompt selection)
+      // vs incremental changes (user typing)
+      const isCompleteReplacement =
+        lastInput.length > 0 &&
+        !input.startsWith(lastInput) &&
+        !lastInput.startsWith(input);
+
+      // Check if textarea doesn't have focus (external input)
+      const isExternalInput = !textareaHasFocus;
+
+      // Check if this is likely a prompt selection (empty to full text)
+      const isPromptSelection = lastInput === "" && input.length > 20;
+
+      // Only interfere with cursor positioning for external inputs or prompt selections
+      if (isCompleteReplacement || isExternalInput || isPromptSelection) {
+        textareaRef.current.focus();
+
+        // For prompt selections, put cursor at the end
+        const length = input.length;
+        textareaRef.current.setSelectionRange(length, length);
+      }
+
+      // Always adjust height for new content
       adjustHeight();
+
+      // Update the last input
+      lastInputRef.current = input;
     }
   }, [input, textareaRef, isHomePage, adjustHeight]);
 
@@ -460,11 +494,16 @@ function PureInputField({
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    // Mark that this change is from user typing
+    isUserTypingRef.current = true;
+
     setInput(e.target.value);
     adjustHeight();
 
-    // We don't need extra cursor position handling as React will maintain it automatically
-    // when using controlled input with the value property
+    // Reset the flag after a short delay to allow the effect to run
+    setTimeout(() => {
+      isUserTypingRef.current = false;
+    }, 10);
   };
 
   // Expose handleSubmit function through ref for external access

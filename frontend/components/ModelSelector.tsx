@@ -80,8 +80,11 @@ const ModelCard: React.FC<ModelCardProps> = ({
             <h3
               className={cn(
                 "font-semibold text-xs sm:text-sm leading-tight truncate",
-                isSelected && !isDisabled ? "text-primary" :
-                isDisabled ? "text-muted-foreground" : "text-foreground"
+                isSelected && !isDisabled
+                  ? "text-primary"
+                  : isDisabled
+                  ? "text-muted-foreground"
+                  : "text-foreground"
               )}
             >
               {modelConfig.displayName}
@@ -92,10 +95,12 @@ const ModelCard: React.FC<ModelCardProps> = ({
               </div>
             )}
           </div>
-          <p className={cn(
-            "text-xs mt-0.5 sm:mt-1 font-medium hidden sm:block",
-            isDisabled ? "text-muted-foreground/70" : "text-muted-foreground"
-          )}>
+          <p
+            className={cn(
+              "text-xs mt-0.5 sm:mt-1 font-medium hidden sm:block",
+              isDisabled ? "text-muted-foreground/70" : "text-muted-foreground"
+            )}
+          >
             {modelConfig.company}
           </p>
           {isDisabled && tierValidation?.message && (
@@ -158,7 +163,7 @@ const BYOKIndicator = () => {
   const hasByok = hasOpenRouterKey();
 
   const handleClick = () => {
-    navigate('/settings#settings');
+    navigate("/settings#settings");
   };
 
   return (
@@ -172,12 +177,14 @@ const BYOKIndicator = () => {
           ? "text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-950/20"
           : "text-muted-foreground hover:text-foreground hover:bg-muted"
       )}
-      title={hasByok ? "BYOK is ON - Unlimited access to all models" : "Configure your own API key for unlimited access"}
+      title={
+        hasByok
+          ? "BYOK is ON - Unlimited access to all models"
+          : "Configure your own API key for unlimited access"
+      }
     >
       <Key className="w-3 h-3 mr-1" />
-      <span className="hidden sm:inline">
-        {hasByok ? "BYOK ON" : "BYOK"}
-      </span>
+      <span className="hidden sm:inline">{hasByok ? "BYOK ON" : "BYOK"}</span>
     </Button>
   );
 };
@@ -188,7 +195,9 @@ const PureModelSelector = () => {
   const { hasOpenRouterKey } = useBYOKStore();
   const selectedModelConfig = getModelConfig(selectedModel);
   const [searchQuery, setSearchQuery] = useState("");
-  const [tierValidations, setTierValidations] = useState<Record<AIModel, TierValidationResult>>({} as Record<AIModel, TierValidationResult>);
+  const [tierValidations, setTierValidations] = useState<
+    Record<AIModel, TierValidationResult>
+  >({} as Record<AIModel, TierValidationResult>);
 
   // When web search is enabled, lock to Gemini 2.5 Flash Search
   const isLocked = isWebSearchEnabled;
@@ -197,7 +206,10 @@ const PureModelSelector = () => {
   // Load tier validations for all models
   useEffect(() => {
     const loadTierValidations = async () => {
-      const validations: Record<AIModel, TierValidationResult> = {} as Record<AIModel, TierValidationResult>;
+      const validations: Record<AIModel, TierValidationResult> = {} as Record<
+        AIModel,
+        TierValidationResult
+      >;
 
       for (const model of AI_MODELS) {
         try {
@@ -207,7 +219,7 @@ const PureModelSelector = () => {
           validations[model] = {
             canUseModel: false,
             remainingCredits: 0,
-            message: 'Error checking model access',
+            message: "Error checking model access",
           };
         }
       }
@@ -267,7 +279,7 @@ const PureModelSelector = () => {
             className={cn(
               "flex items-center gap-1 sm:gap-2 h-10 sm:h-9 md:h-8 pl-2 pr-1.5 sm:pr-2 text-xs rounded-md min-w-0",
               "text-foreground hover:bg-accent hover:text-accent-foreground",
-              "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+
               "transition-all duration-200 mobile-touch",
               isLocked && "opacity-75 cursor-not-allowed hover:bg-transparent"
             )}
