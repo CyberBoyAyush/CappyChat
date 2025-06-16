@@ -29,21 +29,34 @@ const AuthRedirectGuard: React.FC<AuthRedirectGuardProps> = ({
   useEffect(() => {
     // Only redirect if user is authenticated and not loading
     if (isAuthenticated && !loading) {
+      console.log('[AuthRedirectGuard] User is authenticated, checking redirect...', {
+        currentPath: location.pathname,
+        redirectTo,
+        isAuthenticated,
+        loading
+      });
+
       // Check if there's a stored redirect path from login
       const storedRedirect = sessionStorage.getItem('auth_redirect');
-      
+
       // Determine final redirect path
       let finalRedirectPath = redirectTo;
-      
+
       if (storedRedirect) {
         finalRedirectPath = storedRedirect;
         sessionStorage.removeItem('auth_redirect');
+        console.log('[AuthRedirectGuard] Using stored redirect:', finalRedirectPath);
       }
-      
+
       // Only redirect if we're not already on the target path
       if (location.pathname !== finalRedirectPath) {
+        console.log('[AuthRedirectGuard] Redirecting to:', finalRedirectPath);
         navigate(finalRedirectPath, { replace: true });
+      } else {
+        console.log('[AuthRedirectGuard] Already on target path, no redirect needed');
       }
+    } else {
+      console.log('[AuthRedirectGuard] Not redirecting:', { isAuthenticated, loading });
     }
   }, [isAuthenticated, loading, navigate, location.pathname, redirectTo]);
 
