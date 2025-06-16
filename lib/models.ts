@@ -172,7 +172,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: true,
-    description: 'Best in the class Google model with advanced reasoning and coding capabilities',
+    description: 'Best in the class Llama model from Meta. Fast and efficient.',
   },
   'OpenAI 4.1 Nano': {
     modelId: 'openai/gpt-4.1-nano',
@@ -184,7 +184,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: true,
-    description: 'Best in the class Google model with advanced reasoning and coding capabilities',
+    description: 'Fastest model from OpenAI.',
   },
 } as const satisfies Record<AIModel, ModelConfig>;
 
