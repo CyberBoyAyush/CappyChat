@@ -45,7 +45,7 @@ export const MODEL_CONFIGS = {
     iconType: 'google',
     company: 'Google',
     isPremium: false,
-    isSuperPremium: false,
+    isSuperPremium: true,
     hasReasoning: true,
     description: 'Fast and efficient model from Google with web search capabilities',
   },
