@@ -159,8 +159,8 @@ const MarkdownRenderer = memo(
 
     const proseClasses =
       size === 'small'
-        ? 'prose prose-sm dark:prose-invert bread-words max-w-none w-full prose-code:before:content-none prose-code:after:content-none'
-        : 'prose prose-base dark:prose-invert bread-words max-w-none w-full prose-code:before:content-none prose-code:after:content-none';
+        ? 'prose prose-sm dark:prose-invert break-words max-w-none w-full prose-code:before:content-none prose-code:after:content-none'
+        : 'prose prose-base dark:prose-invert break-words max-w-none w-full prose-code:before:content-none prose-code:after:content-none';
 
     return (
       <MarkdownSizeContext.Provider value={size}>

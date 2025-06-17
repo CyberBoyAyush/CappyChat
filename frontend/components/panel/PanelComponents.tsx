@@ -7,7 +7,7 @@
  */
 
 import { memo, useState } from "react";
-import { Link } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { Button } from "../ui/button";
 import { buttonVariants } from "../ui/button";
 import { Trash2, GitBranch } from "lucide-react";
@@ -17,6 +17,7 @@ import UserProfileDropdown from "../UserProfileDropdown";
 import { DeleteThreadDialog } from "./DeleteThreadDialog";
 import { ThreadSearch } from "./ThreadSearch";
 import { ThreadMenuDropdown } from "./ThreadMenuDropdown";
+import { useAuth } from "@/frontend/contexts/AuthContext";
 
 // ===============================================
 // Panel Header Components
@@ -51,18 +52,22 @@ AppTitle.displayName = "AVChatAppTitle";
  * Used in: PanelHeader
  * Purpose: Provides navigation to start a new chat conversation.
  */
-const NewChatButton = () => (
-  <Link
-    to="/chat"
-    className={buttonVariants({
-      variant: "default",
-      className:
-        "w-full justify-center h-7 sm:h-9 rounded-lg text-sm sm:text-sm",
-    })}
-  >
-    New Chat
-  </Link>
-);
+const NewChatButton = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  return (
+    <Button
+      onClick={() => {
+        if (location.pathname !== "/chat") navigate("/chat");
+      }}
+      disabled={location.pathname === "/chat"}
+      className="w-full justify-center h-7 sm:h-9 rounded-lg text-sm sm:text-sm"
+    >
+      New Chat
+    </Button>
+  );
+};
 
 /**
  * Panel Header Component
@@ -80,6 +85,8 @@ const PanelHeaderComponent = ({
   threads = [],
   onFilteredThreadsChange,
 }: PanelHeaderProps) => {
+  const { isGuest } = useAuth();
+
   return (
     <div className="flex flex-col gap-3 p-3 sm:p-4">
       {/* Logo */}
@@ -90,8 +97,8 @@ const PanelHeaderComponent = ({
       {/* New Chat Button - Full Width */}
       <NewChatButton />
 
-      {/* Search Bar - Full Width */}
-      {onFilteredThreadsChange && (
+      {/* Search Bar - Full Width (hidden for guest users) */}
+      {!isGuest && onFilteredThreadsChange && (
         <ThreadSearch
           threads={threads}
           onFilteredThreadsChange={onFilteredThreadsChange}

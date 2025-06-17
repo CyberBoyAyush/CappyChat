@@ -10,6 +10,9 @@ import { useChat } from "@ai-sdk/react";
 import ChatMessageDisplay from "./ChatMessageDisplay";
 import ChatInputField from "./ChatInputField";
 import ChatMessageBrowser from "./ChatMessageBrowser";
+import GuestWelcomeScreen from "./GuestWelcomeScreen";
+import AuthLoadingScreen from "./auth/AuthLoadingScreen";
+import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 
 import { UIMessage } from "ai";
 
@@ -23,6 +26,8 @@ import { useAuth } from "@/frontend/contexts/AuthContext";
 import { useLocation } from "react-router-dom";
 import ThemeToggleButton from "./ui/ThemeComponents";
 import { Button } from "./ui/button";
+import AuthDialog from "./auth/AuthDialog";
+import { useAuthDialog } from "@/frontend/hooks/useAuthDialog";
 import {
   MessageSquareMore,
   PanelLeftIcon,
@@ -39,6 +44,9 @@ import {
   Laptop,
   ChevronRight,
   PlusIcon,
+  Info,
+  CircleHelp,
+  X,
 } from "lucide-react";
 import { useChatMessageNavigator } from "@/frontend/hooks/useChatMessageNavigator";
 import { useOutletContext } from "react-router-dom";
@@ -46,10 +54,12 @@ import { useIsMobile } from "@/hooks/useMobileDetection";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router";
 import { Plus } from "lucide-react";
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, Fragment } from "react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
+import { AIModel } from "@/lib/models";
+import GlobalSearchDialog from "./GlobalSearchDialog";
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -68,7 +78,90 @@ export default function ChatInterface({
   const { isWebSearchEnabled } = useWebSearchStore();
   const { selectedStyle } = useConversationStyleStore();
   const { openRouterApiKey } = useBYOKStore();
-  const { user } = useAuth();
+  const {
+    user,
+    isGuest,
+    guestUser,
+    loading: authLoading,
+    incrementGuestMessages,
+    canGuestSendMessage,
+  } = useAuth();
+
+  // Check for pending authentication state
+  const [isPendingAuth, setIsPendingAuth] = useState(false);
+
+  // Force clear pending auth when user is detected
+  useEffect(() => {
+    if (user && isPendingAuth) {
+      console.log('[ChatInterface] 🎉 User detected while pending auth - force clearing pending state');
+      setIsPendingAuth(false);
+      sessionStorage.removeItem('avchat_auth_pending');
+    }
+  }, [user, isPendingAuth]);
+
+  useEffect(() => {
+    const checkPendingAuth = () => {
+      try {
+        const pending = sessionStorage.getItem('avchat_auth_pending');
+        if (pending) {
+          const parsed = JSON.parse(pending);
+          const age = Date.now() - parsed.timestamp;
+          // Check if pending auth is still valid (not older than 15 seconds - reduced from 30)
+          const isValid = age < 15000;
+          console.log('[ChatInterface] 🔍 Pending auth check:', {
+            hasPending: true,
+            isValid,
+            method: parsed.method,
+            age
+          });
+          setIsPendingAuth(isValid);
+
+          if (!isValid) {
+            console.log('[ChatInterface] 🧹 Clearing expired pending auth state (age:', age, 'ms)');
+            sessionStorage.removeItem('avchat_auth_pending');
+          }
+        } else {
+          if (isPendingAuth) {
+            console.log('[ChatInterface] 🧹 No pending auth found, clearing state');
+          }
+          setIsPendingAuth(false);
+        }
+      } catch (error) {
+        console.error('[ChatInterface] ❌ Error checking pending auth:', error);
+        setIsPendingAuth(false);
+      }
+    };
+
+    checkPendingAuth();
+
+    // Check even more frequently for pending auth state changes (every 200ms)
+    const interval = setInterval(checkPendingAuth, 200);
+
+    // Listen for auth state changes to clear pending state
+    const handleAuthStateChanged = () => {
+      console.log('[ChatInterface] 🎉 Auth state changed - clearing pending state');
+      setIsPendingAuth(false);
+      sessionStorage.removeItem('avchat_auth_pending');
+    };
+
+    // Emergency timeout to force clear pending state after 8 seconds
+    const emergencyTimeout = setTimeout(() => {
+      if (isPendingAuth) {
+        console.log('[ChatInterface] 🚨 EMERGENCY: Force clearing pending auth after 8 seconds');
+        setIsPendingAuth(false);
+        sessionStorage.removeItem('avchat_auth_pending');
+      }
+    }, 8000);
+
+    window.addEventListener('authStateChanged', handleAuthStateChanged);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(emergencyTimeout);
+      window.removeEventListener('authStateChanged', handleAuthStateChanged);
+    };
+  }, [isPendingAuth]);
+  const authDialog = useAuthDialog();
   const {
     sidebarWidth,
     toggleSidebar,
@@ -80,15 +173,22 @@ export default function ChatInterface({
   }>();
   const isMobile = useIsMobile();
   const mainRef = useRef<HTMLElement>(null);
+
+  // Hook for creating message summaries
+  const { complete: createSummary } = useChatMessageSummary();
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
   const pendingUserMessageRef = useRef<UIMessage | null>(null);
+
+  // State for model-specific retry
+  const [retryModel, setRetryModel] = useState<AIModel | null>(null);
+  const { setModel } = useModelStore();
   const isAutoScrollingRef = useRef(false);
   const chatInputSubmitRef = useRef<(() => void) | null>(null);
   const { theme } = useTheme();
   const isDarkTheme = theme === "dark";
   const location = useLocation();
-  const isHomePage = location.pathname === "/chat";
+  const isHomePage = location.pathname === "/" || location.pathname === "/chat";
 
   const [selectedPrompt, setSelectedPrompt] = useState("");
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
@@ -129,6 +229,12 @@ export default function ChatInterface({
           pendingUserMessageRef.current.id
         );
         pendingUserMessageRef.current = null;
+      }
+
+      // Skip database operations for guest users
+      if (isGuest) {
+        console.log("🚫 Skipping database operations for guest user");
+        return;
       }
 
       // Save the AI message (useChat already handles adding it to the messages array)
@@ -179,18 +285,30 @@ export default function ChatInterface({
         console.log("❌ No web search results needed for message:", message.id);
       }
 
-      HybridDB.createMessage(threadId, aiMessage);
+      // Skip database operations for guest users
+      if (!isGuest) {
+        HybridDB.createMessage(threadId, aiMessage);
+
+        // Create summary for assistant message
+        createSummary(message.content, {
+          body: {
+            messageId: message.id,
+            threadId: threadId,
+          },
+        });
+      }
 
       // Scroll to bottom when new message comes in
       scrollToBottom();
     },
     headers: {},
     body: {
-      model: selectedModel,
+      model: retryModel || selectedModel,
       conversationStyle: selectedStyle,
       userApiKey: openRouterApiKey,
       userId: user?.$id,
       threadId: threadId,
+      isGuest: isGuest,
     },
   });
 
@@ -397,8 +515,14 @@ export default function ChatInterface({
     };
   }, []);
 
-  // Real-time message synchronization
+  // Real-time message synchronization (skip for guest users)
   useEffect(() => {
+    // Skip real-time sync for guest users
+    if (isGuest) {
+      console.log("[ChatInterface] Skipping real-time sync for guest user");
+      return;
+    }
+
     console.log(
       "[ChatInterface] Setting up real-time message sync for thread:",
       threadId
@@ -467,7 +591,7 @@ export default function ChatInterface({
       );
       dbEvents.off("messages_updated", handleMessagesUpdated);
     };
-  }, [threadId, messages, setMessages]);
+  }, [threadId, messages, setMessages, isGuest]);
 
   // Real-time streaming synchronization
   useEffect(() => {
@@ -558,11 +682,83 @@ export default function ChatInterface({
     nextResponseNeedsWebSearch.current = true;
   }, []);
 
+  // Handle retry with specific model
+  const handleRetryWithModel = useCallback(
+    async (model?: AIModel, message?: UIMessage) => {
+      console.log("🔄 Retry with model:", model || selectedModel);
+
+      // Stop the current request
+      stop();
+
+      // Set the retry model temporarily
+      setRetryModel(model || null);
+
+      // If we have message information, handle proper deletion
+      if (message) {
+        if (message.role === "user") {
+          await HybridDB.deleteTrailingMessages(
+            threadId,
+            message.createdAt as Date,
+            false
+          );
+
+          setMessages((messages) => {
+            const index = messages.findIndex((m) => m.id === message.id);
+            if (index !== -1) {
+              return [...messages.slice(0, index + 1)];
+            }
+            return messages;
+          });
+        } else {
+          await HybridDB.deleteTrailingMessages(
+            threadId,
+            message.createdAt as Date
+          );
+
+          setMessages((messages) => {
+            const index = messages.findIndex((m) => m.id === message.id);
+            if (index !== -1) {
+              return [...messages.slice(0, index)];
+            }
+            return messages;
+          });
+        }
+      }
+
+      // Trigger reload which will use the retry model
+      setTimeout(() => {
+        reload();
+        // Reset retry model after reload
+        setTimeout(() => setRetryModel(null), 100);
+      }, 0);
+    },
+    [selectedModel, reload, stop, setMessages, threadId]
+  );
+
   // This useEffect is no longer needed since we handle web search results in onFinish
   // Keeping it commented for reference
   // useEffect(() => {
   //   // Web search results are now handled in the onFinish callback
   // }, []);
+
+  // Force scrollbar visibility and ensure proper initialization
+  useEffect(() => {
+    if (mainRef.current) {
+      const element = mainRef.current;
+      // Force a reflow to ensure scrollbar is properly rendered
+      const originalOverflow = element.style.overflow;
+      element.style.overflow = 'hidden';
+
+      requestAnimationFrame(() => {
+        element.style.overflow = originalOverflow || 'auto';
+        element.style.overflowX = 'hidden';
+        element.style.overflowY = 'scroll';
+
+        // Force a repaint to ensure scrollbar appears
+        element.offsetHeight;
+      });
+    }
+  }, [messages.length, status, threadId]);
 
   const scrollToBottom = () => {
     if (mainRef.current) {
@@ -608,16 +804,55 @@ export default function ChatInterface({
       )}
     >
       <AppPanelTrigger />
-      <main ref={mainRef} className="flex-1 overflow-y-auto pt-14 pb-40">
+      <QuickShortCutInfo />
+
+      <main
+        ref={mainRef}
+        className="flex-1 overflow-y-scroll overflow-x-hidden pt-14 pb-40 main-chat-scrollbar"
+        style={{
+          scrollbarGutter: 'stable',
+        }}
+      >
         {isHomePage && messages.length === 0 ? (
-          <WelcomeScreen
-            onPromptSelect={handlePromptClick}
-            isDarkTheme={isDarkTheme}
-            selectedDomain={selectedDomain}
-            onDomainSelect={handleDomainSelect}
-          />
+          (() => {
+            const shouldShowLoading = authLoading || isPendingAuth;
+            console.log('[ChatInterface] 🎭 Render decision:', {
+              authLoading,
+              isPendingAuth,
+              isGuest,
+              user: !!user,
+              shouldShowLoading
+            });
+
+            if (shouldShowLoading) {
+              return (
+                <div className="flex items-center justify-center h-full">
+                  <AuthLoadingScreen
+                    type="callback"
+                    message={isPendingAuth ? "Completing authentication..." : "Setting up your workspace..."}
+                  />
+                </div>
+              );
+            } else if (isGuest) {
+              return (
+                <GuestWelcomeScreen
+                  onSignUp={() => authDialog.navigateToSignup()}
+                  onLogin={() => authDialog.navigateToLogin()}
+                />
+              );
+            } else {
+              return (
+                <WelcomeScreen
+                  onPromptSelect={handlePromptClick}
+                  isDarkTheme={isDarkTheme}
+                  selectedDomain={selectedDomain}
+                  onDomainSelect={handleDomainSelect}
+                />
+              );
+            }
+          })()
         ) : (
-          <div className="mx-auto flex justify-center px-4 overflow-x-hidden">
+          <div className="mx-auto flex justify-center px-4">
             <ChatMessageDisplay
               threadId={threadId}
               messages={messages}
@@ -627,6 +862,7 @@ export default function ChatInterface({
               error={error}
               registerRef={registerRef}
               stop={stop}
+              onRetryWithModel={handleRetryWithModel}
             />
           </div>
         )}
@@ -744,9 +980,22 @@ export default function ChatInterface({
         isVisible={isNavigatorVisible}
         onClose={closeNavigator}
       />
+
+      {/* Auth Dialog for guest users */}
+      <AuthDialog
+        isOpen={authDialog.isOpen}
+        onClose={authDialog.closeDialog}
+        initialMode={authDialog.mode}
+        title={authDialog.title}
+        description={authDialog.description}
+      />
     </div>
   );
 }
+
+////////////////////////////////////////////////////
+/////////////////Left Side Panel Trigger////////////
+////////////////////////////////////////////////////
 
 const AppPanelTrigger = () => {
   const { sidebarWidth, toggleSidebar, state, isMobile } = useOutletContext<{
@@ -765,11 +1014,20 @@ const AppPanelTrigger = () => {
   };
 
   const navigate = useNavigate();
+  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
+
+  const handleOpenSearch = useCallback(() => {
+    setIsSearchDialogOpen(true);
+  }, []);
+
+  const handleCloseSearch = useCallback(() => {
+    setIsSearchDialogOpen(false);
+  }, []);
 
   // Show trigger on mobile or when sidebar is collapsed on desktop
   return (
     <div
-      className={`fixed left-2 flex top-3 z-50 overflow-hidden ${
+      className={`fixed left-2 flex top-3 z-50 ${
         state === "collapsed"
           ? "top-3 bg-background p-1.5 mr-6 ml-3 rounded-md"
           : "bg-background"
@@ -787,11 +1045,29 @@ const AppPanelTrigger = () => {
         </Button>
       </div>
 
-      <div className=" rounded-md">
+      <div className="rounded-md hidden md:block">
+        <Button
+          onClick={handleOpenSearch}
+          size="icon"
+          variant="outline"
+          className={`hover:bg-zinc-600/10 ${
+            state === "collapsed" ? "ml-2" : "hidden"
+          }`}
+        >
+          <Search className="h-5 w-5" />
+        </Button>
+        <GlobalSearchDialog
+          isOpen={isSearchDialogOpen}
+          onClose={handleCloseSearch}
+        />
+      </div>
+
+      <div className="rounded-md">
         <Button
           onClick={() => {
-            navigate("/chat");
+            if (location.pathname !== "/chat") navigate("/chat");
           }}
+          disabled={location.pathname === "/chat"}
           size="icon"
           variant="outline"
           className={`hover:bg-zinc-600/10 ${
@@ -801,6 +1077,141 @@ const AppPanelTrigger = () => {
           <PlusIcon className="h-5 w-5" />
         </Button>
       </div>
+    </div>
+  );
+};
+
+////////////////////////////////////////////////////////////////
+///////////////////Quick ShortCutInfo Component/////////////////
+////////////////////////////////////////////////////////////////
+
+const QuickShortCutInfo = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Close dialog when clicking outside or pressing Esc
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dialogRef.current &&
+        !dialogRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [isOpen]);
+
+  // Keyboard shortcuts organized by category
+  const shortcuts = [
+    {
+      category: "Navigation",
+      items: [
+        {
+          name: "Global Search",
+          key: `${isMac ? "⌘" : "Ctrl"}+${isMac ? "" : "Shift+"}K`,
+          description: "Search across all conversations",
+          modifiers: [isMac ? "Cmd" : "Ctrl", isMac ? null : "Shift", "K"],
+        },
+        {
+          name: "New Chat",
+          key: `${isMac ? "⌘" : "Ctrl"}+Shift+O`,
+          description: "Create a new chat",
+          modifiers: [isMac ? "Cmd" : "Ctrl", "Shift", "O"],
+        },
+        {
+          name: "Toggle Sidebar",
+          key: `${isMac ? "⌘" : "Ctrl"}+${isMac ? "" : "Shift+"}B`,
+          description: "Toggle the sidebar",
+          modifiers: [isMac ? "Cmd" : "Ctrl", "B"],
+        },
+      ],
+    },
+  ];
+
+  return (
+    <div className="fixed bottom-3 hidden md:flex right-3 z-50">
+      <Button
+        onClick={() => setIsOpen((prev) => !prev)}
+        size="icon"
+        className="bg-transparent hover:bg-border  rounded-full transition transform duration-300"
+        aria-label="Keyboard shortcuts help"
+      >
+        <CircleHelp className="h-5 w-5" />
+      </Button>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          ref={dialogRef}
+          className="absolute right-12 bottom-0 w-80 z-50 bg-background rounded-lg shadow-lg border border-border"
+        >
+          <div className="p-3 border-b border-border">
+            <div className="flex justify-between items-center">
+              <h3 className="text-base font-semibold">Keyboard Shortcuts</h3>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                onClick={() => setIsOpen(false)}
+                aria-label="Close shortcuts guide"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <motion.div className="max-h-[calc(100vh-12rem)] overflow-y-auto p-4">
+            {shortcuts.map((section, idx) => (
+              <div key={idx} className={idx > 0 ? "mt-2" : ""}>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                  {section.category}
+                </h4>
+                <div className="space-y-3">
+                  {section.items.map((shortcut, i) => (
+                    <div key={i} className="flex justify-between items-center">
+                      <div>
+                        <p className="text-sm font-medium">{shortcut.name}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {shortcut.modifiers.filter(Boolean).map((mod, m) => (
+                          <Fragment key={m}>
+                            {m > 0 && (
+                              <span className="text-sm text-muted-foreground">
+                                +
+                              </span>
+                            )}
+                            <kbd className="px-2 py-1 text-sm font-mono bg-background border border-border rounded">
+                              {mod}
+                            </kbd>
+                          </Fragment>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 };

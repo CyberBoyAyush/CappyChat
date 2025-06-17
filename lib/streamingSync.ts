@@ -302,8 +302,6 @@ class StreamingSyncManager {
             // Ignore cleanup errors
           }
         }, 100);
-
-        console.log('[StreamingSync] Broadcasted to other sessions:', state.messageId, 'content length:', state.content.length);
       } catch (error) {
         console.error('[StreamingSync] Error broadcasting to other sessions:', error);
       }

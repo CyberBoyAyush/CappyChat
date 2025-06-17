@@ -12,12 +12,7 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, model, conversationStyle, userApiKey, experimental_attachments, userId, threadId } = body;
-
-    console.log('=== CHAT MESSAGING API DEBUG ===');
-    console.log('Number of messages received:', messages?.length);
-    console.log('Experimental attachments:', experimental_attachments);
-    console.log('Messages structure:', JSON.stringify(messages, null, 2));
+    const { messages, model, conversationStyle, userApiKey, experimental_attachments, userId, threadId, isGuest } = body;
 
     // Validate required fields
     if (!messages || !Array.isArray(messages)) {
@@ -40,7 +35,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const modelConfig = getModelConfig(model as AIModel);
+    // Guest user restrictions - force Gemini 2.5 Flash for guest users
+    let actualModel = model;
+    if (isGuest) {
+      // Force guest users to use Gemini 2.5 Flash regardless of what model is sent
+      actualModel = 'Gemini 2.5 Flash';
+    }
+
+    const modelConfig = getModelConfig(actualModel as AIModel);
 
     if (!modelConfig) {
       return new Response(
@@ -52,40 +54,71 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user can use this model (tier validation)
-    const usingBYOK = !!userApiKey;
-    console.log(`[ChatAPI] Model: ${model}, BYOK: ${usingBYOK}, UserApiKey: ${userApiKey ? 'present' : 'not present'}`);
+    // Additional guest user restrictions
+    if (isGuest) {
+      // Disable attachments for guest users
+      if (experimental_attachments && experimental_attachments.length > 0) {
+        return new Response(
+          JSON.stringify({
+            error: 'File attachments are not available for guest users. Please sign up to use this feature.',
+            code: 'GUEST_ATTACHMENTS_RESTRICTED'
+          }),
+          {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
 
-    const tierValidation = await canUserUseModel(model as AIModel, usingBYOK, userId);
-    console.log('[ChatAPI] Tier validation result:', tierValidation);
-
-    if (!tierValidation.canUseModel) {
-      console.log('[ChatAPI] Model access denied, returning 403');
-      return new Response(
-        JSON.stringify({
-          error: tierValidation.message || 'Model access denied',
-          code: 'TIER_LIMIT_EXCEEDED'
-        }),
-        {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      // Disable conversation styles for guest users (except default)
+      if (conversationStyle && conversationStyle !== DEFAULT_CONVERSATION_STYLE) {
+        return new Response(
+          JSON.stringify({
+            error: 'Conversation styles are not available for guest users. Please sign up to use this feature.',
+            code: 'GUEST_STYLES_RESTRICTED'
+          }),
+          {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
     }
 
-    // Consume credits before making the API call
-    const creditsConsumed = await consumeCredits(model as AIModel, usingBYOK, userId);
-    if (!creditsConsumed && !usingBYOK) {
-      return new Response(
-        JSON.stringify({
-          error: 'Insufficient credits for this model',
-          code: 'INSUFFICIENT_CREDITS'
-        }),
-        {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+    // Skip tier validation and credit consumption for guest users
+    if (!isGuest) {
+      // Check if user can use this model (tier validation)
+      const usingBYOK = !!userApiKey;
+
+      const tierValidation = await canUserUseModel(actualModel as AIModel, usingBYOK, userId, isGuest);
+
+      if (!tierValidation.canUseModel) {
+        return new Response(
+          JSON.stringify({
+            error: tierValidation.message || 'Model access denied',
+            code: 'TIER_LIMIT_EXCEEDED'
+          }),
+          {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      // Consume credits before making the API call
+      const creditsConsumed = await consumeCredits(actualModel as AIModel, usingBYOK, userId, isGuest);
+      if (!creditsConsumed && !usingBYOK) {
+        return new Response(
+          JSON.stringify({
+            error: 'Insufficient credits for this model',
+            code: 'INSUFFICIENT_CREDITS'
+          }),
+          {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
     }
 
     // Use user's API key if provided, otherwise fall back to system key
@@ -117,10 +150,10 @@ export async function POST(req: NextRequest) {
       (conversationStyle as ConversationStyle) || DEFAULT_CONVERSATION_STYLE
     );
 
-    // Get user custom profile for personalization
+    // Get user custom profile for personalization (skip for guest users)
     let customProfile = null;
     let projectPrompt = null;
-    if (userId) {
+    if (userId && !isGuest) {
       try {
         customProfile = await getUserCustomProfileServer(userId);
         if (threadId) {

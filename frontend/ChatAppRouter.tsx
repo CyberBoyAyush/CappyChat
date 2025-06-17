@@ -7,19 +7,18 @@
  * Includes authentication protection and providers.
  */
 
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ChatLayoutWrapper from "./ChatLayoutWrapper";
 import ChatHomePage from "./routes/ChatHomePage";
-import HomePage from "./routes/HomePage";
-import LandingPage from "./routes/LandingPage";
 import ChatThreadPage from "./routes/ChatThreadPage";
 import SettingsPage from "./routes/SettingsPage";
-import LoginPage from "./routes/auth/LoginPage";
-import SignUpPage from "./routes/auth/SignUpPage";
+import AdminPage from "./routes/AdminPage";
 import AuthCallbackPage from "./routes/auth/AuthCallbackPage";
 import AuthErrorPage from "./routes/auth/AuthErrorPage";
+import LoginPage from "./routes/auth/LoginPage";
+import SignupPage from "./routes/auth/SignupPage";
 import EmailVerificationPage from "./routes/auth/EmailVerificationPage";
 import ResetPasswordPage from "./routes/auth/ResetPasswordPage";
 import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts";
@@ -32,48 +31,24 @@ export default function ChatAppRouter() {
         <AuthProvider>
           <GlobalKeyboardShortcuts>
             <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/landing" element={<LandingPage />} />
+          {/* Main chat routes - accessible to both guests and authenticated users */}
+          <Route path="/" element={<ChatLayoutWrapper />}>
+            <Route index element={<ChatHomePage />} />
+            <Route path="chat" element={<ChatHomePage />} />
+            <Route path="chat/:id" element={<ChatThreadPage />} />
+          </Route>
 
-          {/* Auth routes (only accessible when not authenticated) */}
-          <Route
-            path="/auth/login"
-            element={
-              <ProtectedRoute requireAuth={false}>
-                <LoginPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/auth/signup"
-            element={
-              <ProtectedRoute requireAuth={false}>
-                <SignUpPage />
-              </ProtectedRoute>
-            }
-          />
 
-          {/* Auth callback and error routes (always accessible) */}
+
+          {/* Auth routes (always accessible) */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/auth/error" element={<AuthErrorPage />} />
           <Route path="/auth/verify" element={<EmailVerificationPage />} />
           <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
 
-          {/* Protected routes (require authentication) */}
-          <Route
-            path="chat"
-            element={
-              <ProtectedRoute>
-                <ChatLayoutWrapper />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<ChatHomePage />} />
-            <Route path=":id" element={<ChatThreadPage />} />
-          </Route>
-
+          {/* Settings route (require authentication) */}
           <Route
             path="settings"
             element={
@@ -83,16 +58,17 @@ export default function ChatAppRouter() {
             }
           />
 
-          {/* Redirect old routes to unified settings */}
+          {/* Admin route (require authentication) */}
           <Route
-            path="privacy"
-            element={<Navigate to="/settings#privacy" replace />}
+            path="admin"
+            element={
+              <ProtectedRoute>
+                <AdminPage />
+              </ProtectedRoute>
+            }
           />
 
-          <Route
-            path="/profile"
-            element={<Navigate to="/settings#profile" replace />}
-          />
+
 
           {/* 404 page */}
           <Route

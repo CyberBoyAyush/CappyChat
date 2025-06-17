@@ -21,6 +21,7 @@ import ProjectFolder from "./projects/ProjectFolder";
 import ProjectCreateDialog from "./projects/ProjectCreateDialog";
 import { Button } from "./ui/button";
 import { HybridDB } from "@/lib/hybridDB";
+import { useAuth } from "@/frontend/contexts/AuthContext";
 
 // Helper functions to categorize dates
 const isToday = (date: Date) => {
@@ -50,6 +51,8 @@ const isLastSevenDays = (date: Date) => {
 
 // Main conversation panel component
 export default function ChatSidebarPanel() {
+  const { isGuest } = useAuth();
+
   const {
     threadCollection,
     navigateToThread,
@@ -239,9 +242,19 @@ export default function ChatSidebarPanel() {
         onFilteredThreadsChange={handleFilteredThreadsChange}
       />
 
-      <div className="flex-1 overflow-y-auto no-scrollbar px-3 pb-3 sm:px-4">
+      <div className="flex-1 overflow-y-auto px-3 pb-3 sm:px-4">
         <SidebarMenu className="space-y-2">
-          {isLoading ? (
+          {isGuest ? (
+            // Guest user interface - simple welcome message
+            <div className="px-2 py-4 text-center space-y-3">
+              <div className="text-sm text-muted-foreground">
+                Welcome to AVChat! You can send up to 2 free messages to try our AI assistant.
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Sign up for unlimited conversations, conversation history, and access to all features.
+              </div>
+            </div>
+          ) : isLoading ? (
             // Loading skeleton - centered properly
             <SidebarMenuItem>
               <div className="h-9 flex items-center justify-center px-2 py-1 rounded-lg overflow-hidden w-full">

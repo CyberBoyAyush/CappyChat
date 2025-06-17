@@ -1,7 +1,7 @@
 /**
- * LoginPage Component
+ * SignupPage Component
  *
- * Purpose: Dedicated login page for better UX and faster authentication
+ * Purpose: Dedicated signup page for better UX and faster authentication
  * Features: Clean design, loading states, OAuth integration
  */
 
@@ -21,20 +21,22 @@ import {
   EyeOff,
   Mail,
   Lock,
+  User,
   AlertCircle,
   Loader2,
   ArrowLeft,
 } from 'lucide-react';
 
-const LoginPage: React.FC = () => {
+const SignupPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | null>(null);
 
-  const { login, loginWithGoogle, loginWithGitHub, isAuthenticated } = useAuth();
+  const { register, loginWithGoogle, loginWithGitHub, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -46,22 +48,27 @@ const LoginPage: React.FC = () => {
     }
   }, [isAuthenticated, navigate, searchParams]);
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
     try {
-      if (!email || !password) {
+      if (!email || !password || !name) {
         setError('Please fill in all fields.');
         return;
       }
       
-      await login(email, password);
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters long.');
+        return;
+      }
+      
+      await register(email, password, name);
       
       // Redirect will happen automatically via useEffect
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please try again.');
+      setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -118,9 +125,9 @@ const LoginPage: React.FC = () => {
         )}
         {isLoading && !oauthLoading && (
           <AuthLoadingScreen
-            type="login"
+            type="signup"
             provider="email"
-            message="Signing you in..."
+            message="Creating your account..."
           />
         )}
       </AnimatePresence>
@@ -169,11 +176,11 @@ const LoginPage: React.FC = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to home
             </Link>
-            <h1 className="text-3xl font-bold mb-2">Welcome back</h1>
-            <p className="text-muted-foreground">Sign in to your account to continue</p>
+            <h1 className="text-3xl font-bold mb-2">Create account</h1>
+            <p className="text-muted-foreground">Join AVChat and start your AI journey</p>
           </div>
 
-          {/* Login Form */}
+          {/* Signup Form */}
           <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-8 shadow-xl">
             {/* OAuth Buttons */}
             <div className="space-y-3 mb-6">
@@ -229,7 +236,25 @@ const LoginPage: React.FC = () => {
             </div>
 
             {/* Email Form */}
-            <form onSubmit={handleEmailLogin} className="space-y-5">
+            <form onSubmit={handleEmailSignup} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-sm font-medium">
+                  Full Name
+                </Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="pl-10 h-12 bg-background/50 border-border/50"
+                    disabled={isLoading || oauthLoading !== null}
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
                   Email Address
@@ -278,6 +303,9 @@ const LoginPage: React.FC = () => {
                     )}
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Must be at least 8 characters long
+                </p>
               </div>
 
               {error && (
@@ -299,10 +327,10 @@ const LoginPage: React.FC = () => {
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Signing in...
+                    Creating account...
                   </>
                 ) : (
-                  'Sign in'
+                  'Create account'
                 )}
               </Button>
             </form>
@@ -310,12 +338,12 @@ const LoginPage: React.FC = () => {
             {/* Footer */}
             <div className="text-center mt-6">
               <p className="text-sm text-muted-foreground">
-                Don't have an account?{' '}
+                Already have an account?{' '}
                 <Link 
-                  to={`/signup${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`}
+                  to={`/login${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`}
                   className="font-semibold text-primary hover:text-primary/80 transition-colors"
                 >
-                  Sign up
+                  Sign in
                 </Link>
               </p>
             </div>
@@ -326,4 +354,4 @@ const LoginPage: React.FC = () => {
   );
 };
 
-export default LoginPage;
+export default SignupPage;

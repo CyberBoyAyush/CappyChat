@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&family=Crimson+Text:wght@400;600;700&family=Lora:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&family=Comfortaa:wght@300;400;500;600;700&family=Dancing+Script:wght@400;500;600;700&family=Pacifico&family=Lobster&family=Satisfy&family=Kalam:wght@300;400;700&family=Caveat:wght@400;500;600;700&family=Orbitron:wght@400;500;700;900&family=Righteous&family=Fredoka+One&family=Abril+Fatface&display=swap");
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin '@tailwindcss/typography';
@@ -168,6 +170,12 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Ensure body doesn't have conflicting overflow */
+    overflow-x: hidden;
+  }
+  html {
+    /* Ensure html doesn't have conflicting overflow */
+    overflow-x: hidden;
   }
 }
 
@@ -178,6 +186,113 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* Prevent multiple scrollbars in nested containers */
+  .single-scroll-container {
+    overflow: hidden;
+  }
+  .single-scroll-container > .scrollable-content {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* Ensure prose elements don't create scrollbars */
+  .prose {
+    overflow: visible;
+  }
+  .prose * {
+    overflow-x: hidden;
+  }
+  .prose pre {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .prose pre::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Main chat interface scrollbar styling */
+  .main-chat-scrollbar {
+    /* Force scrollbar to always be present */
+    overflow-y: scroll !important;
+    scrollbar-gutter: stable;
+  }
+
+  .main-chat-scrollbar::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+    background: transparent;
+  }
+  .main-chat-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 7px;
+    margin: 4px 2px;
+  }
+  .main-chat-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 7px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    min-height: 40px;
+    cursor: pointer;
+  }
+  .main-chat-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.6);
+    border-color: rgba(0, 0, 0, 0.2);
+  }
+  .main-chat-scrollbar::-webkit-scrollbar-thumb:active {
+    background: rgba(0, 0, 0, 0.7);
+    border-color: rgba(0, 0, 0, 0.3);
+  }
+  .main-chat-scrollbar::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Dark mode scrollbar */
+  .dark .main-chat-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .dark .main-chat-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.4);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  .dark .main-chat-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.6);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .dark .main-chat-scrollbar::-webkit-scrollbar-thumb:active {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Firefox scrollbar */
+  .main-chat-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.4) rgba(0, 0, 0, 0.08);
+  }
+  .dark .main-chat-scrollbar {
+    scrollbar-color: rgba(255, 255, 255, 0.4) rgba(255, 255, 255, 0.08);
+  }
+
+  /* Hide scrollbars for all nested elements */
+  .main-chat-scrollbar * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .main-chat-scrollbar *::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Ensure all nested elements in chat don't create visible scrollbars */
+  .chat-message-container,
+  .chat-message-container * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .chat-message-container *::-webkit-scrollbar,
+  .chat-message-container::-webkit-scrollbar {
+    display: none;
   }
 
   /* Mobile-first responsive utilities */
@@ -552,7 +667,8 @@ body.sidebar-open {
 }
 
 @keyframes gradient-x {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 50%;
   }
   50% {
@@ -610,7 +726,8 @@ body.sidebar-open {
 
   /* Reduce shadow complexity on mobile */
   .shadow-xl {
-    box-shadow: 0 10px 25px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+    box-shadow: 0 10px 25px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -2px rgb(0 0 0 / 0.05);
   }
 }
 
@@ -709,8 +826,6 @@ html {
   }
 }
 
-
-
 /* LLM Marquee Animation - Perfect Infinite Continuous Scroll */
 .marquee-wrapper {
   width: 100%;
@@ -746,4 +861,3 @@ html {
 .marquee-content > * {
   transform: translateZ(0);
 }
-

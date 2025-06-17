@@ -7,14 +7,16 @@
 
 import { Client, RealtimeResponseEvent } from 'appwrite';
 import { client } from './appwrite';
-import { 
-  DATABASE_ID, 
-  THREADS_COLLECTION_ID, 
-  MESSAGES_COLLECTION_ID, 
+import {
+  DATABASE_ID,
+  THREADS_COLLECTION_ID,
+  MESSAGES_COLLECTION_ID,
   MESSAGE_SUMMARIES_COLLECTION_ID,
+  PROJECTS_COLLECTION_ID,
   AppwriteThread,
   AppwriteMessage,
-  AppwriteMessageSummary
+  AppwriteMessageSummary,
+  AppwriteProject
 } from './appwriteDB';
 
 // Object to store callback events for UI updates
@@ -28,6 +30,9 @@ type RealtimeCallbacks = {
   onMessageSummaryCreated?: (summary: AppwriteMessageSummary) => void;
   onMessageSummaryUpdated?: (summary: AppwriteMessageSummary) => void;
   onMessageSummaryDeleted?: (summary: AppwriteMessageSummary) => void;
+  onProjectCreated?: (project: AppwriteProject) => void;
+  onProjectUpdated?: (project: AppwriteProject) => void;
+  onProjectDeleted?: (project: AppwriteProject) => void;
 };
 
 export class AppwriteRealtime {
@@ -39,12 +44,13 @@ export class AppwriteRealtime {
     this.callbacks = { ...this.callbacks, ...callbacks };
   }
   
-  // Subscribe to all collections (threads, messages, message_summaries)
+  // Subscribe to all collections (threads, messages, message_summaries, projects)
   static subscribeToAll(userId: string): void {
     console.log('[AppwriteRealtime] Subscribing to all collections for user:', userId);
     this.subscribeToThreads(userId);
     this.subscribeToMessages(userId);
     this.subscribeToMessageSummaries(userId);
+    this.subscribeToProjects(userId);
   }
   
   // Unsubscribe from all collections
@@ -170,7 +176,49 @@ export class AppwriteRealtime {
     
     this.subscriptions.set('message_summaries', unsubscribe);
   }
-  
+
+  // Subscribe to project collection changes
+  static subscribeToProjects(userId: string): void {
+    if (this.subscriptions.has('projects')) {
+      console.log('[AppwriteRealtime] Already subscribed to projects');
+      return; // Already subscribed
+    }
+
+    console.log('[AppwriteRealtime] Subscribing to projects collection');
+    const unsubscribe = client.subscribe(
+      `databases.${DATABASE_ID}.collections.${PROJECTS_COLLECTION_ID}.documents`,
+      (response: RealtimeResponseEvent<AppwriteProject>) => {
+        console.log('[AppwriteRealtime] Project event received:', response.events[0], response.payload);
+
+        // Process only events for the current user
+        if (response.payload?.userId !== userId) {
+          console.log('[AppwriteRealtime] Project event ignored - different user:', response.payload?.userId, 'vs', userId);
+          return;
+        }
+
+        // Handle different event types - check if event contains the action
+        const eventType = response.events[0];
+        console.log('[AppwriteRealtime] Project event type:', eventType);
+
+        if (eventType.includes('.create')) {
+          console.log('[AppwriteRealtime] Project created:', response.payload.projectId);
+          this.handleProjectCreated(response.payload);
+        } else if (eventType.includes('.update')) {
+          console.log('[AppwriteRealtime] Project updated:', response.payload.projectId);
+          this.handleProjectUpdated(response.payload);
+        } else if (eventType.includes('.delete')) {
+          console.log('[AppwriteRealtime] Project deleted:', response.payload.projectId);
+          this.handleProjectDeleted(response.payload);
+        } else {
+          console.log('[AppwriteRealtime] Unknown project event type:', eventType);
+        }
+      }
+    );
+
+    this.subscriptions.set('projects', unsubscribe);
+    console.log('[AppwriteRealtime] Successfully subscribed to projects');
+  }
+
   // --------- Thread Event Handlers ---------
   
   // Handle thread created event
@@ -246,6 +294,32 @@ export class AppwriteRealtime {
     // Trigger UI update callback
     if (this.callbacks.onMessageSummaryDeleted) {
       this.callbacks.onMessageSummaryDeleted(summary);
+    }
+  }
+
+  // --------- Project Event Handlers ---------
+
+  // Handle project created event
+  private static handleProjectCreated(project: AppwriteProject): void {
+    // Trigger UI update callback
+    if (this.callbacks.onProjectCreated) {
+      this.callbacks.onProjectCreated(project);
+    }
+  }
+
+  // Handle project updated event
+  private static handleProjectUpdated(project: AppwriteProject): void {
+    // Trigger UI update callback
+    if (this.callbacks.onProjectUpdated) {
+      this.callbacks.onProjectUpdated(project);
+    }
+  }
+
+  // Handle project deleted event
+  private static handleProjectDeleted(project: AppwriteProject): void {
+    // Trigger UI update callback
+    if (this.callbacks.onProjectDeleted) {
+      this.callbacks.onProjectDeleted(project);
     }
   }
 }

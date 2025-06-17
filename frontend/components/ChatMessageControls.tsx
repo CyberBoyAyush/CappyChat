@@ -9,11 +9,13 @@
 import { Dispatch, SetStateAction, useState } from "react";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
-import { Check, Copy, RefreshCcw, SquarePen } from "lucide-react";
+import { Check, Copy, SquarePen } from "lucide-react";
 import { UIMessage } from "ai";
 import { UseChatHelpers } from "@ai-sdk/react";
 import { AppwriteDB } from "@/lib/appwriteDB";
 import { HybridDB } from "@/lib/hybridDB";
+import RetryDropdown from "./RetryDropdown";
+import { AIModel } from "@/lib/models";
 
 interface MessageControlsProps {
   threadId: string;
@@ -23,6 +25,7 @@ interface MessageControlsProps {
   setMode?: Dispatch<SetStateAction<"view" | "edit">>;
   reload: UseChatHelpers["reload"];
   stop: UseChatHelpers["stop"];
+  onRetryWithModel?: (model?: AIModel, message?: UIMessage) => void;
 }
 
 export default function MessageControls({
@@ -33,6 +36,7 @@ export default function MessageControls({
   setMode,
   reload,
   stop,
+  onRetryWithModel,
 }: MessageControlsProps) {
   const [copied, setCopied] = useState(false);
 
@@ -44,7 +48,14 @@ export default function MessageControls({
     }, 2000);
   };
 
-  const handleRegenerate = async () => {
+  const handleRegenerate = async (model?: AIModel) => {
+    // If we have a callback, use it and pass the message information
+    if (onRetryWithModel) {
+      onRetryWithModel(model, message);
+      return;
+    }
+
+    // Fallback to original logic if no callback provided
     // stop the current request
     stop();
 
@@ -96,9 +107,7 @@ export default function MessageControls({
           <SquarePen className="w-4 h-4" />
         </Button>
       )}
-      <Button variant="ghost" size="icon" onClick={handleRegenerate}>
-        <RefreshCcw className="w-4 h-4" />
-      </Button>
+      <RetryDropdown onRetry={handleRegenerate} />
     </div>
   );
 }

@@ -8,6 +8,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { account, APPWRITE_CONFIG, ID } from '@/lib/appwrite';
 import { OAuthProvider } from 'appwrite';
 import { Models, AppwriteException } from 'appwrite';
@@ -18,10 +19,18 @@ import { ensureUserTierInitialized } from '@/lib/tierSystem';
 
 interface User extends Models.User<Models.Preferences> {}
 
+interface GuestUser {
+  isGuest: true;
+  messagesUsed: number;
+  maxMessages: number;
+}
+
 interface AuthContextType {
   user: User | null;
+  guestUser: GuestUser | null;
   loading: boolean;
   isAuthenticated: boolean;
+  isGuest: boolean;
   isEmailVerified: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
@@ -40,6 +49,9 @@ interface AuthContextType {
   resetPassword: (userId: string, secret: string, newPassword: string) => Promise<void>;
   verifyEmail: (userId: string, secret: string) => Promise<void>;
   resendVerificationEmail: () => Promise<void>;
+  incrementGuestMessages: () => boolean; // Returns true if under limit, false if limit reached
+  canGuestSendMessage: () => boolean;
+  resetGuestUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -81,13 +93,140 @@ const getErrorMessage = (error: any): string => {
   return error?.message || 'An unexpected error occurred.';
 };
 
+// Enhanced cache keys for instant authentication
+const AUTH_CACHE_KEY = 'avchat_auth_cache';
+const AUTH_SESSION_KEY = 'avchat_auth_session';
+const AUTH_PENDING_KEY = 'avchat_auth_pending';
+const AUTH_CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+const AUTH_QUICK_CHECK_EXPIRY = 10 * 60 * 1000; // 10 minutes
+
+// Helper to get cached auth state
+const getCachedAuthState = (): { user: User | null; timestamp: number } | null => {
+  try {
+    const cached = localStorage.getItem(AUTH_CACHE_KEY);
+    if (!cached) return null;
+
+    const parsed = JSON.parse(cached);
+    const now = Date.now();
+
+    // Check if cache is expired
+    if (now - parsed.timestamp > AUTH_CACHE_EXPIRY) {
+      localStorage.removeItem(AUTH_CACHE_KEY);
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    localStorage.removeItem(AUTH_CACHE_KEY);
+    return null;
+  }
+};
+
+// Helper to cache auth state
+const setCachedAuthState = (user: User | null) => {
+  try {
+    const cacheData = {
+      user,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(cacheData));
+  } catch {
+    // Ignore localStorage errors
+  }
+};
+
+// Helper to check if cached state needs verification
+const shouldVerifyCachedState = (cachedState: { user: User | null; timestamp: number } | null): boolean => {
+  if (!cachedState) return true;
+  const now = Date.now();
+  return (now - cachedState.timestamp) > AUTH_QUICK_CHECK_EXPIRY;
+};
+
+// Enhanced session storage for instant auth state
+const getSessionAuthState = (): { user: User | null; timestamp: number } | null => {
+  try {
+    const cached = sessionStorage.getItem(AUTH_SESSION_KEY);
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+};
+
+const setSessionAuthState = (user: User | null): void => {
+  try {
+    const cacheData = {
+      user,
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(cacheData));
+  } catch {
+    // Ignore sessionStorage errors
+  }
+};
+
+// Auth pending state management
+const setAuthPending = (isAuthenticating: boolean, method: 'email' | 'oauth' = 'email'): void => {
+  try {
+    if (isAuthenticating) {
+      const pendingData = {
+        isAuthenticating: true,
+        timestamp: Date.now(),
+        method
+      };
+      sessionStorage.setItem(AUTH_PENDING_KEY, JSON.stringify(pendingData));
+    } else {
+      sessionStorage.removeItem(AUTH_PENDING_KEY);
+    }
+  } catch {
+    // Ignore sessionStorage errors
+  }
+};
+
+const getAuthPending = (): { isAuthenticating: boolean; timestamp: number; method: string } | null => {
+  try {
+    const pending = sessionStorage.getItem(AUTH_PENDING_KEY);
+    if (!pending) return null;
+
+    const parsed = JSON.parse(pending);
+
+    // Clear if older than 30 seconds
+    if (Date.now() - parsed.timestamp > 30000) {
+      sessionStorage.removeItem(AUTH_PENDING_KEY);
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
+  // Initialize with cached state to prevent flash of unauthenticated content
+  const cachedState = getCachedAuthState();
+  const sessionState = getSessionAuthState();
+  const pendingAuth = getAuthPending();
+
+  // Use session state first (fastest), then cached state
+  const initialUser = sessionState?.user || cachedState?.user || null;
+  const hasAnyCache = !!(sessionState || cachedState);
+
+  const [user, setUser] = useState<User | null>(initialUser);
+  const [loading, setLoading] = useState(!hasAnyCache || !!pendingAuth); // Show loading if no cache OR auth is pending
+  const [initialized, setInitialized] = useState(hasAnyCache && !pendingAuth); // Mark as initialized if we have cache and no pending auth
+  const [guestUser, setGuestUser] = useState<GuestUser | null>(() => {
+    // Only initialize guest user if no cached authenticated user
+    if (initialUser) return null;
+    return {
+      isGuest: true,
+      messagesUsed: 0,
+      maxMessages: 2
+    };
+  });
 
   // Check if user's email is verified
   const isEmailVerified = user?.emailVerification ?? false;
+  const isGuest = !user && !!guestUser;
 
   // Cached user session to avoid repeated API calls
   const getCurrentUser = useCallback(async (): Promise<User | null> => {
@@ -99,71 +238,143 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  // Fast session detection for OAuth (checks if any session exists first)
+  const hasActiveSession = useCallback(async (): Promise<boolean> => {
+    try {
+      const sessions = await account.listSessions();
+      return sessions.sessions.length > 0;
+    } catch (error) {
+      return false;
+    }
+  }, []);
+
   // Refresh session
   const refreshSession = useCallback(async (): Promise<void> => {
     try {
       await account.updateSession('current');
+      console.log('Session refreshed successfully');
     } catch (error) {
+      console.warn('Session refresh failed:', error);
       // Session refresh failed - user may need to re-authenticate
     }
   }, []);
+
+  // Auto-refresh session periodically to keep user logged in
+  useEffect(() => {
+    if (!user) return;
+
+    // Refresh session every 12 hours to keep it active
+    const refreshInterval = setInterval(() => {
+      refreshSession();
+    }, 12 * 60 * 60 * 1000); // 12 hours
+
+    return () => clearInterval(refreshInterval);
+  }, [user, refreshSession]);
 
   // Refresh user data
   const refreshUser = useCallback(async (): Promise<void> => {
     try {
       const currentUser = await account.get();
-      setUser(currentUser);
+      // Update cache with fresh user data
+      setCachedAuthState(currentUser);
+
+      // Use flushSync for immediate UI update
+      flushSync(() => {
+        setUser(currentUser);
+        if (currentUser) {
+          setGuestUser(null); // Clear guest user when authenticated user is found
+        }
+      });
+
       console.log('[AuthContext] User data refreshed:', {
         emailVerified: currentUser?.emailVerification,
         userId: currentUser?.$id
       });
     } catch (error) {
       console.error('Failed to refresh user data:', error);
+      // Clear cache if refresh fails
+      setCachedAuthState(null);
+
+      // Use flushSync for immediate UI update
+      flushSync(() => {
+        setUser(null);
+      });
     }
   }, []);
 
   // Initialize user services (DB and realtime) - optimized for performance
   const initializeUserServices = useCallback(async (userId: string) => {
     try {
-      console.log('[AuthContext] Initializing user services for user:', userId);
-
       // Initialize tier system for new users only - don't reset existing users
       await ensureUserTierInitialized();
-      console.log('[AuthContext] User tier initialization completed');
 
-      // Only initialize HybridDB - realtime will be handled inside it
+      // Initialize HybridDB immediately for instant data loading
       // This is now non-blocking and much faster
-      await HybridDB.initialize(userId);
-      console.log('[AuthContext] User services initialized successfully');
+      HybridDB.initialize(userId, false).catch(err =>
+        console.error('HybridDB initialization failed:', err)
+      ); // false = not guest mode, don't await to avoid blocking
     } catch (error) {
       console.error('Failed to initialize user services:', error);
     }
   }, []);
 
   useEffect(() => {
-    if (initialized) return; // Prevent multiple initializations
+    if (initialized && !shouldVerifyCachedState(cachedState)) return; // Skip if we have recent cached state
 
     const initAuth = async () => {
       try {
-        setLoading(true);
+        // If we have recent cached state, skip loading state
+        const needsVerification = shouldVerifyCachedState(cachedState);
+        if (needsVerification && !cachedState) {
+          setLoading(true);
+        }
+
         const currentUser = await getCurrentUser();
 
         if (currentUser) {
-          setUser(currentUser);
-          setLoading(false); // Set loading to false immediately after user is set
-          setInitialized(true);
+          // Update cache with fresh user data
+          setCachedAuthState(currentUser);
+
+          // Use flushSync to ensure immediate synchronous updates
+          flushSync(() => {
+            setUser(currentUser);
+            setGuestUser(null); // Clear guest user when authenticated user is found
+            setLoading(false); // Set loading to false immediately after user is set
+            setInitialized(true);
+          });
 
           // Initialize services in background - don't await to avoid blocking UI
           initializeUserServices(currentUser.$id).catch(err =>
             console.error('Background service initialization failed:', err)
           );
         } else {
-          setUser(null);
-          setLoading(false);
-          setInitialized(true);
+          // Clear cache if no user found
+          setCachedAuthState(null);
+
+          // Use flushSync to ensure immediate synchronous updates
+          flushSync(() => {
+            setUser(null);
+            // Keep guest user initialized for unauthenticated users
+            if (!guestUser) {
+              setGuestUser({
+                isGuest: true,
+                messagesUsed: 0,
+                maxMessages: 2
+              });
+            }
+            setLoading(false);
+            setInitialized(true);
+          });
+
+          // Initialize HybridDB for guest users
+          HybridDB.initialize('guest', true).catch(err =>
+            console.error('Guest HybridDB initialization failed:', err)
+          );
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
+        // Clear cache on error
+        setCachedAuthState(null);
         setUser(null);
         setLoading(false);
         setInitialized(true);
@@ -178,25 +389,168 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         AppwriteRealtime.unsubscribeFromAll();
       }
     };
-  }, [getCurrentUser, initializeUserServices, initialized]);
+  }, [getCurrentUser, initializeUserServices, initialized, cachedState, guestUser]);
+
+  // Add window focus listener to refresh auth state when user returns from OAuth
+  useEffect(() => {
+    const handleWindowFocus = async () => {
+      // Only refresh if we don't have a user but might have just completed OAuth
+      if (!user && !loading) {
+        try {
+          const currentUser = await getCurrentUser();
+          if (currentUser) {
+            console.log('[AuthContext] User authenticated after window focus, refreshing state');
+            setCachedAuthState(currentUser);
+            setSessionAuthState(currentUser);
+
+            flushSync(() => {
+              setUser(currentUser);
+              setGuestUser(null);
+            });
+
+            // Initialize services in background
+            initializeUserServices(currentUser.$id).catch(err =>
+              console.error('Background service initialization failed:', err)
+            );
+          }
+        } catch (error) {
+          console.error('Failed to refresh auth state on window focus:', error);
+        }
+      }
+    };
+
+    // OAuth session pre-warming: Check for session immediately when pending OAuth
+    const checkOAuthSession = async () => {
+      const pendingAuth = getAuthPending();
+      if (pendingAuth && pendingAuth.method === 'oauth' && !user) {
+        console.log('[AuthContext] 🔍 OAuth pre-warming check - pending auth detected');
+        try {
+          const currentUser = await getCurrentUser();
+          if (currentUser) {
+            console.log('[AuthContext] 🎉 OAuth session detected via pre-warming!', { userId: currentUser.$id });
+            setCachedAuthState(currentUser);
+            setSessionAuthState(currentUser);
+            setAuthPending(false);
+
+            flushSync(() => {
+              setUser(currentUser);
+              setGuestUser(null);
+              setLoading(false);
+            });
+
+            console.log('[AuthContext] 🚀 OAuth pre-warming completed - user state updated');
+
+            // Initialize services in background
+            initializeUserServices(currentUser.$id).catch(err =>
+              console.error('Background service initialization failed:', err)
+            );
+          } else {
+            console.log('[AuthContext] 🔄 OAuth pre-warming - no session yet');
+          }
+        } catch (error) {
+          console.error('[AuthContext] ❌ OAuth session pre-warming failed:', error);
+        }
+      }
+    };
+
+    // Check for OAuth session every 200ms when pending (faster than 500ms)
+    const oauthInterval = setInterval(checkOAuthSession, 200);
+
+    // Listen for custom auth state change events (from OAuth callback)
+    const handleAuthStateChanged = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { authenticated, user: eventUser } = customEvent.detail;
+      if (authenticated && eventUser && !user) {
+        console.log('[AuthContext] Received auth state change event, updating state');
+        setCachedAuthState(eventUser);
+
+        flushSync(() => {
+          setUser(eventUser);
+          setGuestUser(null);
+        });
+
+        // Initialize services in background
+        initializeUserServices(eventUser.$id).catch(err =>
+          console.error('Background service initialization failed:', err)
+        );
+      }
+    };
+
+    // Listen for admin data deletion events
+    const handleAdminDataDeleted = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { userId: deletedUserId } = customEvent.detail;
+      if (user && user.$id === deletedUserId) {
+        console.log('[AuthContext] User data deleted by admin, refreshing...');
+        try {
+          // Force refresh all data from remote
+          const { HybridDB } = await import('@/lib/hybridDB');
+          await HybridDB.forceRefreshAllData();
+        } catch (error) {
+          console.error('Failed to refresh data after admin deletion:', error);
+        }
+      }
+    };
+
+    // Listen for admin all data deletion events
+    const handleAdminAllDataDeleted = async () => {
+      if (user) {
+        console.log('[AuthContext] All data deleted by admin, refreshing...');
+        try {
+          // Force refresh all data from remote
+          const { HybridDB } = await import('@/lib/hybridDB');
+          await HybridDB.forceRefreshAllData();
+        } catch (error) {
+          console.error('Failed to refresh data after admin all data deletion:', error);
+        }
+      }
+    };
+
+    window.addEventListener('focus', handleWindowFocus);
+    window.addEventListener('authStateChanged', handleAuthStateChanged);
+    window.addEventListener('adminDataDeleted', handleAdminDataDeleted);
+    window.addEventListener('adminAllDataDeleted', handleAdminAllDataDeleted);
+
+    return () => {
+      clearInterval(oauthInterval);
+      window.removeEventListener('focus', handleWindowFocus);
+      window.removeEventListener('authStateChanged', handleAuthStateChanged);
+      window.removeEventListener('adminDataDeleted', handleAdminDataDeleted);
+      window.removeEventListener('adminAllDataDeleted', handleAdminAllDataDeleted);
+    };
+  }, [user, loading, getCurrentUser, initializeUserServices]);
 
   // Login with email and password
   const login = async (email: string, password: string): Promise<void> => {
     try {
+      // Set pending auth state immediately
+      setAuthPending(true, 'email');
       setLoading(true);
 
       // Create session and get user data
       await account.createEmailPasswordSession(email, password);
       const currentUser = await account.get(); // Get fresh user data after session creation
-      setUser(currentUser);
-      setLoading(false); // Set loading to false immediately after user is set
 
-      // Initialize services in background - don't block login completion
-      initializeUserServices(currentUser.$id).catch(err =>
-        console.error('Background service initialization failed:', err)
-      );
+      // Update both caches immediately for instant future access
+      setCachedAuthState(currentUser);
+      setSessionAuthState(currentUser);
+
+      // Clear pending auth state
+      setAuthPending(false);
+
+      // Use flushSync for immediate UI update
+      flushSync(() => {
+        setUser(currentUser);
+        setGuestUser(null); // Clear guest user when logging in
+        setLoading(false); // Set loading to false immediately after user is set
+        setInitialized(true);
+      });
+
+      // Initialize services immediately for instant data loading
+      initializeUserServices(currentUser.$id);
     } catch (error) {
       console.error('Login error:', error);
+      setAuthPending(false);
       setLoading(false);
       throw new Error(getErrorMessage(error));
     }
@@ -205,28 +559,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Register a new user
   const register = async (email: string, password: string, name: string): Promise<void> => {
     try {
+      // Set pending auth state immediately
+      setAuthPending(true, 'email');
       setLoading(true);
 
       // Create user account
-      const newUser = await account.create(ID.unique(), email, password, name);
+      await account.create(ID.unique(), email, password, name);
       // Create session
       await account.createEmailPasswordSession(email, password);
 
-      // Send verification email in background
-      account.createVerification(APPWRITE_CONFIG.verificationUrl).catch(err =>
-        console.warn('Failed to send verification email:', err)
-      );
+      // Send verification email immediately (not in background)
+      await account.createVerification(APPWRITE_CONFIG.verificationUrl);
 
-      // Use the newUser object instead of making another API call
-      setUser(newUser);
-      setLoading(false); // Set loading to false immediately after user is set
+      // Get fresh user data after session creation to ensure correct verification status
+      const currentUser = await account.get();
 
-      // Initialize services in background - don't block registration completion
-      initializeUserServices(newUser.$id).catch(err =>
-        console.error('Background service initialization failed:', err)
-      );
+      // Update both caches immediately for instant future access
+      setCachedAuthState(currentUser);
+      setSessionAuthState(currentUser);
+
+      // Clear pending auth state
+      setAuthPending(false);
+
+      // Use flushSync for immediate UI update
+      flushSync(() => {
+        setUser(currentUser);
+        setGuestUser(null); // Clear guest user when registering
+        setLoading(false); // Set loading to false immediately after user is set
+        setInitialized(true);
+      });
+
+      // Initialize services immediately for instant data loading
+      initializeUserServices(currentUser.$id);
     } catch (error) {
       console.error('Registration error:', error);
+      setAuthPending(false);
       setLoading(false);
       throw new Error(getErrorMessage(error));
     }
@@ -235,6 +602,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Login with Google OAuth
   const loginWithGoogle = async (): Promise<void> => {
     try {
+      // Set pending OAuth state immediately
+      setAuthPending(true, 'oauth');
+
+      // Store current path for redirect after OAuth
+      const currentPath = window.location.pathname + window.location.search;
+      if (currentPath !== '/auth/callback' && currentPath !== '/') {
+        sessionStorage.setItem('auth_redirect', currentPath);
+      }
+
+      // Store OAuth start time for performance tracking
+      sessionStorage.setItem('oauth_start_time', Date.now().toString());
+
       account.createOAuth2Session(
         OAuthProvider.Google,
         APPWRITE_CONFIG.successUrl,
@@ -242,6 +621,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       );
     } catch (error) {
       console.error('Google login error:', error);
+      setAuthPending(false);
       throw new Error(getErrorMessage(error));
     }
   };
@@ -249,6 +629,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Login with GitHub OAuth
   const loginWithGitHub = async (): Promise<void> => {
     try {
+      // Set pending OAuth state immediately
+      setAuthPending(true, 'oauth');
+
+      // Store current path for redirect after OAuth
+      const currentPath = window.location.pathname + window.location.search;
+      if (currentPath !== '/auth/callback' && currentPath !== '/') {
+        sessionStorage.setItem('auth_redirect', currentPath);
+      }
+
+      // Store OAuth start time for performance tracking
+      sessionStorage.setItem('oauth_start_time', Date.now().toString());
+
       account.createOAuth2Session(
         OAuthProvider.Github,
         APPWRITE_CONFIG.successUrl,
@@ -256,6 +648,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       );
     } catch (error) {
       console.error('GitHub login error:', error);
+      setAuthPending(false);
       throw new Error(getErrorMessage(error));
     }
   };
@@ -265,15 +658,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       await account.deleteSessions();
-      
+
       // Unsubscribe from all Appwrite Realtime channels
       AppwriteRealtime.unsubscribeFromAll();
-      
+
       // Clear local database
       HybridDB.clearLocalData();
-      
+
+      // Clear cache immediately
+      setCachedAuthState(null);
       setUser(null);
-      
+      // Reset guest user when logging out
+      setGuestUser({
+        isGuest: true,
+        messagesUsed: 0,
+        maxMessages: 2
+      });
+
       // Clear any stored redirect
       sessionStorage.removeItem('auth_redirect');
     } catch (error) {
@@ -317,7 +718,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       const updatedUser = await account.updateName(name);
-      setUser(updatedUser);
+      // Update cache with updated user data
+      setCachedAuthState(updatedUser);
+
+      // Use flushSync for immediate UI update
+      flushSync(() => {
+        setUser(updatedUser);
+      });
     } catch (error) {
       console.error('Profile update error:', error);
       throw new Error(getErrorMessage(error));
@@ -331,7 +738,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       const updatedUser = await account.updateEmail(email, password);
-      setUser(updatedUser);
+      // Update cache with updated user data
+      setCachedAuthState(updatedUser);
+
+      // Use flushSync for immediate UI update
+      flushSync(() => {
+        setUser(updatedUser);
+      });
     } catch (error) {
       console.error('Email update error:', error);
       throw new Error(getErrorMessage(error));
@@ -417,10 +830,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Directly call account.get() to ensure we get fresh user data
       const currentUser = await account.get();
       if (currentUser) {
-        setUser(currentUser);
-        console.log('[AuthContext] Email verification successful, user updated:', {
-          emailVerified: currentUser.emailVerification,
-          userId: currentUser.$id
+        // Update cache with verified user data
+        setCachedAuthState(currentUser);
+
+        // Use flushSync for immediate UI update
+        flushSync(() => {
+          setUser(currentUser);
         });
       }
     } catch (error) {
@@ -431,12 +846,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Guest user methods
+  const incrementGuestMessages = (): boolean => {
+    if (!guestUser || guestUser.messagesUsed >= guestUser.maxMessages) {
+      return false;
+    }
+
+    setGuestUser(prev => prev ? {
+      ...prev,
+      messagesUsed: prev.messagesUsed + 1
+    } : null);
+
+    return true;
+  };
+
+  const canGuestSendMessage = (): boolean => {
+    return guestUser ? guestUser.messagesUsed < guestUser.maxMessages : false;
+  };
+
+  const resetGuestUser = (): void => {
+    setGuestUser({
+      isGuest: true,
+      messagesUsed: 0,
+      maxMessages: 2
+    });
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
+        guestUser,
         loading,
         isAuthenticated: !!user,
+        isGuest,
         isEmailVerified,
         login,
         register,
@@ -455,6 +898,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         resendVerificationEmail,
         sendPasswordRecovery,
         resetPassword,
+        incrementGuestMessages,
+        canGuestSendMessage,
+        resetGuestUser,
       }}
     >
       {children}

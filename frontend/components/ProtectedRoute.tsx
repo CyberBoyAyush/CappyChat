@@ -20,11 +20,11 @@ interface ProtectedRouteProps {
   fallbackPath?: string;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
   requireAuth = true,
   requireVerification = true,
-  fallbackPath = '/auth/login'
+  fallbackPath = '/'
 }) => {
   const { isAuthenticated, isEmailVerified, loading } = useAuth();
   const location = useLocation();

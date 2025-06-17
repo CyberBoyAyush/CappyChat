@@ -104,6 +104,42 @@ export async function POST(req: NextRequest) {
           message: `Successfully logged out ${logoutCount} users`
         });
 
+      case 'getAllUsers':
+        const allUsers = await getAllUsers();
+        return NextResponse.json({
+          success: true,
+          users: allUsers
+        });
+
+      case 'clearUserSession':
+        if (!userId) {
+          return NextResponse.json(
+            { error: 'User ID is required' },
+            { status: 400 }
+          );
+        }
+
+        const sessionCleared = await clearUserSession(userId);
+        return NextResponse.json({
+          success: true,
+          message: `User session cleared for ${userId}`,
+          sessionCleared
+        });
+
+      case 'resetUserCredits':
+        if (!userId) {
+          return NextResponse.json(
+            { error: 'User ID is required' },
+            { status: 400 }
+          );
+        }
+
+        await adminResetUserCredits(userId);
+        return NextResponse.json({
+          success: true,
+          message: `Credits reset for user ${userId}`
+        });
+
       default:
         return NextResponse.json(
           { error: 'Invalid action' },
@@ -212,6 +248,85 @@ async function logoutAllUsers(): Promise<number> {
     return logoutCount;
   } catch (error) {
     console.error('Error logging out all users:', error);
+    throw error;
+  }
+}
+
+async function getAllUsers() {
+  try {
+    const allUsers = [];
+    let offset = 0;
+    const limit = 100;
+
+    while (true) {
+      const usersList = await users.list([Query.limit(limit), Query.offset(offset)]);
+
+      if (usersList.users.length === 0) {
+        break;
+      }
+
+      // Get user preferences for each user
+      for (const user of usersList.users) {
+        try {
+          const preferences = await getUserPreferencesServer(user.$id);
+          allUsers.push({
+            $id: user.$id,
+            email: user.email,
+            name: user.name,
+            emailVerification: user.emailVerification,
+            status: user.status,
+            registration: user.registration,
+            preferences
+          });
+        } catch (error) {
+          console.error(`Failed to get preferences for user ${user.$id}:`, error);
+          // Add user without preferences
+          allUsers.push({
+            $id: user.$id,
+            email: user.email,
+            name: user.name,
+            emailVerification: user.emailVerification,
+            status: user.status,
+            registration: user.registration,
+            preferences: null
+          });
+        }
+      }
+
+      offset += limit;
+
+      if (usersList.users.length < limit) {
+        break;
+      }
+    }
+
+    return allUsers;
+  } catch (error) {
+    console.error('Error getting all users:', error);
+    throw error;
+  }
+}
+
+async function clearUserSession(userId: string): Promise<boolean> {
+  try {
+    // Get all sessions for the user
+    const sessions = await users.listSessions(userId);
+
+    let clearedCount = 0;
+    // Delete each session
+    for (const session of sessions.sessions) {
+      try {
+        await users.deleteSession(userId, session.$id);
+        clearedCount++;
+      } catch (sessionError) {
+        console.error(`Failed to delete session ${session.$id} for user ${userId}:`, sessionError);
+      }
+    }
+
+    console.log(`Cleared ${clearedCount} sessions for user ${userId}`);
+    return clearedCount > 0;
+  } catch (error) {
+    console.error(`Error clearing sessions for user ${userId}:`, error);
     throw error;
   }
 }

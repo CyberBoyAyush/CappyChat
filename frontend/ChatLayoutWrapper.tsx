@@ -14,11 +14,14 @@ import { useIsMobile } from "@/hooks/useMobileDetection";
 import { Button } from "@/frontend/components/ui/button";
 import { PanelLeftIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/frontend/contexts/AuthContext";
+import EmailVerificationGuard from "@/frontend/components/EmailVerificationGuard";
 
 export default function ChatLayoutWrapper() {
   const [sidebarWidth, setSidebarWidth] = useState(300); // Default width
   const [isDragging, setIsDragging] = useState(false);
   const isMobile = useIsMobile();
+  const { isAuthenticated, isEmailVerified } = useAuth();
 
   // Default sidebar open state - only close by default on mobile
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
@@ -101,6 +104,15 @@ export default function ChatLayoutWrapper() {
     };
   }, [isDragging]);
 
+  // If user is authenticated but email is not verified, show verification guard
+  if (isAuthenticated && !isEmailVerified) {
+    return (
+      <EmailVerificationGuard>
+        <div></div> {/* This will never render because EmailVerificationGuard blocks unverified users */}
+      </EmailVerificationGuard>
+    );
+  }
+
   return (
     <SidebarProvider
       defaultOpen={!isMobile}
@@ -145,7 +157,7 @@ export default function ChatLayoutWrapper() {
         </div>
 
         {/* Main content area that flexes with sidebar width */}
-        <div className="flex-1 relative min-h-screen bg-gradient-to-t from-background dark:from-zinc-950 dark:to-50% overflow-hidden">
+        <div className="flex-1 relative min-h-screen bg-gradient-to-t from-background dark:from-zinc-950 dark:to-50%">
           <Outlet
             context={{
               sidebarWidth,

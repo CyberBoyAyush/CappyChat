@@ -36,6 +36,9 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/frontend/contexts/AuthContext";
+import { useAuthDialog } from "@/frontend/hooks/useAuthDialog";
+import AuthDialog from "./auth/AuthDialog";
 
 // Extended UIMessage type to include attachments
 type ExtendedUIMessage = UIMessage & {
@@ -93,6 +96,9 @@ function PureInputField({
     minHeight: 72,
     maxHeight: 200,
   });
+
+  const { isGuest, canGuestSendMessage, incrementGuestMessages, loading: authLoading } = useAuth();
+  const authDialog = useAuthDialog();
 
   // File attachments state
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
@@ -348,6 +354,13 @@ function PureInputField({
     console.log("=== HANDLE SUBMIT CALLED ===");
     console.log("Attachments state at submit:", attachments);
     console.log("Attachments length at submit:", attachments.length);
+    console.log("Auth loading state:", authLoading);
+
+    // Wait for authentication to be fully loaded before proceeding
+    if (authLoading) {
+      console.log("=== SUBMIT BLOCKED - AUTH LOADING ===");
+      return;
+    }
 
     const currentInput = textareaRef.current?.value || input;
 
@@ -361,6 +374,21 @@ function PureInputField({
       console.log("Attachments length:", attachments.length);
       console.log("Status:", status);
       return;
+    }
+
+    // Check guest user limits
+    if (isGuest) {
+      if (!canGuestSendMessage()) {
+        console.log("=== GUEST LIMIT REACHED ===");
+        authDialog.showGuestLimitPage(); // Use faster page navigation
+        return;
+      }
+
+      // Check for restricted features for guests
+      if (attachments.length > 0) {
+        authDialog.showPremiumFeaturePage(); // Use faster page navigation
+        return;
+      }
     }
 
     // Use the input as-is without automatic file conversion
@@ -394,8 +422,19 @@ function PureInputField({
       // New conversation - navigate first if not already there
       if (!id) {
         navigate(`/chat/${threadId}`);
-        // Create thread instantly with local update + async backend sync
-        HybridDB.createThread(threadId);
+        // Create thread instantly with local update + async backend sync (skip for guest users)
+        // Use createThreadIfNotExists to avoid duplicate creation errors
+        if (!isGuest) {
+          console.log('👤 Authenticated user - creating thread in ChatInputField:', threadId);
+          HybridDB.createThread(threadId).then(() => {
+            console.log('✅ Thread created successfully in ChatInputField:', threadId);
+          }).catch((error) => {
+            // Thread might already exist (e.g., from URL search pre-creation)
+            console.log('Thread creation handled or already exists:', error.message || error);
+          });
+        } else {
+          console.log('🎯 Guest user - skipping thread creation in ChatInputField');
+        }
       }
 
       // Start completion immediately for better UX
@@ -426,14 +465,22 @@ function PureInputField({
       onWebSearchMessage(messageId);
     }
 
-    // Store the user message immediately to the database
-    console.log(
-      "💾 Storing user message immediately:",
-      messageId,
-      "Has attachments:",
-      !!userMessage.attachments
-    );
-    HybridDB.createMessage(threadId, userMessage);
+    // Store the user message immediately to the database (skip for guest users)
+    if (!isGuest) {
+      console.log(
+        "💾 Storing user message immediately:",
+        messageId,
+        "Has attachments:",
+        !!userMessage.attachments
+      );
+      HybridDB.createMessage(threadId, userMessage);
+    }
+
+    // Increment guest message count if guest user
+    if (isGuest) {
+      incrementGuestMessages();
+      console.log("🎯 Guest message count incremented");
+    }
 
     // The message will be persisted to database in ChatInterface's onFinish callback
     // Pass attachments using experimental_attachments parameter AND include in message object for immediate UI display
@@ -470,6 +517,11 @@ function PureInputField({
     messages,
     isWebSearchEnabled,
     onWebSearchMessage,
+    isGuest,
+    canGuestSendMessage,
+    incrementGuestMessages,
+    authDialog,
+    authLoading,
   ]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -728,8 +780,6 @@ function PureInputField({
                   "w-full px-3 sm:px-4 py-3 sm:py-2 md:pt-4 pr-10 sm:pr-12 border-none shadow-none",
                   "placeholder:text-muted-foreground resize-none text-foreground",
                   "focus-visible:ring-0 focus-visible:ring-offset-0",
-                  "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/30",
-                  "scrollbar-thumb-rounded-full",
                   "min-h-[44px] sm:min-h-[40px] text-base sm:text-base",
                   "selection:bg-primary selection:text-primary-foreground",
                   "mobile-input leading-relaxed transition-colors",
@@ -812,29 +862,42 @@ function PureInputField({
           <div className="min-h-[60px] sm:h-14 flex bg-transparent items-center px-2 sm:px-3 border-t border-border/50">
             <div className="flex items-center justify-between w-full gap-1 sm:gap-2 md:gap-3">
               <div className="flex items-center gap-1 sm:gap-2 flex-shrink min-w-0 overflow-hidden">
-                <div className="min-w-0 flex-shrink overflow-hidden">
-                  <ModelSelector />
-                </div>
-                <ConversationStyleSelector className="hidden md:flex flex-shrink-0" />
-                <WebSearchToggle
-                  isEnabled={isWebSearchEnabled}
-                  onToggle={setWebSearchEnabled}
-                  className="hidden md:flex flex-shrink-0"
-                />
+                {!isGuest && (
+                  <>
+                    <div className="min-w-0 flex-shrink overflow-hidden">
+                      <ModelSelector />
+                    </div>
+                    <ConversationStyleSelector className="hidden md:flex flex-shrink-0" />
+                    <WebSearchToggle
+                      isEnabled={isWebSearchEnabled}
+                      onToggle={setWebSearchEnabled}
+                      className="hidden md:flex flex-shrink-0"
+                    />
+                  </>
+                )}
+                {isGuest && (
+                  <div className="text-xs text-muted-foreground">
+                    Using Gemini 2.5 Flash • Sign up for more models
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 flex-shrink-0">
-                <ConversationStyleSelector className="flex md:hidden" />
-                <WebSearchToggle
-                  isEnabled={isWebSearchEnabled}
-                  onToggle={setWebSearchEnabled}
-                  className="flex md:hidden"
-                />
-                <FileUpload
-                  onFilesUploaded={handleFilesUploaded}
-                  onUploadStatusChange={handleUploadStatusChange}
-                  disabled={status === "streaming" || status === "submitted"}
-                />
+                {!isGuest && (
+                  <>
+                    <ConversationStyleSelector className="flex md:hidden" />
+                    <WebSearchToggle
+                      isEnabled={isWebSearchEnabled}
+                      onToggle={setWebSearchEnabled}
+                      className="flex md:hidden"
+                    />
+                    <FileUpload
+                      onFilesUploaded={handleFilesUploaded}
+                      onUploadStatusChange={handleUploadStatusChange}
+                      disabled={status === "streaming" || status === "submitted"}
+                    />
+                  </>
+                )}
                 {status === "submitted" || status === "streaming" ? (
                   <StopButton stop={stop} />
                 ) : (
@@ -845,6 +908,15 @@ function PureInputField({
           </div>
         </div>
       </div>
+
+      {/* Auth Dialog for guest users */}
+      <AuthDialog
+        isOpen={authDialog.isOpen}
+        onClose={authDialog.closeDialog}
+        initialMode={authDialog.mode}
+        title={authDialog.title}
+        description={authDialog.description}
+      />
     </div>
   );
 }
