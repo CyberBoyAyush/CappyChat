@@ -106,7 +106,9 @@ class DebouncedEventEmitter {
       case 'messages_updated':
         return 30; // Very quick updates for messages (smooth streaming)
       case 'threads_updated':
-        return 100; // Slightly slower for threads
+        return 50; // Quick updates for threads
+      case 'projects_updated':
+        return 20; // Super fast updates for projects (instant sync)
       case 'summaries_updated':
         return 200; // Slower for summaries
       default:
@@ -212,6 +214,9 @@ export class HybridDB {
       onMessageUpdated: this.handleRemoteMessageUpdated.bind(this),
       onMessageDeleted: this.handleRemoteMessageDeleted.bind(this),
       onMessageSummaryCreated: this.handleRemoteMessageSummaryCreated.bind(this),
+      onProjectCreated: this.handleRemoteProjectCreated.bind(this),
+      onProjectUpdated: this.handleRemoteProjectUpdated.bind(this),
+      onProjectDeleted: this.handleRemoteProjectDeleted.bind(this),
     });
 
     // Subscribe to realtime updates immediately for better UX
@@ -410,13 +415,9 @@ export class HybridDB {
     // Instant local update
     LocalDB.updateThread(threadId, { projectId, updatedAt: now });
 
-    // Get updated threads and emit event
+    // Get updated threads and emit event immediately for instant sync
     const updatedThreads = LocalDB.getThreads();
-
-    // Use setTimeout to ensure this runs after any pending React updates
-    setTimeout(() => {
-      debouncedEmitter.emit('threads_updated', updatedThreads);
-    }, 0);
+    debouncedEmitter.emitImmediate('threads_updated', updatedThreads);
 
     // Skip remote sync for guest users
     if (this.isGuestMode) {
@@ -564,9 +565,9 @@ export class HybridDB {
     // Instant local update
     LocalDB.updateProject(projectId, { name, description, prompt, updatedAt: now });
 
-    // Get updated projects and emit event
+    // Get updated projects and emit event immediately for instant sync
     const updatedProjects = LocalDB.getProjects();
-    debouncedEmitter.emit('projects_updated', updatedProjects);
+    debouncedEmitter.emitImmediate('projects_updated', updatedProjects);
 
     // Skip remote sync for guest users
     if (this.isGuestMode) {
@@ -590,9 +591,9 @@ export class HybridDB {
     // Instant local update
     LocalDB.updateProject(projectId, { colorIndex, updatedAt: now });
 
-    // Get updated projects and emit event
+    // Get updated projects and emit event immediately for instant sync
     const updatedProjects = LocalDB.getProjects();
-    debouncedEmitter.emit('projects_updated', updatedProjects);
+    debouncedEmitter.emitImmediate('projects_updated', updatedProjects);
 
     // Skip remote sync for guest users
     if (this.isGuestMode) {
@@ -1043,6 +1044,69 @@ export class HybridDB {
 
     LocalDB.addSummary(summary);
     debouncedEmitter.emit('summaries_updated', summary.threadId);
+  }
+
+  // ============ PROJECT REMOTE HANDLERS ============
+
+  private static handleRemoteProjectCreated(appwriteProject: any): void {
+    // Check if project already exists locally to avoid duplicates
+    const existingProjects = LocalDB.getProjects();
+    const existsLocally = existingProjects.some(p => p.id === appwriteProject.projectId);
+
+    if (existsLocally) {
+      // Project already exists locally, this is likely from our own sync operation
+      console.log('[HybridDB] Project already exists locally, skipping remote create:', appwriteProject.projectId);
+      return;
+    }
+
+    console.log('[HybridDB] Handling remote project created:', appwriteProject.projectId);
+
+    const project: Project = {
+      id: appwriteProject.projectId,
+      name: appwriteProject.name,
+      description: appwriteProject.description,
+      prompt: appwriteProject.prompt,
+      colorIndex: appwriteProject.colorIndex,
+      createdAt: new Date(appwriteProject.createdAt),
+      updatedAt: new Date(appwriteProject.updatedAt)
+    };
+
+    LocalDB.upsertProject(project);
+    debouncedEmitter.emitImmediate('projects_updated', LocalDB.getProjects());
+  }
+
+  private static handleRemoteProjectUpdated(appwriteProject: any): void {
+    console.log('[HybridDB] Handling remote project updated:', appwriteProject.projectId);
+
+    const project: Project = {
+      id: appwriteProject.projectId,
+      name: appwriteProject.name,
+      description: appwriteProject.description,
+      prompt: appwriteProject.prompt,
+      colorIndex: appwriteProject.colorIndex,
+      createdAt: new Date(appwriteProject.createdAt),
+      updatedAt: new Date(appwriteProject.updatedAt)
+    };
+
+    LocalDB.upsertProject(project);
+    debouncedEmitter.emitImmediate('projects_updated', LocalDB.getProjects());
+  }
+
+  private static handleRemoteProjectDeleted(appwriteProject: any): void {
+    console.log('[HybridDB] Handling remote project deleted:', appwriteProject.projectId);
+
+    LocalDB.deleteProject(appwriteProject.projectId);
+
+    // Also update any threads that were in this project to remove the project reference
+    const threads = LocalDB.getThreads();
+    threads.forEach(thread => {
+      if (thread.projectId === appwriteProject.projectId) {
+        LocalDB.updateThread(thread.id, { projectId: undefined });
+      }
+    });
+
+    debouncedEmitter.emitImmediate('projects_updated', LocalDB.getProjects());
+    debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
   }
 
   // ============ SYNC MANAGEMENT ============
