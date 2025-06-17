@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Client, Users, Databases, Query } from 'node-appwrite';
+import { Client, Users, Databases, Query, Models } from 'node-appwrite';
 
 // Initialize Appwrite client for server-side operations
 const client = new Client()
@@ -149,7 +149,7 @@ async function getDatabaseStats() {
 
 async function getTierStats() {
   try {
-    let allUsers = [];
+    let allUsers: Models.User<Models.Preferences>[] = [];
     let offset = 0;
     const limit = 100;
 
