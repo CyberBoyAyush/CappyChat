@@ -95,8 +95,8 @@ const getErrorMessage = (error: any): string => {
 
 // Cache keys for localStorage
 const AUTH_CACHE_KEY = 'avchat_auth_cache';
-const AUTH_CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
-const AUTH_QUICK_CHECK_EXPIRY = 30 * 1000; // 30 seconds for quick checks
+const AUTH_CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours (much longer to avoid frequent re-auth)
+const AUTH_QUICK_CHECK_EXPIRY = 10 * 60 * 1000; // 10 minutes for quick checks (increased from 30 seconds)
 
 // Helper to get cached auth state
 const getCachedAuthState = (): { user: User | null; timestamp: number } | null => {
@@ -174,10 +174,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const refreshSession = useCallback(async (): Promise<void> => {
     try {
       await account.updateSession('current');
+      console.log('Session refreshed successfully');
     } catch (error) {
+      console.warn('Session refresh failed:', error);
       // Session refresh failed - user may need to re-authenticate
     }
   }, []);
+
+  // Auto-refresh session periodically to keep user logged in
+  useEffect(() => {
+    if (!user) return;
+
+    // Refresh session every 12 hours to keep it active
+    const refreshInterval = setInterval(() => {
+      refreshSession();
+    }, 12 * 60 * 60 * 1000); // 12 hours
+
+    return () => clearInterval(refreshInterval);
+  }, [user, refreshSession]);
 
   // Refresh user data
   const refreshUser = useCallback(async (): Promise<void> => {
@@ -185,7 +199,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const currentUser = await account.get();
       // Update cache with fresh user data
       setCachedAuthState(currentUser);
-      setUser(currentUser);
+
+      // Use flushSync for immediate UI update
+      flushSync(() => {
+        setUser(currentUser);
+        if (currentUser) {
+          setGuestUser(null); // Clear guest user when authenticated user is found
+        }
+      });
+
       console.log('[AuthContext] User data refreshed:', {
         emailVerified: currentUser?.emailVerification,
         userId: currentUser?.$id
@@ -194,7 +216,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Failed to refresh user data:', error);
       // Clear cache if refresh fails
       setCachedAuthState(null);
-      setUser(null);
+
+      // Use flushSync for immediate UI update
+      flushSync(() => {
+        setUser(null);
+      });
     }
   }, []);
 
@@ -204,9 +230,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Initialize tier system for new users only - don't reset existing users
       await ensureUserTierInitialized();
 
-      // Only initialize HybridDB - realtime will be handled inside it
+      // Initialize HybridDB immediately for instant data loading
       // This is now non-blocking and much faster
-      await HybridDB.initialize(userId, false); // false = not guest mode
+      HybridDB.initialize(userId, false).catch(err =>
+        console.error('HybridDB initialization failed:', err)
+      ); // false = not guest mode, don't await to avoid blocking
     } catch (error) {
       console.error('Failed to initialize user services:', error);
     }
@@ -285,6 +313,94 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [getCurrentUser, initializeUserServices, initialized, cachedState, guestUser]);
 
+  // Add window focus listener to refresh auth state when user returns from OAuth
+  useEffect(() => {
+    const handleWindowFocus = async () => {
+      // Only refresh if we don't have a user but might have just completed OAuth
+      if (!user && !loading) {
+        try {
+          const currentUser = await getCurrentUser();
+          if (currentUser) {
+            console.log('[AuthContext] User authenticated after window focus, refreshing state');
+            setCachedAuthState(currentUser);
+
+            flushSync(() => {
+              setUser(currentUser);
+              setGuestUser(null);
+            });
+
+            // Initialize services in background
+            initializeUserServices(currentUser.$id).catch(err =>
+              console.error('Background service initialization failed:', err)
+            );
+          }
+        } catch (error) {
+          console.error('Failed to refresh auth state on window focus:', error);
+        }
+      }
+    };
+
+    // Listen for custom auth state change events (from OAuth callback)
+    const handleAuthStateChanged = (event: CustomEvent) => {
+      const { authenticated, user: eventUser } = event.detail;
+      if (authenticated && eventUser && !user) {
+        console.log('[AuthContext] Received auth state change event, updating state');
+        setCachedAuthState(eventUser);
+
+        flushSync(() => {
+          setUser(eventUser);
+          setGuestUser(null);
+        });
+
+        // Initialize services in background
+        initializeUserServices(eventUser.$id).catch(err =>
+          console.error('Background service initialization failed:', err)
+        );
+      }
+    };
+
+    // Listen for admin data deletion events
+    const handleAdminDataDeleted = async (event: CustomEvent) => {
+      const { userId: deletedUserId } = event.detail;
+      if (user && user.$id === deletedUserId) {
+        console.log('[AuthContext] User data deleted by admin, refreshing...');
+        try {
+          // Force refresh all data from remote
+          const { HybridDB } = await import('@/lib/hybridDB');
+          await HybridDB.forceRefreshAllData();
+        } catch (error) {
+          console.error('Failed to refresh data after admin deletion:', error);
+        }
+      }
+    };
+
+    // Listen for admin all data deletion events
+    const handleAdminAllDataDeleted = async () => {
+      if (user) {
+        console.log('[AuthContext] All data deleted by admin, refreshing...');
+        try {
+          // Force refresh all data from remote
+          const { HybridDB } = await import('@/lib/hybridDB');
+          await HybridDB.forceRefreshAllData();
+        } catch (error) {
+          console.error('Failed to refresh data after admin all data deletion:', error);
+        }
+      }
+    };
+
+    window.addEventListener('focus', handleWindowFocus);
+    window.addEventListener('authStateChanged', handleAuthStateChanged as EventListener);
+    window.addEventListener('adminDataDeleted', handleAdminDataDeleted as EventListener);
+    window.addEventListener('adminAllDataDeleted', handleAdminAllDataDeleted as EventListener);
+
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus);
+      window.removeEventListener('authStateChanged', handleAuthStateChanged as EventListener);
+      window.removeEventListener('adminDataDeleted', handleAdminDataDeleted as EventListener);
+      window.removeEventListener('adminAllDataDeleted', handleAdminAllDataDeleted as EventListener);
+    };
+  }, [user, loading, getCurrentUser, initializeUserServices]);
+
   // Login with email and password
   const login = async (email: string, password: string): Promise<void> => {
     try {
@@ -304,10 +420,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setLoading(false); // Set loading to false immediately after user is set
       });
 
-      // Initialize services in background - don't block login completion
-      initializeUserServices(currentUser.$id).catch(err =>
-        console.error('Background service initialization failed:', err)
-      );
+      // Initialize services immediately for instant data loading
+      initializeUserServices(currentUser.$id);
     } catch (error) {
       console.error('Login error:', error);
       setLoading(false);
@@ -333,14 +447,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Update cache immediately
       setCachedAuthState(currentUser);
-      setUser(currentUser);
-      setGuestUser(null); // Clear guest user when registering
-      setLoading(false); // Set loading to false immediately after user is set
 
-      // Initialize services in background - don't block registration completion
-      initializeUserServices(currentUser.$id).catch(err =>
-        console.error('Background service initialization failed:', err)
-      );
+      // Use flushSync for immediate UI update
+      flushSync(() => {
+        setUser(currentUser);
+        setGuestUser(null); // Clear guest user when registering
+        setLoading(false); // Set loading to false immediately after user is set
+      });
+
+      // Initialize services immediately for instant data loading
+      initializeUserServices(currentUser.$id);
     } catch (error) {
       console.error('Registration error:', error);
       setLoading(false);
@@ -443,7 +559,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const updatedUser = await account.updateName(name);
       // Update cache with updated user data
       setCachedAuthState(updatedUser);
-      setUser(updatedUser);
+
+      // Use flushSync for immediate UI update
+      flushSync(() => {
+        setUser(updatedUser);
+      });
     } catch (error) {
       console.error('Profile update error:', error);
       throw new Error(getErrorMessage(error));
@@ -459,7 +579,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const updatedUser = await account.updateEmail(email, password);
       // Update cache with updated user data
       setCachedAuthState(updatedUser);
-      setUser(updatedUser);
+
+      // Use flushSync for immediate UI update
+      flushSync(() => {
+        setUser(updatedUser);
+      });
     } catch (error) {
       console.error('Email update error:', error);
       throw new Error(getErrorMessage(error));
@@ -547,7 +671,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (currentUser) {
         // Update cache with verified user data
         setCachedAuthState(currentUser);
-        setUser(currentUser);
+
+        // Use flushSync for immediate UI update
+        flushSync(() => {
+          setUser(currentUser);
+        });
       }
     } catch (error) {
       console.error('Email verification error:', error);

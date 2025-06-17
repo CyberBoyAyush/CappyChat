@@ -13,7 +13,7 @@ import { useAuth } from '@/frontend/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 const AuthCallbackPage: React.FC = () => {
-  const { getCurrentUser } = useAuth();
+  const { getCurrentUser, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,20 +42,39 @@ const AuthCallbackPage: React.FC = () => {
         const user = await getCurrentUser();
 
         if (user) {
+          // Force refresh the user state in AuthContext to ensure immediate UI update
+          await refreshUser();
+
+          // Dispatch a custom event to notify other components of successful authentication
+          window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { authenticated: true, user } }));
+
           // Check if there's a stored redirect path
           const redirectPath = sessionStorage.getItem('auth_redirect');
           sessionStorage.removeItem('auth_redirect');
+
+          // Small delay to ensure state updates are processed
+          await new Promise(resolve => setTimeout(resolve, 100));
 
           // Redirect to intended page or default to chat with replace to avoid back button issues
           navigate(redirectPath || '/chat', { replace: true });
         } else {
           // Try one more time after a longer delay
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
           const retryUser = await getCurrentUser();
 
           if (retryUser) {
+            // Force refresh the user state in AuthContext to ensure immediate UI update
+            await refreshUser();
+
+            // Dispatch a custom event to notify other components of successful authentication
+            window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { authenticated: true, user: retryUser } }));
+
             const redirectPath = sessionStorage.getItem('auth_redirect');
             sessionStorage.removeItem('auth_redirect');
+
+            // Small delay to ensure state updates are processed
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             navigate(redirectPath || '/chat', { replace: true });
           } else {
             // Authentication failed, redirect to home instead of login to avoid loops

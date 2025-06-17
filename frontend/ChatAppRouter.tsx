@@ -14,6 +14,7 @@ import ChatLayoutWrapper from "./ChatLayoutWrapper";
 import ChatHomePage from "./routes/ChatHomePage";
 import ChatThreadPage from "./routes/ChatThreadPage";
 import SettingsPage from "./routes/SettingsPage";
+import AdminPage from "./routes/AdminPage";
 import AuthCallbackPage from "./routes/auth/AuthCallbackPage";
 import AuthErrorPage from "./routes/auth/AuthErrorPage";
 import EmailVerificationPage from "./routes/auth/EmailVerificationPage";
@@ -49,6 +50,16 @@ export default function ChatAppRouter() {
             element={
               <ProtectedRoute>
                 <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin route (require authentication) */}
+          <Route
+            path="admin"
+            element={
+              <ProtectedRoute>
+                <AdminPage />
               </ProtectedRoute>
             }
           />

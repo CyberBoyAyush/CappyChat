@@ -77,7 +77,12 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
         }
         await register(email, password, name);
       }
+
+      // Close dialog immediately after successful authentication
       onClose();
+
+      // Reset form state
+      resetForm();
     } catch (err: any) {
       setError(err.message || `${mode === 'login' ? 'Login' : 'Registration'} failed. Please try again.`);
     } finally {
@@ -88,8 +93,12 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
   const handleGoogleAuth = async () => {
     setError('');
     try {
-      await loginWithGoogle();
+      // Close dialog immediately since OAuth will redirect
       onClose();
+      resetForm();
+
+      // Start OAuth flow
+      await loginWithGoogle();
     } catch (err: any) {
       setError(err.message || 'Google authentication failed. Please try again.');
     }
@@ -98,8 +107,12 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
   const handleGitHubAuth = async () => {
     setError('');
     try {
-      await loginWithGitHub();
+      // Close dialog immediately since OAuth will redirect
       onClose();
+      resetForm();
+
+      // Start OAuth flow
+      await loginWithGitHub();
     } catch (err: any) {
       setError(err.message || 'GitHub authentication failed. Please try again.');
     }

@@ -217,6 +217,17 @@ const UserProfileDropdown: React.FC = () => {
           <span>Privacy & Security</span>
         </DropdownMenuItem>
 
+        {/* Admin Panel - Only show for admin users */}
+        {tierInfo?.tier === 'admin' && (
+          <DropdownMenuItem
+            onClick={() => navigate("/admin")}
+            className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-orange-600 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-950/20 dark:hover:text-orange-300"
+          >
+            <Shield className="h-4 w-4" />
+            <span>Admin Panel</span>
+          </DropdownMenuItem>
+        )}
+
         <DropdownMenuSeparator />
 
         {/* Settings */}

@@ -149,25 +149,52 @@ async function getDatabaseStats() {
 
 async function getTierStats() {
   try {
-    const allUsers = await users.list();
-    
+    let allUsers = [];
+    let offset = 0;
+    const limit = 100;
+
+    // Get all users with pagination
+    while (true) {
+      const usersList = await users.list([Query.limit(limit), Query.offset(offset)]);
+
+      if (usersList.users.length === 0) {
+        break;
+      }
+
+      allUsers = allUsers.concat(usersList.users);
+      offset += limit;
+
+      if (usersList.users.length < limit) {
+        break;
+      }
+    }
+
     const tierCounts = {
       free: 0,
       premium: 0,
       admin: 0,
       uninitialized: 0
     };
-    
+
     const creditStats = {
       totalFreeCredits: 0,
       totalPremiumCredits: 0,
-      totalSuperPremiumCredits: 0
+      totalSuperPremiumCredits: 0,
+      usedFreeCredits: 0,
+      usedPremiumCredits: 0,
+      usedSuperPremiumCredits: 0
     };
-    
-    for (const user of allUsers.users) {
+
+    const TIER_LIMITS = {
+      free: { freeCredits: 200, premiumCredits: 20, superPremiumCredits: 2 },
+      premium: { freeCredits: 1000, premiumCredits: 200, superPremiumCredits: 20 },
+      admin: { freeCredits: 10000, premiumCredits: 10000, superPremiumCredits: 10000 }
+    };
+
+    for (const user of allUsers) {
       const prefs = user.prefs as Record<string, unknown>;
       const tier = prefs.tier as string;
-      
+
       if (tier === 'free') {
         tierCounts.free++;
       } else if (tier === 'premium') {
@@ -177,8 +204,8 @@ async function getTierStats() {
       } else {
         tierCounts.uninitialized++;
       }
-      
-      // Sum up credits
+
+      // Sum up remaining credits
       if (typeof prefs.freeCredits === 'number') {
         creditStats.totalFreeCredits += prefs.freeCredits;
       }
@@ -188,11 +215,26 @@ async function getTierStats() {
       if (typeof prefs.superPremiumCredits === 'number') {
         creditStats.totalSuperPremiumCredits += prefs.superPremiumCredits;
       }
+
+      // Calculate used credits (tier limit - remaining credits)
+      const userTier = tier || 'free';
+      const limits = TIER_LIMITS[userTier as keyof typeof TIER_LIMITS] || TIER_LIMITS.free;
+
+      if (typeof prefs.freeCredits === 'number') {
+        creditStats.usedFreeCredits += Math.max(0, limits.freeCredits - prefs.freeCredits);
+      }
+      if (typeof prefs.premiumCredits === 'number') {
+        creditStats.usedPremiumCredits += Math.max(0, limits.premiumCredits - prefs.premiumCredits);
+      }
+      if (typeof prefs.superPremiumCredits === 'number') {
+        creditStats.usedSuperPremiumCredits += Math.max(0, limits.superPremiumCredits - prefs.superPremiumCredits);
+      }
     }
-    
+
     return {
       distribution: tierCounts,
-      credits: creditStats
+      credits: creditStats,
+      totalUsers: allUsers.length
     };
   } catch (error) {
     console.error('Error getting tier stats:', error);
@@ -206,8 +248,12 @@ async function getTierStats() {
       credits: {
         totalFreeCredits: 0,
         totalPremiumCredits: 0,
-        totalSuperPremiumCredits: 0
-      }
+        totalSuperPremiumCredits: 0,
+        usedFreeCredits: 0,
+        usedPremiumCredits: 0,
+        usedSuperPremiumCredits: 0
+      },
+      totalUsers: 0
     };
   }
 }

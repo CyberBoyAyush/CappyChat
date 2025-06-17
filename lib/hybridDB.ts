@@ -244,19 +244,27 @@ export class HybridDB {
       try {
         // Load local data first for instant UI
         const localThreads = LocalDB.getThreads();
+        const localProjects = LocalDB.getProjects();
         if (localThreads.length > 0) {
           debouncedEmitter.emitImmediate('threads_updated', localThreads);
         }
+        if (localProjects.length > 0) {
+          debouncedEmitter.emitImmediate('projects_updated', localProjects);
+        }
 
-        // Sync threads from remote
+        console.log('[HybridDB] Starting background sync...');
+
+        // Sync threads from remote with immediate UI update
         const threads = await AppwriteDB.getThreads();
         LocalDB.replaceAllThreads(threads);
-        debouncedEmitter.emit('threads_updated', threads);
+        debouncedEmitter.emitImmediate('threads_updated', threads);
 
-        // Sync projects from remote
+        // Sync projects from remote with immediate UI update
         const projects = await AppwriteDB.getProjects();
         LocalDB.replaceAllProjects(projects);
-        debouncedEmitter.emit('projects_updated', projects);
+        debouncedEmitter.emitImmediate('projects_updated', projects);
+
+        console.log('[HybridDB] Background sync completed successfully');
 
         // For messages, only sync when actually needed (lazy loading)
         // This prevents the massive network requests on startup
@@ -890,7 +898,7 @@ export class HybridDB {
     };
 
     LocalDB.upsertThread(thread);
-    debouncedEmitter.emit('threads_updated', LocalDB.getThreads());
+    debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
   }
 
   private static handleRemoteThreadUpdated(appwriteThread: any): void {
@@ -907,12 +915,12 @@ export class HybridDB {
     };
 
     LocalDB.upsertThread(thread);
-    debouncedEmitter.emit('threads_updated', LocalDB.getThreads());
+    debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
   }
 
   private static handleRemoteThreadDeleted(appwriteThread: any): void {
     LocalDB.deleteThread(appwriteThread.threadId);
-    debouncedEmitter.emit('threads_updated', LocalDB.getThreads());
+    debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
   }
 
   private static handleRemoteMessageCreated(appwriteMessage: any): void {
@@ -962,8 +970,8 @@ export class HybridDB {
 
     LocalDB.addMessage(message);
     const updatedMessages = LocalDB.getMessagesByThread(message.threadId);
-    debouncedEmitter.emit('messages_updated', message.threadId, updatedMessages);
-    debouncedEmitter.emit('threads_updated', LocalDB.getThreads());
+    debouncedEmitter.emitImmediate('messages_updated', message.threadId, updatedMessages);
+    debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
   }
 
   private static handleRemoteMessageUpdated(appwriteMessage: any): void {
@@ -1006,8 +1014,8 @@ export class HybridDB {
 
     LocalDB.addMessage(message); // addMessage handles both create and update
     const updatedMessages = LocalDB.getMessagesByThread(message.threadId);
-    debouncedEmitter.emit('messages_updated', message.threadId, updatedMessages);
-    debouncedEmitter.emit('threads_updated', LocalDB.getThreads());
+    debouncedEmitter.emitImmediate('messages_updated', message.threadId, updatedMessages);
+    debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
   }
 
   private static handleRemoteMessageDeleted(appwriteMessage: any): void {
@@ -1019,8 +1027,8 @@ export class HybridDB {
       localStorage.setItem('atchat_messages', JSON.stringify(filteredMessages));
 
       const updatedMessages = LocalDB.getMessagesByThread(appwriteMessage.threadId);
-      debouncedEmitter.emit('messages_updated', appwriteMessage.threadId, updatedMessages);
-      debouncedEmitter.emit('threads_updated', LocalDB.getThreads());
+      debouncedEmitter.emitImmediate('messages_updated', appwriteMessage.threadId, updatedMessages);
+      debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
     }
   }
 
@@ -1184,21 +1192,56 @@ export class HybridDB {
 
     try {
       const remoteMessages = await AppwriteDB.getMessagesByThreadId(threadId);
-      
+
       // Clear local messages for this thread and replace with remote
       LocalDB.clearMessagesByThread(threadId);
-      
+
       // Add all remote messages to local storage
       remoteMessages.forEach(message => {
         LocalDB.addMessage(message);
       });
-      
+
       // Emit update event for immediate UI refresh
       debouncedEmitter.emitImmediate('messages_updated', threadId, remoteMessages);
     } catch (error) {
       console.error('Failed to force sync thread:', error);
     } finally {
       this.pendingMessageSyncs.delete(`force_${threadId}`);
+    }
+  }
+
+  // Force refresh all data from remote (for admin data deletion scenarios)
+  static async forceRefreshAllData(): Promise<void> {
+    if (this.isGuestMode) {
+      return;
+    }
+
+    try {
+      console.log('[HybridDB] Force refreshing all data from remote...');
+
+      // Clear all local data first
+      LocalDB.clear();
+
+      // Fetch fresh data from remote
+      const [threads, projects] = await Promise.all([
+        AppwriteDB.getThreads(),
+        AppwriteDB.getProjects()
+      ]);
+
+      // Update local storage with fresh data
+      LocalDB.replaceAllThreads(threads);
+      LocalDB.replaceAllProjects(projects);
+
+      // Emit immediate updates to refresh UI
+      debouncedEmitter.emitImmediate('threads_updated', threads);
+      debouncedEmitter.emitImmediate('projects_updated', projects);
+
+      console.log('[HybridDB] Force refresh completed successfully');
+    } catch (error) {
+      console.error('[HybridDB] Force refresh failed:', error);
+      // Emit empty arrays to clear UI if remote fetch fails
+      debouncedEmitter.emitImmediate('threads_updated', []);
+      debouncedEmitter.emitImmediate('projects_updated', []);
     }
   }
 }
