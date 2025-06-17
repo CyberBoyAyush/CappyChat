@@ -93,21 +93,38 @@ export default function MessageControls({
   return (
     <div
       className={cn(
-        "opacity-55 group-hover:opacity-100 transition-opacity duration-100 flex gap-1",
-        {
-          "absolute mt-5 right-2": message.role === "user",
-        }
+        "opacity-60 group-hover:opacity-100 transition-all duration-200 flex gap-1 items-center",
+        "relative z-10 pointer-events-auto"
       )}
     >
-      <Button variant="ghost" size="icon" onClick={handleCopy}>
-        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleCopy}
+        className={cn(
+          "h-7 w-7 p-0 rounded-md hover:bg-accent/50 transition-all duration-200",
+          "border border-border/30 hover:border-border/60 bg-card/30 backdrop-blur-sm",
+          copied && "bg-green-500/10 border-green-500/30 text-green-600"
+        )}
+      >
+        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
       </Button>
       {setMode && (
-        <Button variant="ghost" size="icon" onClick={() => setMode("edit")}>
-          <SquarePen className="w-4 h-4" />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setMode("edit")}
+          className={cn(
+            "h-7 w-7 p-0 rounded-md hover:bg-accent/50 transition-all duration-200",
+            "border border-border/30 hover:border-border/60 bg-card/30 backdrop-blur-sm"
+          )}
+        >
+          <SquarePen className="w-3.5 h-3.5" />
         </Button>
       )}
-      <RetryDropdown onRetry={handleRegenerate} />
+      <div className="relative z-20">
+        <RetryDropdown onRetry={handleRegenerate} />
+      </div>
     </div>
   );
 }

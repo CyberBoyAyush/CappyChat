@@ -70,7 +70,6 @@ export default function ChatLayoutWrapper() {
 
   // Enhanced toggle function that also updates localStorage
   const toggleSidebar = () => {
-    console.log("Toggling sidebar from", sidebarOpen, "to", !sidebarOpen);
     setSidebarOpen((prev) => {
       const newState = !prev;
       localStorage.setItem("sidebarOpen", String(newState));
@@ -157,7 +156,7 @@ export default function ChatLayoutWrapper() {
         </div>
 
         {/* Main content area that flexes with sidebar width */}
-        <div className="flex-1 relative min-h-screen bg-gradient-to-t from-background dark:from-zinc-950 dark:to-50%">
+        <div className="flex-1 relative min-h-screen bg-gradient-to-t from-background dark:from-zinc-950 dark:to-50% overflow-hidden">
           <Outlet
             context={{
               sidebarWidth,

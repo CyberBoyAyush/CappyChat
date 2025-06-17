@@ -275,8 +275,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const refreshUser = useCallback(async (): Promise<void> => {
     try {
       const currentUser = await account.get();
-      // Update cache with fresh user data
+      // Update both caches with fresh user data for consistency
       setCachedAuthState(currentUser);
+      setSessionAuthState(currentUser);
 
       // Use flushSync for immediate UI update
       flushSync(() => {
@@ -292,8 +293,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
     } catch (error) {
       console.error('Failed to refresh user data:', error);
-      // Clear cache if refresh fails
+      // Clear both caches if refresh fails
       setCachedAuthState(null);
+      setSessionAuthState(null);
 
       // Use flushSync for immediate UI update
       flushSync(() => {
@@ -303,18 +305,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   // Initialize user services (DB and realtime) - optimized for performance
-  const initializeUserServices = useCallback(async (userId: string) => {
+  const initializeUserServices = useCallback(async (userId: string, forceRefresh: boolean = false) => {
     try {
       // Initialize tier system for new users only - don't reset existing users
       await ensureUserTierInitialized();
 
-      // Initialize HybridDB immediately for instant data loading
-      // This is now non-blocking and much faster
-      HybridDB.initialize(userId, false).catch(err =>
-        console.error('HybridDB initialization failed:', err)
-      ); // false = not guest mode, don't await to avoid blocking
+      if (forceRefresh) {
+        // Force clear all local data and refresh from Appwrite (for signin)
+        await HybridDB.forceRefreshOnSignin(userId);
+        console.log('[AuthContext] HybridDB force refreshed successfully for user:', userId);
+      } else {
+        // Normal initialization (for app startup)
+        await HybridDB.initialize(userId, false);
+        console.log('[AuthContext] HybridDB initialized successfully for user:', userId);
+      }
     } catch (error) {
       console.error('Failed to initialize user services:', error);
+      // Even if initialization fails, don't block the UI
     }
   }, []);
 
@@ -332,21 +339,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const currentUser = await getCurrentUser();
 
         if (currentUser) {
-          // Update cache with fresh user data
+          // Update both caches with fresh user data for consistency
           setCachedAuthState(currentUser);
+          setSessionAuthState(currentUser);
 
           // Use flushSync to ensure immediate synchronous updates
           flushSync(() => {
             setUser(currentUser);
             setGuestUser(null); // Clear guest user when authenticated user is found
-            setLoading(false); // Set loading to false immediately after user is set
             setInitialized(true);
           });
 
-          // Initialize services in background - don't await to avoid blocking UI
-          initializeUserServices(currentUser.$id).catch(err =>
-            console.error('Background service initialization failed:', err)
-          );
+          // Initialize services and wait for completion to ensure data sync
+          try {
+            await initializeUserServices(currentUser.$id);
+            setLoading(false); // Set loading to false only after services are ready
+          } catch (err) {
+            console.error('Service initialization failed:', err);
+            setLoading(false); // Still set loading to false even if services fail
+          }
         } else {
           // Clear cache if no user found
           setCachedAuthState(null);
@@ -408,10 +419,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               setGuestUser(null);
             });
 
-            // Initialize services in background
-            initializeUserServices(currentUser.$id).catch(err =>
-              console.error('Background service initialization failed:', err)
-            );
+            // Force refresh all data from Appwrite on new authentication
+            try {
+              await initializeUserServices(currentUser.$id, true); // true = force refresh
+            } catch (err) {
+              console.error('Service initialization failed after window focus:', err);
+            }
           }
         } catch (error) {
           console.error('Failed to refresh auth state on window focus:', error);
@@ -435,15 +448,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             flushSync(() => {
               setUser(currentUser);
               setGuestUser(null);
-              setLoading(false);
             });
 
             console.log('[AuthContext] 🚀 OAuth pre-warming completed - user state updated');
 
-            // Initialize services in background
-            initializeUserServices(currentUser.$id).catch(err =>
-              console.error('Background service initialization failed:', err)
-            );
+            // Force refresh all data from Appwrite on OAuth signin
+            try {
+              await initializeUserServices(currentUser.$id, true); // true = force refresh
+              setLoading(false); // Set loading to false only after services are ready
+            } catch (err) {
+              console.error('Service initialization failed during OAuth pre-warming:', err);
+              setLoading(false); // Still set loading to false even if services fail
+            }
           } else {
             console.log('[AuthContext] 🔄 OAuth pre-warming - no session yet');
           }
@@ -463,15 +479,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (authenticated && eventUser && !user) {
         console.log('[AuthContext] Received auth state change event, updating state');
         setCachedAuthState(eventUser);
+        setSessionAuthState(eventUser);
 
         flushSync(() => {
           setUser(eventUser);
           setGuestUser(null);
         });
 
-        // Initialize services in background
-        initializeUserServices(eventUser.$id).catch(err =>
-          console.error('Background service initialization failed:', err)
+        // Force refresh all data from Appwrite on auth state change
+        initializeUserServices(eventUser.$id, true).catch(err => // true = force refresh
+          console.error('Service initialization failed from auth state change event:', err)
         );
       }
     };
@@ -542,12 +559,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       flushSync(() => {
         setUser(currentUser);
         setGuestUser(null); // Clear guest user when logging in
-        setLoading(false); // Set loading to false immediately after user is set
         setInitialized(true);
       });
 
-      // Initialize services immediately for instant data loading
-      initializeUserServices(currentUser.$id);
+      // Force refresh all data from Appwrite on signin for data consistency
+      await initializeUserServices(currentUser.$id, true); // true = force refresh
+
+      // Set loading to false only after services are initialized
+      setLoading(false);
     } catch (error) {
       console.error('Login error:', error);
       setAuthPending(false);
@@ -585,12 +604,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       flushSync(() => {
         setUser(currentUser);
         setGuestUser(null); // Clear guest user when registering
-        setLoading(false); // Set loading to false immediately after user is set
         setInitialized(true);
       });
 
-      // Initialize services immediately for instant data loading
-      initializeUserServices(currentUser.$id);
+      // Force refresh all data from Appwrite on signin for data consistency
+      await initializeUserServices(currentUser.$id, true); // true = force refresh
+
+      // Set loading to false only after services are initialized
+      setLoading(false);
     } catch (error) {
       console.error('Registration error:', error);
       setAuthPending(false);
@@ -665,18 +686,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear local database
       HybridDB.clearLocalData();
 
-      // Clear cache immediately
+      // Clear ALL auth caches immediately - this was missing setSessionAuthState
       setCachedAuthState(null);
-      setUser(null);
-      // Reset guest user when logging out
-      setGuestUser({
-        isGuest: true,
-        messagesUsed: 0,
-        maxMessages: 2
+      setSessionAuthState(null); // This was missing - critical fix
+
+      // Use flushSync to ensure immediate synchronous state updates
+      flushSync(() => {
+        setUser(null);
+        // Reset guest user when logging out
+        setGuestUser({
+          isGuest: true,
+          messagesUsed: 0,
+          maxMessages: 2
+        });
       });
 
-      // Clear any stored redirect
+      // Clear any stored redirect and auth pending state
       sessionStorage.removeItem('auth_redirect');
+      sessionStorage.removeItem(AUTH_PENDING_KEY); // Clear pending auth state
     } catch (error) {
       console.error('Logout error:', error);
       throw new Error(getErrorMessage(error));

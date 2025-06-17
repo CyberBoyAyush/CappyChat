@@ -174,6 +174,21 @@ export const AnthropicIcon: React.FC<IconProps> = ({
     ></path>
   </svg>
 );
+export const XAIIcon: React.FC<IconProps> = ({
+  size = 16,
+  className = "",
+}) => (
+  <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width={size} height={size} viewBox="0,0,256,256">
+    <g fill="#f76f52" fillRule="evenodd" stroke="none" strokeWidth="1" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="10" strokeDasharray="" strokeDashoffset="0" fontFamily="none" fontWeight="none" fontSize="none" textAnchor="none" style={{ mixBlendMode: "normal" }}>
+      <g transform="scale(5.33333,5.33333)">
+        <path d="M24.032,28.919l16.113,-22.93h-7l-12.627,17.969z"></path>
+        <path d="M14.591,32.393l-7.446,10.596h7l3.96,-5.635z"></path>
+        <path d="M14.547,18.989h-7l17,24h7z"></path>
+        <path d="M35,16.789v26.211h6v-34.749z"></path>
+      </g>
+    </g>
+  </svg>
+);
 
 export const DeepSeekIcon: React.FC<IconProps> = ({
   size = 16,
@@ -267,6 +282,8 @@ export const getModelIcon = (
       return <QwenIcon {...props} />;
     case "meta":
       return <MetaIcon {...props} />;
+    case "x-ai":
+      return <XAIIcon {...props} />;
     default:
       return null;
   }

@@ -1,7 +1,9 @@
 // AVChat Service Worker for Performance Optimization
 // This service worker caches static assets and API responses for faster loading
 
-const CACHE_NAME = 'atchat-v1';
+// Use timestamp or build hash for cache versioning to prevent stale cache issues
+const CACHE_VERSION = Date.now(); // This will be unique for each deployment
+const CACHE_NAME = `atchat-v${CACHE_VERSION}`;
 const STATIC_CACHE_URLS = [
   '/',
   '/logo.png',
@@ -65,6 +67,25 @@ self.addEventListener('fetch', (event) => {
               setTimeout(() => {
                 cache.delete(request);
               }, 5 * 60 * 1000);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache if network fails
+          return caches.match(request);
+        })
+    );
+  } else if (url.pathname === '/' || url.pathname.includes('.html')) {
+    // For HTML pages, use network-first to ensure fresh content
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Cache the response but always try network first
+          if (response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
             });
           }
           return response;
