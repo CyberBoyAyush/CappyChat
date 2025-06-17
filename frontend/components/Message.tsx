@@ -17,7 +17,10 @@ import ChatMessageEditor from "./ChatMessageEditor";
 import ChatMessageReasoning from "./ChatMessageReasoning";
 import WebSearchCitations from "./WebSearchCitations";
 import MessageAttachments from "./MessageAttachments";
-import { AIModel } from "@/lib/models";
+import { AIModel, getModelConfig } from "@/lib/models";
+import { User, Bot } from "lucide-react";
+import { getModelIcon } from "@/frontend/components/ui/ModelComponents";
+import { useModelStore } from "@/frontend/stores/ChatModelStore";
 
 function PureMessage({
   threadId,
@@ -39,12 +42,17 @@ function PureMessage({
   onRetryWithModel?: (model?: AIModel, message?: UIMessage) => void;
 }) {
   const [mode, setMode] = useState<"view" | "edit">("view");
+  const { selectedModel } = useModelStore();
+
+  // Get model config for the current selected model (fallback approach)
+  const modelConfig = getModelConfig(selectedModel);
+  const modelIcon = getModelIcon(modelConfig.iconType, 16, "text-primary");
 
   return (
     <div
       role="article"
       className={cn(
-        "flex flex-col w-full",
+        "flex flex-col w-full gap-2 py-1",
         message.role === "user" ? "items-end" : "items-start"
       )}
     >
@@ -66,69 +74,102 @@ function PureMessage({
           return message.role === "user" ? (
             <div
               key={key}
-              className="relative group px-2 py-1.5 rounded-xl bg-card border border-border shadow-sm max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%]"
+              className="flex gap-2 max-w-[95%] sm:max-w-[85%] md:max-w-[75%] lg:max-w-[65%] xl:max-w-[55%] pl-4"
               ref={(el) => registerRef?.(message.id, el)}
             >
-              {mode === "edit" && (
-                <ChatMessageEditor
-                  threadId={threadId}
-                  message={message}
-                  content={(part as any).text || ""}
-                  setMessages={setMessages}
-                  reload={reload}
-                  setMode={setMode}
-                  stop={stop}
-                />
-              )}
-              {mode === "view" && (
-                <>
-                  <p className="break-words whitespace-pre-wrap">{(part as any).text || ""}</p>
-                  {/* Show attachments for user messages */}
-                  {(message as any).attachments && (message as any).attachments.length > 0 && (
-                    <div className="mt-2">
-                      <MessageAttachments attachments={(message as any).attachments} />
-                    </div>
+              {/* User Avatar */}
+              <div className="flex-shrink-0 mt-1">
+                <div className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                  <User className="w-3.5 h-3.5 text-primary" />
+                </div>
+              </div>
+
+              {/* User Message Content */}
+              <div className="relative group flex-1 min-w-0 overflow-hidden">
+                <div className="px-3 py-2 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50 shadow-sm hover:border-border/70 transition-all duration-200">
+                  {mode === "edit" && (
+                    <ChatMessageEditor
+                      threadId={threadId}
+                      message={message}
+                      content={(part as any).text || ""}
+                      setMessages={setMessages}
+                      reload={reload}
+                      setMode={setMode}
+                      stop={stop}
+                    />
                   )}
-                </>
-              )}
-              {mode === "view" && (
-                <ChatMessageControls
-                  threadId={threadId}
-                  content={(part as any).text || ""}
-                  message={message}
-                  setMode={setMode}
-                  setMessages={setMessages}
-                  reload={reload}
-                  stop={stop}
-                  onRetryWithModel={onRetryWithModel}
-                />
-              )}
+                  {mode === "view" && (
+                    <>
+                      <p className="break-words whitespace-pre-wrap text-sm leading-relaxed overflow-wrap-anywhere">{(part as any).text || ""}</p>
+                      {/* Show attachments for user messages */}
+                      {(message as any).attachments && (message as any).attachments.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-border/30">
+                          <MessageAttachments attachments={(message as any).attachments} />
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+                {mode === "view" && (
+                  <div className="mt-1">
+                    <ChatMessageControls
+                      threadId={threadId}
+                      content={(part as any).text || ""}
+                      message={message}
+                      setMode={setMode}
+                      setMessages={setMessages}
+                      reload={reload}
+                      stop={stop}
+                      onRetryWithModel={onRetryWithModel}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
+
           ) : (
             <div
               key={key}
-              className="group flex flex-col gap-2 w-full max-w-3xl"
+              className="flex gap-2 w-full max-w-full pr-4"
             >
-              <MarkdownRenderer content={(part as any).text || ""} id={message.id} />
-              {!isStreaming && (
-                <ChatMessageControls
-                  threadId={threadId}
-                  content={(part as any).text || ""}
-                  message={message}
-                  setMessages={setMessages}
-                  reload={reload}
-                  stop={stop}
-                  onRetryWithModel={onRetryWithModel}
-                />
-              )}
-              {/* Show web search citations for assistant messages with search results */}
-              {message.role === "assistant" &&
-                (message as any).webSearchResults && (
-                  <WebSearchCitations
-                    results={(message as any).webSearchResults}
-                    searchQuery="web search"
-                  />
+              {/* Assistant Avatar with Model Icon */}
+              <div className="flex-shrink-0 mt-1">
+                <div className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                  {modelIcon || <Bot className="w-3.5 h-3.5 text-primary" />}
+                </div>
+              </div>
+
+              {/* Assistant Message Content */}
+              <div className="group flex-1 flex flex-col gap-2 min-w-0 overflow-hidden max-w-full">
+                <div className="break-words overflow-hidden max-w-full">
+                  <MarkdownRenderer content={(part as any).text || ""} id={message.id} />
+                </div>
+
+                {!isStreaming && (
+                  <div className="flex-shrink-0">
+                    <ChatMessageControls
+                      threadId={threadId}
+                      content={(part as any).text || ""}
+                      message={message}
+                      setMessages={setMessages}
+                      reload={reload}
+                      stop={stop}
+                      onRetryWithModel={onRetryWithModel}
+                    />
+                  </div>
                 )}
+
+                {/* Show web search citations for assistant messages with search results */}
+                {message.role === "assistant" &&
+                  (message as any).webSearchResults && (
+                    <div className="flex-shrink-0">
+                      <WebSearchCitations
+                        results={(message as any).webSearchResults}
+                        searchQuery="web search"
+                      />
+                    </div>
+                  )}
+              </div>
             </div>
           );
         }

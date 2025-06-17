@@ -861,3 +861,96 @@ html {
 .marquee-content > * {
   transform: translateZ(0);
 }
+
+/* Mobile-responsive markdown styles */
+.mobile-responsive-markdown {
+  /* Force word wrapping for all text elements */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Mobile-specific markdown optimizations */
+@media (max-width: 768px) {
+  .mobile-responsive-markdown {
+    /* Ensure all content fits within viewport */
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Lists and bullet points */
+  .mobile-responsive-markdown ul,
+  .mobile-responsive-markdown ol {
+    padding-left: 1rem !important;
+    margin-left: 0 !important;
+    overflow-x: hidden;
+  }
+
+  .mobile-responsive-markdown li {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    hyphens: auto;
+    max-width: 100%;
+  }
+
+  /* Paragraphs */
+  .mobile-responsive-markdown p {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    hyphens: auto;
+    max-width: 100%;
+  }
+
+  /* Headers */
+  .mobile-responsive-markdown h1,
+  .mobile-responsive-markdown h2,
+  .mobile-responsive-markdown h3,
+  .mobile-responsive-markdown h4,
+  .mobile-responsive-markdown h5,
+  .mobile-responsive-markdown h6 {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    hyphens: auto;
+    max-width: 100%;
+  }
+
+  /* Code blocks */
+  .mobile-responsive-markdown pre {
+    overflow-x: auto !important;
+    max-width: 100% !important;
+    font-size: 0.75rem !important;
+    padding: 0.75rem !important;
+  }
+
+  /* Inline code */
+  .mobile-responsive-markdown code {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    font-size: 0.75rem !important;
+    max-width: 100%;
+  }
+
+  /* Tables */
+  .mobile-responsive-markdown table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  /* Blockquotes */
+  .mobile-responsive-markdown blockquote {
+    margin-left: 0.5rem !important;
+    margin-right: 0.5rem !important;
+    padding-left: 0.75rem !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Links */
+  .mobile-responsive-markdown a {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    hyphens: auto;
+  }
+}

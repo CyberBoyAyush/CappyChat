@@ -61,13 +61,13 @@ function CodeBlock({ children, className, ...props }: CodeComponentProps) {
   if (match) {
     const lang = match[1];
     return (
-      <div className="code-block-container rounded-lg overflow-hidden border border-border bg-background shadow-sm my-4">
+      <div className="code-block-container rounded-lg overflow-hidden border border-border bg-background shadow-sm my-4 max-w-full">
         <Codebar lang={lang} codeString={String(children)} />
-        <div className="bg-background">
+        <div className="bg-background overflow-x-auto max-w-full">
           <ShikiHighlighter
             language={lang}
             theme={isDarkMode ? "github-dark" : "min-light"}
-            className="text-sm font-mono overflow-x-auto mobile-text p-4 bg-transparent"
+            className="text-xs sm:text-sm font-mono overflow-x-auto mobile-text p-3 sm:p-4 bg-transparent min-w-0 max-w-full"
             showLanguage={false}
           >
             {String(children)}
@@ -79,8 +79,8 @@ function CodeBlock({ children, className, ...props }: CodeComponentProps) {
 
   const inlineCodeClasses =
     size === 'small'
-      ? 'mx-0.5 overflow-auto rounded-md px-1 py-0.5 bg-secondary text-foreground font-mono text-xs border border-border'
-      : 'mx-0.5 overflow-auto rounded-md px-2 py-1 bg-secondary text-foreground font-mono border border-border';
+      ? 'mx-0.5 overflow-x-auto rounded-md px-1 py-0.5 bg-secondary text-foreground font-mono text-xs border border-border break-all max-w-full'
+      : 'mx-0.5 overflow-x-auto rounded-md px-2 py-1 bg-secondary text-foreground font-mono text-xs sm:text-sm border border-border break-all max-w-full';
 
   return (
     <code className={inlineCodeClasses} {...props}>
@@ -159,12 +159,12 @@ const MarkdownRenderer = memo(
 
     const proseClasses =
       size === 'small'
-        ? 'prose prose-sm dark:prose-invert break-words max-w-none w-full prose-code:before:content-none prose-code:after:content-none'
-        : 'prose prose-base dark:prose-invert break-words max-w-none w-full prose-code:before:content-none prose-code:after:content-none';
+        ? 'prose prose-sm dark:prose-invert break-words max-w-none w-full prose-code:before:content-none prose-code:after:content-none overflow-hidden prose-pre:overflow-x-auto prose-pre:max-w-full prose-table:overflow-x-auto prose-ul:break-words prose-ol:break-words prose-li:break-words'
+        : 'prose prose-base dark:prose-invert break-words max-w-none w-full prose-code:before:content-none prose-code:after:content-none overflow-hidden prose-pre:overflow-x-auto prose-pre:max-w-full prose-table:overflow-x-auto prose-ul:break-words prose-ol:break-words prose-li:break-words prose-p:break-words prose-p:overflow-wrap-anywhere';
 
     return (
       <MarkdownSizeContext.Provider value={size}>
-        <div className={proseClasses}>
+        <div className={`${proseClasses} mobile-responsive-markdown`}>
           {blocks.map((block, index) => (
             <MarkdownRendererBlock
               content={block}

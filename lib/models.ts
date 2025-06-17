@@ -11,7 +11,8 @@ export const AI_MODELS = [
   'Claude Sonnet 4',
   'Gemini 2.5 Pro',
   'Meta: Llama 4 Maverick',
-  'OpenAI 4.1 Nano'
+  'OpenAI 4.1 Nano',
+  'Grok 3 Mini'
 ] as const;
 
 export type AIModel = (typeof AI_MODELS)[number];
@@ -20,7 +21,7 @@ export type ModelConfig = {
   modelId: string;
   provider: 'openrouter';
   displayName: string;
-  iconType: 'google' | 'openai' | 'anthropic' | 'deepseek' | 'huggingface' | 'qwen' | 'meta';
+  iconType: 'google' | 'openai' | 'anthropic' | 'deepseek' | 'huggingface' | 'qwen' | 'meta' | 'x-ai';
   company: string;
   isPremium: boolean;
   isSuperPremium: boolean;
@@ -185,6 +186,18 @@ export const MODEL_CONFIGS = {
     hasReasoning: false,
     isFileSupported: true,
     description: 'Fastest model from OpenAI.',
+  },
+  'Grok 3 Mini': {
+    modelId: 'x-ai/grok-3-mini-beta',
+    provider: 'openrouter',
+    displayName: 'Grok 3 Mini',
+    iconType: 'x-ai',
+    company: 'XAI',
+    isPremium: false,
+    isSuperPremium: false,
+    hasReasoning: true,
+    isFileSupported: true,
+    description: 'Fastest model from XAI with advanced reasoning.',
   },
 } as const satisfies Record<AIModel, ModelConfig>;
 

@@ -116,21 +116,29 @@ export default function RetryDropdown({ onRetry, disabled = false }: RetryDropdo
     label: string;
     count: number;
   }) => (
-    <DropdownMenuItem
-      onClick={() => toggleCategory(category)}
-      className="flex items-center justify-between cursor-pointer hover:bg-accent/50"
+    <div
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleCategory(category);
+      }}
+      className={cn(
+        "flex items-center justify-between cursor-pointer px-2 py-1.5 rounded-md",
+        "hover:bg-orange-500/10 transition-colors duration-200 mx-1 my-0.5",
+        "border border-transparent hover:border-orange-500/20"
+      )}
     >
       <div className="flex items-center gap-2">
-        <span>{icon}</span>
-        <span className="text-xs font-semibold">{label}</span>
+        <span className="text-orange-500">{icon}</span>
+        <span className="text-xs font-semibold text-foreground">{label}</span>
         <span className="text-xs text-muted-foreground">({count})</span>
       </div>
       {expandedCategories[category] ? (
-        <ChevronDown className="h-3 w-3" />
+        <ChevronDown className="h-3 w-3 text-orange-500" />
       ) : (
-        <ChevronRight className="h-3 w-3" />
+        <ChevronRight className="h-3 w-3 text-orange-500" />
       )}
-    </DropdownMenuItem>
+    </div>
   );
 
   const availableRecommended = filterAvailableModels(recommendedModels);
@@ -141,24 +149,39 @@ export default function RetryDropdown({ onRetry, disabled = false }: RetryDropdo
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="sm"
           disabled={disabled}
-          className="relative group"
+          className={cn(
+            "relative group h-7 w-7 p-0 rounded-md hover:bg-accent/50 transition-all duration-200",
+            "border border-border/30 hover:border-border/60 bg-card/30 backdrop-blur-sm"
+          )}
         >
-          <RefreshCcw className="w-4 h-4" />
+          <RefreshCcw className="w-3.5 h-3.5" />
           <ChevronDown className="w-2 h-2 absolute -bottom-0.5 -right-0.5 opacity-60" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent
+        align="end"
+        className={cn(
+          "w-64 bg-card/95 backdrop-blur-sm border border-border/50 shadow-lg",
+          "animate-in slide-in-from-top-2 duration-200"
+        )}
+      >
         {/* Retry with same model */}
-        <DropdownMenuItem onClick={() => handleRetryWithModel()}>
-          <RefreshCcw className="w-4 h-4 mr-2" />
-          Retry with {getModelConfig(selectedModel).displayName}
+        <DropdownMenuItem
+          onClick={() => handleRetryWithModel()}
+          className={cn(
+            "hover:bg-orange-500/10 transition-colors duration-200 mx-1 my-0.5 rounded-md",
+            "border border-transparent hover:border-orange-500/20"
+          )}
+        >
+          <RefreshCcw className="w-4 h-4 mr-2 text-orange-500" />
+          <span className="font-medium text-foreground">Retry with {getModelConfig(selectedModel).displayName}</span>
         </DropdownMenuItem>
-        
-        <DropdownMenuSeparator />
+
+        <div className="h-px bg-border/50 mx-2 my-1" />
         
         {/* Recommended Models */}
         {availableRecommended.length > 0 && (
@@ -173,13 +196,17 @@ export default function RetryDropdown({ onRetry, disabled = false }: RetryDropdo
               <DropdownMenuItem
                 key={model}
                 onClick={() => handleRetryWithModel(model)}
-                className="flex items-center gap-2 pl-6"
+                className={cn(
+                  "flex items-center gap-2 pl-6 mx-1 my-0.5 rounded-md",
+                  "hover:bg-orange-500/10 transition-colors duration-200",
+                  "border border-transparent hover:border-orange-500/20"
+                )}
               >
                 <ModelIcon model={model} />
-                <span className="text-sm">{getModelConfig(model).displayName}</span>
+                <span className="text-sm text-foreground">{getModelConfig(model).displayName}</span>
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator />
+            <div className="h-px bg-border/50 mx-2 my-1" />
           </>
         )}
 
@@ -196,13 +223,17 @@ export default function RetryDropdown({ onRetry, disabled = false }: RetryDropdo
               <DropdownMenuItem
                 key={model}
                 onClick={() => handleRetryWithModel(model)}
-                className="flex items-center gap-2 pl-6"
+                className={cn(
+                  "flex items-center gap-2 pl-6 mx-1 my-0.5 rounded-md",
+                  "hover:bg-orange-500/10 transition-colors duration-200",
+                  "border border-transparent hover:border-orange-500/20"
+                )}
               >
                 <ModelIcon model={model} />
-                <span className="text-sm">{getModelConfig(model).displayName}</span>
+                <span className="text-sm text-foreground">{getModelConfig(model).displayName}</span>
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator />
+            <div className="h-px bg-border/50 mx-2 my-1" />
           </>
         )}
 
@@ -219,13 +250,17 @@ export default function RetryDropdown({ onRetry, disabled = false }: RetryDropdo
               <DropdownMenuItem
                 key={model}
                 onClick={() => handleRetryWithModel(model)}
-                className="flex items-center gap-2 pl-6"
+                className={cn(
+                  "flex items-center gap-2 pl-6 mx-1 my-0.5 rounded-md",
+                  "hover:bg-orange-500/10 transition-colors duration-200",
+                  "border border-transparent hover:border-orange-500/20"
+                )}
               >
                 <ModelIcon model={model} />
-                <span className="text-sm">{getModelConfig(model).displayName}</span>
+                <span className="text-sm text-foreground">{getModelConfig(model).displayName}</span>
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator />
+            <div className="h-px bg-border/50 mx-2 my-1" />
           </>
         )}
 
@@ -242,10 +277,14 @@ export default function RetryDropdown({ onRetry, disabled = false }: RetryDropdo
               <DropdownMenuItem
                 key={model}
                 onClick={() => handleRetryWithModel(model)}
-                className="flex items-center gap-2 pl-6"
+                className={cn(
+                  "flex items-center gap-2 pl-6 mx-1 my-0.5 rounded-md",
+                  "hover:bg-orange-500/10 transition-colors duration-200",
+                  "border border-transparent hover:border-orange-500/20"
+                )}
               >
                 <ModelIcon model={model} />
-                <span className="text-sm">{getModelConfig(model).displayName}</span>
+                <span className="text-sm text-foreground">{getModelConfig(model).displayName}</span>
               </DropdownMenuItem>
             ))}
           </>
