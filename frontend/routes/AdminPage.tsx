@@ -1,6 +1,6 @@
 /**
  * Admin Dashboard
- * 
+ *
  * Clean, focused admin interface with only essential functions.
  * Only accessible to admin users.
  */
@@ -8,10 +8,35 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/frontend/components/ui/button";
 import { Input } from "@/frontend/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/frontend/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/frontend/components/ui/card";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import { getUserTierInfo } from "@/lib/tierSystem";
-import { Shield, User, AlertTriangle, CheckCircle2, Database, Server, Users, RefreshCw, LogOut, ArrowLeft, Trash2, UserX, RotateCcw, Eye, Search, Activity, TrendingUp, CreditCard } from "lucide-react";
+import {
+  Shield,
+  User,
+  AlertTriangle,
+  CheckCircle2,
+  Database,
+  Server,
+  Users,
+  RefreshCw,
+  LogOut,
+  ArrowLeft,
+  Trash2,
+  UserX,
+  RotateCcw,
+  Eye,
+  Search,
+  Activity,
+  TrendingUp,
+  CreditCard,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -50,9 +75,9 @@ export default function AdminPage() {
 
       try {
         const tierInfo = await getUserTierInfo();
-        setIsAdmin(tierInfo?.tier === 'admin');
+        setIsAdmin(tierInfo?.tier === "admin");
       } catch (error) {
-        console.error('Error checking admin status:', error);
+        console.error("Error checking admin status:", error);
       }
     };
 
@@ -68,10 +93,10 @@ export default function AdminPage() {
 
     setLoadingStats(true);
     try {
-      const response = await fetch('/api/admin/stats', {
-        method: 'POST',
+      const response = await fetch("/api/admin/stats", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
@@ -84,11 +109,11 @@ export default function AdminPage() {
         setAdminStats(data.stats);
         toast.success("Statistics loaded successfully");
       } else {
-        toast.error(data.error || 'Failed to load statistics');
+        toast.error(data.error || "Failed to load statistics");
       }
     } catch (error) {
-      console.error('Error loading stats:', error);
-      toast.error('Network error occurred');
+      console.error("Error loading stats:", error);
+      toast.error("Network error occurred");
     } finally {
       setLoadingStats(false);
     }
@@ -103,14 +128,14 @@ export default function AdminPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/manage-user', {
-        method: 'POST',
+      const response = await fetch("/api/admin/manage-user", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
-          action: 'getUserByEmail',
+          action: "getUserByEmail",
           email: userEmail.trim(),
         }),
       });
@@ -121,12 +146,12 @@ export default function AdminPage() {
         setSelectedUser(data.user);
         toast.success("User found successfully");
       } else {
-        toast.error(data.error || 'Failed to search user');
+        toast.error(data.error || "Failed to search user");
         setSelectedUser(null);
       }
     } catch (error) {
-      console.error('Error searching user:', error);
-      toast.error('Network error occurred');
+      console.error("Error searching user:", error);
+      toast.error("Network error occurred");
       setSelectedUser(null);
     } finally {
       setIsLoading(false);
@@ -134,7 +159,9 @@ export default function AdminPage() {
   };
 
   // Update user tier
-  const handleUpdateUserTier = async (newTier: "free" | "premium" | "admin") => {
+  const handleUpdateUserTier = async (
+    newTier: "free" | "premium" | "admin"
+  ) => {
     if (!selectedUser || !adminKey.trim()) {
       toast.error("Please select a user and enter admin key");
       return;
@@ -142,14 +169,14 @@ export default function AdminPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/manage-user', {
-        method: 'POST',
+      const response = await fetch("/api/admin/manage-user", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
-          action: 'updateTier',
+          action: "updateTier",
           userId: selectedUser.$id,
           tier: newTier,
         }),
@@ -161,11 +188,11 @@ export default function AdminPage() {
         toast.success(`User tier updated to ${newTier}`);
         handleSearchUser(); // Refresh user data
       } else {
-        toast.error(data.error || 'Failed to update user tier');
+        toast.error(data.error || "Failed to update user tier");
       }
     } catch (error) {
-      console.error('Error updating user tier:', error);
-      toast.error('Network error occurred');
+      console.error("Error updating user tier:", error);
+      toast.error("Network error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -178,17 +205,18 @@ export default function AdminPage() {
       return;
     }
 
-    const confirmMessage = "⚠️ This will reset ALL user credits to their tier limits. Are you sure?";
+    const confirmMessage =
+      "⚠️ This will reset ALL user credits to their tier limits. Are you sure?";
     if (!confirm(confirmMessage)) {
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/manage-user', {
-        method: 'POST',
+      const response = await fetch("/api/admin/manage-user", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
@@ -199,16 +227,16 @@ export default function AdminPage() {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success(data.message || 'Monthly reset completed successfully');
+        toast.success(data.message || "Monthly reset completed successfully");
         if (adminStats) {
           handleLoadStats(); // Refresh stats
         }
       } else {
-        toast.error(data.error || 'Failed to perform monthly reset');
+        toast.error(data.error || "Failed to perform monthly reset");
       }
     } catch (error) {
-      console.error('Error performing monthly reset:', error);
-      toast.error('Network error occurred');
+      console.error("Error performing monthly reset:", error);
+      toast.error("Network error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -221,37 +249,40 @@ export default function AdminPage() {
       return;
     }
 
-    const confirmMessage = "⚠️ This will logout ALL users from the system. Are you sure?";
+    const confirmMessage =
+      "⚠️ This will logout ALL users from the system. Are you sure?";
     if (!confirm(confirmMessage)) {
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/manage-user', {
-        method: 'POST',
+      const response = await fetch("/api/admin/manage-user", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
-          action: 'logoutAllUsers',
+          action: "logoutAllUsers",
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        toast.success(data.message || "All users have been logged out successfully");
+        toast.success(
+          data.message || "All users have been logged out successfully"
+        );
         if (adminStats) {
           handleLoadStats(); // Refresh stats
         }
       } else {
-        toast.error(data.error || 'Failed to logout all users');
+        toast.error(data.error || "Failed to logout all users");
       }
     } catch (error) {
-      console.error('Error logging out all users:', error);
-      toast.error('Network error occurred');
+      console.error("Error logging out all users:", error);
+      toast.error("Network error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -266,14 +297,14 @@ export default function AdminPage() {
 
     setLoadingUsers(true);
     try {
-      const response = await fetch('/api/admin/manage-user', {
-        method: 'POST',
+      const response = await fetch("/api/admin/manage-user", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
-          action: 'getAllUsers',
+          action: "getAllUsers",
         }),
       });
 
@@ -284,11 +315,11 @@ export default function AdminPage() {
         setShowAllUsers(true);
         toast.success(`Loaded ${data.users.length} users`);
       } else {
-        toast.error(data.error || 'Failed to load users');
+        toast.error(data.error || "Failed to load users");
       }
     } catch (error) {
-      console.error('Error loading users:', error);
-      toast.error('Network error occurred');
+      console.error("Error loading users:", error);
+      toast.error("Network error occurred");
     } finally {
       setLoadingUsers(false);
     }
@@ -301,21 +332,22 @@ export default function AdminPage() {
       return;
     }
 
-    const confirmMessage = "⚠️ This will clear all sessions for this user. Are you sure?";
+    const confirmMessage =
+      "⚠️ This will clear all sessions for this user. Are you sure?";
     if (!confirm(confirmMessage)) {
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/manage-user', {
-        method: 'POST',
+      const response = await fetch("/api/admin/manage-user", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
-          action: 'clearUserSession',
+          action: "clearUserSession",
           userId: userId,
         }),
       });
@@ -325,11 +357,11 @@ export default function AdminPage() {
       if (response.ok) {
         toast.success(data.message || "User session cleared successfully");
       } else {
-        toast.error(data.error || 'Failed to clear user session');
+        toast.error(data.error || "Failed to clear user session");
       }
     } catch (error) {
-      console.error('Error clearing user session:', error);
-      toast.error('Network error occurred');
+      console.error("Error clearing user session:", error);
+      toast.error("Network error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -342,21 +374,22 @@ export default function AdminPage() {
       return;
     }
 
-    const confirmMessage = "⚠️ This will reset this user's credits to their tier limits. Are you sure?";
+    const confirmMessage =
+      "⚠️ This will reset this user's credits to their tier limits. Are you sure?";
     if (!confirm(confirmMessage)) {
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/manage-user', {
-        method: 'POST',
+      const response = await fetch("/api/admin/manage-user", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
-          action: 'resetUserCredits',
+          action: "resetUserCredits",
           userId: userId,
         }),
       });
@@ -369,11 +402,11 @@ export default function AdminPage() {
           handleSearchUser(); // Refresh selected user data
         }
       } else {
-        toast.error(data.error || 'Failed to reset user credits');
+        toast.error(data.error || "Failed to reset user credits");
       }
     } catch (error) {
-      console.error('Error resetting user credits:', error);
-      toast.error('Network error occurred');
+      console.error("Error resetting user credits:", error);
+      toast.error("Network error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -393,14 +426,14 @@ export default function AdminPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/delete-user-data', {
-        method: 'POST',
+      const response = await fetch("/api/admin/delete-user-data", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
-          action: 'deleteUserData',
+          action: "deleteUserData",
           userId: userId,
           email: email,
         }),
@@ -414,11 +447,11 @@ export default function AdminPage() {
           handleLoadStats(); // Refresh stats
         }
       } else {
-        toast.error(data.error || 'Failed to delete user data');
+        toast.error(data.error || "Failed to delete user data");
       }
     } catch (error) {
-      console.error('Error deleting user data:', error);
-      toast.error('Network error occurred');
+      console.error("Error deleting user data:", error);
+      toast.error("Network error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -441,14 +474,14 @@ export default function AdminPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/delete-user-data', {
-        method: 'POST',
+      const response = await fetch("/api/admin/delete-user-data", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           adminKey: adminKey.trim(),
-          action: 'deleteAllData',
+          action: "deleteAllData",
         }),
       });
 
@@ -460,11 +493,11 @@ export default function AdminPage() {
           handleLoadStats(); // Refresh stats
         }
       } else {
-        toast.error(data.error || 'Failed to delete all data');
+        toast.error(data.error || "Failed to delete all data");
       }
     } catch (error) {
-      console.error('Error deleting all data:', error);
-      toast.error('Network error occurred');
+      console.error("Error deleting all data:", error);
+      toast.error("Network error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -508,12 +541,12 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-background p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-6xl pb-11 mx-auto space-y-6">
         {/* Header with Back Button */}
         <div className="flex items-center justify-between">
           <Button
             variant="outline"
-            onClick={() => navigate('/')}
+            onClick={() => navigate("/")}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -596,22 +629,32 @@ export default function AdminPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg text-center">
                       <User className="h-5 w-5 mx-auto mb-2 text-slate-600" />
-                      <p className="text-2xl font-bold">{adminStats.users?.total || '0'}</p>
-                      <p className="text-xs text-muted-foreground">Total Users</p>
+                      <p className="text-2xl font-bold">
+                        {adminStats.users?.total || "0"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Total Users
+                      </p>
                     </div>
                     <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
                       <CheckCircle2 className="h-5 w-5 mx-auto mb-2 text-green-600" />
-                      <p className="text-2xl font-bold text-green-700 dark:text-green-300">{adminStats.users?.verified || '0'}</p>
+                      <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                        {adminStats.users?.verified || "0"}
+                      </p>
                       <p className="text-xs text-green-600">Verified</p>
                     </div>
                     <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg text-center">
                       <AlertTriangle className="h-5 w-5 mx-auto mb-2 text-amber-600" />
-                      <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">{adminStats.users?.unverified || '0'}</p>
+                      <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                        {adminStats.users?.unverified || "0"}
+                      </p>
                       <p className="text-xs text-amber-600">Unverified</p>
                     </div>
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-center">
                       <Database className="h-5 w-5 mx-auto mb-2 text-blue-600" />
-                      <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{adminStats.database?.threads || '0'}</p>
+                      <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                        {adminStats.database?.threads || "0"}
+                      </p>
                       <p className="text-xs text-blue-600">Total Threads</p>
                     </div>
                   </div>
@@ -626,17 +669,23 @@ export default function AdminPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg text-center">
                       <Activity className="h-5 w-5 mx-auto mb-2 text-purple-600" />
-                      <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{adminStats.database?.messages || '0'}</p>
+                      <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                        {adminStats.database?.messages || "0"}
+                      </p>
                       <p className="text-xs text-purple-600">Total Messages</p>
                     </div>
                     <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg text-center">
                       <Server className="h-5 w-5 mx-auto mb-2 text-indigo-600" />
-                      <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">{adminStats.database?.projects || '0'}</p>
+                      <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">
+                        {adminStats.database?.projects || "0"}
+                      </p>
                       <p className="text-xs text-indigo-600">Total Projects</p>
                     </div>
                     <div className="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-lg text-center">
                       <TrendingUp className="h-5 w-5 mx-auto mb-2 text-teal-600" />
-                      <p className="text-2xl font-bold text-teal-700 dark:text-teal-300">{adminStats.tiers?.totalUsers || '0'}</p>
+                      <p className="text-2xl font-bold text-teal-700 dark:text-teal-300">
+                        {adminStats.tiers?.totalUsers || "0"}
+                      </p>
                       <p className="text-xs text-teal-600">Active Users</p>
                     </div>
                   </div>
@@ -651,22 +700,30 @@ export default function AdminPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg text-center">
                       <User className="h-5 w-5 mx-auto mb-2 text-gray-600" />
-                      <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">{adminStats.tiers?.distribution?.free || '0'}</p>
+                      <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">
+                        {adminStats.tiers?.distribution?.free || "0"}
+                      </p>
                       <p className="text-xs text-gray-600">Free Users</p>
                     </div>
                     <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg text-center">
                       <Shield className="h-5 w-5 mx-auto mb-2 text-purple-600" />
-                      <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{adminStats.tiers?.distribution?.premium || '0'}</p>
+                      <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                        {adminStats.tiers?.distribution?.premium || "0"}
+                      </p>
                       <p className="text-xs text-purple-600">Premium Users</p>
                     </div>
                     <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg text-center">
                       <Shield className="h-5 w-5 mx-auto mb-2 text-orange-600" />
-                      <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">{adminStats.tiers?.distribution?.admin || '0'}</p>
+                      <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
+                        {adminStats.tiers?.distribution?.admin || "0"}
+                      </p>
                       <p className="text-xs text-orange-600">Admin Users</p>
                     </div>
                     <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg text-center">
                       <AlertTriangle className="h-5 w-5 mx-auto mb-2 text-red-600" />
-                      <p className="text-2xl font-bold text-red-700 dark:text-red-300">{adminStats.tiers?.distribution?.uninitialized || '0'}</p>
+                      <p className="text-2xl font-bold text-red-700 dark:text-red-300">
+                        {adminStats.tiers?.distribution?.uninitialized || "0"}
+                      </p>
                       <p className="text-xs text-red-600">Uninitialized</p>
                     </div>
                   </div>
@@ -681,31 +738,50 @@ export default function AdminPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
                       <div className="text-center">
-                        <p className="text-lg font-bold text-green-700 dark:text-green-300">{adminStats.tiers?.credits?.totalFreeCredits || '0'}</p>
+                        <p className="text-lg font-bold text-green-700 dark:text-green-300">
+                          {adminStats.tiers?.credits?.totalFreeCredits || "0"}
+                        </p>
                         <p className="text-xs text-green-600">Remaining Free</p>
                       </div>
                       <div className="text-center mt-2">
-                        <p className="text-sm font-semibold text-green-600">{adminStats.tiers?.credits?.usedFreeCredits || '0'}</p>
+                        <p className="text-sm font-semibold text-green-600">
+                          {adminStats.tiers?.credits?.usedFreeCredits || "0"}
+                        </p>
                         <p className="text-xs text-green-500">Used Free</p>
                       </div>
                     </div>
                     <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
                       <div className="text-center">
-                        <p className="text-lg font-bold text-purple-700 dark:text-purple-300">{adminStats.tiers?.credits?.totalPremiumCredits || '0'}</p>
-                        <p className="text-xs text-purple-600">Remaining Premium</p>
+                        <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                          {adminStats.tiers?.credits?.totalPremiumCredits ||
+                            "0"}
+                        </p>
+                        <p className="text-xs text-purple-600">
+                          Remaining Premium
+                        </p>
                       </div>
                       <div className="text-center mt-2">
-                        <p className="text-sm font-semibold text-purple-600">{adminStats.tiers?.credits?.usedPremiumCredits || '0'}</p>
+                        <p className="text-sm font-semibold text-purple-600">
+                          {adminStats.tiers?.credits?.usedPremiumCredits || "0"}
+                        </p>
                         <p className="text-xs text-purple-500">Used Premium</p>
                       </div>
                     </div>
                     <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
                       <div className="text-center">
-                        <p className="text-lg font-bold text-orange-700 dark:text-orange-300">{adminStats.tiers?.credits?.totalSuperPremiumCredits || '0'}</p>
-                        <p className="text-xs text-orange-600">Remaining Super</p>
+                        <p className="text-lg font-bold text-orange-700 dark:text-orange-300">
+                          {adminStats.tiers?.credits
+                            ?.totalSuperPremiumCredits || "0"}
+                        </p>
+                        <p className="text-xs text-orange-600">
+                          Remaining Super
+                        </p>
                       </div>
                       <div className="text-center mt-2">
-                        <p className="text-sm font-semibold text-orange-600">{adminStats.tiers?.credits?.usedSuperPremiumCredits || '0'}</p>
+                        <p className="text-sm font-semibold text-orange-600">
+                          {adminStats.tiers?.credits?.usedSuperPremiumCredits ||
+                            "0"}
+                        </p>
                         <p className="text-xs text-orange-500">Used Super</p>
                       </div>
                     </div>
@@ -713,7 +789,10 @@ export default function AdminPage() {
                 </div>
 
                 <div className="text-xs text-muted-foreground">
-                  Last updated: {adminStats.lastUpdated ? new Date(adminStats.lastUpdated).toLocaleString() : 'N/A'}
+                  Last updated:{" "}
+                  {adminStats.lastUpdated
+                    ? new Date(adminStats.lastUpdated).toLocaleString()
+                    : "N/A"}
                 </div>
               </div>
             ) : (
@@ -733,9 +812,7 @@ export default function AdminPage() {
               <User className="h-5 w-5" />
               User Management
             </CardTitle>
-            <CardDescription>
-              Search and manage user accounts
-            </CardDescription>
+            <CardDescription>Search and manage user accounts</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex gap-3 mb-4">
@@ -766,31 +843,45 @@ export default function AdminPage() {
             {selectedUser && (
               <div className="bg-muted/30 p-4 rounded-lg space-y-4">
                 <div>
-                  <h5 className="text-sm font-semibold mb-2">User Information</h5>
+                  <h5 className="text-sm font-semibold mb-2">
+                    User Information
+                  </h5>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     <div>
-                      <span className="font-medium">Email:</span> {selectedUser.email}
+                      <span className="font-medium">Email:</span>{" "}
+                      {selectedUser.email}
                     </div>
                     <div>
-                      <span className="font-medium">Name:</span> {selectedUser.name || "N/A"}
+                      <span className="font-medium">Name:</span>{" "}
+                      {selectedUser.name || "N/A"}
                     </div>
                     <div>
-                      <span className="font-medium">Tier:</span> {selectedUser.preferences?.tier || "N/A"}
+                      <span className="font-medium">Tier:</span>{" "}
+                      {selectedUser.preferences?.tier || "N/A"}
                     </div>
                     <div>
-                      <span className="font-medium">Verified:</span> {selectedUser.emailVerification ? "Yes" : "No"}
+                      <span className="font-medium">Verified:</span>{" "}
+                      {selectedUser.emailVerification ? "Yes" : "No"}
                     </div>
                     <div>
-                      <span className="font-medium">Free Credits:</span> {selectedUser.preferences?.freeCredits || 0}
+                      <span className="font-medium">Free Credits:</span>{" "}
+                      {selectedUser.preferences?.freeCredits || 0}
                     </div>
                     <div>
-                      <span className="font-medium">Premium Credits:</span> {selectedUser.preferences?.premiumCredits || 0}
+                      <span className="font-medium">Premium Credits:</span>{" "}
+                      {selectedUser.preferences?.premiumCredits || 0}
                     </div>
                     <div>
-                      <span className="font-medium">Super Credits:</span> {selectedUser.preferences?.superPremiumCredits || 0}
+                      <span className="font-medium">Super Credits:</span>{" "}
+                      {selectedUser.preferences?.superPremiumCredits || 0}
                     </div>
                     <div>
-                      <span className="font-medium">Last Reset:</span> {selectedUser.preferences?.lastResetDate ? new Date(selectedUser.preferences.lastResetDate).toLocaleDateString() : "N/A"}
+                      <span className="font-medium">Last Reset:</span>{" "}
+                      {selectedUser.preferences?.lastResetDate
+                        ? new Date(
+                            selectedUser.preferences.lastResetDate
+                          ).toLocaleDateString()
+                        : "N/A"}
                     </div>
                   </div>
                 </div>
@@ -853,7 +944,12 @@ export default function AdminPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDeleteUserData(selectedUser.$id, selectedUser.email)}
+                      onClick={() =>
+                        handleDeleteUserData(
+                          selectedUser.$id,
+                          selectedUser.email
+                        )
+                      }
                       disabled={isLoading}
                       className="border-red-300 text-red-700 hover:bg-red-50"
                     >
@@ -918,19 +1014,26 @@ export default function AdminPage() {
                     <div key={user.$id} className="bg-muted/30 p-3 rounded-lg">
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
                         <div>
-                          <span className="font-medium">Email:</span> {user.email}
+                          <span className="font-medium">Email:</span>{" "}
+                          {user.email}
                         </div>
                         <div>
-                          <span className="font-medium">Name:</span> {user.name || "N/A"}
+                          <span className="font-medium">Name:</span>{" "}
+                          {user.name || "N/A"}
                         </div>
                         <div>
-                          <span className="font-medium">Tier:</span> {user.preferences?.tier || "N/A"}
+                          <span className="font-medium">Tier:</span>{" "}
+                          {user.preferences?.tier || "N/A"}
                         </div>
                         <div>
-                          <span className="font-medium">Verified:</span> {user.emailVerification ? "Yes" : "No"}
+                          <span className="font-medium">Verified:</span>{" "}
+                          {user.emailVerification ? "Yes" : "No"}
                         </div>
                         <div>
-                          <span className="font-medium">Credits:</span> {user.preferences?.freeCredits || 0}/{user.preferences?.premiumCredits || 0}/{user.preferences?.superPremiumCredits || 0}
+                          <span className="font-medium">Credits:</span>{" "}
+                          {user.preferences?.freeCredits || 0}/
+                          {user.preferences?.premiumCredits || 0}/
+                          {user.preferences?.superPremiumCredits || 0}
                         </div>
                         <div className="flex gap-1">
                           <Button
@@ -954,7 +1057,9 @@ export default function AdminPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleDeleteUserData(user.$id, user.email)}
+                            onClick={() =>
+                              handleDeleteUserData(user.$id, user.email)
+                            }
                             disabled={isLoading}
                             className="text-xs px-2 py-1 h-6 text-red-600 border-red-300 hover:bg-red-50"
                           >
@@ -1024,7 +1129,8 @@ export default function AdminPage() {
               Dangerous Operations
             </CardTitle>
             <CardDescription className="text-red-600">
-              ⚠️ These operations are irreversible and will permanently delete data
+              ⚠️ These operations are irreversible and will permanently delete
+              data
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -1034,7 +1140,9 @@ export default function AdminPage() {
                   Delete All Database Data
                 </h5>
                 <p className="text-xs text-red-700 dark:text-red-300 mb-3">
-                  This will permanently delete ALL threads, messages, projects, and summaries for ALL users. User accounts will remain but all their data will be lost.
+                  This will permanently delete ALL threads, messages, projects,
+                  and summaries for ALL users. User accounts will remain but all
+                  their data will be lost.
                 </p>
                 <Button
                   onClick={handleDeleteAllData}

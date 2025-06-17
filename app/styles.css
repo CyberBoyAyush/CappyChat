@@ -226,7 +226,7 @@
     background: transparent;
   }
   .main-chat-scrollbar::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.08);
+    background: var(--background);
     border-radius: 7px;
     margin: 4px 2px;
   }
@@ -242,7 +242,7 @@
     border-color: rgba(0, 0, 0, 0.2);
   }
   .main-chat-scrollbar::-webkit-scrollbar-thumb:active {
-    background: rgba(0, 0, 0, 0.7);
+    background: var(--background);
     border-color: rgba(0, 0, 0, 0.3);
   }
   .main-chat-scrollbar::-webkit-scrollbar-corner {
@@ -251,7 +251,7 @@
 
   /* Dark mode scrollbar */
   .dark .main-chat-scrollbar::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.08);
+    background: #202020;
   }
   .dark .main-chat-scrollbar::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.4);
@@ -269,10 +269,10 @@
   /* Firefox scrollbar */
   .main-chat-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.4) rgba(0, 0, 0, 0.08);
+    scrollbar-color: rgba(111, 111, 111, 0.4) rgba(0, 0, 0, 0);
   }
   .dark .main-chat-scrollbar {
-    scrollbar-color: rgba(255, 255, 255, 0.4) rgba(255, 255, 255, 0.08);
+    scrollbar-color: #4e4e4e rgba(255, 255, 255, 0);
   }
 
   /* Hide scrollbars for all nested elements */

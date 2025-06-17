@@ -97,7 +97,12 @@ function PureInputField({
     maxHeight: 200,
   });
 
-  const { isGuest, canGuestSendMessage, incrementGuestMessages, loading: authLoading } = useAuth();
+  const {
+    isGuest,
+    canGuestSendMessage,
+    incrementGuestMessages,
+    loading: authLoading,
+  } = useAuth();
   const authDialog = useAuthDialog();
 
   // File attachments state
@@ -425,15 +430,28 @@ function PureInputField({
         // Create thread instantly with local update + async backend sync (skip for guest users)
         // Use createThreadIfNotExists to avoid duplicate creation errors
         if (!isGuest) {
-          console.log('👤 Authenticated user - creating thread in ChatInputField:', threadId);
-          HybridDB.createThread(threadId).then(() => {
-            console.log('✅ Thread created successfully in ChatInputField:', threadId);
-          }).catch((error) => {
-            // Thread might already exist (e.g., from URL search pre-creation)
-            console.log('Thread creation handled or already exists:', error.message || error);
-          });
+          console.log(
+            "👤 Authenticated user - creating thread in ChatInputField:",
+            threadId
+          );
+          HybridDB.createThread(threadId)
+            .then(() => {
+              console.log(
+                "✅ Thread created successfully in ChatInputField:",
+                threadId
+              );
+            })
+            .catch((error) => {
+              // Thread might already exist (e.g., from URL search pre-creation)
+              console.log(
+                "Thread creation handled or already exists:",
+                error.message || error
+              );
+            });
         } else {
-          console.log('🎯 Guest user - skipping thread creation in ChatInputField');
+          console.log(
+            "🎯 Guest user - skipping thread creation in ChatInputField"
+          );
         }
       }
 
@@ -777,7 +795,7 @@ function PureInputField({
                     : "What can I do for you? (Copy Paste works here)"
                 }
                 className={cn(
-                  "w-full px-3 sm:px-4 py-3 sm:py-2 md:pt-4 pr-10 sm:pr-12 border-none shadow-none",
+                  "w-full px-3 sm:px-4 py-3 sm:py-2 md:pt-4 pr-10 sm:pr-12 border-none shadow-none scrollbar-none",
                   "placeholder:text-muted-foreground resize-none text-foreground",
                   "focus-visible:ring-0 focus-visible:ring-offset-0",
                   "min-h-[44px] sm:min-h-[40px] text-base sm:text-base",
@@ -894,7 +912,9 @@ function PureInputField({
                     <FileUpload
                       onFilesUploaded={handleFilesUploaded}
                       onUploadStatusChange={handleUploadStatusChange}
-                      disabled={status === "streaming" || status === "submitted"}
+                      disabled={
+                        status === "streaming" || status === "submitted"
+                      }
                     />
                   </>
                 )}
