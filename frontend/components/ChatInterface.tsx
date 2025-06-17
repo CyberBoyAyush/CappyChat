@@ -11,6 +11,7 @@ import ChatMessageDisplay from "./ChatMessageDisplay";
 import ChatInputField from "./ChatInputField";
 import ChatMessageBrowser from "./ChatMessageBrowser";
 import GuestWelcomeScreen from "./GuestWelcomeScreen";
+import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 
 import { UIMessage } from "ai";
 
@@ -53,6 +54,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
+import { AIModel } from "@/lib/models";
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -84,9 +86,16 @@ export default function ChatInterface({
   }>();
   const isMobile = useIsMobile();
   const mainRef = useRef<HTMLElement>(null);
+
+  // Hook for creating message summaries
+  const { complete: createSummary } = useChatMessageSummary();
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
   const pendingUserMessageRef = useRef<UIMessage | null>(null);
+
+  // State for model-specific retry
+  const [retryModel, setRetryModel] = useState<AIModel | null>(null);
+  const { setModel } = useModelStore();
   const isAutoScrollingRef = useRef(false);
   const chatInputSubmitRef = useRef<(() => void) | null>(null);
   const { theme } = useTheme();
@@ -192,6 +201,14 @@ export default function ChatInterface({
       // Skip database operations for guest users
       if (!isGuest) {
         HybridDB.createMessage(threadId, aiMessage);
+
+        // Create summary for assistant message
+        createSummary(message.content, {
+          body: {
+            messageId: message.id,
+            threadId: threadId
+          }
+        });
       }
 
       // Scroll to bottom when new message comes in
@@ -199,7 +216,7 @@ export default function ChatInterface({
     },
     headers: {},
     body: {
-      model: selectedModel,
+      model: retryModel || selectedModel,
       conversationStyle: selectedStyle,
       userApiKey: openRouterApiKey,
       userId: user?.$id,
@@ -578,6 +595,49 @@ export default function ChatInterface({
     nextResponseNeedsWebSearch.current = true;
   }, []);
 
+  // Handle retry with specific model
+  const handleRetryWithModel = useCallback(async (model?: AIModel, message?: UIMessage) => {
+    console.log("🔄 Retry with model:", model || selectedModel);
+
+    // Stop the current request
+    stop();
+
+    // Set the retry model temporarily
+    setRetryModel(model || null);
+
+    // If we have message information, handle proper deletion
+    if (message) {
+      if (message.role === "user") {
+        await HybridDB.deleteTrailingMessages(threadId, message.createdAt as Date, false);
+
+        setMessages((messages) => {
+          const index = messages.findIndex((m) => m.id === message.id);
+          if (index !== -1) {
+            return [...messages.slice(0, index + 1)];
+          }
+          return messages;
+        });
+      } else {
+        await HybridDB.deleteTrailingMessages(threadId, message.createdAt as Date);
+
+        setMessages((messages) => {
+          const index = messages.findIndex((m) => m.id === message.id);
+          if (index !== -1) {
+            return [...messages.slice(0, index)];
+          }
+          return messages;
+        });
+      }
+    }
+
+    // Trigger reload which will use the retry model
+    setTimeout(() => {
+      reload();
+      // Reset retry model after reload
+      setTimeout(() => setRetryModel(null), 100);
+    }, 0);
+  }, [selectedModel, reload, stop, setMessages, threadId]);
+
   // This useEffect is no longer needed since we handle web search results in onFinish
   // Keeping it commented for reference
   // useEffect(() => {
@@ -655,6 +715,7 @@ export default function ChatInterface({
               error={error}
               registerRef={registerRef}
               stop={stop}
+              onRetryWithModel={handleRetryWithModel}
             />
           </div>
         )}

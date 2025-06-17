@@ -8,10 +8,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { HybridDB, dbEvents } from '@/lib/hybridDB';
+import { AppwriteDB } from '@/lib/appwriteDB';
 import { memo } from 'react';
 import { X, MessageCircle, Bot, User, Search, Clock } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/frontend/contexts/AuthContext';
 
 interface MessageBrowserProps {
   threadId: string;
@@ -36,26 +38,72 @@ function PureMessageBrowser({
   onClose,
 }: MessageBrowserProps) {
   const [messageSummaries, setMessageSummaries] = useState<MessageSummaryWithRole[]>([]);
+  const { isGuest } = useAuth();
 
   // Handle message summary updates from the hybrid database
-  const handleSummariesUpdated = useCallback((updatedThreadId: string) => {
+  const handleSummariesUpdated = useCallback(async (updatedThreadId: string) => {
     if (updatedThreadId === threadId) {
-      // Load the updated summaries instantly from local storage
-      HybridDB.getMessageSummariesWithRole(threadId)
-        .then(summaries => setMessageSummaries(summaries || []))
-        .catch(error => console.error('Error loading updated summaries:', error));
+      try {
+        // For guest users, only load from local storage
+        if (isGuest) {
+          const summaries = await HybridDB.getMessageSummariesWithRole(threadId);
+          setMessageSummaries(summaries || []);
+          return;
+        }
+
+        // For authenticated users, try to get the latest from remote first
+        try {
+          const remoteSummaries = await AppwriteDB.getMessageSummariesWithRole(threadId);
+          setMessageSummaries(remoteSummaries || []);
+        } catch (remoteError) {
+          // Fallback to local if remote fails
+          console.warn('Failed to load remote summaries, using local:', remoteError);
+          const localSummaries = await HybridDB.getMessageSummariesWithRole(threadId);
+          setMessageSummaries(localSummaries || []);
+        }
+      } catch (error) {
+        console.error('Error loading updated summaries:', error);
+      }
     }
-  }, [threadId]);
+  }, [threadId, isGuest]);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadMessageSummaries = async () => {
       try {
-        // Load summaries instantly from local storage
-        const summaries = await HybridDB.getMessageSummariesWithRole(threadId);
+        // For guest users, only load from local storage
+        if (isGuest) {
+          const summaries = await HybridDB.getMessageSummariesWithRole(threadId);
+          if (isMounted) {
+            setMessageSummaries(summaries || []);
+          }
+          return;
+        }
+
+        // For authenticated users, first load from local storage for instant display
+        const localSummaries = await HybridDB.getMessageSummariesWithRole(threadId);
         if (isMounted) {
-          setMessageSummaries(summaries || []);
+          setMessageSummaries(localSummaries || []);
+        }
+
+        // Then sync with Appwrite to get the latest summaries
+        try {
+          const remoteSummaries = await AppwriteDB.getMessageSummariesWithRole(threadId);
+          if (isMounted && remoteSummaries.length > 0) {
+            // Update local storage with remote summaries
+            // Clear local summaries for this thread first
+            const allLocalSummaries = await HybridDB.getMessageSummariesWithRole(threadId);
+
+            // Replace with remote summaries
+            setMessageSummaries(remoteSummaries);
+
+            // Emit update event for other components
+            dbEvents.emit('summaries_updated', threadId);
+          }
+        } catch (remoteError) {
+          console.warn('Failed to sync summaries from remote, using local:', remoteError);
+          // Keep using local summaries if remote fails
         }
       } catch (error) {
         console.error('Error loading message summaries:', error);
@@ -76,7 +124,7 @@ function PureMessageBrowser({
       isMounted = false;
       dbEvents.off('summaries_updated', handleSummariesUpdated);
     };
-  }, [threadId, handleSummariesUpdated]);
+  }, [threadId, handleSummariesUpdated, isGuest]);
 
   const formatTimeAgo = (createdAt: Date | string) => {
     const date = new Date(createdAt);

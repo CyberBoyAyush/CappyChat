@@ -15,6 +15,7 @@ import ChatMessageLoading from "./ui/UIComponents";
 import { Error } from "./ui/UIComponents";
 import { useOutletContext } from "react-router-dom";
 import { useIsMobile } from "@/hooks/useMobileDetection";
+import { AIModel } from "@/lib/models";
 
 function PureMessageDisplay({
   threadId,
@@ -25,6 +26,7 @@ function PureMessageDisplay({
   error,
   stop,
   registerRef,
+  onRetryWithModel,
 }: {
   threadId: string;
   messages: UIMessage[];
@@ -34,6 +36,7 @@ function PureMessageDisplay({
   error: UseChatHelpers["error"];
   stop: UseChatHelpers["stop"];
   registerRef: (id: string, ref: HTMLDivElement | null) => void;
+  onRetryWithModel?: (model?: AIModel, message?: UIMessage) => void;
 }) {
   return (
     <section className="flex flex-col w-full max-w-3xl space-y-12">
@@ -47,6 +50,7 @@ function PureMessageDisplay({
           reload={reload}
           registerRef={registerRef}
           stop={stop}
+          onRetryWithModel={onRetryWithModel}
         />
       ))}
       {status === "submitted" && <ChatMessageLoading />}

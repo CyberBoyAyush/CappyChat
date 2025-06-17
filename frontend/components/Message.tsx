@@ -17,6 +17,7 @@ import ChatMessageEditor from "./ChatMessageEditor";
 import ChatMessageReasoning from "./ChatMessageReasoning";
 import WebSearchCitations from "./WebSearchCitations";
 import MessageAttachments from "./MessageAttachments";
+import { AIModel } from "@/lib/models";
 
 function PureMessage({
   threadId,
@@ -26,6 +27,7 @@ function PureMessage({
   isStreaming,
   registerRef,
   stop,
+  onRetryWithModel,
 }: {
   threadId: string;
   message: UIMessage;
@@ -34,6 +36,7 @@ function PureMessage({
   isStreaming: boolean;
   registerRef: (id: string, ref: HTMLDivElement | null) => void;
   stop: UseChatHelpers["stop"];
+  onRetryWithModel?: (model?: AIModel, message?: UIMessage) => void;
 }) {
   const [mode, setMode] = useState<"view" | "edit">("view");
 
@@ -97,6 +100,7 @@ function PureMessage({
                   setMessages={setMessages}
                   reload={reload}
                   stop={stop}
+                  onRetryWithModel={onRetryWithModel}
                 />
               )}
             </div>
@@ -114,6 +118,7 @@ function PureMessage({
                   setMessages={setMessages}
                   reload={reload}
                   stop={stop}
+                  onRetryWithModel={onRetryWithModel}
                 />
               )}
               {/* Show web search citations for assistant messages with search results */}
