@@ -242,7 +242,7 @@ export default function ChatSidebarPanel() {
         onFilteredThreadsChange={handleFilteredThreadsChange}
       />
 
-      <div className="flex-1 overflow-y-auto no-scrollbar px-3 pb-3 sm:px-4">
+      <div className="flex-1 overflow-y-auto px-3 pb-3 sm:px-4">
         <SidebarMenu className="space-y-2">
           {isGuest ? (
             // Guest user interface - simple welcome message

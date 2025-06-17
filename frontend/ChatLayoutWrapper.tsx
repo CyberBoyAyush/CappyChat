@@ -157,7 +157,7 @@ export default function ChatLayoutWrapper() {
         </div>
 
         {/* Main content area that flexes with sidebar width */}
-        <div className="flex-1 relative min-h-screen bg-gradient-to-t from-background dark:from-zinc-950 dark:to-50% overflow-hidden">
+        <div className="flex-1 relative min-h-screen bg-gradient-to-t from-background dark:from-zinc-950 dark:to-50%">
           <Outlet
             context={{
               sidebarWidth,

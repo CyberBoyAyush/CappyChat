@@ -780,8 +780,6 @@ function PureInputField({
                   "w-full px-3 sm:px-4 py-3 sm:py-2 md:pt-4 pr-10 sm:pr-12 border-none shadow-none",
                   "placeholder:text-muted-foreground resize-none text-foreground",
                   "focus-visible:ring-0 focus-visible:ring-offset-0",
-                  "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/30",
-                  "scrollbar-thumb-rounded-full",
                   "min-h-[44px] sm:min-h-[40px] text-base sm:text-base",
                   "selection:bg-primary selection:text-primary-foreground",
                   "mobile-input leading-relaxed transition-colors",

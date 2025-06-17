@@ -664,6 +664,25 @@ export default function ChatInterface({
   //   // Web search results are now handled in the onFinish callback
   // }, []);
 
+  // Force scrollbar visibility and ensure proper initialization
+  useEffect(() => {
+    if (mainRef.current) {
+      const element = mainRef.current;
+      // Force a reflow to ensure scrollbar is properly rendered
+      const originalOverflow = element.style.overflow;
+      element.style.overflow = 'hidden';
+
+      requestAnimationFrame(() => {
+        element.style.overflow = originalOverflow || 'auto';
+        element.style.overflowX = 'hidden';
+        element.style.overflowY = 'scroll';
+
+        // Force a repaint to ensure scrollbar appears
+        element.offsetHeight;
+      });
+    }
+  }, [messages.length, status, threadId]);
+
   const scrollToBottom = () => {
     if (mainRef.current) {
       // Set flag to prevent scroll event from triggering during auto-scroll
@@ -710,7 +729,13 @@ export default function ChatInterface({
       <AppPanelTrigger />
       <QuickShortCutInfo />
 
-      <main ref={mainRef} className="flex-1 overflow-y-auto pt-14 pb-40">
+      <main
+        ref={mainRef}
+        className="flex-1 overflow-y-scroll overflow-x-hidden pt-14 pb-40 main-chat-scrollbar"
+        style={{
+          scrollbarGutter: 'stable',
+        }}
+      >
         {isHomePage && messages.length === 0 ? (
           isGuest ? (
             <GuestWelcomeScreen
@@ -726,7 +751,7 @@ export default function ChatInterface({
             />
           )
         ) : (
-          <div className="mx-auto flex justify-center px-4 overflow-x-hidden">
+          <div className="mx-auto flex justify-center px-4">
             <ChatMessageDisplay
               threadId={threadId}
               messages={messages}
@@ -901,7 +926,7 @@ const AppPanelTrigger = () => {
   // Show trigger on mobile or when sidebar is collapsed on desktop
   return (
     <div
-      className={`fixed left-2 flex top-3 z-50 overflow-hidden ${
+      className={`fixed left-2 flex top-3 z-50 ${
         state === "collapsed"
           ? "top-3 bg-background p-1.5 mr-6 ml-3 rounded-md"
           : "bg-background"

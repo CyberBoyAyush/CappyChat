@@ -196,7 +196,7 @@ function PureMessageBrowser({
           <div className="flex-1 overflow-hidden">
             {!messageSummaries ? (
               // Loading state
-              <div className="h-full overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 scrollbar-thumb-rounded-full">
+              <div className="h-full overflow-y-auto">
                 <div className="p-2 space-y-1">
                   {[...Array(5)].map((_, i) => (
                     <div key={i} className="p-3 rounded-lg animate-pulse">
@@ -213,7 +213,7 @@ function PureMessageBrowser({
                 </div>
               </div>
             ) : messageSummaries.length > 0 ? (
-              <div className="h-full overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 scrollbar-thumb-rounded-full">
+              <div className="h-full overflow-y-auto">
                 <div className="p-2 space-y-1">
                   {messageSummaries.map((summary: MessageSummaryWithRole, index: number) => (
                     <div
