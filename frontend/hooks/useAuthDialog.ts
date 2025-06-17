@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthDialogState {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export const useAuthDialog = () => {
     isOpen: false,
     mode: 'login'
   });
+  const navigate = useNavigate();
 
   const showLoginDialog = useCallback((title?: string, description?: string) => {
     setDialogState({
@@ -56,12 +58,37 @@ export const useAuthDialog = () => {
     );
   }, [showLoginDialog]);
 
+  // Navigate to dedicated pages (faster alternative to dialogs)
+  const navigateToLogin = useCallback((redirectPath?: string) => {
+    const loginUrl = redirectPath ? `/login?redirect=${encodeURIComponent(redirectPath)}` : '/login';
+    navigate(loginUrl);
+  }, [navigate]);
+
+  const navigateToSignup = useCallback((redirectPath?: string) => {
+    const signupUrl = redirectPath ? `/signup?redirect=${encodeURIComponent(redirectPath)}` : '/signup';
+    navigate(signupUrl);
+  }, [navigate]);
+
+  const showGuestLimitPage = useCallback(() => {
+    const currentPath = window.location.pathname + window.location.search;
+    navigateToSignup(currentPath);
+  }, [navigateToSignup]);
+
+  const showPremiumFeaturePage = useCallback((redirectPath?: string) => {
+    const currentPath = redirectPath || window.location.pathname + window.location.search;
+    navigateToLogin(currentPath);
+  }, [navigateToLogin]);
+
   return {
     ...dialogState,
     showLoginDialog,
     showSignupDialog,
     closeDialog,
     showGuestLimitDialog,
-    showPremiumFeatureDialog
+    showPremiumFeatureDialog,
+    navigateToLogin,
+    navigateToSignup,
+    showGuestLimitPage,
+    showPremiumFeaturePage
   };
 };

@@ -11,6 +11,7 @@ import ChatMessageDisplay from "./ChatMessageDisplay";
 import ChatInputField from "./ChatInputField";
 import ChatMessageBrowser from "./ChatMessageBrowser";
 import GuestWelcomeScreen from "./GuestWelcomeScreen";
+import AuthLoadingScreen from "./auth/AuthLoadingScreen";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 
 import { UIMessage } from "ai";
@@ -81,9 +82,85 @@ export default function ChatInterface({
     user,
     isGuest,
     guestUser,
+    loading: authLoading,
     incrementGuestMessages,
     canGuestSendMessage,
   } = useAuth();
+
+  // Check for pending authentication state
+  const [isPendingAuth, setIsPendingAuth] = useState(false);
+
+  // Force clear pending auth when user is detected
+  useEffect(() => {
+    if (user && isPendingAuth) {
+      console.log('[ChatInterface] 🎉 User detected while pending auth - force clearing pending state');
+      setIsPendingAuth(false);
+      sessionStorage.removeItem('avchat_auth_pending');
+    }
+  }, [user, isPendingAuth]);
+
+  useEffect(() => {
+    const checkPendingAuth = () => {
+      try {
+        const pending = sessionStorage.getItem('avchat_auth_pending');
+        if (pending) {
+          const parsed = JSON.parse(pending);
+          const age = Date.now() - parsed.timestamp;
+          // Check if pending auth is still valid (not older than 15 seconds - reduced from 30)
+          const isValid = age < 15000;
+          console.log('[ChatInterface] 🔍 Pending auth check:', {
+            hasPending: true,
+            isValid,
+            method: parsed.method,
+            age
+          });
+          setIsPendingAuth(isValid);
+
+          if (!isValid) {
+            console.log('[ChatInterface] 🧹 Clearing expired pending auth state (age:', age, 'ms)');
+            sessionStorage.removeItem('avchat_auth_pending');
+          }
+        } else {
+          if (isPendingAuth) {
+            console.log('[ChatInterface] 🧹 No pending auth found, clearing state');
+          }
+          setIsPendingAuth(false);
+        }
+      } catch (error) {
+        console.error('[ChatInterface] ❌ Error checking pending auth:', error);
+        setIsPendingAuth(false);
+      }
+    };
+
+    checkPendingAuth();
+
+    // Check even more frequently for pending auth state changes (every 200ms)
+    const interval = setInterval(checkPendingAuth, 200);
+
+    // Listen for auth state changes to clear pending state
+    const handleAuthStateChanged = () => {
+      console.log('[ChatInterface] 🎉 Auth state changed - clearing pending state');
+      setIsPendingAuth(false);
+      sessionStorage.removeItem('avchat_auth_pending');
+    };
+
+    // Emergency timeout to force clear pending state after 8 seconds
+    const emergencyTimeout = setTimeout(() => {
+      if (isPendingAuth) {
+        console.log('[ChatInterface] 🚨 EMERGENCY: Force clearing pending auth after 8 seconds');
+        setIsPendingAuth(false);
+        sessionStorage.removeItem('avchat_auth_pending');
+      }
+    }, 8000);
+
+    window.addEventListener('authStateChanged', handleAuthStateChanged);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(emergencyTimeout);
+      window.removeEventListener('authStateChanged', handleAuthStateChanged);
+    };
+  }, [isPendingAuth]);
   const authDialog = useAuthDialog();
   const {
     sidebarWidth,
@@ -737,19 +814,43 @@ export default function ChatInterface({
         }}
       >
         {isHomePage && messages.length === 0 ? (
-          isGuest ? (
-            <GuestWelcomeScreen
-              onSignUp={() => authDialog.showSignupDialog()}
-              onLogin={() => authDialog.showLoginDialog()}
-            />
-          ) : (
-            <WelcomeScreen
-              onPromptSelect={handlePromptClick}
-              isDarkTheme={isDarkTheme}
-              selectedDomain={selectedDomain}
-              onDomainSelect={handleDomainSelect}
-            />
-          )
+          (() => {
+            const shouldShowLoading = authLoading || isPendingAuth;
+            console.log('[ChatInterface] 🎭 Render decision:', {
+              authLoading,
+              isPendingAuth,
+              isGuest,
+              user: !!user,
+              shouldShowLoading
+            });
+
+            if (shouldShowLoading) {
+              return (
+                <div className="flex items-center justify-center h-full">
+                  <AuthLoadingScreen
+                    type="callback"
+                    message={isPendingAuth ? "Completing authentication..." : "Setting up your workspace..."}
+                  />
+                </div>
+              );
+            } else if (isGuest) {
+              return (
+                <GuestWelcomeScreen
+                  onSignUp={() => authDialog.navigateToSignup()}
+                  onLogin={() => authDialog.navigateToLogin()}
+                />
+              );
+            } else {
+              return (
+                <WelcomeScreen
+                  onPromptSelect={handlePromptClick}
+                  isDarkTheme={isDarkTheme}
+                  selectedDomain={selectedDomain}
+                  onDomainSelect={handleDomainSelect}
+                />
+              );
+            }
+          })()
         ) : (
           <div className="mx-auto flex justify-center px-4">
             <ChatMessageDisplay

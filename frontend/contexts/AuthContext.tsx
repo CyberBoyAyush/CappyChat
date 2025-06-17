@@ -93,10 +93,12 @@ const getErrorMessage = (error: any): string => {
   return error?.message || 'An unexpected error occurred.';
 };
 
-// Cache keys for localStorage
+// Enhanced cache keys for instant authentication
 const AUTH_CACHE_KEY = 'avchat_auth_cache';
-const AUTH_CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours (much longer to avoid frequent re-auth)
-const AUTH_QUICK_CHECK_EXPIRY = 10 * 60 * 1000; // 10 minutes for quick checks (increased from 30 seconds)
+const AUTH_SESSION_KEY = 'avchat_auth_session';
+const AUTH_PENDING_KEY = 'avchat_auth_pending';
+const AUTH_CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+const AUTH_QUICK_CHECK_EXPIRY = 10 * 60 * 1000; // 10 minutes
 
 // Helper to get cached auth state
 const getCachedAuthState = (): { user: User | null; timestamp: number } | null => {
@@ -140,15 +142,81 @@ const shouldVerifyCachedState = (cachedState: { user: User | null; timestamp: nu
   return (now - cachedState.timestamp) > AUTH_QUICK_CHECK_EXPIRY;
 };
 
+// Enhanced session storage for instant auth state
+const getSessionAuthState = (): { user: User | null; timestamp: number } | null => {
+  try {
+    const cached = sessionStorage.getItem(AUTH_SESSION_KEY);
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+};
+
+const setSessionAuthState = (user: User | null): void => {
+  try {
+    const cacheData = {
+      user,
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(cacheData));
+  } catch {
+    // Ignore sessionStorage errors
+  }
+};
+
+// Auth pending state management
+const setAuthPending = (isAuthenticating: boolean, method: 'email' | 'oauth' = 'email'): void => {
+  try {
+    if (isAuthenticating) {
+      const pendingData = {
+        isAuthenticating: true,
+        timestamp: Date.now(),
+        method
+      };
+      sessionStorage.setItem(AUTH_PENDING_KEY, JSON.stringify(pendingData));
+    } else {
+      sessionStorage.removeItem(AUTH_PENDING_KEY);
+    }
+  } catch {
+    // Ignore sessionStorage errors
+  }
+};
+
+const getAuthPending = (): { isAuthenticating: boolean; timestamp: number; method: string } | null => {
+  try {
+    const pending = sessionStorage.getItem(AUTH_PENDING_KEY);
+    if (!pending) return null;
+
+    const parsed = JSON.parse(pending);
+
+    // Clear if older than 30 seconds
+    if (Date.now() - parsed.timestamp > 30000) {
+      sessionStorage.removeItem(AUTH_PENDING_KEY);
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Initialize with cached state to prevent flash of unauthenticated content
   const cachedState = getCachedAuthState();
-  const [user, setUser] = useState<User | null>(cachedState?.user || null);
-  const [loading, setLoading] = useState(!cachedState); // Only show loading if no cache
-  const [initialized, setInitialized] = useState(!!cachedState); // Mark as initialized if we have cache
+  const sessionState = getSessionAuthState();
+  const pendingAuth = getAuthPending();
+
+  // Use session state first (fastest), then cached state
+  const initialUser = sessionState?.user || cachedState?.user || null;
+  const hasAnyCache = !!(sessionState || cachedState);
+
+  const [user, setUser] = useState<User | null>(initialUser);
+  const [loading, setLoading] = useState(!hasAnyCache || !!pendingAuth); // Show loading if no cache OR auth is pending
+  const [initialized, setInitialized] = useState(hasAnyCache && !pendingAuth); // Mark as initialized if we have cache and no pending auth
   const [guestUser, setGuestUser] = useState<GuestUser | null>(() => {
     // Only initialize guest user if no cached authenticated user
-    if (cachedState?.user) return null;
+    if (initialUser) return null;
     return {
       isGuest: true,
       messagesUsed: 0,
@@ -167,6 +235,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return currentUser;
     } catch (error) {
       return null;
+    }
+  }, []);
+
+  // Fast session detection for OAuth (checks if any session exists first)
+  const hasActiveSession = useCallback(async (): Promise<boolean> => {
+    try {
+      const sessions = await account.listSessions();
+      return sessions.sessions.length > 0;
+    } catch (error) {
+      return false;
     }
   }, []);
 
@@ -323,6 +401,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (currentUser) {
             console.log('[AuthContext] User authenticated after window focus, refreshing state');
             setCachedAuthState(currentUser);
+            setSessionAuthState(currentUser);
 
             flushSync(() => {
               setUser(currentUser);
@@ -340,9 +419,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
+    // OAuth session pre-warming: Check for session immediately when pending OAuth
+    const checkOAuthSession = async () => {
+      const pendingAuth = getAuthPending();
+      if (pendingAuth && pendingAuth.method === 'oauth' && !user) {
+        console.log('[AuthContext] 🔍 OAuth pre-warming check - pending auth detected');
+        try {
+          const currentUser = await getCurrentUser();
+          if (currentUser) {
+            console.log('[AuthContext] 🎉 OAuth session detected via pre-warming!', { userId: currentUser.$id });
+            setCachedAuthState(currentUser);
+            setSessionAuthState(currentUser);
+            setAuthPending(false);
+
+            flushSync(() => {
+              setUser(currentUser);
+              setGuestUser(null);
+              setLoading(false);
+            });
+
+            console.log('[AuthContext] 🚀 OAuth pre-warming completed - user state updated');
+
+            // Initialize services in background
+            initializeUserServices(currentUser.$id).catch(err =>
+              console.error('Background service initialization failed:', err)
+            );
+          } else {
+            console.log('[AuthContext] 🔄 OAuth pre-warming - no session yet');
+          }
+        } catch (error) {
+          console.error('[AuthContext] ❌ OAuth session pre-warming failed:', error);
+        }
+      }
+    };
+
+    // Check for OAuth session every 200ms when pending (faster than 500ms)
+    const oauthInterval = setInterval(checkOAuthSession, 200);
+
     // Listen for custom auth state change events (from OAuth callback)
-    const handleAuthStateChanged = (event: CustomEvent) => {
-      const { authenticated, user: eventUser } = event.detail;
+    const handleAuthStateChanged = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { authenticated, user: eventUser } = customEvent.detail;
       if (authenticated && eventUser && !user) {
         console.log('[AuthContext] Received auth state change event, updating state');
         setCachedAuthState(eventUser);
@@ -360,8 +477,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     // Listen for admin data deletion events
-    const handleAdminDataDeleted = async (event: CustomEvent) => {
-      const { userId: deletedUserId } = event.detail;
+    const handleAdminDataDeleted = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { userId: deletedUserId } = customEvent.detail;
       if (user && user.$id === deletedUserId) {
         console.log('[AuthContext] User data deleted by admin, refreshing...');
         try {
@@ -389,41 +507,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     window.addEventListener('focus', handleWindowFocus);
-    window.addEventListener('authStateChanged', handleAuthStateChanged as EventListener);
-    window.addEventListener('adminDataDeleted', handleAdminDataDeleted as EventListener);
-    window.addEventListener('adminAllDataDeleted', handleAdminAllDataDeleted as EventListener);
+    window.addEventListener('authStateChanged', handleAuthStateChanged);
+    window.addEventListener('adminDataDeleted', handleAdminDataDeleted);
+    window.addEventListener('adminAllDataDeleted', handleAdminAllDataDeleted);
 
     return () => {
+      clearInterval(oauthInterval);
       window.removeEventListener('focus', handleWindowFocus);
-      window.removeEventListener('authStateChanged', handleAuthStateChanged as EventListener);
-      window.removeEventListener('adminDataDeleted', handleAdminDataDeleted as EventListener);
-      window.removeEventListener('adminAllDataDeleted', handleAdminAllDataDeleted as EventListener);
+      window.removeEventListener('authStateChanged', handleAuthStateChanged);
+      window.removeEventListener('adminDataDeleted', handleAdminDataDeleted);
+      window.removeEventListener('adminAllDataDeleted', handleAdminAllDataDeleted);
     };
   }, [user, loading, getCurrentUser, initializeUserServices]);
 
   // Login with email and password
   const login = async (email: string, password: string): Promise<void> => {
     try {
+      // Set pending auth state immediately
+      setAuthPending(true, 'email');
       setLoading(true);
 
       // Create session and get user data
       await account.createEmailPasswordSession(email, password);
       const currentUser = await account.get(); // Get fresh user data after session creation
 
-      // Update cache immediately
+      // Update both caches immediately for instant future access
       setCachedAuthState(currentUser);
+      setSessionAuthState(currentUser);
+
+      // Clear pending auth state
+      setAuthPending(false);
 
       // Use flushSync for immediate UI update
       flushSync(() => {
         setUser(currentUser);
         setGuestUser(null); // Clear guest user when logging in
         setLoading(false); // Set loading to false immediately after user is set
+        setInitialized(true);
       });
 
       // Initialize services immediately for instant data loading
       initializeUserServices(currentUser.$id);
     } catch (error) {
       console.error('Login error:', error);
+      setAuthPending(false);
       setLoading(false);
       throw new Error(getErrorMessage(error));
     }
@@ -432,6 +559,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Register a new user
   const register = async (email: string, password: string, name: string): Promise<void> => {
     try {
+      // Set pending auth state immediately
+      setAuthPending(true, 'email');
       setLoading(true);
 
       // Create user account
@@ -445,20 +574,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Get fresh user data after session creation to ensure correct verification status
       const currentUser = await account.get();
 
-      // Update cache immediately
+      // Update both caches immediately for instant future access
       setCachedAuthState(currentUser);
+      setSessionAuthState(currentUser);
+
+      // Clear pending auth state
+      setAuthPending(false);
 
       // Use flushSync for immediate UI update
       flushSync(() => {
         setUser(currentUser);
         setGuestUser(null); // Clear guest user when registering
         setLoading(false); // Set loading to false immediately after user is set
+        setInitialized(true);
       });
 
       // Initialize services immediately for instant data loading
       initializeUserServices(currentUser.$id);
     } catch (error) {
       console.error('Registration error:', error);
+      setAuthPending(false);
       setLoading(false);
       throw new Error(getErrorMessage(error));
     }
@@ -467,6 +602,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Login with Google OAuth
   const loginWithGoogle = async (): Promise<void> => {
     try {
+      // Set pending OAuth state immediately
+      setAuthPending(true, 'oauth');
+
+      // Store current path for redirect after OAuth
+      const currentPath = window.location.pathname + window.location.search;
+      if (currentPath !== '/auth/callback' && currentPath !== '/') {
+        sessionStorage.setItem('auth_redirect', currentPath);
+      }
+
+      // Store OAuth start time for performance tracking
+      sessionStorage.setItem('oauth_start_time', Date.now().toString());
+
       account.createOAuth2Session(
         OAuthProvider.Google,
         APPWRITE_CONFIG.successUrl,
@@ -474,6 +621,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       );
     } catch (error) {
       console.error('Google login error:', error);
+      setAuthPending(false);
       throw new Error(getErrorMessage(error));
     }
   };
@@ -481,6 +629,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Login with GitHub OAuth
   const loginWithGitHub = async (): Promise<void> => {
     try {
+      // Set pending OAuth state immediately
+      setAuthPending(true, 'oauth');
+
+      // Store current path for redirect after OAuth
+      const currentPath = window.location.pathname + window.location.search;
+      if (currentPath !== '/auth/callback' && currentPath !== '/') {
+        sessionStorage.setItem('auth_redirect', currentPath);
+      }
+
+      // Store OAuth start time for performance tracking
+      sessionStorage.setItem('oauth_start_time', Date.now().toString());
+
       account.createOAuth2Session(
         OAuthProvider.Github,
         APPWRITE_CONFIG.successUrl,
@@ -488,6 +648,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       );
     } catch (error) {
       console.error('GitHub login error:', error);
+      setAuthPending(false);
       throw new Error(getErrorMessage(error));
     }
   };

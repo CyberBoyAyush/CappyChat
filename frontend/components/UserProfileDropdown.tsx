@@ -74,7 +74,7 @@ const UserProfileDropdown: React.FC = () => {
       <>
         <div className="flex gap-2 p-2">
           <Button
-            onClick={() => authDialog.showLoginDialog()}
+            onClick={() => authDialog.navigateToLogin()}
             variant="outline"
             size="sm"
             className="flex-1 h-9 text-sm"
@@ -83,7 +83,7 @@ const UserProfileDropdown: React.FC = () => {
             Sign in
           </Button>
           <Button
-            onClick={() => authDialog.showSignupDialog()}
+            onClick={() => authDialog.navigateToSignup()}
             variant="default"
             size="sm"
             className="flex-1 h-9 text-sm"

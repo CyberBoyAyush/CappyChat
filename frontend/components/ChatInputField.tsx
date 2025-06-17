@@ -380,13 +380,13 @@ function PureInputField({
     if (isGuest) {
       if (!canGuestSendMessage()) {
         console.log("=== GUEST LIMIT REACHED ===");
-        authDialog.showGuestLimitDialog();
+        authDialog.showGuestLimitPage(); // Use faster page navigation
         return;
       }
 
       // Check for restricted features for guests
       if (attachments.length > 0) {
-        authDialog.showPremiumFeatureDialog("File attachments");
+        authDialog.showPremiumFeaturePage(); // Use faster page navigation
         return;
       }
     }

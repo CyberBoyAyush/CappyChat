@@ -17,6 +17,8 @@ import SettingsPage from "./routes/SettingsPage";
 import AdminPage from "./routes/AdminPage";
 import AuthCallbackPage from "./routes/auth/AuthCallbackPage";
 import AuthErrorPage from "./routes/auth/AuthErrorPage";
+import LoginPage from "./routes/auth/LoginPage";
+import SignupPage from "./routes/auth/SignupPage";
 import EmailVerificationPage from "./routes/auth/EmailVerificationPage";
 import ResetPasswordPage from "./routes/auth/ResetPasswordPage";
 import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts";
@@ -38,7 +40,9 @@ export default function ChatAppRouter() {
 
 
 
-          {/* Auth callback and error routes (always accessible) */}
+          {/* Auth routes (always accessible) */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/auth/error" element={<AuthErrorPage />} />
           <Route path="/auth/verify" element={<EmailVerificationPage />} />
