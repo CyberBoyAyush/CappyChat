@@ -7,7 +7,15 @@
  */
 
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { Search, X, Tag, Hash } from "lucide-react";
+import {
+  Search,
+  X,
+  Tag,
+  Hash,
+  AlignJustify,
+  Ellipsis,
+  EllipsisVertical,
+} from "lucide-react";
 import { Input } from "@/frontend/components/ui/input";
 import { Button } from "@/frontend/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -29,8 +37,10 @@ export const ThreadSearch = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isTagsDropdownOpen, setIsTagsDropdownOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const tagsDropdownRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
   const isDarkTheme = theme === "dark";
 
@@ -154,6 +164,19 @@ export const ThreadSearch = ({
     searchInputRef.current?.focus();
   };
 
+  // Handle tags dropdown toggle
+  const handleTagsDropdownToggle = () => {
+    setIsTagsDropdownOpen(!isTagsDropdownOpen);
+  };
+
+  // Handle tag selection from dropdown
+  const handleTagSelect = (tag: string) => {
+    setSearchQuery(tag);
+    debouncedSearch(tag);
+    setIsTagsDropdownOpen(false);
+    searchInputRef.current?.focus();
+  };
+
   // Close dialog when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -163,6 +186,13 @@ export const ThreadSearch = ({
         !searchInputRef.current?.contains(event.target as Node)
       ) {
         setIsDialogOpen(false);
+      }
+
+      if (
+        tagsDropdownRef.current &&
+        !tagsDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsTagsDropdownOpen(false);
       }
     };
 
@@ -207,7 +237,7 @@ export const ThreadSearch = ({
 
         <div className="w-full bg-foreground/20 h-[1px] mt-1"></div>
 
-        {searchQuery && !isSearching && (
+        {searchQuery && !isSearching ? (
           <Button
             variant="ghost"
             size="icon"
@@ -216,7 +246,16 @@ export const ThreadSearch = ({
           >
             <X className="h-3 w-3" />
           </Button>
-        )}
+        ) : allTags.length > 0 ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleTagsDropdownToggle}
+            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+          >
+            <EllipsisVertical className="h-3 w-3" />
+          </Button>
+        ) : null}
         {isSearching && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
             <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
@@ -224,15 +263,15 @@ export const ThreadSearch = ({
         )}
       </div>
 
-      {/* Quick Search Dialog */}
-      {isDialogOpen && (
+      {/* Tags Dropdown */}
+      {isTagsDropdownOpen && allTags.length > 0 && (
         <div
-          ref={dialogRef}
+          ref={tagsDropdownRef}
           className={cn(
             "absolute z-10 mt-1 w-full rounded-md border shadow-md",
             "bg-background border-border",
             "animate-in fade-in-50 zoom-in-95 slide-in-from-top-2",
-            "max-h-[300px] overflow-y-auto"
+            "max-h-[200px] overflow-y-auto"
           )}
         >
           {/* Close Button */}
@@ -240,46 +279,35 @@ export const ThreadSearch = ({
             variant="ghost"
             size="icon"
             className="absolute right-1 top-1 h-6 w-6 text-muted-foreground hover:text-foreground"
-            onClick={() => setIsDialogOpen(false)}
-            aria-label="Close search suggestions"
+            onClick={() => setIsTagsDropdownOpen(false)}
+            aria-label="Close tags dropdown"
           >
             <X className="h-3 w-3" />
           </Button>
 
           {/* Tags Section */}
-          {allTags.length > 0 ? (
-            <div className="p-2">
-              <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground mb-2 px-2">
-                <Tag className="h-3 w-3" />
-                <span>Tags</span>
-              </div>
-              <div className="flex flex-wrap gap-2 px-2">
-                {allTags.map((tag, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleQuickSearchSelect(tag)}
-                    className={cn(
-                      "inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border",
-                      getTagColor(tag),
-                      "hover:opacity-80 transition-opacity"
-                    )}
-                  >
-                    <Hash className="h-2.5 w-2.5" />
-                    {tag}
-                  </button>
-                ))}
-              </div>
+          <div className="p-2">
+            <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground mb-2 px-2">
+              <Tag className="h-3 w-3" />
+              <span>All Tags</span>
             </div>
-          ) : (
-            <div className="p-3 text-center">
-              <p className="text-sm text-muted-foreground">
-                Type to search for conversations
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Search by title, content, or tags
-              </p>
+            <div className="flex flex-wrap gap-2 px-2">
+              {allTags.map((tag, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleTagSelect(tag)}
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border",
+                    getTagColor(tag),
+                    "hover:opacity-80 transition-opacity"
+                  )}
+                >
+                  <Hash className="h-2.5 w-2.5" />
+                  {tag}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>

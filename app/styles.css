@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&family=Crimson+Text:wght@400;600;700&family=Lora:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&family=Comfortaa:wght@300;400;500;600;700&family=Dancing+Script:wght@400;500;600;700&family=Pacifico&family=Lobster&family=Satisfy&family=Kalam:wght@300;400;700&family=Caveat:wght@400;500;600;700&family=Orbitron:wght@400;500;700;900&family=Righteous&family=Fredoka+One&family=Abril+Fatface&display=swap");
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin '@tailwindcss/typography';
@@ -665,7 +667,8 @@ body.sidebar-open {
 }
 
 @keyframes gradient-x {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 50%;
   }
   50% {
@@ -723,7 +726,8 @@ body.sidebar-open {
 
   /* Reduce shadow complexity on mobile */
   .shadow-xl {
-    box-shadow: 0 10px 25px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+    box-shadow: 0 10px 25px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -2px rgb(0 0 0 / 0.05);
   }
 }
 
@@ -822,8 +826,6 @@ html {
   }
 }
 
-
-
 /* LLM Marquee Animation - Perfect Infinite Continuous Scroll */
 .marquee-wrapper {
   width: 100%;
@@ -859,4 +861,3 @@ html {
 .marquee-content > * {
   transform: translateZ(0);
 }
-
