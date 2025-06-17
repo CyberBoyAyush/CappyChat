@@ -125,12 +125,18 @@ const ModelCard: React.FC<ModelCardProps> = ({
           </div>
         )}
         {modelConfig.hasReasoning && (
-          <div title="Reasoning Model - Advanced problem-solving capabilities" className="cursor-default">
+          <div
+            title="Reasoning Model - Advanced problem-solving capabilities"
+            className="cursor-default"
+          >
             <ModelBadge type="reasoning" size={16} />
           </div>
         )}
         {modelConfig.isFileSupported && (
-          <div title="File Support - Can analyze images, documents, and other file types" className="cursor-default">
+          <div
+            title="File Support - Can analyze images, documents, and other file types"
+            className="cursor-default"
+          >
             <ModelBadge type="file-support" size={16} />
           </div>
         )}
@@ -160,7 +166,7 @@ const BYOKIndicator = () => {
   const hasByok = hasOpenRouterKey();
 
   const handleClick = () => {
-    navigate("/settings#settings");
+    navigate("/settings");
   };
 
   return (
@@ -205,7 +211,9 @@ const PureModelSelector = () => {
   // Force guest users to use Gemini 2.5 Flash
   useEffect(() => {
     if (isGuest && selectedModel !== "Gemini 2.5 Flash") {
-      console.log('[ModelSelector] Guest user detected, forcing model to Gemini 2.5 Flash');
+      console.log(
+        "[ModelSelector] Guest user detected, forcing model to Gemini 2.5 Flash"
+      );
       setModel("Gemini 2.5 Flash");
     }
   }, [isGuest, selectedModel, setModel]);
@@ -262,10 +270,10 @@ const PureModelSelector = () => {
 
   // Define recommended models
   const recommendedModels: AIModel[] = [
-    'Gemini 2.5 Flash',
-    'OpenAI 4.1 Mini',
-    'OpenAI o4-mini',
-    'DeepSeek R1-0528'
+    "Gemini 2.5 Flash",
+    "OpenAI 4.1 Mini",
+    "OpenAI o4-mini",
+    "DeepSeek R1-0528",
   ];
 
   // Categorize models
@@ -293,29 +301,30 @@ const PureModelSelector = () => {
     if (!searchQuery.trim()) {
       return {
         recommended: recommendedModels,
-        ...categorizeModels
+        ...categorizeModels,
       };
     }
 
     const query = searchQuery.toLowerCase();
-    const filterModels = (models: AIModel[]) => models.filter((model) => {
-      const config = getModelConfig(model);
-      return (
-        config.displayName.toLowerCase().includes(query) ||
-        config.company.toLowerCase().includes(query) ||
-        config.description.toLowerCase().includes(query) ||
-        (config.isPremium && "premium".includes(query)) ||
-        (config.isSuperPremium && "super premium".includes(query)) ||
-        (config.hasReasoning && "reasoning".includes(query)) ||
-        (config.isFileSupported && "file".includes(query))
-      );
-    });
+    const filterModels = (models: AIModel[]) =>
+      models.filter((model) => {
+        const config = getModelConfig(model);
+        return (
+          config.displayName.toLowerCase().includes(query) ||
+          config.company.toLowerCase().includes(query) ||
+          config.description.toLowerCase().includes(query) ||
+          (config.isPremium && "premium".includes(query)) ||
+          (config.isSuperPremium && "super premium".includes(query)) ||
+          (config.hasReasoning && "reasoning".includes(query)) ||
+          (config.isFileSupported && "file".includes(query))
+        );
+      });
 
     return {
       recommended: filterModels(recommendedModels),
       freeModels: filterModels(categorizeModels.freeModels),
       premiumModels: filterModels(categorizeModels.premiumModels),
-      superPremiumModels: filterModels(categorizeModels.superPremiumModels)
+      superPremiumModels: filterModels(categorizeModels.superPremiumModels),
     };
   }, [searchQuery, recommendedModels, categorizeModels]);
 
@@ -391,7 +400,9 @@ const PureModelSelector = () => {
                   <span className="text-primary">⭐</span>
                   Recommended
                 </h3>
-                <span className="text-xs text-muted-foreground block mb-2">AVChat Recommened Models - Best Overall Performance</span>
+                <span className="text-xs text-muted-foreground block mb-2">
+                  AVChat Recommened Models - Best Overall Performance
+                </span>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {filteredModels.recommended.map((model) => (
                     <ModelCard
@@ -414,7 +425,10 @@ const PureModelSelector = () => {
                   <span className="text-green-500">✴️</span>
                   Budget Models
                 </h3>
-                <span className="text-xs text-muted-foreground block mb-2">Best Price To Performance Ratio Models - Good For Most Of The Tasks</span>
+                <span className="text-xs text-muted-foreground block mb-2">
+                  Best Price To Performance Ratio Models - Good For Most Of The
+                  Tasks
+                </span>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {filteredModels.freeModels.map((model) => (
                     <ModelCard
@@ -437,7 +451,9 @@ const PureModelSelector = () => {
                   <span className="text-primary">💎</span>
                   Premium
                 </h3>
-                <span className="text-xs text-muted-foreground block mb-2">Finest Models For Most of The Tasks</span>
+                <span className="text-xs text-muted-foreground block mb-2">
+                  Finest Models For Most of The Tasks
+                </span>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {filteredModels.premiumModels.map((model) => (
                     <ModelCard
@@ -460,7 +476,9 @@ const PureModelSelector = () => {
                   <span className="text-primary">💎💎</span>
                   Super Premium
                 </h3>
-                <span className="text-xs text-muted-foreground block mb-2">Super Advanced Models For Advanced Tasks</span>
+                <span className="text-xs text-muted-foreground block mb-2">
+                  Super Advanced Models For Advanced Tasks
+                </span>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {filteredModels.superPremiumModels.map((model) => (
                     <ModelCard
@@ -478,17 +496,19 @@ const PureModelSelector = () => {
 
             {/* No results */}
             {filteredModels.recommended.length === 0 &&
-             filteredModels.freeModels.length === 0 &&
-             filteredModels.premiumModels.length === 0 &&
-             filteredModels.superPremiumModels.length === 0 && (
-              <div className="text-center py-8">
-                <Search className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">No models found</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Try adjusting your search terms
-                </p>
-              </div>
-            )}
+              filteredModels.freeModels.length === 0 &&
+              filteredModels.premiumModels.length === 0 &&
+              filteredModels.superPremiumModels.length === 0 && (
+                <div className="text-center py-8">
+                  <Search className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    No models found
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Try adjusting your search terms
+                  </p>
+                </div>
+              )}
           </div>
 
           {/* Footer */}
@@ -498,12 +518,12 @@ const PureModelSelector = () => {
             </p>
             {searchQuery && (
               <p className="text-xs text-muted-foreground text-center mt-1">
-                Showing {
-                  filteredModels.recommended.length +
+                Showing{" "}
+                {filteredModels.recommended.length +
                   filteredModels.freeModels.length +
                   filteredModels.premiumModels.length +
-                  filteredModels.superPremiumModels.length
-                } of {AI_MODELS.length} models
+                  filteredModels.superPremiumModels.length}{" "}
+                of {AI_MODELS.length} models
               </p>
             )}
           </div>

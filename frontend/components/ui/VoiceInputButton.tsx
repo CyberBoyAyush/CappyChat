@@ -328,10 +328,10 @@ export default function VoiceInputButton({
         title: "Microphone access required - click to enable",
         className: cn(
           baseSize,
-          "rounded-full flex items-center justify-center transition-all bg-yellow-500 hover:bg-yellow-600",
+          "rounded-full flex items-center justify-center transition-all bg-primary hover:bg-primary/60",
           className
         ),
-        icon: <AlertCircle size={iconSize} />,
+        icon: <Mic size={iconSize} />,
       };
     }
 

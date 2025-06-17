@@ -269,7 +269,7 @@
   /* Firefox scrollbar */
   .main-chat-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(111, 111, 111, 0.4) rgba(0, 0, 0, 0);
+    scrollbar-color: rgba(111, 111, 111, 0.4) rgba(189, 87, 87, 0);
   }
   .dark .main-chat-scrollbar {
     scrollbar-color: #4e4e4e rgba(255, 255, 255, 0);

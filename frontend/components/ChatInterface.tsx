@@ -1162,14 +1162,14 @@ const QuickShortCutInfo = () => {
   ];
 
   return (
-    <div className="fixed bottom-3 hidden md:flex right-3 z-50">
+    <div className="fixed bottom-3 hidden md:flex right-5 z-50">
       <Button
         onClick={() => setIsOpen((prev) => !prev)}
         size="icon"
-        className="bg-transparent hover:bg-border  rounded-full transition transform duration-300"
+        className="bg-transparent hover:bg-primary/15 dark:hover:bg-border  rounded-full transition transform duration-300"
         aria-label="Keyboard shortcuts help"
       >
-        <CircleHelp className="h-5 w-5" />
+        <CircleHelp className="h-5 w-5 text-foreground " />
       </Button>
       {isOpen && (
         <motion.div
