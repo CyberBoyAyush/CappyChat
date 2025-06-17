@@ -7,7 +7,7 @@
  */
 
 import { memo, useState } from "react";
-import { Link } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { Button } from "../ui/button";
 import { buttonVariants } from "../ui/button";
 import { Trash2, GitBranch } from "lucide-react";
@@ -52,18 +52,22 @@ AppTitle.displayName = "AVChatAppTitle";
  * Used in: PanelHeader
  * Purpose: Provides navigation to start a new chat conversation.
  */
-const NewChatButton = () => (
-  <Link
-    to="/chat"
-    className={buttonVariants({
-      variant: "default",
-      className:
-        "w-full justify-center h-7 sm:h-9 rounded-lg text-sm sm:text-sm",
-    })}
-  >
-    New Chat
-  </Link>
-);
+const NewChatButton = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  return (
+    <Button
+      onClick={() => {
+        if (location.pathname !== "/chat") navigate("/chat");
+      }}
+      disabled={location.pathname === "/chat"}
+      className="w-full justify-center h-7 sm:h-9 rounded-lg text-sm sm:text-sm"
+    >
+      New Chat
+    </Button>
+  );
+};
 
 /**
  * Panel Header Component

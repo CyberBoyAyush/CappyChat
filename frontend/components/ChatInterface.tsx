@@ -43,6 +43,9 @@ import {
   Laptop,
   ChevronRight,
   PlusIcon,
+  Info,
+  CircleHelp,
+  X,
 } from "lucide-react";
 import { useChatMessageNavigator } from "@/frontend/hooks/useChatMessageNavigator";
 import { useOutletContext } from "react-router-dom";
@@ -50,11 +53,12 @@ import { useIsMobile } from "@/hooks/useMobileDetection";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router";
 import { Plus } from "lucide-react";
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, Fragment } from "react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
 import { AIModel } from "@/lib/models";
+import GlobalSearchDialog from "./GlobalSearchDialog";
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -73,7 +77,13 @@ export default function ChatInterface({
   const { isWebSearchEnabled } = useWebSearchStore();
   const { selectedStyle } = useConversationStyleStore();
   const { openRouterApiKey } = useBYOKStore();
-  const { user, isGuest, guestUser, incrementGuestMessages, canGuestSendMessage } = useAuth();
+  const {
+    user,
+    isGuest,
+    guestUser,
+    incrementGuestMessages,
+    canGuestSendMessage,
+  } = useAuth();
   const authDialog = useAuthDialog();
   const {
     sidebarWidth,
@@ -206,8 +216,8 @@ export default function ChatInterface({
         createSummary(message.content, {
           body: {
             messageId: message.id,
-            threadId: threadId
-          }
+            threadId: threadId,
+          },
         });
       }
 
@@ -596,47 +606,57 @@ export default function ChatInterface({
   }, []);
 
   // Handle retry with specific model
-  const handleRetryWithModel = useCallback(async (model?: AIModel, message?: UIMessage) => {
-    console.log("🔄 Retry with model:", model || selectedModel);
+  const handleRetryWithModel = useCallback(
+    async (model?: AIModel, message?: UIMessage) => {
+      console.log("🔄 Retry with model:", model || selectedModel);
 
-    // Stop the current request
-    stop();
+      // Stop the current request
+      stop();
 
-    // Set the retry model temporarily
-    setRetryModel(model || null);
+      // Set the retry model temporarily
+      setRetryModel(model || null);
 
-    // If we have message information, handle proper deletion
-    if (message) {
-      if (message.role === "user") {
-        await HybridDB.deleteTrailingMessages(threadId, message.createdAt as Date, false);
+      // If we have message information, handle proper deletion
+      if (message) {
+        if (message.role === "user") {
+          await HybridDB.deleteTrailingMessages(
+            threadId,
+            message.createdAt as Date,
+            false
+          );
 
-        setMessages((messages) => {
-          const index = messages.findIndex((m) => m.id === message.id);
-          if (index !== -1) {
-            return [...messages.slice(0, index + 1)];
-          }
-          return messages;
-        });
-      } else {
-        await HybridDB.deleteTrailingMessages(threadId, message.createdAt as Date);
+          setMessages((messages) => {
+            const index = messages.findIndex((m) => m.id === message.id);
+            if (index !== -1) {
+              return [...messages.slice(0, index + 1)];
+            }
+            return messages;
+          });
+        } else {
+          await HybridDB.deleteTrailingMessages(
+            threadId,
+            message.createdAt as Date
+          );
 
-        setMessages((messages) => {
-          const index = messages.findIndex((m) => m.id === message.id);
-          if (index !== -1) {
-            return [...messages.slice(0, index)];
-          }
-          return messages;
-        });
+          setMessages((messages) => {
+            const index = messages.findIndex((m) => m.id === message.id);
+            if (index !== -1) {
+              return [...messages.slice(0, index)];
+            }
+            return messages;
+          });
+        }
       }
-    }
 
-    // Trigger reload which will use the retry model
-    setTimeout(() => {
-      reload();
-      // Reset retry model after reload
-      setTimeout(() => setRetryModel(null), 100);
-    }, 0);
-  }, [selectedModel, reload, stop, setMessages, threadId]);
+      // Trigger reload which will use the retry model
+      setTimeout(() => {
+        reload();
+        // Reset retry model after reload
+        setTimeout(() => setRetryModel(null), 100);
+      }, 0);
+    },
+    [selectedModel, reload, stop, setMessages, threadId]
+  );
 
   // This useEffect is no longer needed since we handle web search results in onFinish
   // Keeping it commented for reference
@@ -688,11 +708,12 @@ export default function ChatInterface({
       )}
     >
       <AppPanelTrigger />
+      <QuickShortCutInfo />
+
       <main ref={mainRef} className="flex-1 overflow-y-auto pt-14 pb-40">
         {isHomePage && messages.length === 0 ? (
           isGuest ? (
             <GuestWelcomeScreen
-              isDarkTheme={isDarkTheme}
               onSignUp={() => authDialog.showSignupDialog()}
               onLogin={() => authDialog.showLoginDialog()}
             />
@@ -846,6 +867,10 @@ export default function ChatInterface({
   );
 }
 
+////////////////////////////////////////////////////
+/////////////////Left Side Panel Trigger////////////
+////////////////////////////////////////////////////
+
 const AppPanelTrigger = () => {
   const { sidebarWidth, toggleSidebar, state, isMobile } = useOutletContext<{
     sidebarWidth: number;
@@ -863,6 +888,15 @@ const AppPanelTrigger = () => {
   };
 
   const navigate = useNavigate();
+  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
+
+  const handleOpenSearch = useCallback(() => {
+    setIsSearchDialogOpen(true);
+  }, []);
+
+  const handleCloseSearch = useCallback(() => {
+    setIsSearchDialogOpen(false);
+  }, []);
 
   // Show trigger on mobile or when sidebar is collapsed on desktop
   return (
@@ -885,11 +919,29 @@ const AppPanelTrigger = () => {
         </Button>
       </div>
 
-      <div className=" rounded-md">
+      <div className="rounded-md hidden md:block">
+        <Button
+          onClick={handleOpenSearch}
+          size="icon"
+          variant="outline"
+          className={`hover:bg-zinc-600/10 ${
+            state === "collapsed" ? "ml-2" : "hidden"
+          }`}
+        >
+          <Search className="h-5 w-5" />
+        </Button>
+        <GlobalSearchDialog
+          isOpen={isSearchDialogOpen}
+          onClose={handleCloseSearch}
+        />
+      </div>
+
+      <div className="rounded-md">
         <Button
           onClick={() => {
-            navigate("/chat");
+            if (location.pathname !== "/chat") navigate("/chat");
           }}
+          disabled={location.pathname === "/chat"}
           size="icon"
           variant="outline"
           className={`hover:bg-zinc-600/10 ${
@@ -903,7 +955,140 @@ const AppPanelTrigger = () => {
   );
 };
 
+////////////////////////////////////////////////////////////////
+///////////////////Quick ShortCutInfo Component/////////////////
+////////////////////////////////////////////////////////////////
 
+const QuickShortCutInfo = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Close dialog when clicking outside or pressing Esc
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dialogRef.current &&
+        !dialogRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [isOpen]);
+
+  // Keyboard shortcuts organized by category
+  const shortcuts = [
+    {
+      category: "Navigation",
+      items: [
+        {
+          name: "Global Search",
+          key: `${isMac ? "⌘" : "Ctrl"}+${isMac ? "" : "Shift+"}K`,
+          description: "Search across all conversations",
+          modifiers: [isMac ? "Cmd" : "Ctrl", isMac ? null : "Shift", "K"],
+        },
+        {
+          name: "New Chat",
+          key: `${isMac ? "⌘" : "Ctrl"}+Shift+O`,
+          description: "Create a new chat",
+          modifiers: [isMac ? "Cmd" : "Ctrl", "Shift", "O"],
+        },
+        {
+          name: "Toggle Sidebar",
+          key: `${isMac ? "⌘" : "Ctrl"}+${isMac ? "" : "Shift+"}B`,
+          description: "Toggle the sidebar",
+          modifiers: [isMac ? "Cmd" : "Ctrl", "B"],
+        },
+      ],
+    },
+  ];
+
+  return (
+    <div className="fixed bottom-3 hidden md:flex right-3 z-50">
+      <Button
+        onClick={() => setIsOpen((prev) => !prev)}
+        size="icon"
+        className="bg-transparent hover:bg-border  rounded-full transition transform duration-300"
+        aria-label="Keyboard shortcuts help"
+      >
+        <CircleHelp className="h-5 w-5" />
+      </Button>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          ref={dialogRef}
+          className="absolute right-12 bottom-0 w-80 z-50 bg-background rounded-lg shadow-lg border border-border"
+        >
+          <div className="p-3 border-b border-border">
+            <div className="flex justify-between items-center">
+              <h3 className="text-base font-semibold">Keyboard Shortcuts</h3>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                onClick={() => setIsOpen(false)}
+                aria-label="Close shortcuts guide"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <motion.div className="max-h-[calc(100vh-12rem)] overflow-y-auto p-4">
+            {shortcuts.map((section, idx) => (
+              <div key={idx} className={idx > 0 ? "mt-2" : ""}>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                  {section.category}
+                </h4>
+                <div className="space-y-3">
+                  {section.items.map((shortcut, i) => (
+                    <div key={i} className="flex justify-between items-center">
+                      <div>
+                        <p className="text-sm font-medium">{shortcut.name}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {shortcut.modifiers.filter(Boolean).map((mod, m) => (
+                          <Fragment key={m}>
+                            {m > 0 && (
+                              <span className="text-sm text-muted-foreground">
+                                +
+                              </span>
+                            )}
+                            <kbd className="px-2 py-1 text-sm font-mono bg-background border border-border rounded">
+                              {mod}
+                            </kbd>
+                          </Fragment>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        </motion.div>
+      )}
+    </div>
+  );
+};
 
 ///////////////////////////////////////////////////
 /////////////// Welcome Screen Component///////////
