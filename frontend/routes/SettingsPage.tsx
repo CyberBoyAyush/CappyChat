@@ -55,6 +55,7 @@ import {
   UserCustomProfile,
 } from "@/lib/appwrite";
 import { GitHubIcon } from "../components/ui/icons";
+import SessionManager from "../components/SessionManager";
 
 // Notification type
 type NotificationType = {
@@ -1279,6 +1280,9 @@ export default function SettingsPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Session Management */}
+                    <SessionManager />
                   </div>
                 )}
 
