@@ -12,7 +12,8 @@ interface LLMItem {
     | "deepseek"
     | "huggingface"
     | "qwen"
-    | "meta";
+    | "meta"
+    | "x-ai";
   description: string;
 }
 
