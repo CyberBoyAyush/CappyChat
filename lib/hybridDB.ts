@@ -1171,6 +1171,80 @@ export class HybridDB {
     this.pendingMessageSyncs.clear(); // Clear pending syncs
   }
 
+  // Force clear all local data and refresh from Appwrite (for signin)
+  static async forceRefreshOnSignin(userId: string): Promise<void> {
+    console.log('[HybridDB] Force refreshing all data on signin for user:', userId);
+
+    try {
+      // 1. Clear all local data first
+      LocalDB.clear();
+
+      // 2. Reset initialization state
+      this.initialized = false;
+      this.initializationPromise = null;
+      this.pendingMessageSyncs.clear();
+      this.isGuestMode = false;
+
+      // 3. Set the new user ID
+      LocalDB.setUserId(userId);
+
+      // 4. Set up realtime callbacks
+      AppwriteRealtime.setCallbacks({
+        onThreadCreated: this.handleRemoteThreadCreated.bind(this),
+        onThreadUpdated: this.handleRemoteThreadUpdated.bind(this),
+        onThreadDeleted: this.handleRemoteThreadDeleted.bind(this),
+        onMessageCreated: this.handleRemoteMessageCreated.bind(this),
+        onMessageUpdated: this.handleRemoteMessageUpdated.bind(this),
+        onMessageDeleted: this.handleRemoteMessageDeleted.bind(this),
+        onMessageSummaryCreated: this.handleRemoteMessageSummaryCreated.bind(this),
+        onProjectCreated: this.handleRemoteProjectCreated.bind(this),
+        onProjectUpdated: this.handleRemoteProjectUpdated.bind(this),
+        onProjectDeleted: this.handleRemoteProjectDeleted.bind(this),
+      });
+
+      // 5. Subscribe to realtime updates
+      AppwriteRealtime.subscribeToAll(userId);
+
+      // 6. Force fetch fresh data from Appwrite
+      console.log('[HybridDB] Fetching fresh data from Appwrite...');
+
+      const [threads, projects] = await Promise.all([
+        AppwriteDB.getThreads(),
+        AppwriteDB.getProjects()
+      ]);
+
+      // 7. Store fresh data in local storage
+      LocalDB.replaceAllThreads(threads);
+      LocalDB.replaceAllProjects(projects);
+
+      // 8. Emit immediate updates to refresh UI
+      debouncedEmitter.emitImmediate('threads_updated', threads);
+      debouncedEmitter.emitImmediate('projects_updated', projects);
+
+      // 9. Mark as initialized
+      this.initialized = true;
+      this.isOnline = true;
+
+      console.log('[HybridDB] Force refresh completed successfully:', {
+        threadsCount: threads.length,
+        projectsCount: projects.length
+      });
+
+    } catch (error) {
+      console.error('[HybridDB] Force refresh failed:', error);
+
+      // On failure, still mark as initialized but offline
+      this.initialized = true;
+      this.isOnline = false;
+
+      // Emit empty arrays to clear UI
+      debouncedEmitter.emitImmediate('threads_updated', []);
+      debouncedEmitter.emitImmediate('projects_updated', []);
+
+      throw error; // Re-throw to let caller handle
+    }
+  }
+
   // Get online status
   static isOnlineStatus(): boolean {
     return this.isOnline;
