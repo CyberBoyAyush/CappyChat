@@ -93,41 +93,49 @@ export default function ChatInterface({
   // Force clear pending auth when user is detected
   useEffect(() => {
     if (user && isPendingAuth) {
-      console.log('[ChatInterface] 🎉 User detected while pending auth - force clearing pending state');
+      console.log(
+        "[ChatInterface] 🎉 User detected while pending auth - force clearing pending state"
+      );
       setIsPendingAuth(false);
-      sessionStorage.removeItem('avchat_auth_pending');
+      sessionStorage.removeItem("avchat_auth_pending");
     }
   }, [user, isPendingAuth]);
 
   useEffect(() => {
     const checkPendingAuth = () => {
       try {
-        const pending = sessionStorage.getItem('avchat_auth_pending');
+        const pending = sessionStorage.getItem("avchat_auth_pending");
         if (pending) {
           const parsed = JSON.parse(pending);
           const age = Date.now() - parsed.timestamp;
           // Check if pending auth is still valid (not older than 15 seconds - reduced from 30)
           const isValid = age < 15000;
-          console.log('[ChatInterface] 🔍 Pending auth check:', {
+          console.log("[ChatInterface] 🔍 Pending auth check:", {
             hasPending: true,
             isValid,
             method: parsed.method,
-            age
+            age,
           });
           setIsPendingAuth(isValid);
 
           if (!isValid) {
-            console.log('[ChatInterface] 🧹 Clearing expired pending auth state (age:', age, 'ms)');
-            sessionStorage.removeItem('avchat_auth_pending');
+            console.log(
+              "[ChatInterface] 🧹 Clearing expired pending auth state (age:",
+              age,
+              "ms)"
+            );
+            sessionStorage.removeItem("avchat_auth_pending");
           }
         } else {
           if (isPendingAuth) {
-            console.log('[ChatInterface] 🧹 No pending auth found, clearing state');
+            console.log(
+              "[ChatInterface] 🧹 No pending auth found, clearing state"
+            );
           }
           setIsPendingAuth(false);
         }
       } catch (error) {
-        console.error('[ChatInterface] ❌ Error checking pending auth:', error);
+        console.error("[ChatInterface] ❌ Error checking pending auth:", error);
         setIsPendingAuth(false);
       }
     };
@@ -139,26 +147,30 @@ export default function ChatInterface({
 
     // Listen for auth state changes to clear pending state
     const handleAuthStateChanged = () => {
-      console.log('[ChatInterface] 🎉 Auth state changed - clearing pending state');
+      console.log(
+        "[ChatInterface] 🎉 Auth state changed - clearing pending state"
+      );
       setIsPendingAuth(false);
-      sessionStorage.removeItem('avchat_auth_pending');
+      sessionStorage.removeItem("avchat_auth_pending");
     };
 
     // Emergency timeout to force clear pending state after 8 seconds
     const emergencyTimeout = setTimeout(() => {
       if (isPendingAuth) {
-        console.log('[ChatInterface] 🚨 EMERGENCY: Force clearing pending auth after 8 seconds');
+        console.log(
+          "[ChatInterface] 🚨 EMERGENCY: Force clearing pending auth after 8 seconds"
+        );
         setIsPendingAuth(false);
-        sessionStorage.removeItem('avchat_auth_pending');
+        sessionStorage.removeItem("avchat_auth_pending");
       }
     }, 8000);
 
-    window.addEventListener('authStateChanged', handleAuthStateChanged);
+    window.addEventListener("authStateChanged", handleAuthStateChanged);
 
     return () => {
       clearInterval(interval);
       clearTimeout(emergencyTimeout);
-      window.removeEventListener('authStateChanged', handleAuthStateChanged);
+      window.removeEventListener("authStateChanged", handleAuthStateChanged);
     };
   }, [isPendingAuth]);
   const authDialog = useAuthDialog();
@@ -747,12 +759,12 @@ export default function ChatInterface({
       const element = mainRef.current;
       // Force a reflow to ensure scrollbar is properly rendered
       const originalOverflow = element.style.overflow;
-      element.style.overflow = 'hidden';
+      element.style.overflow = "hidden";
 
       requestAnimationFrame(() => {
-        element.style.overflow = originalOverflow || 'auto';
-        element.style.overflowX = 'hidden';
-        element.style.overflowY = 'scroll';
+        element.style.overflow = originalOverflow || "auto";
+        element.style.overflowX = "hidden";
+        element.style.overflowY = "scroll";
 
         // Force a repaint to ensure scrollbar appears
         element.offsetHeight;
@@ -808,20 +820,20 @@ export default function ChatInterface({
 
       <main
         ref={mainRef}
-        className="flex-1 overflow-y-scroll overflow-x-hidden pt-14 pb-40 main-chat-scrollbar"
+        className="flex-1 overflow-y-scroll overflow-x-hidden pt-20 pb-40 main-chat-scrollbar"
         style={{
-          scrollbarGutter: 'stable',
+          scrollbarGutter: "stable",
         }}
       >
         {isHomePage && messages.length === 0 ? (
           (() => {
             const shouldShowLoading = authLoading || isPendingAuth;
-            console.log('[ChatInterface] 🎭 Render decision:', {
+            console.log("[ChatInterface] 🎭 Render decision:", {
               authLoading,
               isPendingAuth,
               isGuest,
               user: !!user,
-              shouldShowLoading
+              shouldShowLoading,
             });
 
             if (shouldShowLoading) {
@@ -829,7 +841,11 @@ export default function ChatInterface({
                 <div className="flex items-center justify-center h-full">
                   <AuthLoadingScreen
                     type="callback"
-                    message={isPendingAuth ? "Completing authentication..." : "Setting up your workspace..."}
+                    message={
+                      isPendingAuth
+                        ? "Completing authentication..."
+                        : "Setting up your workspace..."
+                    }
                   />
                 </div>
               );
@@ -873,7 +889,7 @@ export default function ChatInterface({
         {/* Scroll to bottom button */}
         <div
           className={cn(
-            "flex justify-center transition-opacity duration-300",
+            "relative transition-opacity duration-300",
             showScrollToBottom ? "opacity-100" : "opacity-0 pointer-events-none"
           )}
           style={{
@@ -894,7 +910,7 @@ export default function ChatInterface({
             variant="secondary"
             size="sm"
             className={cn(
-              "rounded-full shadow-lg text-primary-foreground mb-2 transition-all duration-200",
+              "rounded-full absolute bottom-0 left-1/2 -translate-x-1/2 shadow-lg text-primary-foreground mb-2 transition-all duration-200",
               isDarkTheme
                 ? "bg-primary/90 hover:bg-primary"
                 : "bg-primary hover:bg-primary/90"
