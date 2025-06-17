@@ -16,6 +16,7 @@ import { AppwriteDB } from '@/lib/appwriteDB';
 import { HybridDB } from '@/lib/hybridDB';
 import { AppwriteRealtime } from '@/lib/appwriteRealtime';
 import { ensureUserTierInitialized } from '@/lib/tierSystem';
+import { globalErrorHandler } from '@/lib/globalErrorHandler';
 
 interface User extends Models.User<Models.Preferences> {}
 
@@ -38,6 +39,7 @@ interface AuthContextType {
   loginWithGitHub: () => Promise<void>;
   logout: () => Promise<void>;
   getCurrentUser: () => Promise<User | null>;
+  checkActiveSessions: () => Promise<{ hasSession: boolean; sessionCount: number }>;
   refreshSession: () => Promise<void>;
   refreshUser: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -238,35 +240,117 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Fast session detection for OAuth (checks if any session exists first)
-  const hasActiveSession = useCallback(async (): Promise<boolean> => {
+  // Check active sessions and handle session limits
+  const checkActiveSessions = useCallback(async (): Promise<{ hasSession: boolean; sessionCount: number }> => {
     try {
       const sessions = await account.listSessions();
-      return sessions.sessions.length > 0;
+      console.log(`Active sessions: ${sessions.sessions.length}`);
+
+      // Log session details for debugging
+      sessions.sessions.forEach((session, index) => {
+        console.log(`Session ${index + 1}:`, {
+          id: session.$id,
+          provider: session.provider,
+          current: session.current,
+          createdAt: session.$createdAt
+        });
+      });
+
+      return {
+        hasSession: sessions.sessions.length > 0,
+        sessionCount: sessions.sessions.length
+      };
     } catch (error) {
-      return false;
+      console.error('Failed to check active sessions:', error);
+      return { hasSession: false, sessionCount: 0 };
     }
   }, []);
 
-  // Refresh session
+  // Fast session detection for OAuth (checks if any session exists first)
+  const hasActiveSession = useCallback(async (): Promise<boolean> => {
+    const { hasSession } = await checkActiveSessions();
+    return hasSession;
+  }, [checkActiveSessions]);
+
+  // Enhanced session refresh with proper error handling
   const refreshSession = useCallback(async (): Promise<void> => {
     try {
       await account.updateSession('current');
       console.log('Session refreshed successfully');
     } catch (error) {
       console.warn('Session refresh failed:', error);
-      // Session refresh failed - user may need to re-authenticate
+
+      // If session refresh fails, it likely means the session is invalid
+      // Perform automatic logout to clear invalid state
+      if (error instanceof AppwriteException && (error.code === 401 || error.code === 403)) {
+        console.log('Session expired or invalid, performing automatic logout');
+        await performCleanLogout();
+      }
     }
+  }, []);
+
+  // Perform clean logout without API calls (for error scenarios)
+  const performCleanLogout = useCallback(async (): Promise<void> => {
+    try {
+      console.log('Performing clean logout...');
+
+      // Unsubscribe from all Appwrite Realtime channels
+      AppwriteRealtime.unsubscribeFromAll();
+
+      // Clear local database
+      HybridDB.clearLocalData();
+
+      // Clear ALL auth caches immediately
+      setCachedAuthState(null);
+      setSessionAuthState(null);
+
+      // Clear all session storage auth-related items
+      sessionStorage.removeItem(AUTH_SESSION_KEY);
+      sessionStorage.removeItem(AUTH_PENDING_KEY);
+      sessionStorage.removeItem('auth_redirect');
+      sessionStorage.removeItem('oauth_start_time');
+
+      // Use flushSync to ensure immediate synchronous state updates
+      flushSync(() => {
+        setUser(null);
+        // Reset guest user when logging out
+        setGuestUser({
+          isGuest: true,
+          messagesUsed: 0,
+          maxMessages: 2
+        });
+        setLoading(false);
+      });
+
+      console.log('Clean logout completed');
+    } catch (error) {
+      console.error('Error during clean logout:', error);
+    }
+  }, []);
+
+  // Set up global error handler callback
+  useEffect(() => {
+    globalErrorHandler.setAuthCleanupCallback(() => {
+      flushSync(() => {
+        setUser(null);
+        setGuestUser({
+          isGuest: true,
+          messagesUsed: 0,
+          maxMessages: 2
+        });
+        setLoading(false);
+      });
+    });
   }, []);
 
   // Auto-refresh session periodically to keep user logged in
   useEffect(() => {
     if (!user) return;
 
-    // Refresh session every 12 hours to keep it active
+    // Refresh session every 6 hours instead of 12 to reduce conflicts
     const refreshInterval = setInterval(() => {
       refreshSession();
-    }, 12 * 60 * 60 * 1000); // 12 hours
+    }, 6 * 60 * 60 * 1000); // 6 hours
 
     return () => clearInterval(refreshInterval);
   }, [user, refreshSession]);
@@ -293,14 +377,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
     } catch (error) {
       console.error('Failed to refresh user data:', error);
-      // Clear both caches if refresh fails
-      setCachedAuthState(null);
-      setSessionAuthState(null);
 
-      // Use flushSync for immediate UI update
-      flushSync(() => {
-        setUser(null);
-      });
+      // If it's an auth error, perform clean logout
+      if (error instanceof AppwriteException && (error.code === 401 || error.code === 403)) {
+        await performCleanLogout();
+      } else {
+        // Clear both caches if refresh fails
+        setCachedAuthState(null);
+        setSessionAuthState(null);
+
+        // Use flushSync for immediate UI update
+        flushSync(() => {
+          setUser(null);
+        });
+      }
     }
   }, []);
 
@@ -384,11 +474,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
-        // Clear cache on error
-        setCachedAuthState(null);
-        setUser(null);
-        setLoading(false);
-        setInitialized(true);
+
+        // If it's an auth error, perform clean logout
+        if (error instanceof AppwriteException && (error.code === 401 || error.code === 403)) {
+          await performCleanLogout();
+        } else {
+          // Clear cache on other errors
+          setCachedAuthState(null);
+          setSessionAuthState(null);
+          setUser(null);
+          setLoading(false);
+          setInitialized(true);
+        }
       }
     };
 
@@ -548,6 +645,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await account.createEmailPasswordSession(email, password);
       const currentUser = await account.get(); // Get fresh user data after session creation
 
+      // Check session count after login
+      const { sessionCount } = await checkActiveSessions();
+
       // Update both caches immediately for instant future access
       setCachedAuthState(currentUser);
       setSessionAuthState(currentUser);
@@ -678,37 +778,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async (): Promise<void> => {
     try {
       setLoading(true);
-      await account.deleteSessions();
 
-      // Unsubscribe from all Appwrite Realtime channels
-      AppwriteRealtime.unsubscribeFromAll();
+      // Try to delete sessions from server
+      try {
+        await account.deleteSessions();
+        console.log('Server sessions deleted successfully');
+      } catch (sessionError) {
+        console.warn('Failed to delete server sessions:', sessionError);
+        // Continue with local cleanup even if server logout fails
+      }
 
-      // Clear local database
-      HybridDB.clearLocalData();
+      // Always perform clean local logout
+      await performCleanLogout();
 
-      // Clear ALL auth caches immediately - this was missing setSessionAuthState
-      setCachedAuthState(null);
-      setSessionAuthState(null); // This was missing - critical fix
-
-      // Use flushSync to ensure immediate synchronous state updates
-      flushSync(() => {
-        setUser(null);
-        // Reset guest user when logging out
-        setGuestUser({
-          isGuest: true,
-          messagesUsed: 0,
-          maxMessages: 2
-        });
-      });
-
-      // Clear any stored redirect and auth pending state
-      sessionStorage.removeItem('auth_redirect');
-      sessionStorage.removeItem(AUTH_PENDING_KEY); // Clear pending auth state
     } catch (error) {
       console.error('Logout error:', error);
+
+      // Even if logout fails, ensure local cleanup
+      await performCleanLogout();
+
       throw new Error(getErrorMessage(error));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -754,6 +843,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
     } catch (error) {
       console.error('Profile update error:', error);
+
+      // If it's an auth error, perform clean logout
+      if (error instanceof AppwriteException && (error.code === 401 || error.code === 403)) {
+        await performCleanLogout();
+      }
+
       throw new Error(getErrorMessage(error));
     } finally {
       setLoading(false);
@@ -914,6 +1009,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         loginWithGitHub,
         logout,
         getCurrentUser,
+        checkActiveSessions,
         refreshSession,
         refreshUser,
         deleteAccount,

@@ -35,7 +35,6 @@ import {
   ArrowLeft,
   Keyboard,
   MessageSquareMore,
-  TwitterIcon,
 } from "lucide-react";
 import ThemeToggleButton from "../components/ui/ThemeComponents";
 import { useTheme } from "next-themes";
@@ -55,6 +54,7 @@ import {
   UserCustomProfile,
 } from "@/lib/appwrite";
 import { GitHubIcon } from "../components/ui/icons";
+import SessionManager from "../components/SessionManager";
 
 // Notification type
 type NotificationType = {
@@ -831,8 +831,75 @@ export default function SettingsPage() {
                         </Button>
                       </div>
                     </div>
+
+                    {/* Session Management */}
+                    <SessionManager />
                   </div>
                 )}
+
+                {/* Privacy & Security Section */}
+                {activeSection === "privacy" && (
+                  <div className="space-y-6">
+                    {/* Privacy Principles */}
+                    <div className="p-6 border rounded-xl bg-card shadow-sm">
+                      <h3 className="text-lg font-medium mb-4 pb-2 border-b border-border">
+                        Privacy Principles
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                          <Lock className="w-5 h-5 text-primary mt-0.5" />
+                          <div>
+                            <h4 className="font-medium text-sm">
+                              End-to-End Encryption
+                            </h4>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Your conversations are encrypted in transit and at
+                              rest.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                          <Eye className="w-5 h-5 text-primary mt-0.5" />
+                          <div>
+                            <h4 className="font-medium text-sm">
+                              Data Transparency
+                            </h4>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              We clearly explain what data we collect and how we
+                              use it.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                          <Database className="w-5 h-5 text-primary mt-0.5" />
+                          <div>
+                            <h4 className="font-medium text-sm">
+                              Minimal Data Collection
+                            </h4>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              We only collect information necessary to provide
+                              our services.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                          <Trash2 className="w-5 h-5 text-primary mt-0.5" />
+                          <div>
+                            <h4 className="font-medium text-sm">
+                              Data Deletion Controls
+                            </h4>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              You have full control over your data and can
+                              delete it anytime.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                
 
                 {/* Customization Section */}
                 {activeSection === "customization" && (
@@ -1127,68 +1194,6 @@ export default function SettingsPage() {
                             </div>
                           </div>
                         ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Privacy & Security Section */}
-                {activeSection === "privacy" && (
-                  <div className="space-y-6">
-                    {/* Privacy Principles */}
-                    <div className="p-6 border rounded-xl bg-card shadow-sm">
-                      <h3 className="text-lg font-medium mb-4 pb-2 border-b border-border">
-                        Privacy Principles
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                          <Lock className="w-5 h-5 text-primary mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-sm">
-                              End-to-End Encryption
-                            </h4>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Your conversations are encrypted in transit and at
-                              rest.
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                          <Eye className="w-5 h-5 text-primary mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-sm">
-                              Data Transparency
-                            </h4>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              We clearly explain what data we collect and how we
-                              use it.
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                          <Database className="w-5 h-5 text-primary mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-sm">
-                              Minimal Data Collection
-                            </h4>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              We only collect information necessary to provide
-                              our services.
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                          <Trash2 className="w-5 h-5 text-primary mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-sm">
-                              Data Deletion Controls
-                            </h4>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              You have full control over your data and can
-                              delete it anytime.
-                            </p>
-                          </div>
-                        </div>
                       </div>
                     </div>
 
@@ -1889,7 +1894,7 @@ export default function SettingsPage() {
                             window.open("https://x.com/CyberBoyAyush", "_blank")
                           }
                         >
-                          <TwitterIcon className="w-5 h-5 text-primary" />
+                          <MessageSquareMore className="w-5 h-5 text-primary" />
                           <span className="text-sm">Twitter</span>
                         </Button>
                         <Button
