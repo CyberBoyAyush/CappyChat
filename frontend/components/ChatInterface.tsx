@@ -10,6 +10,7 @@ import { useChat } from "@ai-sdk/react";
 import ChatMessageDisplay from "./ChatMessageDisplay";
 import ChatInputField from "./ChatInputField";
 import ChatMessageBrowser from "./ChatMessageBrowser";
+import GuestWelcomeScreen from "./GuestWelcomeScreen";
 
 import { UIMessage } from "ai";
 
@@ -91,7 +92,7 @@ export default function ChatInterface({
   const { theme } = useTheme();
   const isDarkTheme = theme === "dark";
   const location = useLocation();
-  const isHomePage = location.pathname === "/chat";
+  const isHomePage = location.pathname === "/" || location.pathname === "/chat";
 
   const [selectedPrompt, setSelectedPrompt] = useState("");
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
@@ -629,12 +630,20 @@ export default function ChatInterface({
       <AppPanelTrigger />
       <main ref={mainRef} className="flex-1 overflow-y-auto pt-14 pb-40">
         {isHomePage && messages.length === 0 ? (
-          <WelcomeScreen
-            onPromptSelect={handlePromptClick}
-            isDarkTheme={isDarkTheme}
-            selectedDomain={selectedDomain}
-            onDomainSelect={handleDomainSelect}
-          />
+          isGuest ? (
+            <GuestWelcomeScreen
+              isDarkTheme={isDarkTheme}
+              onSignUp={() => authDialog.showSignupDialog()}
+              onLogin={() => authDialog.showLoginDialog()}
+            />
+          ) : (
+            <WelcomeScreen
+              onPromptSelect={handlePromptClick}
+              isDarkTheme={isDarkTheme}
+              selectedDomain={selectedDomain}
+              onDomainSelect={handleDomainSelect}
+            />
+          )
         ) : (
           <div className="mx-auto flex justify-center px-4 overflow-x-hidden">
             <ChatMessageDisplay
@@ -832,6 +841,8 @@ const AppPanelTrigger = () => {
     </div>
   );
 };
+
+
 
 ///////////////////////////////////////////////////
 /////////////// Welcome Screen Component///////////
