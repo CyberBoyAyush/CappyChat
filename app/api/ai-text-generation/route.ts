@@ -1,44 +1,13 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateText } from 'ai';
 import { NextResponse } from 'next/server';
-import { canUserUseModel, consumeCredits } from '@/lib/tierSystem';
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { prompt, isTitle, messageId, threadId, userApiKey, userId, isGuest } = body;
+  const { prompt, isTitle, messageId, threadId, userApiKey } = body;
 
-  // Skip tier validation for guest users
-  if (!isGuest) {
-    // Check tier validation for title generation (uses OpenAI 4.1 Mini)
-    const usingBYOK = !!userApiKey;
-    const tierValidation = await canUserUseModel('OpenAI 4.1 Mini', usingBYOK, userId, isGuest);
-
-    if (!tierValidation.canUseModel) {
-      return NextResponse.json(
-        {
-          error: tierValidation.message || 'Model access denied',
-          code: 'TIER_LIMIT_EXCEEDED'
-        },
-        { status: 403 }
-      );
-    }
-  }
-
-  // Skip credit consumption for guest users
-  if (!isGuest) {
-    // Consume credits for title generation
-    const usingBYOK = !!userApiKey;
-    const creditsConsumed = await consumeCredits('OpenAI 4.1 Mini', usingBYOK, userId, isGuest);
-    if (!creditsConsumed && !usingBYOK) {
-      return NextResponse.json(
-        {
-          error: 'Insufficient credits for title generation',
-          code: 'INSUFFICIENT_CREDITS'
-        },
-        { status: 403 }
-      );
-    }
-  }
+  // AI text generation is completely free - no tier validation or credit consumption
+  console.log('📝 AI text generation - completely free service (no credits consumed)');
 
   // Use user's API key if provided, otherwise fall back to system key
   const apiKey = userApiKey || process.env.OPENROUTER_API_KEY;

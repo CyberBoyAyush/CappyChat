@@ -1083,7 +1083,7 @@ const AppPanelTrigger = () => {
         </Button>
       </div>
 
-      <div className="rounded-md hidden md:block">
+      <div className="rounded-md md:block">
         <Button
           onClick={handleOpenSearch}
           size="icon"

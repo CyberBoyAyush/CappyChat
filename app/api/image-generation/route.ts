@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
     // Consume credits for non-guest users
     if (!isGuest && userId) {
       try {
-        await consumeCredits(userId, model, 'image-generation');
+        await consumeCredits(model, false, userId, isGuest);
         console.log(`💳 Credits consumed for user ${userId} using model ${model}`);
       } catch (error) {
         console.error('Failed to consume credits:', error);
