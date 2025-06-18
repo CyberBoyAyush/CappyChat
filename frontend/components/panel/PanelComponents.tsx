@@ -98,7 +98,7 @@ const PanelHeaderComponent = ({
         {isGuest ? (
           <LogIn
             className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground md:hidden cursor-pointer hover:text-primary transition-colors"
-            onClick={() => navigate("/auth/login")}
+            onClick={() => navigate("/login")}
           />
         ) : (
           <Settings
