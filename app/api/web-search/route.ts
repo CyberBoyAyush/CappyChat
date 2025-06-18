@@ -71,23 +71,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-      // Consume credits before making the API call
-      const creditsConsumed = await consumeCredits(searchModel as AIModel, usingBYOK, userId, isGuest);
-      if (!creditsConsumed && !usingBYOK) {
-        return new Response(
-          JSON.stringify({
-            error: 'Insufficient credits for web search',
-            code: 'INSUFFICIENT_CREDITS'
-          }),
-          {
-            status: 403,
-            headers: { 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      console.log(`🔍 Web search credits consumed for user ${userId} using model ${searchModel}`);
+    // Consume credits before making the API call
+    const creditsConsumed = await consumeCredits(searchModel as AIModel, usingBYOK, userId, isGuest);
+    if (!creditsConsumed && !usingBYOK) {
+      return new Response(
+        JSON.stringify({
+          error: 'Insufficient credits for web search',
+          code: 'INSUFFICIENT_CREDITS'
+        }),
+        {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
+
+    console.log(`🔍 Web search credits consumed for user ${userId} using model ${searchModel}`);
 
     // Use user's API key if provided, otherwise fall back to system key
     const apiKey = userApiKey || process.env.OPENROUTER_API_KEY;
