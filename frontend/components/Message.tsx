@@ -165,15 +165,30 @@ function PureMessage({
                 )}
 
                 {/* Show web search citations for assistant messages with search results */}
-                {message.role === "assistant" &&
-                  (message as any).webSearchResults && (
+                {(() => {
+                  const hasWebSearchResults = message.role === "assistant" &&
+                    (message as any).webSearchResults &&
+                    Array.isArray((message as any).webSearchResults) &&
+                    (message as any).webSearchResults.length > 0;
+
+                  console.log("🔗 Message component checking for citations:", {
+                    messageId: message.id,
+                    role: message.role,
+                    hasWebSearchResults,
+                    webSearchResults: (message as any).webSearchResults,
+                    isStreaming
+                  });
+
+                  return hasWebSearchResults && (
                     <div className="flex-shrink-0">
                       <WebSearchCitations
                         results={(message as any).webSearchResults}
                         searchQuery="web search"
+                        isStreaming={isStreaming}
                       />
                     </div>
-                  )}
+                  );
+                })()}
               </div>
             </div>
           );

@@ -60,6 +60,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
 import { AIModel } from "@/lib/models";
 import GlobalSearchDialog from "./GlobalSearchDialog";
+import { extractUrlsFromContent } from "./WebSearchCitations";
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -261,42 +262,37 @@ export default function ChatInterface({
         model: modelUsed, // Store the model used to generate this message
       };
 
-      // Add web search results if this message was sent with web search enabled
-      if (nextResponseNeedsWebSearch.current) {
-        // For now, add sample web search results when web search was enabled
-        // This will be replaced with actual grounding metadata extraction
-        const webSearchResults = [
-          "https://makemytrip.com",
-          "https://planetware.com",
-          "https://delhitourism.gov.in",
-          "https://holidify.com",
-          "https://traveltriangle.com",
-        ];
+      // Extract URLs from any assistant message content for citations
+      console.log("🔍 onFinish: Checking message content for URLs. Content length:", message.content.length);
+      const extractedUrls = extractUrlsFromContent(message.content);
+      console.log("🔍 onFinish: URLs found:", extractedUrls.length, extractedUrls);
 
+      if (extractedUrls.length > 0) {
         console.log(
-          "✅ Adding web search results to AI message:",
+          "✅ Extracted URLs from AI message:",
           message.id,
-          webSearchResults
+          extractedUrls
         );
-        aiMessage.webSearchResults = webSearchResults;
 
-        // Reset the flag
-        nextResponseNeedsWebSearch.current = false;
+        aiMessage.webSearchResults = extractedUrls;
 
         // Also update the message in the UI immediately
         setMessages((prevMessages) => {
           const updatedMessages = prevMessages.map((msg) =>
             msg.id === message.id
-              ? ({ ...msg, webSearchResults } as UIMessage & {
+              ? ({ ...msg, webSearchResults: extractedUrls } as UIMessage & {
                   webSearchResults?: string[];
                 })
               : msg
           );
-          console.log("📱 Updated UI messages with web search results");
+          console.log("📱 Updated UI messages with extracted URLs");
           return updatedMessages;
         });
-      } else {
-        console.log("❌ No web search results needed for message:", message.id);
+      }
+
+      // Reset the web search flag if it was set
+      if (nextResponseNeedsWebSearch.current) {
+        nextResponseNeedsWebSearch.current = false;
       }
 
       // Skip database operations for guest users
@@ -493,6 +489,27 @@ export default function ChatInterface({
             lastMessage.content.length,
             "chars"
           );
+
+          // Extract URLs from streaming content for web search citations
+          // Check for URLs in any assistant message, not just when web search is explicitly enabled
+          if (lastMessage.content) {
+            const extractedUrls = extractUrlsFromContent(lastMessage.content);
+            console.log("🔍 Checking for URLs in streaming content. Content length:", lastMessage.content.length, "URLs found:", extractedUrls.length);
+            if (extractedUrls.length > 0) {
+              console.log("🔍 Extracted URLs from streaming content:", extractedUrls);
+
+              // Update the message with extracted URLs in real-time
+              setMessages((prevMessages) => {
+                return prevMessages.map((msg) =>
+                  msg.id === lastMessage.id
+                    ? ({ ...msg, webSearchResults: extractedUrls } as UIMessage & {
+                        webSearchResults?: string[];
+                      })
+                    : msg
+                );
+              });
+            }
+          }
         }
 
         // Update reference
