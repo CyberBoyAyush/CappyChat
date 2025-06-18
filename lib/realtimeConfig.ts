@@ -8,9 +8,9 @@
 export const REALTIME_CONFIG = {
   // Authentication Settings
   auth: {
-    // Session duration - 24 hours for fewer login interruptions
-    sessionRefreshInterval: 24 * 60 * 60 * 1000, // 24 hours
-    
+    // Session duration - 6 hours for more frequent refresh to prevent expiry
+    sessionRefreshInterval: 6 * 60 * 60 * 1000, // 6 hours
+
     // Session cache duration - 30 seconds for real-time auth state
     sessionCacheTimeout: 30 * 1000, // 30 seconds
     

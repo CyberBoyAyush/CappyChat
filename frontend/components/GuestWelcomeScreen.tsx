@@ -83,7 +83,7 @@ export default function GuestWelcomeScreen({
             <Button
               onClick={onLogin}
               size="lg"
-              className="px-8 py-5 text-lg border-[1px] border-primary/20 bg-background hover:bg-border/5 font-medium"
+              className="px-8 py-5 text-primary dark:text-foreground text-lg border-[1px] border-primary/20 bg-background hover:bg-border/5 font-medium"
             >
               Sign In
             </Button>
@@ -235,7 +235,9 @@ export default function GuestWelcomeScreen({
                   <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                     <Check className="h-3 w-3 text-primary" />
                   </div>
-                  <span className="text-sm">20 premium credits (Chat + Image Gen)</span>
+                  <span className="text-sm">
+                    20 premium credits (Chat + Image Gen)
+                  </span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
@@ -301,7 +303,9 @@ export default function GuestWelcomeScreen({
                   <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                     <Check className="h-3 w-3 text-primary" />
                   </div>
-                  <span className="text-sm">600 premium credits (Chat + Image Gen)</span>
+                  <span className="text-sm">
+                    600 premium credits (Chat + Image Gen)
+                  </span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
@@ -434,7 +438,7 @@ export default function GuestWelcomeScreen({
                 <Button
                   onClick={onLogin}
                   size="lg"
-                  className="px-8 py-5 text-lg border-[1px] border-primary/20 bg-background hover:bg-border/35 font-medium"
+                  className="px-8 py-5 text-lg border-[1px] text-primary dark:text-foreground border-primary/20 bg-background hover:bg-border/35 font-medium"
                 >
                   Sign In
                 </Button>

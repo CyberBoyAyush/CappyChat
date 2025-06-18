@@ -6,8 +6,24 @@
  * Triggered by Cmd+K (Mac) or Ctrl+Shift+K (Windows/Linux) keyboard shortcuts.
  */
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { Search, X, MessageSquare, Hash, ArrowRight, Sparkles, Tag, User, Bot } from "lucide-react";
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+} from "react";
+import {
+  Search,
+  X,
+  MessageSquare,
+  Hash,
+  ArrowRight,
+  Sparkles,
+  Tag,
+  User,
+  Bot,
+} from "lucide-react";
 import { Input } from "@/frontend/components/ui/input";
 import { Button } from "@/frontend/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -25,14 +41,14 @@ import { Badge } from "@/frontend/components/ui/BasicComponents";
 
 interface SearchResult {
   id: string;
-  type: 'thread' | 'message' | 'summary';
+  type: "thread" | "message" | "summary";
   title: string;
   content: string;
   threadId: string;
   threadTitle: string;
   timestamp: string;
   tags?: string[];
-  messageRole?: 'user' | 'assistant' | 'system' | 'data';
+  messageRole?: "user" | "assistant" | "system" | "data";
   score: number; // Search relevance score
   highlights?: {
     title?: string;
@@ -52,8 +68,8 @@ const fuzzyScore = (query: string, text: string): number => {
   if (textLower.includes(queryLower)) {
     const position = textLower.indexOf(queryLower);
     const lengthRatio = queryLower.length / textLower.length;
-    const positionScore = 1 - (position / textLower.length);
-    return 80 + (lengthRatio * 15) + (positionScore * 5);
+    const positionScore = 1 - position / textLower.length;
+    return 80 + lengthRatio * 15 + positionScore * 5;
   }
 
   // Fuzzy matching - check if all characters of query exist in order
@@ -73,7 +89,10 @@ const fuzzyScore = (query: string, text: string): number => {
 
   if (queryIndex === queryLower.length) {
     const completionRatio = queryIndex / queryLower.length;
-    const lengthPenalty = Math.max(0, 1 - (textLower.length - queryLower.length) / 100);
+    const lengthPenalty = Math.max(
+      0,
+      1 - (textLower.length - queryLower.length) / 100
+    );
     return Math.min(75, score * completionRatio * lengthPenalty);
   }
 
@@ -91,9 +110,9 @@ const highlightText = (text: string, query: string): string => {
 
   return (
     text.substring(0, index) +
-    '<mark class="bg-primary/20 text-primary-foreground rounded px-0.5">' +
+    '<mark class="bg-primary/20 text-foreground dark:text-primary-foreground rounded px-0.5">' +
     text.substring(index, index + query.length) +
-    '</mark>' +
+    "</mark>" +
     text.substring(index + query.length)
   );
 };
@@ -103,7 +122,10 @@ interface GlobalSearchDialogProps {
   onClose: () => void;
 }
 
-export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDialogProps) {
+export default function GlobalSearchDialog({
+  isOpen,
+  onClose,
+}: GlobalSearchDialogProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -111,6 +133,36 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Inject the global styles for custom scrollbar
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.innerHTML = `
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(127, 127, 127, 0.5);
+        border-radius: 10px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(127, 127, 127, 0.8);
+      }
+      .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(127, 127, 127, 0.5) transparent;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   // Focus input when dialog opens
   useEffect(() => {
@@ -148,7 +200,7 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
           if (titleScore >= minScore) {
             results.push({
               id: `thread-${thread.id}`,
-              type: 'thread',
+              type: "thread",
               title: thread.title,
               content: thread.title,
               threadId: thread.id,
@@ -177,10 +229,10 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
             }
 
             if (matchingTags.length > 0) {
-              const tagTitle = `Tags: ${matchingTags.join(', ')}`;
+              const tagTitle = `Tags: ${matchingTags.join(", ")}`;
               results.push({
                 id: `thread-tags-${thread.id}`,
-                type: 'thread',
+                type: "thread",
                 title: tagTitle,
                 content: thread.title,
                 threadId: thread.id,
@@ -198,17 +250,20 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
 
           // Search in message summaries
           try {
-            const summaries = await HybridDB.getMessageSummariesWithRole(thread.id);
+            const summaries = await HybridDB.getMessageSummariesWithRole(
+              thread.id
+            );
             for (const summary of summaries) {
               const summaryScore = fuzzyScore(query, summary.content);
               if (summaryScore >= minScore) {
-                const preview = summary.content.length > 150
-                  ? summary.content.substring(0, 150) + "..."
-                  : summary.content;
+                const preview =
+                  summary.content.length > 150
+                    ? summary.content.substring(0, 150) + "..."
+                    : summary.content;
 
                 results.push({
                   id: `summary-${summary.messageId}`,
-                  type: 'summary',
+                  type: "summary",
                   title: preview,
                   content: summary.content,
                   threadId: thread.id,
@@ -224,7 +279,11 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
               }
             }
           } catch (error) {
-            console.error("Error searching summaries for thread:", thread.id, error);
+            console.error(
+              "Error searching summaries for thread:",
+              thread.id,
+              error
+            );
           }
 
           // Search in actual messages (limited to recent ones for performance)
@@ -235,19 +294,24 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
             for (const message of recentMessages) {
               const messageScore = fuzzyScore(query, message.content);
               if (messageScore >= minScore) {
-                const preview = message.content.length > 120
-                  ? message.content.substring(0, 120) + "..."
-                  : message.content;
+                const preview =
+                  message.content.length > 120
+                    ? message.content.substring(0, 120) + "..."
+                    : message.content;
 
                 results.push({
                   id: `message-${message.id}`,
-                  type: 'message',
+                  type: "message",
                   title: preview,
                   content: message.content,
                   threadId: thread.id,
                   threadTitle: thread.title,
                   timestamp: message.createdAt.toISOString(),
-                  messageRole: message.role as 'user' | 'assistant' | 'system' | 'data',
+                  messageRole: message.role as
+                    | "user"
+                    | "assistant"
+                    | "system"
+                    | "data",
                   score: messageScore,
                   highlights: {
                     title: highlightText(preview, query),
@@ -257,7 +321,11 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
               }
             }
           } catch (error) {
-            console.error("Error searching messages for thread:", thread.id, error);
+            console.error(
+              "Error searching messages for thread:",
+              thread.id,
+              error
+            );
           }
         }
 
@@ -278,7 +346,9 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
             }
 
             // Finally by timestamp (most recent first)
-            return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+            return (
+              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            );
           })
           .slice(0, 30); // Limit to 30 high-quality results
       } catch (error) {
@@ -339,10 +409,12 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
     (e: React.KeyboardEvent) => {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelectedIndex(prev => Math.min(prev + 1, searchResults.length - 1));
+        setSelectedIndex((prev) =>
+          Math.min(prev + 1, searchResults.length - 1)
+        );
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setSelectedIndex(prev => Math.max(prev - 1, 0));
+        setSelectedIndex((prev) => Math.max(prev - 1, 0));
       } else if (e.key === "Enter" && searchResults[selectedIndex]) {
         e.preventDefault();
         handleResultSelect(searchResults[selectedIndex]);
@@ -354,52 +426,62 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
     [searchResults, selectedIndex, handleResultSelect, onClose]
   );
 
-  const getResultIcon = (type: SearchResult['type'], role?: string) => {
-    if (type === 'thread') return <Hash className="h-4 w-4 text-primary" />;
-    if (type === 'message') {
+  const getResultIcon = (type: SearchResult["type"], role?: string) => {
+    if (type === "thread") return <Hash className="h-4 w-4 text-primary" />;
+    if (type === "message") {
       switch (role) {
-        case 'user': return <User className="h-4 w-4 text-blue-500" />;
-        case 'assistant': return <Bot className="h-4 w-4 text-green-500" />;
-        case 'system': return <MessageSquare className="h-4 w-4 text-orange-500" />;
-        default: return <MessageSquare className="h-4 w-4 text-muted-foreground" />;
+        case "user":
+          return <User className="h-4 w-4 text-blue-500" />;
+        case "assistant":
+          return <Bot className="h-4 w-4 text-green-500" />;
+        case "system":
+          return <MessageSquare className="h-4 w-4 text-orange-500" />;
+        default:
+          return <MessageSquare className="h-4 w-4 text-muted-foreground" />;
       }
     }
     return <Sparkles className="h-4 w-4 text-purple-500" />;
   };
 
-  const getResultTypeLabel = (type: SearchResult['type'], role?: string) => {
-    if (type === 'thread') return 'Thread';
-    if (type === 'message') {
+  const getResultTypeLabel = (type: SearchResult["type"], role?: string) => {
+    if (type === "thread") return "Thread";
+    if (type === "message") {
       switch (role) {
-        case 'user': return 'Your message';
-        case 'assistant': return 'AI response';
-        case 'system': return 'System';
-        case 'data': return 'Data';
-        default: return 'Message';
+        case "user":
+          return "Your message";
+        case "assistant":
+          return "AI response";
+        case "system":
+          return "System";
+        case "data":
+          return "Data";
+        default:
+          return "Message";
       }
     }
-    return 'Summary';
+    return "Summary";
   };
-
-
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-    
+
     if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     } else if (diffInHours < 24 * 7) {
-      return date.toLocaleDateString([], { weekday: 'short' });
+      return date.toLocaleDateString([], { weekday: "short" });
     } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      return date.toLocaleDateString([], { month: "short", day: "numeric" });
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-3xl max-h-[90vh] sm:max-h-[85vh] p-0 bg-background/95 backdrop-blur-xl border-border/50 shadow-2xl">
+      <DialogContent className="max-w-[90vw] sm:max-w-2xl lg:max-w-3xl max-h-[65vh] sm:max-h-[60vh] md:max-h-[75vh] p-0 bg-background/95 backdrop-blur-xl border-border/50 shadow-2xl flex flex-col overflow-hidden">
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
           <DialogTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent flex items-center gap-2">
             <Search className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
@@ -407,14 +489,16 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
             <span className="sm:hidden">Search</span>
           </DialogTitle>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            <span className="hidden sm:inline">Find anything across your conversations with intelligent search</span>
+            <span className="hidden sm:inline">
+              Find anything across your conversations with intelligent search
+            </span>
             <span className="sm:hidden">Find across conversations</span>
           </p>
         </DialogHeader>
 
         <div className="px-4 sm:px-6 pb-4">
           <div className="relative group">
-            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-primary " />
             <Input
               ref={searchInputRef}
               type="text"
@@ -446,7 +530,7 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
           </div>
         </div>
 
-        <ScrollArea className="max-h-[50vh] sm:max-h-[50vh] px-4 sm:px-6 pb-4 sm:pb-6">
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-4 sm:px-6 pb-4 sm:pb-6">
           {searchResults.length > 0 ? (
             <div className="space-y-2 sm:space-y-3 mt-4">
               {searchResults.map((result, index) => (
@@ -456,7 +540,8 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
                     "group flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl cursor-pointer transition-all duration-200",
                     "bg-card/30 backdrop-blur-sm border border-border/30 hover:border-primary/30",
                     "hover:bg-card/50 hover:shadow-lg hover:shadow-primary/5",
-                    index === selectedIndex && "bg-primary/5 border-primary/50 shadow-lg shadow-primary/10"
+                    index === selectedIndex &&
+                      "bg-primary/5 border-primary/50 shadow-lg shadow-primary/10"
                   )}
                   onClick={() => handleResultSelect(result)}
                 >
@@ -476,11 +561,18 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
                         {formatTimestamp(result.timestamp)}
                       </span>
                       <div className="ml-auto flex items-center gap-1">
-                        <div className={cn("w-2 h-2 rounded-full",
-                          result.score >= 80 ? "bg-green-500" :
-                          result.score >= 60 ? "bg-yellow-500" :
-                          result.score >= 40 ? "bg-orange-500" : "bg-red-500"
-                        )} />
+                        <div
+                          className={cn(
+                            "w-2 h-2 rounded-full",
+                            result.score >= 80
+                              ? "bg-green-500"
+                              : result.score >= 60
+                              ? "bg-yellow-500"
+                              : result.score >= 40
+                              ? "bg-orange-500"
+                              : "bg-red-500"
+                          )}
+                        />
                         <span className="text-xs text-muted-foreground font-mono hidden sm:inline">
                           {Math.round(result.score)}
                         </span>
@@ -490,7 +582,7 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
                     <div
                       className="font-medium text-sm mb-2 line-clamp-2 leading-relaxed"
                       dangerouslySetInnerHTML={{
-                        __html: result.highlights?.title || result.title
+                        __html: result.highlights?.title || result.title,
                       }}
                     />
 
@@ -502,15 +594,27 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
 
                       {result.tags && result.tags.length > 0 && (
                         <div className="flex gap-1 flex-wrap">
-                          {result.tags.slice(0, window.innerWidth < 640 ? 1 : 2).map((tag, tagIndex) => (
-                            <Badge key={tagIndex} variant="outline" className="text-xs px-2 py-0.5">
-                              <Tag className="h-2.5 w-2.5 mr-1" />
-                              <span className="max-w-16 truncate">{tag}</span>
-                            </Badge>
-                          ))}
-                          {result.tags.length > (window.innerWidth < 640 ? 1 : 2) && (
-                            <Badge variant="outline" className="text-xs px-2 py-0.5">
-                              +{result.tags.length - (window.innerWidth < 640 ? 1 : 2)}
+                          {result.tags
+                            .slice(0, window.innerWidth < 640 ? 1 : 2)
+                            .map((tag, tagIndex) => (
+                              <Badge
+                                key={tagIndex}
+                                variant="outline"
+                                className="text-xs px-2 py-0.5"
+                              >
+                                <Tag className="h-2.5 w-2.5 mr-1" />
+                                <span className="max-w-16 truncate">{tag}</span>
+                              </Badge>
+                            ))}
+                          {result.tags.length >
+                            (window.innerWidth < 640 ? 1 : 2) && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs px-2 py-0.5"
+                            >
+                              +
+                              {result.tags.length -
+                                (window.innerWidth < 640 ? 1 : 2)}
                             </Badge>
                           )}
                         </div>
@@ -527,9 +631,14 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
               <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 rounded-full bg-muted/20 flex items-center justify-center">
                 <Search className="h-6 w-6 sm:h-8 sm:w-8 opacity-50" />
               </div>
-              <h3 className="text-base sm:text-lg font-medium mb-2">No results found</h3>
+              <h3 className="text-base sm:text-lg font-medium mb-2">
+                No results found
+              </h3>
               <p className="text-sm px-2">
-                No matches for <span className="font-mono bg-muted/50 px-2 py-1 rounded text-xs sm:text-sm break-all">"{searchQuery}"</span>
+                No matches for{" "}
+                <span className="font-mono bg-muted/50 px-2 py-1 rounded text-xs sm:text-sm break-all">
+                  "{searchQuery}"
+                </span>
               </p>
               <p className="text-xs mt-2 opacity-75">
                 Try different keywords or check your spelling
@@ -540,9 +649,14 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
               <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
                 <div className="h-6 w-6 sm:h-8 sm:w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
               </div>
-              <h3 className="text-base sm:text-lg font-medium mb-2">Searching...</h3>
+              <h3 className="text-base sm:text-lg font-medium mb-2">
+                Searching...
+              </h3>
               <p className="text-sm px-2">
-                Looking through conversations for <span className="font-mono bg-muted/50 px-2 py-1 rounded text-xs sm:text-sm break-all">"{searchQuery}"</span>
+                Looking through conversations for{" "}
+                <span className="font-mono bg-muted/50 px-2 py-1 rounded text-xs sm:text-sm break-all">
+                  "{searchQuery}"
+                </span>
               </p>
             </div>
           ) : (
@@ -550,9 +664,13 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
               <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
                 <Search className="h-6 w-6 sm:h-8 sm:w-8 text-primary/70" />
               </div>
-              <h3 className="text-base sm:text-lg font-medium mb-2">Search Everything</h3>
+              <h3 className="text-base sm:text-lg font-medium mb-2">
+                Search Everything
+              </h3>
               <p className="text-sm mb-4 px-2">
-                <span className="hidden sm:inline">Find threads, messages, summaries, and tags instantly</span>
+                <span className="hidden sm:inline">
+                  Find threads, messages, summaries, and tags instantly
+                </span>
                 <span className="sm:hidden">Find across conversations</span>
               </p>
               <div className="flex flex-wrap justify-center gap-2 text-xs mb-4">
@@ -579,21 +697,27 @@ export default function GlobalSearchDialog({ isOpen, onClose }: GlobalSearchDial
               </div>
               <div className="hidden sm:flex justify-center gap-4 text-xs text-muted-foreground/70">
                 <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-muted/50 rounded text-xs">↑↓</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-muted/50 rounded text-xs">
+                    ↑↓
+                  </kbd>
                   Navigate
                 </span>
                 <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-muted/50 rounded text-xs">Enter</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-muted/50 rounded text-xs">
+                    Enter
+                  </kbd>
                   Select
                 </span>
                 <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-muted/50 rounded text-xs">Esc</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-muted/50 rounded text-xs">
+                    Esc
+                  </kbd>
                   Close
                 </span>
               </div>
             </div>
           )}
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
