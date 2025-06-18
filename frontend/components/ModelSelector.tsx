@@ -171,14 +171,13 @@ const BYOKIndicator = () => {
 
   return (
     <Button
-      variant="ghost"
       size="sm"
       onClick={handleClick}
       className={cn(
-        "h-7 px-2 text-xs font-medium transition-all duration-200",
+        "h-7 px-2 text-xs font-medium bg-primary/15 transition-all duration-200",
         hasByok
-          ? "text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-950/20"
-          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+          ? "text-green-600 bg-green-200 dark:bg-green-400  hover:text-green-700 hover:bg-green-300 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-600"
+          : "text-muted-foreground hover:text-foreground hover:bg-primary/35"
       )}
       title={
         hasByok
@@ -186,8 +185,10 @@ const BYOKIndicator = () => {
           : "Configure your own API key for unlimited access"
       }
     >
-      <Key className="w-3 h-3 mr-1" />
-      <span className="hidden sm:inline">{hasByok ? "BYOK ON" : "BYOK"}</span>
+      <Key className="w-3 h-3 mr-1 text-primary" />
+      <span className="hidden sm:inline text-foreground">
+        {hasByok ? "BYOK ON" : "BYOK"}
+      </span>
     </Button>
   );
 };
@@ -277,7 +278,10 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
     (model: AIModel) => {
       if (isWebSearchEnabled) {
         // When web search is enabled, only show search models
-        return model === "OpenAI 4.1 Mini Search" || model === "Gemini 2.5 Flash Search";
+        return (
+          model === "OpenAI 4.1 Mini Search" ||
+          model === "Gemini 2.5 Flash Search"
+        );
       }
       if (isGuest) {
         return model === "Gemini 2.5 Flash";
@@ -287,7 +291,10 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
         return config.isImageGeneration === true;
       }
       // Hide search models when web search is not enabled
-      if (model === "Gemini 2.5 Flash Search" || model === "OpenAI 4.1 Mini Search") {
+      if (
+        model === "Gemini 2.5 Flash Search" ||
+        model === "OpenAI 4.1 Mini Search"
+      ) {
         return false;
       }
       return true;
@@ -355,10 +362,14 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
 
     if (!searchQuery.trim()) {
       return {
-        recommended: isImageGenMode ? [] : filterByAvailability(recommendedModels),
+        recommended: isImageGenMode
+          ? []
+          : filterByAvailability(recommendedModels),
         freeModels: filterByAvailability(categorizeModels.freeModels),
         premiumModels: filterByAvailability(categorizeModels.premiumModels),
-        superPremiumModels: filterByAvailability(categorizeModels.superPremiumModels),
+        superPremiumModels: filterByAvailability(
+          categorizeModels.superPremiumModels
+        ),
         imageGenModels: filterByAvailability(categorizeModels.imageGenModels),
       };
     }
@@ -389,10 +400,16 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
       superPremiumModels: filterModels(categorizeModels.superPremiumModels),
       imageGenModels: filterModels(categorizeModels.imageGenModels),
     };
-  }, [searchQuery, recommendedModels, categorizeModels, isImageGenMode, isModelEnabled]);
+  }, [
+    searchQuery,
+    recommendedModels,
+    categorizeModels,
+    isImageGenMode,
+    isModelEnabled,
+  ]);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 ">
       <DropdownMenu>
         <DropdownMenuTrigger asChild disabled={isLocked}>
           <Button
@@ -408,6 +425,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
               isLocked ? " (locked for guest users)" : ""
             }`}
             disabled={isLocked}
+            title={isLocked ? "Locked for guest users" : "Select AI Model"}
           >
             <div className="flex max-w-[120px] sm:max-w-[160px] md:max-w-sm items-center gap-1 sm:gap-1.5">
               {isGuest && (
@@ -424,7 +442,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent
           className={cn(
-            "w-[320px] sm:w-[480px] max-w-[95vw] p-3 sm:p-4",
+            "w-[320px] sm:w-[480px] max-w-[95vw] p-3 sm:p-4 main-chat-scrollbar",
             "border-border dark:bg-zinc-900/50 backdrop-blur-3xl",
             "max-h-[70vh] overflow-y-auto",
             "shadow-lg"
@@ -433,13 +451,16 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
           sideOffset={8}
         >
           {/* Header */}
-          <div className="mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-border">
-            <h2 className="text-sm font-semibold text-foreground">
-              Select AI Model
-            </h2>
-            <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
-              Choose the AI model that best fits your needs
-            </p>
+          <div className="mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-border flex gap-3.5 justify-between">
+            <div className="">
+              <h2 className="text-sm font-semibold text-foreground">
+                Select AI Model
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
+                Choose the AI model that best fits your needs
+              </p>
+            </div>
+            <BYOKIndicator />
           </div>
 
           {/* Search Input */}
@@ -558,36 +579,38 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
             )}
 
             {/* Image Generation Models */}
-            {filteredModels.imageGenModels && filteredModels.imageGenModels.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                  <span className="text-primary">🎨</span>
-                  Image Generation
-                </h3>
-                <span className="text-xs text-muted-foreground block mb-2">
-                  AI Models For Creating Images From Text Prompts
-                </span>
-                <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                  {filteredModels.imageGenModels.map((model) => (
-                    <ModelCard
-                      key={model}
-                      model={model}
-                      isSelected={selectedModel === model}
-                      onSelect={handleModelSelect}
-                      showKeyIcon={hasOpenRouterKey()}
-                      tierValidation={tierValidations[model]}
-                    />
-                  ))}
+            {filteredModels.imageGenModels &&
+              filteredModels.imageGenModels.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <span className="text-primary">🎨</span>
+                    Image Generation
+                  </h3>
+                  <span className="text-xs text-muted-foreground block mb-2">
+                    AI Models For Creating Images From Text Prompts
+                  </span>
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                    {filteredModels.imageGenModels.map((model) => (
+                      <ModelCard
+                        key={model}
+                        model={model}
+                        isSelected={selectedModel === model}
+                        onSelect={handleModelSelect}
+                        showKeyIcon={hasOpenRouterKey()}
+                        tierValidation={tierValidations[model]}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* No results */}
             {filteredModels.recommended.length === 0 &&
               filteredModels.freeModels.length === 0 &&
               filteredModels.premiumModels.length === 0 &&
               filteredModels.superPremiumModels.length === 0 &&
-              (!filteredModels.imageGenModels || filteredModels.imageGenModels.length === 0) && (
+              (!filteredModels.imageGenModels ||
+                filteredModels.imageGenModels.length === 0) && (
                 <div className="text-center py-8">
                   <Search className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">
@@ -619,7 +642,6 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
           </div>
         </DropdownMenuContent>
       </DropdownMenu>
-      <BYOKIndicator />
     </div>
   );
 };
