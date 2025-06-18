@@ -68,6 +68,39 @@ interface ChatInterfaceProps {
   searchQuery?: string | null;
 }
 
+// Utility function to deduplicate messages at the React level
+function deduplicateMessages<T extends { id: string; content: string }>(messages: T[]): T[] {
+  const seen = new Map<string, T>();
+
+  messages.forEach((message, index) => {
+    const existing = seen.get(message.id);
+
+    if (!existing) {
+      // New message - add it
+      seen.set(message.id, message);
+    } else {
+      // Duplicate found - keep the one with more content or later in array
+      if (message.content.length > existing.content.length ||
+          (message.content.length === existing.content.length && index > messages.findIndex(m => m.id === existing.id))) {
+        seen.set(message.id, message);
+        console.warn('[ChatInterface] Replaced duplicate message in deduplication:', {
+          id: message.id,
+          existingContent: existing.content.substring(0, 50),
+          newContent: message.content.substring(0, 50)
+        });
+      }
+    }
+  });
+
+  const deduplicated = Array.from(seen.values());
+
+  if (deduplicated.length !== messages.length) {
+    console.warn(`[ChatInterface] Deduplicated ${messages.length - deduplicated.length} duplicate messages from ${messages.length} total`);
+  }
+
+  return deduplicated;
+}
+
 // Define domain categories for suggested prompts with more specific questions
 
 export default function ChatInterface({
@@ -228,7 +261,7 @@ export default function ChatInterface({
     api: isWebSearchEnabled ? "/api/web-search" : "/api/chat-messaging",
     id: threadId,
     initialMessages,
-    experimental_throttle: 30, // Reduced for smoother streaming
+    experimental_throttle: 0, // Zero throttle for instant real-time streaming
     onFinish: async (message) => {
       console.log("🏁 onFinish callback called for message:", message.id);
 
@@ -286,7 +319,7 @@ export default function ChatInterface({
               : msg
           );
           console.log("📱 Updated UI messages with extracted URLs");
-          return updatedMessages;
+          return deduplicateMessages(updatedMessages);
         });
       }
 
@@ -500,13 +533,14 @@ export default function ChatInterface({
 
               // Update the message with extracted URLs in real-time
               setMessages((prevMessages) => {
-                return prevMessages.map((msg) =>
+                const updatedMessages = prevMessages.map((msg) =>
                   msg.id === lastMessage.id
                     ? ({ ...msg, webSearchResults: extractedUrls } as UIMessage & {
                         webSearchResults?: string[];
                       })
                     : msg
                 );
+                return deduplicateMessages(updatedMessages);
               });
             }
           }
@@ -602,7 +636,7 @@ export default function ChatInterface({
 
         if (hasChanged) {
           console.log("[ChatInterface] Messages changed, updating UI");
-          setMessages(uiMessages);
+          setMessages(deduplicateMessages(uiMessages));
 
           // Auto-scroll to bottom for new messages unless user scrolled up
           if (!userHasScrolledUp) {
@@ -680,7 +714,7 @@ export default function ChatInterface({
               });
             }
 
-            return updatedMessages;
+            return deduplicateMessages(updatedMessages);
           });
 
           // Auto-scroll during streaming with minimal delay unless user scrolled up
@@ -738,9 +772,10 @@ export default function ChatInterface({
           setMessages((messages) => {
             const index = messages.findIndex((m) => m.id === message.id);
             if (index !== -1) {
-              return [...messages.slice(0, index + 1)];
+              const slicedMessages = [...messages.slice(0, index + 1)];
+              return deduplicateMessages(slicedMessages);
             }
-            return messages;
+            return deduplicateMessages(messages);
           });
         } else {
           await HybridDB.deleteTrailingMessages(
@@ -751,9 +786,10 @@ export default function ChatInterface({
           setMessages((messages) => {
             const index = messages.findIndex((m) => m.id === message.id);
             if (index !== -1) {
-              return [...messages.slice(0, index)];
+              const slicedMessages = [...messages.slice(0, index)];
+              return deduplicateMessages(slicedMessages);
             }
-            return messages;
+            return deduplicateMessages(messages);
           });
         }
       }

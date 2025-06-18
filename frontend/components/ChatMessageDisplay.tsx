@@ -38,14 +38,52 @@ function PureMessageDisplay({
   registerRef: (id: string, ref: HTMLDivElement | null) => void;
   onRetryWithModel?: (model?: AIModel, message?: UIMessage) => void;
 }) {
+  // Deduplicate messages at the React level to prevent duplicate keys
+  const deduplicatedMessages = messages.reduce((acc: UIMessage[], message, index) => {
+    // Check if message ID already exists in accumulated array
+    const existingIndex = acc.findIndex(m => m.id === message.id);
+
+    if (existingIndex === -1) {
+      // New message - add it
+      acc.push(message);
+    } else {
+      // Duplicate ID found - keep the one with more recent content or later in array
+      const existing = acc[existingIndex];
+      const current = message;
+
+      // Prefer message with more content, or if same content, prefer later one (higher index)
+      if (current.content.length > existing.content.length ||
+          (current.content.length === existing.content.length && index > messages.findIndex(m => m.id === existing.id))) {
+        acc[existingIndex] = current;
+        console.warn('[ChatMessageDisplay] Replaced duplicate message:', {
+          id: message.id,
+          existingContent: existing.content.substring(0, 50),
+          newContent: current.content.substring(0, 50)
+        });
+      } else {
+        console.warn('[ChatMessageDisplay] Skipped duplicate message:', {
+          id: message.id,
+          content: current.content.substring(0, 50)
+        });
+      }
+    }
+
+    return acc;
+  }, []);
+
+  // Log if we found duplicates
+  if (deduplicatedMessages.length !== messages.length) {
+    console.warn(`[ChatMessageDisplay] Removed ${messages.length - deduplicatedMessages.length} duplicate messages from ${messages.length} total`);
+  }
+
   return (
     <section className="chat-message-container flex flex-col w-full max-w-3xl space-y-12">
-      {messages.map((message, index) => (
+      {deduplicatedMessages.map((message, index) => (
         <PreviewMessage
           key={message.id}
           threadId={threadId}
           message={message}
-          isStreaming={status === "streaming" && messages.length - 1 === index}
+          isStreaming={status === "streaming" && deduplicatedMessages.length - 1 === index}
           setMessages={setMessages}
           reload={reload}
           registerRef={registerRef}
