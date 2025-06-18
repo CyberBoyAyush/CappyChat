@@ -258,7 +258,7 @@ export default function ChatInterface({
     reload,
     error,
   } = useChat({
-    api: isWebSearchEnabled ? "/api/web-search" : "/api/chat-messaging",
+    api: (isWebSearchEnabled && !isGuest) ? "/api/web-search" : "/api/chat-messaging",
     id: threadId,
     initialMessages,
     experimental_throttle: 0, // Zero throttle for instant real-time streaming

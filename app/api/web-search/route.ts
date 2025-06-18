@@ -39,25 +39,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Skip tier validation and credit consumption for guest users
-    if (!isGuest) {
-      // Check if user can use this web search model (tier validation)
-      const usingBYOK = !!userApiKey;
+    // Guest users cannot use web search - block access
+    if (isGuest) {
+      return new Response(
+        JSON.stringify({
+          error: 'Web search is not available for guest users. Please sign up to use this feature.',
+          code: 'GUEST_WEB_SEARCH_RESTRICTED'
+        }),
+        {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
-      const tierValidation = await canUserUseModel(searchModel as AIModel, usingBYOK, userId, isGuest);
+    // Check if user can use this web search model (tier validation)
+    const usingBYOK = !!userApiKey;
 
-      if (!tierValidation.canUseModel) {
-        return new Response(
-          JSON.stringify({
-            error: tierValidation.message || 'Web search model access denied',
-            code: 'TIER_LIMIT_EXCEEDED'
-          }),
-          {
-            status: 403,
-            headers: { 'Content-Type': 'application/json' },
-          }
-        );
-      }
+    const tierValidation = await canUserUseModel(searchModel as AIModel, usingBYOK, userId, isGuest);
+
+    if (!tierValidation.canUseModel) {
+      return new Response(
+        JSON.stringify({
+          error: tierValidation.message || 'Web search model access denied',
+          code: 'TIER_LIMIT_EXCEEDED'
+        }),
+        {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
       // Consume credits before making the API call
       const creditsConsumed = await consumeCredits(searchModel as AIModel, usingBYOK, userId, isGuest);
