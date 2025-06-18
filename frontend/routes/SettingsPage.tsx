@@ -76,8 +76,16 @@ export default function SettingsPage() {
     (window.navigator.userAgent.includes("Mac") ||
       window.navigator.userAgent.includes("iPhone"));
 
-  // Section navigation state
-  const [activeSection, setActiveSection] = useState("profile");
+  // Section navigation state - check for BYOK redirect
+  const [activeSection, setActiveSection] = useState(() => {
+    // Check if user was redirected for BYOK management
+    const urlParams = new URLSearchParams(location.search);
+    const section = urlParams.get("section");
+    if (section === "byok" || section === "application") {
+      return "application";
+    }
+    return "profile";
+  });
 
   // Profile state
   const [isEditing, setIsEditing] = useState(false);

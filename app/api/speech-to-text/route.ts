@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'OpenAI API key not configured. Please add your OpenAI API key in Settings for voice input.' },
+        { error: 'OpenAI API key not configured. Please add your OpenAI API key in Settings → Application for voice input.' },
         { status: 500 }
       );
     }
