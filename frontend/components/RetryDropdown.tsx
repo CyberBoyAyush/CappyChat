@@ -55,9 +55,9 @@ export default function RetryDropdown({
   // For client-side, we'll use a simpler approach to determine available models
   const isModelAvailable = useCallback(
     (model: AIModel) => {
-      // Guest users can only use Gemini 2.5 Flash
+      // Guest users can only use OpenAI 4.1 Mini
       if (isGuest) {
-        return model === "Gemini 2.5 Flash";
+        return model === "OpenAI 4.1 Mini";
       }
 
       // For authenticated users, allow all models

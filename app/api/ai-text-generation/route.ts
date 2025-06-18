@@ -9,9 +9,9 @@ export async function POST(req: Request) {
 
   // Skip tier validation for guest users
   if (!isGuest) {
-    // Check tier validation for title generation (uses Gemini 2.5 Flash)
+    // Check tier validation for title generation (uses OpenAI 4.1 Mini)
     const usingBYOK = !!userApiKey;
-    const tierValidation = await canUserUseModel('Gemini 2.5 Flash', usingBYOK, userId, isGuest);
+    const tierValidation = await canUserUseModel('OpenAI 4.1 Mini', usingBYOK, userId, isGuest);
 
     if (!tierValidation.canUseModel) {
       return NextResponse.json(
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
   if (!isGuest) {
     // Consume credits for title generation
     const usingBYOK = !!userApiKey;
-    const creditsConsumed = await consumeCredits('Gemini 2.5 Flash', usingBYOK, userId, isGuest);
+    const creditsConsumed = await consumeCredits('OpenAI 4.1 Mini', usingBYOK, userId, isGuest);
     if (!creditsConsumed && !usingBYOK) {
       return NextResponse.json(
         {

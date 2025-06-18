@@ -208,19 +208,19 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
     Record<AIModel, TierValidationResult>
   >({} as Record<AIModel, TierValidationResult>);
 
-  // For guest users, lock to Gemini 2.5 Flash
+  // For guest users, lock to OpenAI 4.1 Mini
   // For image generation mode, allow selection but only among image generation models
   // Web search mode allows selection between search models
   const isLocked = isGuest;
   const usingBYOK = hasOpenRouterKey();
 
-  // Force guest users to use Gemini 2.5 Flash
+  // Force guest users to use OpenAI 4.1 Mini
   useEffect(() => {
-    if (isGuest && selectedModel !== "Gemini 2.5 Flash") {
+    if (isGuest && selectedModel !== "OpenAI 4.1 Mini") {
       console.log(
-        "[ModelSelector] Guest user detected, forcing model to Gemini 2.5 Flash"
+        "[ModelSelector] Guest user detected, forcing model to OpenAI 4.1 Mini"
       );
-      setModel("Gemini 2.5 Flash");
+      setModel("OpenAI 4.1 Mini");
     }
   }, [isGuest, selectedModel, setModel]);
 
@@ -284,7 +284,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
         );
       }
       if (isGuest) {
-        return model === "Gemini 2.5 Flash";
+        return model === "OpenAI 4.1 Mini";
       }
       if (isImageGenMode) {
         const config = getModelConfig(model);
@@ -315,9 +315,9 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
   // Define recommended models
   const recommendedModels: AIModel[] = [
     "OpenAI 4.1 Mini",
-    "Gemini 2.5 Flash",
     "OpenAI o4-mini",
     "DeepSeek R1-0528",
+    "Claude Sonnet 3.5 Haiku",
   ];
 
   // Categorize models

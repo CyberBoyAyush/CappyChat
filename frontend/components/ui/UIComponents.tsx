@@ -149,7 +149,7 @@ export function ImageGenerationLoading() {
  *
  * Used in: frontend/components/ChatInputField.tsx
  * Purpose: Toggle button for enabling/disabling web search functionality.
- * When enabled, forces the use of Gemini 2.5 Flash Search model and routes through web-search endpoint.
+ * When enabled, forces the use of OpenAI 4.1 Mini Search model and routes through web-search endpoint.
  */
 interface WebSearchToggleProps {
   isEnabled: boolean;
