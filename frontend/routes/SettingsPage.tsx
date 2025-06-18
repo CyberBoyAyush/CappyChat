@@ -35,6 +35,7 @@ import {
   ArrowLeft,
   Keyboard,
   MessageSquareMore,
+  Sparkles,
 } from "lucide-react";
 import ThemeToggleButton from "../components/ui/ThemeComponents";
 import { useTheme } from "next-themes";
@@ -532,7 +533,7 @@ export default function SettingsPage() {
                   {
                     id: "customization",
                     label: "Customization",
-                    icon: Settings,
+                    icon: Sparkles,
                   },
                   { id: "privacy", label: "Privacy & Security", icon: Shield },
                   {
@@ -898,8 +899,6 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 )}
-
-                
 
                 {/* Customization Section */}
                 {activeSection === "customization" && (

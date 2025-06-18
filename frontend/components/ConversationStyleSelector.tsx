@@ -51,6 +51,7 @@ function PureConversationStyleSelector({
         <Button
           variant="outline"
           size="sm"
+          title="Select conversation style"
           className={cn(
             "flex items-center gap-1.5 text-xs font-medium transition-all duration-200",
             "hover:bg-muted border-border/50 h-8",
