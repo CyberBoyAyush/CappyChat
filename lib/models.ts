@@ -240,7 +240,7 @@ export const MODEL_CONFIGS = {
     hasReasoning: false,
     isFileSupported: false,
     isImageGeneration: true,
-    description: 'For Ultra-fast Image Generation. Perfect for quick iterations and immediate feedback.',
+    description: 'For Ultra-fast Image Generation. HD',
   },
   'FLUX.1 Dev': {
     modelId: 'runware:101@1',
@@ -253,7 +253,7 @@ export const MODEL_CONFIGS = {
     hasReasoning: false,
     isFileSupported: false,
     isImageGeneration: true,
-    description: 'High Quality Image Generation for Developers.',
+    description: 'Image Generation for Developers. HD',
   },
   'Stable Defusion 3': {
     modelId: 'runware:5@1',
@@ -266,7 +266,7 @@ export const MODEL_CONFIGS = {
     hasReasoning: false,
     isFileSupported: false,
     isImageGeneration: true,
-    description: 'For Realistic High Quality Image Generation.',
+    description: 'For Realistic Image Generation. HD',
   },
 } as const satisfies Record<AIModel, ModelConfig>;
 

@@ -1,15 +1,16 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText, smoothStream } from 'ai';
-import { getModelConfig } from '@/lib/models';
+import { getModelConfig, AIModel } from '@/lib/models';
 import { getConversationStyleConfig, ConversationStyle, DEFAULT_CONVERSATION_STYLE } from '@/lib/conversationStyles';
 import { NextRequest, NextResponse } from 'next/server';
+import { canUserUseModel, consumeCredits } from '@/lib/tierSystem';
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, conversationStyle, userApiKey, model } = body;
+    const { messages, conversationStyle, userApiKey, model, userId, isGuest } = body;
 
     // Validate required fields
     if (!messages || !Array.isArray(messages)) {
@@ -36,6 +37,44 @@ export async function POST(req: NextRequest) {
           headers: { 'Content-Type': 'application/json' },
         }
       );
+    }
+
+    // Skip tier validation and credit consumption for guest users
+    if (!isGuest) {
+      // Check if user can use this web search model (tier validation)
+      const usingBYOK = !!userApiKey;
+
+      const tierValidation = await canUserUseModel(searchModel as AIModel, usingBYOK, userId, isGuest);
+
+      if (!tierValidation.canUseModel) {
+        return new Response(
+          JSON.stringify({
+            error: tierValidation.message || 'Web search model access denied',
+            code: 'TIER_LIMIT_EXCEEDED'
+          }),
+          {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      // Consume credits before making the API call
+      const creditsConsumed = await consumeCredits(searchModel as AIModel, usingBYOK, userId, isGuest);
+      if (!creditsConsumed && !usingBYOK) {
+        return new Response(
+          JSON.stringify({
+            error: 'Insufficient credits for web search',
+            code: 'INSUFFICIENT_CREDITS'
+          }),
+          {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      console.log(`🔍 Web search credits consumed for user ${userId} using model ${searchModel}`);
     }
 
     // Use user's API key if provided, otherwise fall back to system key
