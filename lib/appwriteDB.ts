@@ -91,6 +91,7 @@ export interface AppwriteMessage extends Models.Document {
   createdAt: string; // ISO date string
   webSearchResults?: string[]; // URLs from web search results
   attachments?: string | FileAttachment[]; // File attachments (stored as JSON string in Appwrite)
+  model?: string; // AI model used to generate the message (for assistant messages)
 }
 
 // Define Message interface for internal use
@@ -103,6 +104,7 @@ export interface DBMessage {
   createdAt: Date;
   webSearchResults?: string[]; // URLs from web search results
   attachments?: FileAttachment[]; // File attachments
+  model?: string; // AI model used to generate the message (for assistant messages)
 }
 
 // Interface for Appwrite Message Summary document
@@ -758,7 +760,8 @@ export class AppwriteDB {
           parts: messageDoc.content ? [{ type: "text", text: messageDoc.content }] : [],
           createdAt: new Date(messageDoc.createdAt),
           webSearchResults: messageDoc.webSearchResults || undefined,
-          attachments: attachments
+          attachments: attachments,
+          model: messageDoc.model || undefined
         };
       });
       
@@ -796,6 +799,11 @@ export class AppwriteDB {
         console.log('💾 Storing attachments to Appwrite:', message.attachments);
         messageData.attachments = JSON.stringify(message.attachments);
         console.log('💾 Serialized attachments:', messageData.attachments);
+      }
+
+      // Add model if present (for assistant messages)
+      if (message.model) {
+        messageData.model = message.model;
       }
 
       const messagePromise = databases.createDocument(
@@ -1092,6 +1100,11 @@ export class AppwriteDB {
         // Handle attachments properly
         if (originalMessage.attachments) {
           newMessageData.attachments = originalMessage.attachments;
+        }
+
+        // Handle model field properly
+        if (originalMessage.model) {
+          newMessageData.model = originalMessage.model;
         }
 
         await databases.createDocument(

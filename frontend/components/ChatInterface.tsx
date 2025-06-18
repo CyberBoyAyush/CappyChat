@@ -251,12 +251,14 @@ export default function ChatInterface({
 
       // Save the AI message (useChat already handles adding it to the messages array)
       // We just need to persist it to the database using the actual message ID from useChat
-      const aiMessage: UIMessage & { webSearchResults?: string[] } = {
+      const modelUsed = retryModel || selectedModel;
+      const aiMessage: UIMessage & { webSearchResults?: string[]; model?: string } = {
         id: message.id,
         parts: message.parts as UIMessage["parts"],
         role: "assistant",
         content: message.content,
         createdAt: new Date(),
+        model: modelUsed, // Store the model used to generate this message
       };
 
       // Add web search results if this message was sent with web search enabled
@@ -568,6 +570,7 @@ export default function ChatInterface({
               createdAt: msg.createdAt,
               webSearchResults: msg.webSearchResults,
               attachments: msg.attachments,
+              model: msg.model,
             } as any)
         );
 

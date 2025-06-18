@@ -95,6 +95,7 @@ export default function ChatThreadPage() {
         createdAt: message.createdAt,
         webSearchResults: message.webSearchResults,
         attachments: message.attachments, // ✅ Include attachments!
+        model: message.model, // ✅ Include model field!
       };
     });
   }, []);
