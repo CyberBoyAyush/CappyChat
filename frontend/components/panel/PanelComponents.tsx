@@ -10,7 +10,7 @@ import { memo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { Button } from "../ui/button";
 import { buttonVariants } from "../ui/button";
-import { Trash2, GitBranch } from "lucide-react";
+import { Trash2, GitBranch, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThreadData, ThreadOperations } from "./ThreadManager";
 import UserProfileDropdown from "../UserProfileDropdown";
@@ -86,12 +86,18 @@ const PanelHeaderComponent = ({
   onFilteredThreadsChange,
 }: PanelHeaderProps) => {
   const { isGuest } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="flex flex-col gap-3 p-3 sm:p-4">
       {/* Logo */}
-      <div className="flex justify-center">
+      <div className="flex relative justify-center">
         <AppTitle />
+
+        <Settings
+          className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-foreground md:hidden"
+          onClick={() => navigate("/settings")}
+        />
       </div>
 
       {/* New Chat Button - Full Width */}
@@ -123,7 +129,7 @@ export const PanelHeader = memo(PanelHeaderComponent);
  */
 const PanelFooterComponent = () => {
   return (
-    <div className="flex flex-col gap-2 p-2">
+    <div className=" hidden md:flex flex-col gap-2 p-2">
       <UserProfileDropdown />
     </div>
   );
