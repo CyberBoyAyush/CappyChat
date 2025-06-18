@@ -992,7 +992,7 @@ function PureInputField({
                       : "Ask me anything..."
                     : isVoiceInputActive
                     ? "Listening... speak now"
-                    : "What can I do for you? (Copy Paste works here)"
+                    : "What can I do for you?"
                 }
                 className={cn(
                   "w-full px-3 sm:px-4 py-3 sm:py-2 md:pt-4 pr-10 sm:pr-12 border-none shadow-none scrollbar-none",

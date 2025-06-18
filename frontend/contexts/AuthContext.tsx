@@ -95,60 +95,44 @@ const getErrorMessage = (error: any): string => {
   return error?.message || 'An unexpected error occurred.';
 };
 
-// Enhanced cache keys for instant authentication
-const AUTH_CACHE_KEY = 'avchat_auth_cache';
+// Real-time auth keys (no caching, instant sync)
 const AUTH_SESSION_KEY = 'avchat_auth_session';
 const AUTH_PENDING_KEY = 'avchat_auth_pending';
-const AUTH_CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
-const AUTH_QUICK_CHECK_EXPIRY = 10 * 60 * 1000; // 10 minutes
 
-// Helper to get cached auth state
+// No caching - always fetch fresh auth state for real-time sync
 const getCachedAuthState = (): { user: User | null; timestamp: number } | null => {
-  try {
-    const cached = localStorage.getItem(AUTH_CACHE_KEY);
-    if (!cached) return null;
-
-    const parsed = JSON.parse(cached);
-    const now = Date.now();
-
-    // Check if cache is expired
-    if (now - parsed.timestamp > AUTH_CACHE_EXPIRY) {
-      localStorage.removeItem(AUTH_CACHE_KEY);
-      return null;
-    }
-
-    return parsed;
-  } catch {
-    localStorage.removeItem(AUTH_CACHE_KEY);
-    return null;
-  }
+  // Return null to force fresh auth check every time
+  return null;
 };
 
-// Helper to cache auth state
+// No-op cache setter for real-time sync
 const setCachedAuthState = (user: User | null) => {
-  try {
-    const cacheData = {
-      user,
-      timestamp: Date.now()
-    };
-    localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(cacheData));
-  } catch {
-    // Ignore localStorage errors
-  }
+  // No caching - real-time sync only
 };
 
-// Helper to check if cached state needs verification
+// Always verify state for real-time sync
 const shouldVerifyCachedState = (cachedState: { user: User | null; timestamp: number } | null): boolean => {
-  if (!cachedState) return true;
-  const now = Date.now();
-  return (now - cachedState.timestamp) > AUTH_QUICK_CHECK_EXPIRY;
+  // Always verify for instant real-time updates
+  return true;
 };
 
-// Enhanced session storage for instant auth state
+// Real-time session storage (minimal caching for performance)
 const getSessionAuthState = (): { user: User | null; timestamp: number } | null => {
   try {
     const cached = sessionStorage.getItem(AUTH_SESSION_KEY);
-    return cached ? JSON.parse(cached) : null;
+    const parsed = cached ? JSON.parse(cached) : null;
+
+    // Only use session cache if it's very recent (under 30 seconds)
+    if (parsed && (Date.now() - parsed.timestamp) < 30000) {
+      return parsed;
+    }
+
+    // Clear stale session cache
+    if (parsed) {
+      sessionStorage.removeItem(AUTH_SESSION_KEY);
+    }
+
+    return null;
   } catch {
     return null;
   }
@@ -156,11 +140,15 @@ const getSessionAuthState = (): { user: User | null; timestamp: number } | null 
 
 const setSessionAuthState = (user: User | null): void => {
   try {
-    const cacheData = {
-      user,
-      timestamp: Date.now()
-    };
-    sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(cacheData));
+    if (user) {
+      const cacheData = {
+        user,
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(cacheData));
+    } else {
+      sessionStorage.removeItem(AUTH_SESSION_KEY);
+    }
   } catch {
     // Ignore sessionStorage errors
   }
@@ -204,20 +192,19 @@ const getAuthPending = (): { isAuthenticating: boolean; timestamp: number; metho
 };
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  // Initialize with cached state to prevent flash of unauthenticated content
-  const cachedState = getCachedAuthState();
+  // Real-time initialization - minimal caching for instant sync
   const sessionState = getSessionAuthState();
   const pendingAuth = getAuthPending();
 
-  // Use session state first (fastest), then cached state
-  const initialUser = sessionState?.user || cachedState?.user || null;
-  const hasAnyCache = !!(sessionState || cachedState);
+  // Use only recent session state for real-time sync
+  const initialUser = sessionState?.user || null;
+  const hasRecentSession = !!sessionState;
 
   const [user, setUser] = useState<User | null>(initialUser);
-  const [loading, setLoading] = useState(!hasAnyCache || !!pendingAuth); // Show loading if no cache OR auth is pending
-  const [initialized, setInitialized] = useState(hasAnyCache && !pendingAuth); // Mark as initialized if we have cache and no pending auth
+  const [loading, setLoading] = useState(!hasRecentSession || !!pendingAuth); // Show loading if no recent session OR auth is pending
+  const [initialized, setInitialized] = useState(hasRecentSession && !pendingAuth); // Mark as initialized if we have recent session and no pending auth
   const [guestUser, setGuestUser] = useState<GuestUser | null>(() => {
-    // Only initialize guest user if no cached authenticated user
+    // Only initialize guest user if no authenticated user
     if (initialUser) return null;
     return {
       isGuest: true,
@@ -300,8 +287,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear local database
       HybridDB.clearLocalData();
 
-      // Clear ALL auth caches immediately
-      setCachedAuthState(null);
+      // Clear session state immediately for real-time sync
       setSessionAuthState(null);
 
       // Clear all session storage auth-related items
@@ -343,14 +329,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
   }, []);
 
-  // Auto-refresh session periodically to keep user logged in
+  // Extended session refresh for fewer login interruptions
   useEffect(() => {
     if (!user) return;
 
-    // Refresh session every 6 hours instead of 12 to reduce conflicts
+    // Refresh session every 24 hours for maximum session duration
     const refreshInterval = setInterval(() => {
       refreshSession();
-    }, 6 * 60 * 60 * 1000); // 6 hours
+    }, 24 * 60 * 60 * 1000); // 24 hours
 
     return () => clearInterval(refreshInterval);
   }, [user, refreshSession]);
@@ -450,15 +436,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (initialized && !shouldVerifyCachedState(cachedState)) return; // Skip if we have recent cached state
-
+    // Always verify for real-time sync - no caching delays
     const initAuth = async () => {
       try {
-        // If we have recent cached state, skip loading state
-        const needsVerification = shouldVerifyCachedState(cachedState);
-        if (needsVerification && !cachedState) {
-          setLoading(true);
-        }
+        // Always show loading for fresh auth check
+        setLoading(true);
 
         const currentUser = await getCurrentUser();
 
@@ -531,7 +513,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         AppwriteRealtime.unsubscribeFromAll();
       }
     };
-  }, [getCurrentUser, initializeUserServices, initialized, cachedState, guestUser]);
+  }, [getCurrentUser, initializeUserServices, initialized, guestUser]);
 
   // Add window focus listener to refresh auth state when user returns from OAuth
   useEffect(() => {
@@ -626,7 +608,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { authenticated, user: eventUser } = customEvent.detail;
       if (authenticated && eventUser && !user) {
         console.log('[AuthContext] Received auth state change event, updating state');
-        setCachedAuthState(eventUser);
         setSessionAuthState(eventUser);
 
         flushSync(() => {
@@ -720,12 +701,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await account.createEmailPasswordSession(email, password);
       const currentUser = await account.get(); // Get fresh user data after session creation
 
-      // Check session count after login
+      // Implement single-session enforcement
       const { sessionCount } = await checkActiveSessions();
 
-      // Update both caches immediately for instant future access
-      setCachedAuthState(currentUser);
-      setSessionAuthState(currentUser);
+      // If multiple sessions exist, delete all others to enforce single session
+      if (sessionCount > 1) {
+        console.log('Multiple sessions detected, enforcing single session...');
+        try {
+          // Delete all sessions except current
+          await account.deleteSessions();
+          // Create new session to ensure we stay logged in
+          await account.createEmailPasswordSession(email, password);
+          const freshUser = await account.get();
+          setUser(freshUser);
+          setSessionAuthState(freshUser);
+        } catch (error) {
+          console.warn('Failed to enforce single session:', error);
+          // Continue with existing session
+          setUser(currentUser);
+          setSessionAuthState(currentUser);
+        }
+      } else {
+        // Single session - proceed normally
+        setUser(currentUser);
+        setSessionAuthState(currentUser);
+      }
 
       // Clear pending auth state
       setAuthPending(false);
@@ -768,8 +768,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Get fresh user data after session creation to ensure correct verification status
       const currentUser = await account.get();
 
-      // Update both caches immediately for instant future access
-      setCachedAuthState(currentUser);
+      // Update session state for real-time sync (no long-term caching)
       setSessionAuthState(currentUser);
 
       // Clear pending auth state

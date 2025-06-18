@@ -231,11 +231,11 @@ class StreamingSyncManager {
       clearTimeout(this.debounceTimeouts.get(key)!);
     }
 
-    // Set new timeout with very short delay for real-time streaming
+    // Immediate notification for real-time streaming
     const timeout = setTimeout(() => {
       this.notifySubscribers(key, state);
       this.debounceTimeouts.delete(key);
-    }, 20); // Reduced to 20ms for more responsive streaming
+    }, 0); // Zero delay for instant real-time streaming
 
     this.debounceTimeouts.set(key, timeout);
   }
