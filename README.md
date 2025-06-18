@@ -1,4 +1,4 @@
-# 🚀 AtChat - The Fastest Chat APP Probably! 🎯
+# 🚀 AVChat - The Fastest Chat APP Probably! 🎯
 
 <div align="center">
 
@@ -45,7 +45,7 @@
 
 ## 🎪 What's This Magical Creation?
 
-AtChat is a **next-generation AI chat platform** that combines the power of multiple AI models with a sleek, responsive interface. Think of it as the Swiss Army knife of chat applications, but instead of tiny scissors and a weird hook thing, you get:
+AVChat is a **next-generation AI chat platform** that combines the power of multiple AI models with a sleek, responsive interface. Think of it as the Swiss Army knife of chat applications, but instead of tiny scissors and a weird hook thing, you get:
 
 - 🤖 **Multiple AI Models**: From OpenAI's to Sonnet, we've got them all!
 - ⚡ **Real-time Sync**: Works across devices faster than a cat knocking things off a table
@@ -90,8 +90,8 @@ Before you begin, make sure you have:
 
 ```bash
 # Clone the repo (obviously)
-git clone https://github.com/your-username/AtChat.git
-cd AtChat
+git clone https://github.com/your-username/AVChat.git
+cd AVChat
 
 # Install dependencies (this might take a while, perfect time for a coffee break)
 pnpm install
@@ -139,7 +139,7 @@ NEXT_PUBLIC_APPWRITE_PROJECT_ID=your-project-id-here
 # Get from: Appwrite Console > Your Project > Settings
 
 # Database Configuration
-NEXT_PUBLIC_APPWRITE_DATABASE_ID=atchat-database
+NEXT_PUBLIC_APPWRITE_DATABASE_ID=AVChat-database
 # Create in: Appwrite Console > Databases > Create Database
 
 # Collection IDs (use exactly these names)
@@ -424,7 +424,7 @@ CMD ["pnpm", "start"]
 ## 🎪 Project Structure (The Organized Chaos)
 
 ```
-AtChat/
+AVChat/
 ├── 🎯 app/                     # Next.js 15 App Router
 │   ├── api/                    # API routes (the server magic)
 │   ├── layout.tsx              # Root layout (the foundation)
@@ -485,7 +485,7 @@ AtChat/
 - **Comments for complex logic** (your future self will thank you, trust us)
 - **Consistent formatting** (Prettier is your friend, embrace it!)
 
-### 🏗️ Architecture Principles (The Sacred Laws of AtChat)
+### 🏗️ Architecture Principles (The Sacred Laws of AVChat)
 
 **🎯 Local-First Philosophy:**
 ```typescript
@@ -629,7 +629,7 @@ const useChatStore = create<ChatState>((set, get) => ({
 // Conditional logging for development
 const debugLog = (message: string, data?: any) => {
   if (process.env.NODE_ENV === 'development') {
-    console.log(`🐱 [AtChat Debug]: ${message}`, data);
+    console.log(`🐱 [AVChat Debug]: ${message}`, data);
   }
 };
 
@@ -763,8 +763,8 @@ Translation: Do whatever you want with this code, just don't blame us if your ca
 
 Having issues? Found a bug? Want to chat about cats and AI?
 
-- 🐛 **Report Issues**: [GitHub Issues](https://github.com/cyberboyayush/AtChat/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/cyberboyayush/AtChat/discussions)
+- 🐛 **Report Issues**: [GitHub Issues](https://github.com/cyberboyayush/AVChat/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/cyberboyayush/AVChat/discussions)
 - 📧 **Email**: connect@ayush-sharma.in or connect@vrandacodz.xyz
 - 🐱 **Cat Photos**: Always welcome
 
