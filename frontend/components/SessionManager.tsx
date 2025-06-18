@@ -151,7 +151,7 @@ const SessionManager: React.FC = () => {
       </div>
 
       <div className="text-xs text-muted-foreground space-y-1">
-        <p>• Sessions are automatically refreshed every 24 hours</p>
+        <p>• Sessions are automatically refreshed every 6 hours</p>
         <p>• Single-session enforcement prevents multiple device conflicts</p>
         <p>• Use "Logout from All Devices" if you suspect unauthorized access</p>
       </div>

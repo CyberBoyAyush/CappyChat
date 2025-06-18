@@ -333,10 +333,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     if (!user) return;
 
-    // Refresh session every 24 hours for maximum session duration
+    // Refresh session every 6 hours to prevent Appwrite session expiry
     const refreshInterval = setInterval(() => {
       refreshSession();
-    }, 24 * 60 * 60 * 1000); // 24 hours
+    }, 6 * 60 * 60 * 1000); // 6 hours
 
     return () => clearInterval(refreshInterval);
   }, [user, refreshSession]);
