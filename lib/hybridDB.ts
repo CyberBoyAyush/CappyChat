@@ -686,7 +686,8 @@ export class HybridDB {
       createdAt: message.createdAt || new Date(),
       webSearchResults: message.webSearchResults || undefined,
       attachments: message.attachments || undefined,
-      model: message.model || undefined
+      model: message.model || undefined,
+      imgurl: message.imgurl || undefined
     };
 
     // Instant local update
@@ -973,7 +974,8 @@ export class HybridDB {
       createdAt: new Date(appwriteMessage.createdAt),
       webSearchResults: appwriteMessage.webSearchResults || undefined,
       attachments: attachments,
-      model: appwriteMessage.model || undefined
+      model: appwriteMessage.model || undefined,
+      imgurl: appwriteMessage.imgurl || undefined
     };
 
     LocalDB.addMessage(message);
@@ -1018,7 +1020,8 @@ export class HybridDB {
       createdAt: new Date(appwriteMessage.createdAt),
       webSearchResults: appwriteMessage.webSearchResults || undefined,
       attachments: attachments,
-      model: appwriteMessage.model || undefined
+      model: appwriteMessage.model || undefined,
+      imgurl: appwriteMessage.imgurl || undefined
     };
 
     LocalDB.addMessage(message); // addMessage handles both create and update

@@ -92,6 +92,7 @@ export interface AppwriteMessage extends Models.Document {
   webSearchResults?: string[]; // URLs from web search results
   attachments?: string | FileAttachment[]; // File attachments (stored as JSON string in Appwrite)
   model?: string; // AI model used to generate the message (for assistant messages)
+  imgurl?: string; // URL of generated image (for image generation messages)
 }
 
 // Define Message interface for internal use
@@ -105,6 +106,7 @@ export interface DBMessage {
   webSearchResults?: string[]; // URLs from web search results
   attachments?: FileAttachment[]; // File attachments
   model?: string; // AI model used to generate the message (for assistant messages)
+  imgurl?: string; // URL of generated image (for image generation messages)
 }
 
 // Interface for Appwrite Message Summary document
@@ -761,7 +763,8 @@ export class AppwriteDB {
           createdAt: new Date(messageDoc.createdAt),
           webSearchResults: messageDoc.webSearchResults || undefined,
           attachments: attachments,
-          model: messageDoc.model || undefined
+          model: messageDoc.model || undefined,
+          imgurl: messageDoc.imgurl || undefined
         };
       });
       
@@ -804,6 +807,11 @@ export class AppwriteDB {
       // Add model if present (for assistant messages)
       if (message.model) {
         messageData.model = message.model;
+      }
+
+      // Add imgurl if present (for image generation messages)
+      if (message.imgurl) {
+        messageData.imgurl = message.imgurl;
       }
 
       const messagePromise = databases.createDocument(
@@ -1105,6 +1113,11 @@ export class AppwriteDB {
         // Handle model field properly
         if (originalMessage.model) {
           newMessageData.model = originalMessage.model;
+        }
+
+        // Handle imgurl field properly
+        if (originalMessage.imgurl) {
+          newMessageData.imgurl = originalMessage.imgurl;
         }
 
         await databases.createDocument(

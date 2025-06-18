@@ -187,10 +187,10 @@ export const getModelType = (model: AIModel): ModelType => {
 export const canUserUseModel = async (model: AIModel, usingBYOK: boolean = false, userId?: string, isGuest: boolean = false): Promise<TierValidationResult> => {
   console.log(`[TierSystem] Checking model access for: ${model}, BYOK: ${usingBYOK}, Guest: ${isGuest}`);
 
-  // Guest users can only use Gemini 2.5 Flash
+  // Guest users can only use OpenAI 4.1 Mini
   if (isGuest) {
     console.log('[TierSystem] Guest user detected');
-    if (model === 'Gemini 2.5 Flash') {
+    if (model === 'OpenAI 4.1 Mini') {
       return {
         canUseModel: true,
         remainingCredits: -1, // Unlimited for guest users (no tracking)
@@ -199,7 +199,7 @@ export const canUserUseModel = async (model: AIModel, usingBYOK: boolean = false
       return {
         canUseModel: false,
         remainingCredits: 0,
-        message: 'Guest users can only use Gemini 2.5 Flash. Please sign up for access to other models.',
+        message: 'Guest users can only use OpenAI 4.1 Mini. Please sign up for access to other models.',
       };
     }
   }

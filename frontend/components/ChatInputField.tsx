@@ -24,6 +24,8 @@ import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 import { ModelSelector } from "./ModelSelector";
 import { ConversationStyleSelector } from "./ConversationStyleSelector";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
+import { useModelStore } from "@/frontend/stores/ChatModelStore";
+import { getModelConfig } from "@/lib/models";
 import VoiceInputButton from "./ui/VoiceInputButton";
 import FileUpload, { UploadingFile } from "./FileUpload";
 import { FileAttachment } from "@/lib/appwriteDB";
@@ -34,6 +36,7 @@ import {
   Loader2,
   CheckCircle,
   XCircle,
+  ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/frontend/contexts/AuthContext";
@@ -51,6 +54,7 @@ interface InputFieldProps {
   status: UseChatHelpers["status"];
   setInput: UseChatHelpers["setInput"];
   append: UseChatHelpers["append"];
+  setMessages: UseChatHelpers["setMessages"];
   stop: UseChatHelpers["stop"];
   pendingUserMessageRef: React.RefObject<UIMessage | null>;
   onWebSearchMessage?: (messageId: string) => void;
@@ -86,6 +90,7 @@ function PureInputField({
   status,
   setInput,
   append,
+  setMessages,
   stop,
   pendingUserMessageRef,
   onWebSearchMessage,
@@ -98,6 +103,7 @@ function PureInputField({
   });
 
   const {
+    user,
     isGuest,
     canGuestSendMessage,
     incrementGuestMessages,
@@ -109,6 +115,9 @@ function PureInputField({
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragOverTextarea, setIsDragOverTextarea] = useState(false);
+
+  // State for image generation mode
+  const [isImageGenMode, setIsImageGenMode] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -127,6 +136,9 @@ function PureInputField({
 
   // Web search state
   const { isWebSearchEnabled, setWebSearchEnabled } = useWebSearchStore();
+
+  // Model selection state
+  const { selectedModel, setModel } = useModelStore();
 
   // Track if input change was from user typing vs external source (like prompt selection)
   const lastInputRef = useRef("");
@@ -390,7 +402,7 @@ function PureInputField({
       }
 
       // Check for restricted features for guests
-      if (attachments.length > 0) {
+      if (attachments.length > 0 || isImageGenMode) {
         authDialog.showPremiumFeaturePage(); // Use faster page navigation
         return;
       }
@@ -419,79 +431,110 @@ function PureInputField({
       JSON.stringify(userMessage, null, 2)
     );
 
-    // Handle new vs existing conversations
-    // Check if this is a new conversation by looking at message count
-    const isNewConversation = !id || (messages && messages.length === 0);
+    // Only handle chat completion for non-image generation mode
+    if (!isImageGenMode) {
+      // Handle new vs existing conversations
+      // Check if this is a new conversation by looking at message count
+      const isNewConversation = !id || (messages && messages.length === 0);
 
-    if (isNewConversation) {
-      // New conversation - navigate first if not already there
-      if (!id) {
-        navigate(`/chat/${threadId}`);
-        // Create thread instantly with local update + async backend sync (skip for guest users)
-        // Use createThreadIfNotExists to avoid duplicate creation errors
-        if (!isGuest) {
-          console.log(
-            "👤 Authenticated user - creating thread in ChatInputField:",
-            threadId
-          );
-          HybridDB.createThread(threadId)
-            .then(() => {
-              console.log(
-                "✅ Thread created successfully in ChatInputField:",
-                threadId
-              );
-            })
-            .catch((error) => {
-              // Thread might already exist (e.g., from URL search pre-creation)
-              console.log(
-                "Thread creation handled or already exists:",
-                error.message || error
-              );
-            });
-        } else {
-          console.log(
-            "🎯 Guest user - skipping thread creation in ChatInputField"
-          );
+      if (isNewConversation) {
+        // New conversation - navigate first if not already there
+        if (!id) {
+          navigate(`/chat/${threadId}`);
+          // Create thread instantly with local update + async backend sync (skip for guest users)
+          // Use createThreadIfNotExists to avoid duplicate creation errors
+          if (!isGuest) {
+            console.log(
+              "👤 Authenticated user - creating thread in ChatInputField:",
+              threadId
+            );
+            HybridDB.createThread(threadId)
+              .then(() => {
+                console.log(
+                  "✅ Thread created successfully in ChatInputField:",
+                  threadId
+                );
+              })
+              .catch((error) => {
+                // Thread might already exist (e.g., from URL search pre-creation)
+                console.log(
+                  "Thread creation handled or already exists:",
+                  error.message || error
+                );
+              });
+          } else {
+            console.log(
+              "🎯 Guest user - skipping thread creation in ChatInputField"
+            );
+          }
         }
+
+        // Start completion immediately for better UX
+        // Include attachment information for better title generation
+        const titlePrompt =
+          finalAttachments.length > 0
+            ? `${finalInput}\n\n[User also attached ${
+                finalAttachments.length
+              } file(s): ${finalAttachments
+                .map((att) => `${att.originalName} (${att.fileType})`)
+                .join(", ")}]`
+            : finalInput;
+
+        complete(titlePrompt, {
+          body: { threadId, messageId, isTitle: true },
+        });
+      } else {
+        // Existing conversation
+        complete(finalInput, { body: { messageId, threadId } });
       }
 
-      // Start completion immediately for better UX
-      // Include attachment information for better title generation
-      const titlePrompt =
-        finalAttachments.length > 0
-          ? `${finalInput}\n\n[User also attached ${
-              finalAttachments.length
-            } file(s): ${finalAttachments
-              .map((att) => `${att.originalName} (${att.fileType})`)
-              .join(", ")}]`
-          : finalInput;
+      // Update UI immediately for better responsiveness - useChat handles the state
+      // Store the user message in ref so it can be persisted in ChatInterface's onFinish callback
+      pendingUserMessageRef.current = userMessage;
 
-      complete(titlePrompt, {
-        body: { threadId, messageId, isTitle: true },
-      });
+      // Track if this message was sent with web search enabled
+      if (isWebSearchEnabled && onWebSearchMessage) {
+        onWebSearchMessage(messageId);
+      }
+
+      // Store the user message immediately to the database (skip for guest users)
+      if (!isGuest) {
+        console.log(
+          "💾 Storing user message immediately:",
+          messageId,
+          "Has attachments:",
+          !!userMessage.attachments
+        );
+        HybridDB.createMessage(threadId, userMessage);
+      }
     } else {
-      // Existing conversation
-      complete(finalInput, { body: { messageId, threadId } });
-    }
+      // For image generation mode, we need to handle thread creation manually
+      // since we're not using the chat completion flow
+      const isNewConversation = !id || (messages && messages.length === 0);
 
-    // Update UI immediately for better responsiveness - useChat handles the state
-    // Store the user message in ref so it can be persisted in ChatInterface's onFinish callback
-    pendingUserMessageRef.current = userMessage;
+      if (isNewConversation) {
+        if (!id) {
+          navigate(`/chat/${threadId}`);
+        }
 
-    // Track if this message was sent with web search enabled
-    if (isWebSearchEnabled && onWebSearchMessage) {
-      onWebSearchMessage(messageId);
-    }
+        // Create thread for image generation and generate title
+        if (!isGuest) {
+          console.log("👤 Creating thread for image generation:", threadId);
+          HybridDB.createThread(threadId)
+            .then(() => {
+              console.log("✅ Thread created successfully for image generation:", threadId);
+            })
+            .catch((error) => {
+              console.log("Thread creation handled or already exists:", error.message || error);
+            });
 
-    // Store the user message immediately to the database (skip for guest users)
-    if (!isGuest) {
-      console.log(
-        "💾 Storing user message immediately:",
-        messageId,
-        "Has attachments:",
-        !!userMessage.attachments
-      );
-      HybridDB.createMessage(threadId, userMessage);
+          // Generate title for the thread using the image prompt
+          const titlePrompt = `Generate a short, descriptive title for an image generation request: "${finalInput}"`;
+          complete(titlePrompt, {
+            body: { threadId, messageId, isTitle: true },
+          });
+        }
+      }
     }
 
     // Increment guest message count if guest user
@@ -500,22 +543,141 @@ function PureInputField({
       console.log("🎯 Guest message count incremented");
     }
 
-    // The message will be persisted to database in ChatInterface's onFinish callback
-    // Pass attachments using experimental_attachments parameter AND include in message object for immediate UI display
-    append(
-      {
+    // Handle image generation mode
+    if (isImageGenMode) {
+      console.log("🎨 Image generation mode - calling image generation API");
+
+      // Create user message first
+      const userMessage = {
         id: messageId,
-        role: "user",
+        role: "user" as const,
         content: finalInput,
+        parts: [{ type: "text" as const, text: finalInput }],
         createdAt: new Date(),
-        // Include attachments directly in the message object for immediate UI display
         attachments: finalAttachments.length > 0 ? finalAttachments : undefined,
-      } as any,
-      {
-        experimental_attachments:
-          finalAttachments.length > 0 ? finalAttachments : undefined,
+      };
+
+      // Add user message to UI immediately for fast response
+      setMessages((prevMessages) => [...prevMessages, userMessage as any]);
+
+      // Store user message to database immediately (skip for guest users)
+      if (!isGuest) {
+        HybridDB.createMessage(threadId, userMessage);
       }
-    );
+
+      // Create a loading assistant message immediately for better UX
+      const loadingAssistantMessage = {
+        id: uuidv4(),
+        role: "assistant" as const,
+        content: "🎨 Generating your image...",
+        parts: [{ type: "text" as const, text: "🎨 Generating your image..." }],
+        createdAt: new Date(),
+      };
+
+      // Add loading message to UI
+      setMessages((prevMessages: any) => [...prevMessages, loadingAssistantMessage as any]);
+
+      // Call image generation API
+      try {
+        const response = await fetch('/api/image-generation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt: finalInput,
+            model: selectedModel,
+            userId: isGuest ? null : user?.$id,
+            isGuest: isGuest,
+            width: 1024,
+            height: 1024,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Image generation failed');
+        }
+
+        console.log("✅ Image generated successfully:", result.imageUrl);
+
+        // Create assistant message with generated image
+        const assistantMessageId = uuidv4();
+        const assistantMessage = {
+          id: assistantMessageId,
+          role: "assistant" as const,
+          content: `I've generated an image based on your prompt: "${finalInput}"`,
+          parts: [{ type: "text" as const, text: `I've generated an image based on your prompt: "${finalInput}"` }],
+          createdAt: new Date(),
+          imgurl: result.imageUrl,
+          model: result.model,
+        };
+
+        // Replace the loading message with the actual result
+        setMessages((prevMessages: any) => {
+          const updatedMessages = [...prevMessages];
+          // Find and replace the loading message (last assistant message)
+          for (let i = updatedMessages.length - 1; i >= 0; i--) {
+            if (updatedMessages[i].role === "assistant" && updatedMessages[i].content.includes("Generating your image")) {
+              updatedMessages[i] = assistantMessage;
+              break;
+            }
+          }
+          return updatedMessages;
+        });
+
+        // Store assistant message to database
+        if (!isGuest) {
+          HybridDB.createMessage(threadId, assistantMessage);
+        }
+
+        toast.success("Image generated successfully!");
+      } catch (error) {
+        console.error("❌ Image generation failed:", error);
+        toast.error(error instanceof Error ? error.message : "Failed to generate image");
+
+        // Create error message
+        const errorMessage = {
+          id: uuidv4(),
+          role: "assistant" as const,
+          content: `Sorry, I couldn't generate an image. ${error instanceof Error ? error.message : "Please try again."}`,
+          parts: [{ type: "text" as const, text: `Sorry, I couldn't generate an image. ${error instanceof Error ? error.message : "Please try again."}` }],
+          createdAt: new Date(),
+        };
+
+        // Replace the loading message with the error message
+        setMessages((prevMessages: any) => {
+          const updatedMessages = [...prevMessages];
+          // Find and replace the loading message (last assistant message)
+          for (let i = updatedMessages.length - 1; i >= 0; i--) {
+            if (updatedMessages[i].role === "assistant" && updatedMessages[i].content.includes("Generating your image")) {
+              updatedMessages[i] = errorMessage;
+              break;
+            }
+          }
+          return updatedMessages;
+        });
+      }
+    } else {
+      // Normal text message flow
+      // The message will be persisted to database in ChatInterface's onFinish callback
+      // Pass attachments using experimental_attachments parameter AND include in message object for immediate UI display
+      append(
+        {
+          id: messageId,
+          role: "user",
+          content: finalInput,
+          createdAt: new Date(),
+          // Include attachments directly in the message object for immediate UI display
+          attachments: finalAttachments.length > 0 ? finalAttachments : undefined,
+        } as any,
+        {
+          experimental_attachments:
+            finalAttachments.length > 0 ? finalAttachments : undefined,
+        }
+      );
+    }
     setInput("");
     setAttachments([]); // Clear attachments after sending
     adjustHeight(true);
@@ -540,6 +702,10 @@ function PureInputField({
     incrementGuestMessages,
     authDialog,
     authLoading,
+    isImageGenMode,
+    selectedModel,
+    user,
+    setMessages,
   ]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -786,7 +952,9 @@ function PureInputField({
                 id="message-input"
                 value={input}
                 placeholder={
-                  isHomePage
+                  isImageGenMode
+                    ? "Describe the image you want to generate..."
+                    : isHomePage
                     ? isVoiceInputActive
                       ? "Listening... speak now"
                       : "Ask me anything..."
@@ -883,7 +1051,7 @@ function PureInputField({
                 {!isGuest && (
                   <>
                     <div className="min-w-0 flex-shrink overflow-hidden">
-                      <ModelSelector />
+                      <ModelSelector isImageGenMode={isImageGenMode} />
                     </div>
                     <ConversationStyleSelector className="hidden md:flex flex-shrink-0" />
                     <WebSearchToggle
@@ -895,7 +1063,7 @@ function PureInputField({
                 )}
                 {isGuest && (
                   <div className="text-xs text-muted-foreground">
-                    Using Gemini 2.5 Flash • Sign up for more models
+                    Using OpenAI 4.1 Mini • Sign up for more models
                   </div>
                 )}
               </div>
@@ -909,11 +1077,42 @@ function PureInputField({
                       onToggle={setWebSearchEnabled}
                       className="flex md:hidden"
                     />
+                    <Button
+                      variant={isImageGenMode ? "default" : "outline"}
+                      size="icon"
+                      className="h-10 w-10 sm:h-9 sm:w-9 mobile-touch"
+                      onClick={() => {
+                        const newImageGenMode = !isImageGenMode;
+                        setIsImageGenMode(newImageGenMode);
+
+                        // Handle model switching
+                        if (newImageGenMode) {
+                          // Entering image generation mode - switch to image generation model if not already
+                          const currentConfig = getModelConfig(selectedModel);
+                          if (!currentConfig.isImageGeneration) {
+                            console.log("🎨 Switching to image generation model: FLUX.1 [schnell]");
+                            setModel("FLUX.1 [schnell]");
+                          }
+                        } else {
+                          // Exiting image generation mode - switch back to default model
+                          const currentConfig = getModelConfig(selectedModel);
+                          if (currentConfig.isImageGeneration) {
+                            console.log("💬 Switching back to default model: Gemini 2.5 Flash");
+                            setModel("Gemini 2.5 Flash");
+                          }
+                        }
+                      }}
+                      disabled={status === "streaming" || status === "submitted"}
+                      aria-label={isImageGenMode ? "Switch to text mode" : "Switch to image generation mode"}
+                      title={isImageGenMode ? "Switch to text mode" : "Generate images with AI"}
+                    >
+                      <ImageIcon size={18} />
+                    </Button>
                     <FileUpload
                       onFilesUploaded={handleFilesUploaded}
                       onUploadStatusChange={handleUploadStatusChange}
                       disabled={
-                        status === "streaming" || status === "submitted"
+                        status === "streaming" || status === "submitted" || isImageGenMode
                       }
                     />
                   </>

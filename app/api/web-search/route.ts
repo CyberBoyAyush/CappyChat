@@ -9,7 +9,7 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, conversationStyle, userApiKey } = body;
+    const { messages, conversationStyle, userApiKey, model } = body;
 
     // Validate required fields
     if (!messages || !Array.isArray(messages)) {
@@ -22,8 +22,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Force use of Gemini 2.5 Flash Search model for web search
-    const modelConfig = getModelConfig('Gemini 2.5 Flash Search');
+    // Use the provided model or default to OpenAI 4.1 Mini Search
+    // Only allow search models for web search
+    const allowedSearchModels = ['OpenAI 4.1 Mini Search', 'Gemini 2.5 Flash Search'];
+    const searchModel = model && allowedSearchModels.includes(model) ? model : 'OpenAI 4.1 Mini Search';
+    const modelConfig = getModelConfig(searchModel);
 
     if (!modelConfig) {
       return new Response(

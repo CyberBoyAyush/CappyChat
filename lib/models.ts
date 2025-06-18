@@ -1,7 +1,9 @@
 export const AI_MODELS = [
   'Gemini 2.5 Flash',
+  'Gemini 2.5 Flash Lite',
   'Gemini 2.5 Flash Search',
   'OpenAI 4.1 Mini',
+  'OpenAI 4.1 Mini Search',
   'OpenAI o4-mini',
   'OpenAI 4.1',
   'Claude Sonnet 3.5 Haiku',
@@ -12,34 +14,50 @@ export const AI_MODELS = [
   'Gemini 2.5 Pro',
   'Meta: Llama 4 Maverick',
   'OpenAI 4.1 Nano',
-  'Grok 3 Mini'
+  'Grok 3 Mini',
+  'FLUX.1 [schnell]',
+  'FLUX.1 Dev',
+  'Stable Defusion 3',
 ] as const;
 
 export type AIModel = (typeof AI_MODELS)[number];
 
 export type ModelConfig = {
   modelId: string;
-  provider: 'openrouter';
+  provider: 'openrouter' | 'runware';
   displayName: string;
-  iconType: 'google' | 'openai' | 'anthropic' | 'deepseek' | 'huggingface' | 'qwen' | 'meta' | 'x-ai';
+  iconType: 'google' | 'openai' | 'anthropic' | 'deepseek' | 'huggingface' | 'qwen' | 'meta' | 'x-ai' | 'runware';
   company: string;
   isPremium: boolean;
   isSuperPremium: boolean;
   hasReasoning: boolean;
   isFileSupported: boolean;
+  isImageGeneration?: boolean;
   description: string;
 };
 
 export const MODEL_CONFIGS = {
   'Gemini 2.5 Flash': {
-    modelId: 'google/gemini-2.5-flash-preview-05-20',
+    modelId: 'google/gemini-2.5-flash',
     provider: 'openrouter',
     displayName: 'Gemini 2.5 Flash',
     iconType: 'google',
     company: 'Google',
+    isPremium: true,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: true,
+    description: 'Fast and efficient model from Google',
+  },
+  'Gemini 2.5 Flash Lite': {
+    modelId: 'google/gemini-2.5-flash-lite-preview-06-17',
+    provider: 'openrouter',
+    displayName: 'Gemini 2.5 Flash Lite',
+    iconType: 'google',
+    company: 'Google',
     isPremium: false,
     isSuperPremium: false,
-    hasReasoning: true,
+    hasReasoning: false,
     isFileSupported: true,
     description: 'Fast and efficient model from Google',
   },
@@ -51,7 +69,7 @@ export const MODEL_CONFIGS = {
     company: 'Google',
     isPremium: false,
     isSuperPremium: true,
-    hasReasoning: true,
+    hasReasoning: false,
     isFileSupported: true,
     description: 'Fast and efficient model from Google with web search capabilities',
   },
@@ -78,6 +96,18 @@ export const MODEL_CONFIGS = {
     hasReasoning: false,
     isFileSupported: true,
     description: 'Efficient mini version of OpenAI 4.1',
+  },
+  'OpenAI 4.1 Mini Search': {
+    modelId: 'openai/gpt-4.1-mini:online',
+    provider: 'openrouter',
+    displayName: 'OpenAI 4.1 Mini Search',
+    iconType: 'openai',
+    company: 'OpenAI',
+    isPremium: false,
+    isSuperPremium: true,
+    hasReasoning: false,
+    isFileSupported: true,
+    description: 'Efficient mini version of OpenAI 4.1 with web search capabilities',
   },
   'OpenAI o4-mini': {
     modelId: 'openai/o4-mini',
@@ -199,6 +229,45 @@ export const MODEL_CONFIGS = {
     isFileSupported: true,
     description: 'Fastest model from XAI with advanced reasoning.',
   },
+  'FLUX.1 [schnell]': {
+    modelId: 'runware:100@1',
+    provider: 'runware',
+    displayName: 'AVChat Classic ImageGen',
+    iconType: 'runware',
+    company: 'Runware',
+    isPremium: true,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: false,
+    isImageGeneration: true,
+    description: 'For Ultra-fast Image Generation. Perfect for quick iterations and immediate feedback.',
+  },
+  'FLUX.1 Dev': {
+    modelId: 'runware:101@1',
+    provider: 'runware',
+    displayName: 'AVChat Dev ImageGen',
+    iconType: 'runware',
+    company: 'Runware',
+    isPremium: true,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: false,
+    isImageGeneration: true,
+    description: 'High Quality Image Generation for Developers.',
+  },
+  'Stable Defusion 3': {
+    modelId: 'runware:5@1',
+    provider: 'runware',
+    displayName: 'AVChat SD ImageGen',
+    iconType: 'runware',
+    company: 'Runware',
+    isPremium: true,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: false,
+    isImageGeneration: true,
+    description: 'For Realistic High Quality Image Generation.',
+  },
 } as const satisfies Record<AIModel, ModelConfig>;
 
 export const getModelConfig = (modelName: AIModel): ModelConfig => {
@@ -206,7 +275,7 @@ export const getModelConfig = (modelName: AIModel): ModelConfig => {
   if (!config) {
     console.error(`Model config not found for: ${modelName}. Available models:`, Object.keys(MODEL_CONFIGS));
     // Return a fallback config for the first available model
-    return MODEL_CONFIGS['Gemini 2.5 Flash'];
+    return MODEL_CONFIGS['OpenAI 4.1 Mini'];
   }
   return config;
 };

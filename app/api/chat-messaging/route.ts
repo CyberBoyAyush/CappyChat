@@ -35,11 +35,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Guest user restrictions - force Gemini 2.5 Flash for guest users
+    // Guest user restrictions - force OpenAI 4.1 Mini for guest users
     let actualModel = model;
     if (isGuest) {
-      // Force guest users to use Gemini 2.5 Flash regardless of what model is sent
-      actualModel = 'Gemini 2.5 Flash';
+      // Force guest users to use OpenAI 4.1 Mini regardless of what model is sent
+      actualModel = 'OpenAI 4.1 Mini';
     }
 
     const modelConfig = getModelConfig(actualModel as AIModel);

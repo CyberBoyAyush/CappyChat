@@ -171,14 +171,13 @@ const BYOKIndicator = () => {
 
   return (
     <Button
-      variant="ghost"
       size="sm"
       onClick={handleClick}
       className={cn(
-        "h-7 px-2 text-xs font-medium transition-all duration-200",
+        "h-7 px-2 text-xs font-medium bg-primary/15 transition-all duration-200",
         hasByok
-          ? "text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-950/20"
-          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+          ? "text-green-600 bg-green-200 dark:bg-green-400  hover:text-green-700 hover:bg-green-300 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-600"
+          : "text-muted-foreground hover:text-foreground hover:bg-primary/35"
       )}
       title={
         hasByok
@@ -186,13 +185,19 @@ const BYOKIndicator = () => {
           : "Configure your own API key for unlimited access"
       }
     >
-      <Key className="w-3 h-3 mr-1" />
-      <span className="hidden sm:inline">{hasByok ? "BYOK ON" : "BYOK"}</span>
+      <Key className="w-3 h-3 mr-1 text-primary" />
+      <span className="hidden sm:inline text-foreground">
+        {hasByok ? "BYOK ON" : "BYOK"}
+      </span>
     </Button>
   );
 };
 
-const PureModelSelector = () => {
+interface ModelSelectorProps {
+  isImageGenMode?: boolean;
+}
+
+const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
   const { selectedModel, setModel } = useModelStore();
   const { isWebSearchEnabled } = useWebSearchStore();
   const { hasOpenRouterKey } = useBYOKStore();
@@ -203,20 +208,44 @@ const PureModelSelector = () => {
     Record<AIModel, TierValidationResult>
   >({} as Record<AIModel, TierValidationResult>);
 
-  // When web search is enabled, lock to Gemini 2.5 Flash Search
-  // For guest users, lock to Gemini 2.5 Flash
-  const isLocked = isWebSearchEnabled || isGuest;
+  // For guest users, lock to OpenAI 4.1 Mini
+  // For image generation mode, allow selection but only among image generation models
+  // Web search mode allows selection between search models
+  const isLocked = isGuest;
   const usingBYOK = hasOpenRouterKey();
 
-  // Force guest users to use Gemini 2.5 Flash
+  // Force guest users to use OpenAI 4.1 Mini
   useEffect(() => {
-    if (isGuest && selectedModel !== "Gemini 2.5 Flash") {
+    if (isGuest && selectedModel !== "OpenAI 4.1 Mini") {
       console.log(
-        "[ModelSelector] Guest user detected, forcing model to Gemini 2.5 Flash"
+        "[ModelSelector] Guest user detected, forcing model to OpenAI 4.1 Mini"
       );
-      setModel("Gemini 2.5 Flash");
+      setModel("OpenAI 4.1 Mini");
     }
   }, [isGuest, selectedModel, setModel]);
+
+  // Force image generation mode to use image generation models
+  // Also prevent image generation models from being used outside image generation mode
+  useEffect(() => {
+    if (isImageGenMode) {
+      const currentConfig = getModelConfig(selectedModel);
+      if (!currentConfig.isImageGeneration) {
+        console.log(
+          "[ModelSelector] Image generation mode detected, switching to FLUX.1 [schnell]"
+        );
+        setModel("FLUX.1 [schnell]");
+      }
+    } else {
+      // Not in image generation mode - switch away from image generation models
+      const currentConfig = getModelConfig(selectedModel);
+      if (currentConfig.isImageGeneration) {
+        console.log(
+          "[ModelSelector] Not in image generation mode, switching to OpenAI 4.1 Mini"
+        );
+        setModel("OpenAI 4.1 Mini");
+      }
+    }
+  }, [isImageGenMode, selectedModel, setModel]);
 
   // Load tier validations for all models
   useEffect(() => {
@@ -248,32 +277,47 @@ const PureModelSelector = () => {
   const isModelEnabled = useCallback(
     (model: AIModel) => {
       if (isWebSearchEnabled) {
-        return model === "Gemini 2.5 Flash Search";
+        // When web search is enabled, only show search models
+        return (
+          model === "OpenAI 4.1 Mini Search" ||
+          model === "Gemini 2.5 Flash Search"
+        );
       }
       if (isGuest) {
-        return model === "Gemini 2.5 Flash";
+        return model === "OpenAI 4.1 Mini";
+      }
+      if (isImageGenMode) {
+        const config = getModelConfig(model);
+        return config.isImageGeneration === true;
+      }
+      // Hide search models when web search is not enabled
+      if (
+        model === "Gemini 2.5 Flash Search" ||
+        model === "OpenAI 4.1 Mini Search"
+      ) {
+        return false;
       }
       return true;
     },
-    [isWebSearchEnabled, isGuest]
+    [isWebSearchEnabled, isGuest, isImageGenMode]
   );
 
   const handleModelSelect = useCallback(
     (model: AIModel) => {
-      if (isModelEnabled(model) && !isLocked) {
+      if (isModelEnabled(model)) {
         setModel(model);
         setSearchQuery(""); // Clear search when model is selected
       }
     },
-    [isModelEnabled, setModel, isLocked]
+    [isModelEnabled, setModel]
   );
 
   // Define recommended models
   const recommendedModels: AIModel[] = [
-    "Gemini 2.5 Flash",
     "OpenAI 4.1 Mini",
     "OpenAI o4-mini",
     "DeepSeek R1-0528",
+    "Claude Sonnet 3.5 Haiku",
   ];
 
   // Categorize models
@@ -281,9 +325,24 @@ const PureModelSelector = () => {
     const freeModels: AIModel[] = [];
     const premiumModels: AIModel[] = [];
     const superPremiumModels: AIModel[] = [];
+    const imageGenModels: AIModel[] = [];
 
     AI_MODELS.forEach((model) => {
       const config = getModelConfig(model);
+
+      // If in image generation mode, only include image generation models
+      if (isImageGenMode) {
+        if (config.isImageGeneration) {
+          imageGenModels.push(model);
+        }
+        return;
+      }
+
+      // For normal mode, exclude image generation models
+      if (config.isImageGeneration) {
+        return;
+      }
+
       if (config.isSuperPremium) {
         superPremiumModels.push(model);
       } else if (config.isPremium) {
@@ -293,21 +352,34 @@ const PureModelSelector = () => {
       }
     });
 
-    return { freeModels, premiumModels, superPremiumModels };
-  }, []);
+    return { freeModels, premiumModels, superPremiumModels, imageGenModels };
+  }, [isImageGenMode]);
 
-  // Filter models based on search query
+  // Filter models based on search query and availability
   const filteredModels = useMemo(() => {
+    const filterByAvailability = (models: AIModel[]) =>
+      models.filter((model) => isModelEnabled(model));
+
     if (!searchQuery.trim()) {
       return {
-        recommended: recommendedModels,
-        ...categorizeModels,
+        recommended: isImageGenMode
+          ? []
+          : filterByAvailability(recommendedModels),
+        freeModels: filterByAvailability(categorizeModels.freeModels),
+        premiumModels: filterByAvailability(categorizeModels.premiumModels),
+        superPremiumModels: filterByAvailability(
+          categorizeModels.superPremiumModels
+        ),
+        imageGenModels: filterByAvailability(categorizeModels.imageGenModels),
       };
     }
 
     const query = searchQuery.toLowerCase();
     const filterModels = (models: AIModel[]) =>
       models.filter((model) => {
+        // First check if model is enabled
+        if (!isModelEnabled(model)) return false;
+
         const config = getModelConfig(model);
         return (
           config.displayName.toLowerCase().includes(query) ||
@@ -316,20 +388,28 @@ const PureModelSelector = () => {
           (config.isPremium && "premium".includes(query)) ||
           (config.isSuperPremium && "super premium".includes(query)) ||
           (config.hasReasoning && "reasoning".includes(query)) ||
-          (config.isFileSupported && "file".includes(query))
+          (config.isFileSupported && "file".includes(query)) ||
+          (config.isImageGeneration && "image".includes(query))
         );
       });
 
     return {
-      recommended: filterModels(recommendedModels),
+      recommended: isImageGenMode ? [] : filterModels(recommendedModels),
       freeModels: filterModels(categorizeModels.freeModels),
       premiumModels: filterModels(categorizeModels.premiumModels),
       superPremiumModels: filterModels(categorizeModels.superPremiumModels),
+      imageGenModels: filterModels(categorizeModels.imageGenModels),
     };
-  }, [searchQuery, recommendedModels, categorizeModels]);
+  }, [
+    searchQuery,
+    recommendedModels,
+    categorizeModels,
+    isImageGenMode,
+    isModelEnabled,
+  ]);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 ">
       <DropdownMenu>
         <DropdownMenuTrigger asChild disabled={isLocked}>
           <Button
@@ -342,12 +422,13 @@ const PureModelSelector = () => {
               isLocked && "opacity-75 cursor-not-allowed hover:bg-transparent"
             )}
             aria-label={`Selected model: ${selectedModel}${
-              isLocked ? " (locked for web search)" : ""
+              isLocked ? " (locked for guest users)" : ""
             }`}
             disabled={isLocked}
+            title={isLocked ? "Locked for guest users" : "Select AI Model"}
           >
             <div className="flex max-w-[120px] sm:max-w-[160px] md:max-w-sm items-center gap-1 sm:gap-1.5">
-              {isLocked && (
+              {isGuest && (
                 <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-60 flex-shrink-0" />
               )}
               <span className="mobile-text truncate font-medium text-xs sm:text-sm min-w-0">
@@ -361,7 +442,7 @@ const PureModelSelector = () => {
         </DropdownMenuTrigger>
         <DropdownMenuContent
           className={cn(
-            "w-[320px] sm:w-[480px] max-w-[95vw] p-3 sm:p-4",
+            "w-[320px] sm:w-[480px] max-w-[95vw] p-3 sm:p-4 main-chat-scrollbar",
             "border-border dark:bg-zinc-900/50 backdrop-blur-3xl",
             "max-h-[70vh] overflow-y-auto",
             "shadow-lg"
@@ -370,13 +451,16 @@ const PureModelSelector = () => {
           sideOffset={8}
         >
           {/* Header */}
-          <div className="mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-border">
-            <h2 className="text-sm font-semibold text-foreground">
-              Select AI Model
-            </h2>
-            <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
-              Choose the AI model that best fits your needs
-            </p>
+          <div className="mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-border flex gap-3.5 justify-between">
+            <div className="">
+              <h2 className="text-sm font-semibold text-foreground">
+                Select AI Model
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
+                Choose the AI model that best fits your needs
+              </p>
+            </div>
+            <BYOKIndicator />
           </div>
 
           {/* Search Input */}
@@ -494,11 +578,39 @@ const PureModelSelector = () => {
               </div>
             )}
 
+            {/* Image Generation Models */}
+            {filteredModels.imageGenModels &&
+              filteredModels.imageGenModels.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <span className="text-primary">🎨</span>
+                    Image Generation
+                  </h3>
+                  <span className="text-xs text-muted-foreground block mb-2">
+                    AI Models For Creating Images From Text Prompts
+                  </span>
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                    {filteredModels.imageGenModels.map((model) => (
+                      <ModelCard
+                        key={model}
+                        model={model}
+                        isSelected={selectedModel === model}
+                        onSelect={handleModelSelect}
+                        showKeyIcon={hasOpenRouterKey()}
+                        tierValidation={tierValidations[model]}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
             {/* No results */}
             {filteredModels.recommended.length === 0 &&
               filteredModels.freeModels.length === 0 &&
               filteredModels.premiumModels.length === 0 &&
-              filteredModels.superPremiumModels.length === 0 && (
+              filteredModels.superPremiumModels.length === 0 &&
+              (!filteredModels.imageGenModels ||
+                filteredModels.imageGenModels.length === 0) && (
                 <div className="text-center py-8">
                   <Search className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">
@@ -522,14 +634,14 @@ const PureModelSelector = () => {
                 {filteredModels.recommended.length +
                   filteredModels.freeModels.length +
                   filteredModels.premiumModels.length +
-                  filteredModels.superPremiumModels.length}{" "}
+                  filteredModels.superPremiumModels.length +
+                  (filteredModels.imageGenModels?.length || 0)}{" "}
                 of {AI_MODELS.length} models
               </p>
             )}
           </div>
         </DropdownMenuContent>
       </DropdownMenu>
-      <BYOKIndicator />
     </div>
   );
 };
