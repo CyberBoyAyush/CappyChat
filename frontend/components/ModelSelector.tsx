@@ -166,7 +166,7 @@ const BYOKIndicator = () => {
   const hasByok = hasOpenRouterKey();
 
   const handleClick = () => {
-    navigate("/settings");
+    navigate("/settings?section=application");
   };
 
   return (

@@ -6,13 +6,11 @@
  * Sets up the sidebar provider and renders the main chat interface structure.
  */
 
-import { SidebarProvider, useSidebar } from "@/frontend/components/ui/sidebar";
+import { SidebarProvider } from "@/frontend/components/ui/sidebar";
 import ChatSidebarPanel from "@/frontend/components/ChatSidebarPanel";
 import { Outlet } from "react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useIsMobile } from "@/hooks/useMobileDetection";
-import { Button } from "@/frontend/components/ui/button";
-import { PanelLeftIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import EmailVerificationGuard from "@/frontend/components/EmailVerificationGuard";
@@ -77,11 +75,17 @@ export default function ChatLayoutWrapper() {
     });
   };
 
+  // Memoized onOpenChange handler to prevent unnecessary re-renders
+  const handleOpenChange = useCallback((open: boolean) => {
+    setSidebarOpen(open);
+    localStorage.setItem("sidebarOpen", String(open));
+  }, []);
+
   // Handle mouse move event for dragging
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
+    if (!isDragging) return;
 
+    const handleMouseMove = (e: MouseEvent) => {
       // Calculate new width based on mouse position
       const newWidth = Math.max(minWidth, Math.min(maxWidth, e.clientX));
       setSidebarWidth(newWidth);
@@ -99,15 +103,15 @@ export default function ChatLayoutWrapper() {
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
-      document.body.style.userSelect = "none";
     };
-  }, [isDragging]);
+  }, [isDragging, minWidth, maxWidth]);
 
   // If user is authenticated but email is not verified, show verification guard
   if (isAuthenticated && !isEmailVerified) {
     return (
       <EmailVerificationGuard>
-        <div></div> {/* This will never render because EmailVerificationGuard blocks unverified users */}
+        <div></div>{" "}
+        {/* This will never render because EmailVerificationGuard blocks unverified users */}
       </EmailVerificationGuard>
     );
   }
@@ -116,7 +120,7 @@ export default function ChatLayoutWrapper() {
     <SidebarProvider
       defaultOpen={!isMobile}
       open={sidebarOpen}
-      onOpenChange={setSidebarOpen}
+      onOpenChange={handleOpenChange}
     >
       <div className="flex h-screen w-full overflow-hidden relative">
         {/* Overlay for mobile when sidebar is open */}

@@ -1,16 +1,16 @@
 /**
  * FileUpload Component
- * 
+ *
  * Handles file upload functionality with drag-and-drop support.
  * Validates files and uploads them to Cloudinary via API.
  */
 
-import React, { useCallback, useState, useRef } from 'react';
-import { FileAttachment } from '@/lib/appwriteDB';
-import { Button } from './ui/button';
-import { Paperclip, Upload, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import React, { useCallback, useState, useRef } from "react";
+import { FileAttachment } from "@/lib/appwriteDB";
+import { Button } from "./ui/button";
+import { Paperclip, Upload, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface FileUploadProps {
   onFilesUploaded: (attachments: FileAttachment[]) => void;
@@ -23,10 +23,15 @@ export interface UploadingFile {
   file: File;
   progress: number;
   error?: string;
-  status: 'uploading' | 'success' | 'error';
+  status: "uploading" | "success" | "error";
 }
 
-export default function FileUpload({ onFilesUploaded, disabled, className, onUploadStatusChange }: FileUploadProps) {
+export default function FileUpload({
+  onFilesUploaded,
+  disabled,
+  className,
+  onUploadStatusChange,
+}: FileUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -34,16 +39,22 @@ export default function FileUpload({ onFilesUploaded, disabled, className, onUpl
   const validateFile = (file: File): { valid: boolean; error?: string } => {
     const maxSize = 5 * 1024 * 1024; // 5MB
     const allowedTypes = [
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'application/pdf'
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "application/pdf",
     ];
 
     if (file.size > maxSize) {
-      return { valid: false, error: 'File size must be less than 5MB' };
+      return { valid: false, error: "File size must be less than 5MB" };
     }
 
     if (!allowedTypes.includes(file.type)) {
-      return { valid: false, error: 'Only images (JPEG, PNG, GIF, WebP) and PDF files are allowed' };
+      return {
+        valid: false,
+        error: "Only images (JPEG, PNG, GIF, WebP) and PDF files are allowed",
+      };
     }
 
     return { valid: true };
@@ -64,10 +75,10 @@ export default function FileUpload({ onFilesUploaded, disabled, className, onUpl
     if (validFiles.length === 0) return;
 
     // Initialize uploading state
-    const uploadingFiles: UploadingFile[] = validFiles.map(file => ({
+    const uploadingFiles: UploadingFile[] = validFiles.map((file) => ({
       file,
       progress: 0,
-      status: 'uploading' as const,
+      status: "uploading" as const,
     }));
     setUploadingFiles(uploadingFiles);
     onUploadStatusChange?.(uploadingFiles);
@@ -75,27 +86,27 @@ export default function FileUpload({ onFilesUploaded, disabled, className, onUpl
     try {
       // Create form data
       const formData = new FormData();
-      validFiles.forEach(file => {
-        formData.append('files', file);
+      validFiles.forEach((file) => {
+        formData.append("files", file);
       });
 
       // Upload files
-      const response = await fetch('/api/upload', {
-        method: 'POST',
+      const response = await fetch("/api/upload", {
+        method: "POST",
         body: formData,
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Upload failed');
+        throw new Error(result.error || "Upload failed");
       }
 
       // Show success state briefly before clearing
-      const successFiles = validFiles.map(file => ({
+      const successFiles = validFiles.map((file) => ({
         file,
         progress: 100,
-        status: 'success' as const,
+        status: "success" as const,
       }));
       setUploadingFiles(successFiles);
       onUploadStatusChange?.(successFiles);
@@ -103,7 +114,9 @@ export default function FileUpload({ onFilesUploaded, disabled, className, onUpl
       // Handle successful uploads
       if (result.attachments && result.attachments.length > 0) {
         onFilesUploaded(result.attachments);
-        toast.success(`${result.attachments.length} file(s) uploaded successfully`);
+        toast.success(
+          `${result.attachments.length} file(s) uploaded successfully`
+        );
       }
 
       // Handle partial failures
@@ -118,21 +131,20 @@ export default function FileUpload({ onFilesUploaded, disabled, className, onUpl
         setUploadingFiles([]);
         onUploadStatusChange?.([]);
       }, 1500);
-
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error("Upload error:", error);
 
       // Show error state
-      const errorFiles = validFiles.map(file => ({
+      const errorFiles = validFiles.map((file) => ({
         file,
         progress: 0,
-        status: 'error' as const,
-        error: 'Upload failed'
+        status: "error" as const,
+        error: "Upload failed",
       }));
       setUploadingFiles(errorFiles);
       onUploadStatusChange?.(errorFiles);
 
-      toast.error('Failed to upload files. Please try again.');
+      toast.error("Failed to upload files. Please try again.");
 
       // Clear error state after delay
       setTimeout(() => {
@@ -148,13 +160,16 @@ export default function FileUpload({ onFilesUploaded, disabled, className, onUpl
     uploadFiles(fileArray);
   };
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!disabled) {
-      setIsDragOver(true);
-    }
-  }, [disabled]);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!disabled) {
+        setIsDragOver(true);
+      }
+    },
+    [disabled]
+  );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -162,23 +177,24 @@ export default function FileUpload({ onFilesUploaded, disabled, className, onUpl
     setIsDragOver(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-    
-    if (disabled) return;
-    
-    const files = e.dataTransfer.files;
-    handleFileSelect(files);
-  }, [disabled]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+
+      if (disabled) return;
+
+      const files = e.dataTransfer.files;
+      handleFileSelect(files);
+    },
+    [disabled]
+  );
 
   const handleButtonClick = () => {
     if (disabled) return;
     fileInputRef.current?.click();
   };
-
-
 
   return (
     <div className={cn("relative", className)}>
@@ -206,7 +222,11 @@ export default function FileUpload({ onFilesUploaded, disabled, className, onUpl
             ? "bg-primary/10 text-primary"
             : "hover:bg-muted/80 hover:scale-105 active:scale-95"
         )}
-        title={uploadingFiles.length > 0 ? "Uploading files..." : "Upload files (Images and PDFs)"}
+        title={
+          uploadingFiles.length > 0
+            ? "Uploading files..."
+            : "Upload files (Images and PDFs)"
+        }
       >
         {uploadingFiles.length > 0 ? (
           <div className="relative">
@@ -255,16 +275,23 @@ export default function FileUpload({ onFilesUploaded, disabled, className, onUpl
             {/* Visual indicator */}
             <div className="mt-4 sm:mt-6 flex justify-center">
               <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div
+                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                  style={{ animationDelay: "0ms" }}
+                />
+                <div
+                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                  style={{ animationDelay: "150ms" }}
+                />
+                <div
+                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                  style={{ animationDelay: "300ms" }}
+                />
               </div>
             </div>
           </div>
         </div>
       )}
-
-
 
       {/* Global drag handlers */}
       <div

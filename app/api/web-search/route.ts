@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: 'OpenRouter API key not configured. Please add your API key in Settings.' }),
+        JSON.stringify({ error: 'OpenRouter API key not configured. Please add your API key in Settings → Application.' }),
         {
           status: 500,
           headers: { 'Content-Type': 'application/json' },

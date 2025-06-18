@@ -7,7 +7,7 @@
  * Creates new threads when needed and manages chat state.
  */
 
-import { ArrowUpIcon } from "lucide-react";
+import { ArrowUpIcon, Sparkles } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Textarea } from "@/frontend/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -522,10 +522,16 @@ function PureInputField({
           console.log("👤 Creating thread for image generation:", threadId);
           HybridDB.createThread(threadId)
             .then(() => {
-              console.log("✅ Thread created successfully for image generation:", threadId);
+              console.log(
+                "✅ Thread created successfully for image generation:",
+                threadId
+              );
             })
             .catch((error) => {
-              console.log("Thread creation handled or already exists:", error.message || error);
+              console.log(
+                "Thread creation handled or already exists:",
+                error.message || error
+              );
             });
 
           // Generate title for the thread using the image prompt
@@ -575,14 +581,17 @@ function PureInputField({
       };
 
       // Add loading message to UI
-      setMessages((prevMessages: any) => [...prevMessages, loadingAssistantMessage as any]);
+      setMessages((prevMessages: any) => [
+        ...prevMessages,
+        loadingAssistantMessage as any,
+      ]);
 
       // Call image generation API
       try {
-        const response = await fetch('/api/image-generation', {
-          method: 'POST',
+        const response = await fetch("/api/image-generation", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             prompt: finalInput,
@@ -597,7 +606,7 @@ function PureInputField({
         const result = await response.json();
 
         if (!response.ok) {
-          throw new Error(result.error || 'Image generation failed');
+          throw new Error(result.error || "Image generation failed");
         }
 
         console.log("✅ Image generated successfully:", result.imageUrl);
@@ -608,7 +617,12 @@ function PureInputField({
           id: assistantMessageId,
           role: "assistant" as const,
           content: `I've generated an image based on your prompt: "${finalInput}"`,
-          parts: [{ type: "text" as const, text: `I've generated an image based on your prompt: "${finalInput}"` }],
+          parts: [
+            {
+              type: "text" as const,
+              text: `I've generated an image based on your prompt: "${finalInput}"`,
+            },
+          ],
           createdAt: new Date(),
           imgurl: result.imageUrl,
           model: result.model,
@@ -619,7 +633,10 @@ function PureInputField({
           const updatedMessages = [...prevMessages];
           // Find and replace the loading message (last assistant message)
           for (let i = updatedMessages.length - 1; i >= 0; i--) {
-            if (updatedMessages[i].role === "assistant" && updatedMessages[i].content.includes("Generating your image")) {
+            if (
+              updatedMessages[i].role === "assistant" &&
+              updatedMessages[i].content.includes("Generating your image")
+            ) {
               updatedMessages[i] = assistantMessage;
               break;
             }
@@ -635,14 +652,25 @@ function PureInputField({
         toast.success("Image generated successfully!");
       } catch (error) {
         console.error("❌ Image generation failed:", error);
-        toast.error(error instanceof Error ? error.message : "Failed to generate image");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to generate image"
+        );
 
         // Create error message
         const errorMessage = {
           id: uuidv4(),
           role: "assistant" as const,
-          content: `Sorry, I couldn't generate an image. ${error instanceof Error ? error.message : "Please try again."}`,
-          parts: [{ type: "text" as const, text: `Sorry, I couldn't generate an image. ${error instanceof Error ? error.message : "Please try again."}` }],
+          content: `Sorry, I couldn't generate an image. ${
+            error instanceof Error ? error.message : "Please try again."
+          }`,
+          parts: [
+            {
+              type: "text" as const,
+              text: `Sorry, I couldn't generate an image. ${
+                error instanceof Error ? error.message : "Please try again."
+              }`,
+            },
+          ],
           createdAt: new Date(),
         };
 
@@ -651,7 +679,10 @@ function PureInputField({
           const updatedMessages = [...prevMessages];
           // Find and replace the loading message (last assistant message)
           for (let i = updatedMessages.length - 1; i >= 0; i--) {
-            if (updatedMessages[i].role === "assistant" && updatedMessages[i].content.includes("Generating your image")) {
+            if (
+              updatedMessages[i].role === "assistant" &&
+              updatedMessages[i].content.includes("Generating your image")
+            ) {
               updatedMessages[i] = errorMessage;
               break;
             }
@@ -670,7 +701,8 @@ function PureInputField({
           content: finalInput,
           createdAt: new Date(),
           // Include attachments directly in the message object for immediate UI display
-          attachments: finalAttachments.length > 0 ? finalAttachments : undefined,
+          attachments:
+            finalAttachments.length > 0 ? finalAttachments : undefined,
         } as any,
         {
           experimental_attachments:
@@ -1080,7 +1112,7 @@ function PureInputField({
                     <Button
                       variant={isImageGenMode ? "default" : "outline"}
                       size="icon"
-                      className="h-10 w-10 sm:h-9 sm:w-9 mobile-touch"
+                      className="h-10 w-10 sm:h-9 sm:w-9 mobile-touch relative"
                       onClick={() => {
                         const newImageGenMode = !isImageGenMode;
                         setIsImageGenMode(newImageGenMode);
@@ -1090,29 +1122,51 @@ function PureInputField({
                           // Entering image generation mode - switch to image generation model if not already
                           const currentConfig = getModelConfig(selectedModel);
                           if (!currentConfig.isImageGeneration) {
-                            console.log("🎨 Switching to image generation model: FLUX.1 [schnell]");
+                            console.log(
+                              "🎨 Switching to image generation model: FLUX.1 [schnell]"
+                            );
                             setModel("FLUX.1 [schnell]");
                           }
                         } else {
                           // Exiting image generation mode - switch back to default model
                           const currentConfig = getModelConfig(selectedModel);
                           if (currentConfig.isImageGeneration) {
-                            console.log("💬 Switching back to default model: Gemini 2.5 Flash");
-                            setModel("Gemini 2.5 Flash");
+                            console.log(
+                              "💬 Switching back to default model: Gemini 2.5 Flash"
+                            );
+                            setModel("OpenAI 4.1 Mini");
                           }
                         }
                       }}
-                      disabled={status === "streaming" || status === "submitted"}
-                      aria-label={isImageGenMode ? "Switch to text mode" : "Switch to image generation mode"}
-                      title={isImageGenMode ? "Switch to text mode" : "Generate images with AI"}
+                      disabled={
+                        status === "streaming" || status === "submitted"
+                      }
+                      aria-label={
+                        isImageGenMode
+                          ? "Switch to text mode"
+                          : "Switch to image generation mode"
+                      }
+                      title={
+                        isImageGenMode
+                          ? "Switch to text mode"
+                          : "Generate images with AI"
+                      }
                     >
-                      <ImageIcon size={18} />
+                      <Sparkles
+                        size={14}
+                        className={`absolute top-1 right-1  ${
+                          isImageGenMode ? "text-foreground" : "text-primary"
+                        }}`}
+                      />
+                      <ImageIcon size={20} />
                     </Button>
                     <FileUpload
                       onFilesUploaded={handleFilesUploaded}
                       onUploadStatusChange={handleUploadStatusChange}
                       disabled={
-                        status === "streaming" || status === "submitted" || isImageGenMode
+                        status === "streaming" ||
+                        status === "submitted" ||
+                        isImageGenMode
                       }
                     />
                   </>

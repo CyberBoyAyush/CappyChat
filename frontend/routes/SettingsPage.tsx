@@ -35,6 +35,7 @@ import {
   ArrowLeft,
   Keyboard,
   MessageSquareMore,
+  Sparkles,
 } from "lucide-react";
 import ThemeToggleButton from "../components/ui/ThemeComponents";
 import { useTheme } from "next-themes";
@@ -75,8 +76,16 @@ export default function SettingsPage() {
     (window.navigator.userAgent.includes("Mac") ||
       window.navigator.userAgent.includes("iPhone"));
 
-  // Section navigation state
-  const [activeSection, setActiveSection] = useState("profile");
+  // Section navigation state - check for BYOK redirect
+  const [activeSection, setActiveSection] = useState(() => {
+    // Check if user was redirected for BYOK management
+    const urlParams = new URLSearchParams(location.search);
+    const section = urlParams.get("section");
+    if (section === "byok" || section === "application") {
+      return "application";
+    }
+    return "profile";
+  });
 
   // Profile state
   const [isEditing, setIsEditing] = useState(false);
@@ -532,7 +541,7 @@ export default function SettingsPage() {
                   {
                     id: "customization",
                     label: "Customization",
-                    icon: Settings,
+                    icon: Sparkles,
                   },
                   { id: "privacy", label: "Privacy & Security", icon: Shield },
                   {
@@ -898,8 +907,6 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 )}
-
-                
 
                 {/* Customization Section */}
                 {activeSection === "customization" && (
