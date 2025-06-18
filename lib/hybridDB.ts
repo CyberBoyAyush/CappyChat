@@ -187,7 +187,13 @@ export class HybridDB {
 
   // Initialize the hybrid database
   static async initialize(userId: string, isGuest: boolean = false): Promise<void> {
-    if (this.initialized) return;
+    if (this.initialized) {
+      // Check if local data exists for authenticated users
+      if (!isGuest && userId) {
+        await this.checkAndRefreshIfDataMissing(userId);
+      }
+      return;
+    }
     if (this.initializationPromise) return this.initializationPromise;
 
     this.initializationPromise = this.doInitialize(userId, isGuest);
@@ -1253,6 +1259,17 @@ export class HybridDB {
     return this.isOnline;
   }
 
+  // Manual trigger for testing - can be called from browser console
+  static async testDataRefresh(): Promise<void> {
+    const userId = LocalDB.getUserId();
+    if (userId) {
+      console.log('[HybridDB] Manual data refresh triggered for user:', userId);
+      await this.checkAndRefreshIfDataMissing(userId);
+    } else {
+      console.log('[HybridDB] No user ID found, cannot refresh data');
+    }
+  }
+
   // Force sync messages for a specific thread (throttled to prevent abuse)
   static async forceSyncThread(threadId: string): Promise<void> {
     // Skip force sync for guest users
@@ -1284,6 +1301,57 @@ export class HybridDB {
       console.error('Failed to force sync thread:', error);
     } finally {
       this.pendingMessageSyncs.delete(`force_${threadId}`);
+    }
+  }
+
+  // Check if local data is missing and refresh from remote if needed
+  static async checkAndRefreshIfDataMissing(userId: string): Promise<void> {
+    if (this.isGuestMode) {
+      return;
+    }
+
+    try {
+      // Check if we have any local data
+      const localThreads = LocalDB.getThreads();
+      const localProjects = LocalDB.getProjects();
+      const storedUserId = LocalDB.getUserId();
+
+      // If no local data exists or user ID doesn't match, refresh from remote
+      const shouldRefresh = localThreads.length === 0 && localProjects.length === 0 || storedUserId !== userId;
+
+      if (shouldRefresh) {
+        console.log('[HybridDB] Local data missing or user mismatch, refreshing from Appwrite...', {
+          localThreadsCount: localThreads.length,
+          localProjectsCount: localProjects.length,
+          storedUserId,
+          currentUserId: userId
+        });
+
+        // Set the correct user ID
+        LocalDB.setUserId(userId);
+
+        // Fetch fresh data from Appwrite
+        const [threads, projects] = await Promise.all([
+          AppwriteDB.getThreads(),
+          AppwriteDB.getProjects()
+        ]);
+
+        // Update local storage with fresh data
+        LocalDB.replaceAllThreads(threads);
+        LocalDB.replaceAllProjects(projects);
+
+        // Emit immediate updates to refresh UI
+        debouncedEmitter.emitImmediate('threads_updated', threads);
+        debouncedEmitter.emitImmediate('projects_updated', projects);
+
+        console.log('[HybridDB] Data refresh completed successfully:', {
+          threadsCount: threads.length,
+          projectsCount: projects.length
+        });
+      }
+    } catch (error) {
+      console.error('[HybridDB] Failed to check and refresh missing data:', error);
+      // Don't throw error to avoid blocking the app
     }
   }
 
@@ -1321,4 +1389,9 @@ export class HybridDB {
       debouncedEmitter.emitImmediate('projects_updated', []);
     }
   }
+}
+
+// Expose HybridDB globally for testing in browser console
+if (typeof window !== 'undefined') {
+  (window as any).HybridDB = HybridDB;
 }

@@ -355,6 +355,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => clearInterval(refreshInterval);
   }, [user, refreshSession]);
 
+  // Periodic check for missing local data (every 30 seconds)
+  useEffect(() => {
+    if (!user || !initialized) return;
+
+    const checkDataInterval = setInterval(async () => {
+      try {
+        // Check if local data exists
+        const localThreadsData = localStorage.getItem('atchat_threads');
+        const localProjectsData = localStorage.getItem('atchat_projects');
+        const storedUserId = localStorage.getItem('atchat_user_id');
+
+        // If local data is missing or user ID doesn't match, refresh from backend
+        const hasLocalData = localThreadsData && localProjectsData;
+        const userIdMatches = storedUserId === user.$id;
+
+        if (!hasLocalData || !userIdMatches) {
+          console.log('[AuthContext] Local data missing or user mismatch detected, refreshing from Appwrite...', {
+            hasLocalData: !!hasLocalData,
+            userIdMatches,
+            storedUserId,
+            currentUserId: user.$id
+          });
+
+          // Force refresh data from Appwrite
+          await HybridDB.checkAndRefreshIfDataMissing(user.$id);
+        }
+      } catch (error) {
+        console.error('[AuthContext] Error checking local data:', error);
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(checkDataInterval);
+  }, [user, initialized]);
+
   // Refresh user data
   const refreshUser = useCallback(async (): Promise<void> => {
     try {
@@ -526,6 +560,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } catch (error) {
           console.error('Failed to refresh auth state on window focus:', error);
         }
+      } else if (user && initialized) {
+        // For authenticated users, check if local data is missing when they return to the tab
+        try {
+          const localThreadsData = localStorage.getItem('atchat_threads');
+          const localProjectsData = localStorage.getItem('atchat_projects');
+          const storedUserId = localStorage.getItem('atchat_user_id');
+
+          const hasLocalData = localThreadsData && localProjectsData;
+          const userIdMatches = storedUserId === user.$id;
+
+          if (!hasLocalData || !userIdMatches) {
+            console.log('[AuthContext] Local data missing on window focus, refreshing from Appwrite...');
+            await HybridDB.checkAndRefreshIfDataMissing(user.$id);
+          }
+        } catch (error) {
+          console.error('[AuthContext] Error checking local data on window focus:', error);
+        }
       }
     };
 
@@ -620,7 +671,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
+    // Handle page visibility changes (more reliable than focus for detecting when user returns)
+    const handleVisibilityChange = async () => {
+      if (!document.hidden && user && initialized) {
+        // Page became visible and user is authenticated
+        try {
+          const localThreadsData = localStorage.getItem('atchat_threads');
+          const localProjectsData = localStorage.getItem('atchat_projects');
+          const storedUserId = localStorage.getItem('atchat_user_id');
+
+          const hasLocalData = localThreadsData && localProjectsData;
+          const userIdMatches = storedUserId === user.$id;
+
+          if (!hasLocalData || !userIdMatches) {
+            console.log('[AuthContext] Local data missing on visibility change, refreshing from Appwrite...');
+            await HybridDB.checkAndRefreshIfDataMissing(user.$id);
+          }
+        } catch (error) {
+          console.error('[AuthContext] Error checking local data on visibility change:', error);
+        }
+      }
+    };
+
     window.addEventListener('focus', handleWindowFocus);
+    window.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('authStateChanged', handleAuthStateChanged);
     window.addEventListener('adminDataDeleted', handleAdminDataDeleted);
     window.addEventListener('adminAllDataDeleted', handleAdminAllDataDeleted);
@@ -628,6 +702,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       clearInterval(oauthInterval);
       window.removeEventListener('focus', handleWindowFocus);
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('authStateChanged', handleAuthStateChanged);
       window.removeEventListener('adminDataDeleted', handleAdminDataDeleted);
       window.removeEventListener('adminAllDataDeleted', handleAdminAllDataDeleted);
