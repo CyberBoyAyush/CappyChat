@@ -108,6 +108,38 @@ export function MessageLoading() {
   );
 }
 
+/**
+ * ImageGenerationLoading Component
+ *
+ * Used in: frontend/components/Message.tsx
+ * Purpose: Displays a specialized loading animation for image generation.
+ * Shows "Cooking Something For You Please Wait" message with animated cooking emoji.
+ */
+export function ImageGenerationLoading() {
+  console.log("🍳 ImageGenerationLoading component rendered");
+
+  return (
+    <div className="flex items-center gap-3 p-4 rounded-lg bg-card/30 border border-border/50">
+      {/* Animated cooking emoji */}
+      <div className="text-2xl animate-bounce">
+        🍳
+      </div>
+
+      {/* Loading message with animated dots */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium text-foreground">
+          Cooking Something For You Please Wait
+        </span>
+        <div className="flex gap-1">
+          <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
+          <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
+          <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ===============================================
 // Web Search Toggle Component
 // ===============================================

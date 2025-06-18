@@ -1,5 +1,6 @@
 export const AI_MODELS = [
   'Gemini 2.5 Flash',
+  'Gemini 2.5 Flash Lite',
   'Gemini 2.5 Flash Search',
   'OpenAI 4.1 Mini',
   'OpenAI 4.1 Mini Search',
@@ -15,7 +16,8 @@ export const AI_MODELS = [
   'OpenAI 4.1 Nano',
   'Grok 3 Mini',
   'FLUX.1 [schnell]',
-  'FLUX.1 Dev'
+  'FLUX.1 Dev',
+  'Stable Defusion 3',
 ] as const;
 
 export type AIModel = (typeof AI_MODELS)[number];
@@ -36,14 +38,26 @@ export type ModelConfig = {
 
 export const MODEL_CONFIGS = {
   'Gemini 2.5 Flash': {
-    modelId: 'google/gemini-2.5-flash-preview-05-20',
+    modelId: 'google/gemini-2.5-flash',
     provider: 'openrouter',
     displayName: 'Gemini 2.5 Flash',
     iconType: 'google',
     company: 'Google',
+    isPremium: true,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: true,
+    description: 'Fast and efficient model from Google',
+  },
+  'Gemini 2.5 Flash Lite': {
+    modelId: 'google/gemini-2.5-flash-lite-preview-06-17',
+    provider: 'openrouter',
+    displayName: 'Gemini 2.5 Flash Lite',
+    iconType: 'google',
+    company: 'Google',
     isPremium: false,
     isSuperPremium: false,
-    hasReasoning: true,
+    hasReasoning: false,
     isFileSupported: true,
     description: 'Fast and efficient model from Google',
   },
@@ -218,7 +232,7 @@ export const MODEL_CONFIGS = {
   'FLUX.1 [schnell]': {
     modelId: 'runware:100@1',
     provider: 'runware',
-    displayName: 'FLUX.1 [schnell]',
+    displayName: 'AVChat Classic ImageGen',
     iconType: 'runware',
     company: 'Runware',
     isPremium: true,
@@ -226,12 +240,12 @@ export const MODEL_CONFIGS = {
     hasReasoning: false,
     isFileSupported: false,
     isImageGeneration: true,
-    description: 'Fast image generation model powered by FLUX.1 schnell.',
+    description: 'For Ultra-fast Image Generation. Perfect for quick iterations and immediate feedback.',
   },
   'FLUX.1 Dev': {
     modelId: 'runware:101@1',
     provider: 'runware',
-    displayName: 'FLUX.1 Dev',
+    displayName: 'AVChat Dev ImageGen',
     iconType: 'runware',
     company: 'Runware',
     isPremium: true,
@@ -239,7 +253,20 @@ export const MODEL_CONFIGS = {
     hasReasoning: false,
     isFileSupported: false,
     isImageGeneration: true,
-    description: 'High-quality image generation model for Developers Images',
+    description: 'High Quality Image Generation for Developers.',
+  },
+  'Stable Defusion 3': {
+    modelId: 'runware:5@1',
+    provider: 'runware',
+    displayName: 'AVChat SD ImageGen',
+    iconType: 'runware',
+    company: 'Runware',
+    isPremium: true,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: false,
+    isImageGeneration: true,
+    description: 'For Realistic High Quality Image Generation.',
   },
 } as const satisfies Record<AIModel, ModelConfig>;
 

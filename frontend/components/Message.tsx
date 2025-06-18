@@ -23,6 +23,7 @@ import { getModelIcon } from "@/frontend/components/ui/ModelComponents";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { Button } from "@/frontend/components/ui/button";
 import { toast } from "sonner";
+import { ImageGenerationLoading } from "./ui/UIComponents";
 
 function PureMessage({
   threadId,
@@ -148,6 +149,28 @@ function PureMessage({
 
               {/* Assistant Message Content */}
               <div className="group flex-1 flex flex-col gap-2 min-w-0 overflow-hidden max-w-full">
+                {/* Check if this is an image generation loading message */}
+                {(() => {
+                  const messageText = (part as any).text || "";
+                  const isImageGenerationLoading = messageText.includes("🎨 Generating your image") ||
+                                                   messageText.includes("Generating your image");
+
+                  console.log("🔍 Message text:", messageText);
+                  console.log("🔍 Is image generation loading:", isImageGenerationLoading);
+
+                  // Only show loading component if this is actually a loading message AND no image is present yet
+                  if (isImageGenerationLoading && !(message as any).imgurl) {
+                    console.log("🎨 Rendering ImageGenerationLoading component");
+                    return (
+                      <div className="mb-4">
+                        <ImageGenerationLoading />
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })()}
+
                 {/* Show generated image if present */}
                 {(message as any).imgurl && (
                   <div className="mb-3">
@@ -197,9 +220,28 @@ function PureMessage({
                   </div>
                 )}
 
-                <div className="break-words overflow-hidden max-w-full">
-                  <MarkdownRenderer content={(part as any).text || ""} id={message.id} />
-                </div>
+                {/* Only show regular markdown content if not an image generation loading message without image */}
+                {(() => {
+                  const messageText = (part as any).text || "";
+                  const isImageGenerationLoading = messageText.includes("🎨 Generating your image") ||
+                                                   messageText.includes("Generating your image");
+
+                  console.log("🔍 Checking markdown render - isImageGenerationLoading:", isImageGenerationLoading);
+                  console.log("🔍 Has imgurl:", !!(message as any).imgurl);
+
+                  // Show markdown content if:
+                  // 1. It's not a loading message, OR
+                  // 2. It's a loading message but we have an image (meaning generation is complete)
+                  if (!isImageGenerationLoading || (message as any).imgurl) {
+                    return (
+                      <div className="break-words overflow-hidden max-w-full">
+                        <MarkdownRenderer content={messageText} id={message.id} />
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })()}
 
                 {!isStreaming && (
                   <div className="flex-shrink-0">

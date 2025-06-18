@@ -59,7 +59,8 @@ export async function POST(req: NextRequest) {
     // Map model names to Runware model IDs
     const modelMapping: Record<string, string> = {
       'FLUX.1 [schnell]': 'runware:100@1',
-      'FLUX.1 Dev': 'runware:101@1'
+      'FLUX.1 Dev': 'runware:101@1',
+      'Stable Defusion 3': 'runware:5@1',
     };
 
     const runwareModelId = modelMapping[model];
