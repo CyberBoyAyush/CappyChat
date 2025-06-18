@@ -588,6 +588,7 @@ export default function ChatInterface({
               webSearchResults: msg.webSearchResults,
               attachments: msg.attachments,
               model: msg.model,
+              imgurl: msg.imgurl,
             } as any)
         );
 
@@ -966,6 +967,7 @@ export default function ChatInterface({
               input={input}
               status={status}
               append={append}
+              setMessages={setMessages}
               setInput={setInput}
               stop={stop}
               pendingUserMessageRef={pendingUserMessageRef}

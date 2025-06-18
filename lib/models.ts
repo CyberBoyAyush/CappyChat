@@ -2,6 +2,7 @@ export const AI_MODELS = [
   'Gemini 2.5 Flash',
   'Gemini 2.5 Flash Search',
   'OpenAI 4.1 Mini',
+  'OpenAI 4.1 Mini Search',
   'OpenAI o4-mini',
   'OpenAI 4.1',
   'Claude Sonnet 3.5 Haiku',
@@ -12,21 +13,24 @@ export const AI_MODELS = [
   'Gemini 2.5 Pro',
   'Meta: Llama 4 Maverick',
   'OpenAI 4.1 Nano',
-  'Grok 3 Mini'
+  'Grok 3 Mini',
+  'FLUX.1 [schnell]',
+  'FLUX.1 Dev'
 ] as const;
 
 export type AIModel = (typeof AI_MODELS)[number];
 
 export type ModelConfig = {
   modelId: string;
-  provider: 'openrouter';
+  provider: 'openrouter' | 'runware';
   displayName: string;
-  iconType: 'google' | 'openai' | 'anthropic' | 'deepseek' | 'huggingface' | 'qwen' | 'meta' | 'x-ai';
+  iconType: 'google' | 'openai' | 'anthropic' | 'deepseek' | 'huggingface' | 'qwen' | 'meta' | 'x-ai' | 'runware';
   company: string;
   isPremium: boolean;
   isSuperPremium: boolean;
   hasReasoning: boolean;
   isFileSupported: boolean;
+  isImageGeneration?: boolean;
   description: string;
 };
 
@@ -51,7 +55,7 @@ export const MODEL_CONFIGS = {
     company: 'Google',
     isPremium: false,
     isSuperPremium: true,
-    hasReasoning: true,
+    hasReasoning: false,
     isFileSupported: true,
     description: 'Fast and efficient model from Google with web search capabilities',
   },
@@ -78,6 +82,18 @@ export const MODEL_CONFIGS = {
     hasReasoning: false,
     isFileSupported: true,
     description: 'Efficient mini version of OpenAI 4.1',
+  },
+  'OpenAI 4.1 Mini Search': {
+    modelId: 'openai/gpt-4.1-mini:online',
+    provider: 'openrouter',
+    displayName: 'OpenAI 4.1 Mini Search',
+    iconType: 'openai',
+    company: 'OpenAI',
+    isPremium: false,
+    isSuperPremium: true,
+    hasReasoning: false,
+    isFileSupported: true,
+    description: 'Efficient mini version of OpenAI 4.1 with web search capabilities',
   },
   'OpenAI o4-mini': {
     modelId: 'openai/o4-mini',
@@ -199,6 +215,32 @@ export const MODEL_CONFIGS = {
     isFileSupported: true,
     description: 'Fastest model from XAI with advanced reasoning.',
   },
+  'FLUX.1 [schnell]': {
+    modelId: 'runware:100@1',
+    provider: 'runware',
+    displayName: 'FLUX.1 [schnell]',
+    iconType: 'runware',
+    company: 'Runware',
+    isPremium: true,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: false,
+    isImageGeneration: true,
+    description: 'Fast image generation model powered by FLUX.1 schnell.',
+  },
+  'FLUX.1 Dev': {
+    modelId: 'runware:101@1',
+    provider: 'runware',
+    displayName: 'FLUX.1 Dev',
+    iconType: 'runware',
+    company: 'Runware',
+    isPremium: true,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: false,
+    isImageGeneration: true,
+    description: 'High-quality image generation model for Developers Images',
+  },
 } as const satisfies Record<AIModel, ModelConfig>;
 
 export const getModelConfig = (modelName: AIModel): ModelConfig => {
@@ -206,7 +248,7 @@ export const getModelConfig = (modelName: AIModel): ModelConfig => {
   if (!config) {
     console.error(`Model config not found for: ${modelName}. Available models:`, Object.keys(MODEL_CONFIGS));
     // Return a fallback config for the first available model
-    return MODEL_CONFIGS['Gemini 2.5 Flash'];
+    return MODEL_CONFIGS['OpenAI 4.1 Mini'];
   }
   return config;
 };

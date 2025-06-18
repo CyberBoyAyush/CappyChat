@@ -3,7 +3,7 @@
  *
  * Used in: frontend/components/ChatInputField.tsx
  * Purpose: Manages web search toggle state and ensures model selection consistency.
- * When web search is enabled, automatically switches to Gemini 2.5 Flash Search model.
+ * When web search is enabled, automatically switches to OpenAI 4.1 Mini Search model.
  */
 
 import { create } from 'zustand';
@@ -23,16 +23,16 @@ export const useWebSearchStore = create<WebSearchStore>()(
 
       setWebSearchEnabled: (enabled) => {
         set({ isWebSearchEnabled: enabled });
-        
-        // When web search is enabled, switch to Gemini 2.5 Flash Search
-        // When disabled, switch back to regular Gemini 2.5 Flash
+
+        // When web search is enabled, switch to OpenAI 4.1 Mini Search (default)
+        // When disabled, switch back to regular OpenAI 4.1 Mini
         const modelStore = useModelStore.getState();
         if (enabled) {
-          modelStore.setModel('Gemini 2.5 Flash Search');
+          modelStore.setModel('OpenAI 4.1 Mini Search');
         } else {
-          // Only switch back if currently using the search model
-          if (modelStore.selectedModel === 'Gemini 2.5 Flash Search') {
-            modelStore.setModel('Gemini 2.5 Flash');
+          // Only switch back if currently using a search model
+          if (modelStore.selectedModel === 'OpenAI 4.1 Mini Search' || modelStore.selectedModel === 'Gemini 2.5 Flash Search') {
+            modelStore.setModel('OpenAI 4.1 Mini');
           }
         }
       },

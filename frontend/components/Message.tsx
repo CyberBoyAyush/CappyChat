@@ -18,9 +18,11 @@ import ChatMessageReasoning from "./ChatMessageReasoning";
 import WebSearchCitations from "./WebSearchCitations";
 import MessageAttachments from "./MessageAttachments";
 import { AIModel, getModelConfig } from "@/lib/models";
-import { User, Bot } from "lucide-react";
+import { User, Bot, Download } from "lucide-react";
 import { getModelIcon } from "@/frontend/components/ui/ModelComponents";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
+import { Button } from "@/frontend/components/ui/button";
+import { toast } from "sonner";
 
 function PureMessage({
   threadId,
@@ -146,6 +148,55 @@ function PureMessage({
 
               {/* Assistant Message Content */}
               <div className="group flex-1 flex flex-col gap-2 min-w-0 overflow-hidden max-w-full">
+                {/* Show generated image if present */}
+                {(message as any).imgurl && (
+                  <div className="mb-3">
+                    <div className="relative rounded-xl overflow-hidden border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm hover:border-border/70 transition-all duration-200 max-w-lg group">
+                      <img
+                        src={(message as any).imgurl}
+                        alt="Generated image"
+                        className="w-full h-auto object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          console.error('Failed to load generated image:', (message as any).imgurl);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm rounded-md px-2 py-1">
+                        <span className="text-xs text-white font-medium">AI Generated</span>
+                      </div>
+                      <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 w-8 p-0 bg-black/50 hover:bg-black/70 border-none"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch((message as any).imgurl);
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `generated-image-${message.id}.png`;
+                              document.body.appendChild(a);
+                              a.click();
+                              window.URL.revokeObjectURL(url);
+                              document.body.removeChild(a);
+                              toast.success('Image downloaded successfully!');
+                            } catch (error) {
+                              console.error('Failed to download image:', error);
+                              toast.error('Failed to download image');
+                            }
+                          }}
+                          title="Download image"
+                        >
+                          <Download className="h-4 w-4 text-white" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="break-words overflow-hidden max-w-full">
                   <MarkdownRenderer content={(part as any).text || ""} id={message.id} />
                 </div>
@@ -204,6 +255,8 @@ const PreviewMessage = memo(PureMessage, (prevProps, nextProps) => {
   if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
   // Check if model field changed (important for assistant messages)
   if ((prevProps.message as any).model !== (nextProps.message as any).model) return false;
+  // Check if imgurl field changed (important for image generation messages)
+  if ((prevProps.message as any).imgurl !== (nextProps.message as any).imgurl) return false;
   return true;
 });
 
