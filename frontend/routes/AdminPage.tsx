@@ -242,7 +242,7 @@ export default function AdminPage() {
     }
   };
 
-  // Logout all users
+  // Logout all users with chunked processing
   const handleLogoutAllUsers = async () => {
     if (!adminKey.trim()) {
       toast.error("Please enter admin key");
@@ -250,12 +250,91 @@ export default function AdminPage() {
     }
 
     const confirmMessage =
-      "⚠️ This will logout ALL users from the system. Are you sure?";
+      "⚠️ This will logout ALL users from ALL devices. This operation may take some time for large user bases. Are you sure?";
     if (!confirm(confirmMessage)) {
       return;
     }
 
     setIsLoading(true);
+    try {
+      // First get user count to show progress
+      const countResponse = await fetch("/api/admin/bulk-operations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          adminKey: adminKey.trim(),
+          action: "getUserCount",
+        }),
+      });
+
+      const countData = await countResponse.json();
+      const totalUsers = countData.totalUsers || 0;
+
+      if (totalUsers === 0) {
+        toast.info("No users found to logout");
+        return;
+      }
+
+      toast.info(`Starting logout process for ${totalUsers} users...`);
+
+      // Perform chunked logout
+      const response = await fetch("/api/admin/bulk-operations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          adminKey: adminKey.trim(),
+          action: "logoutAllUsersChunked",
+          batchSize: 25,
+          maxTime: 25000,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        const { processedUsers, loggedOutUsers, timeElapsed } = data.details;
+        const timeInSeconds = Math.round(timeElapsed / 1000);
+
+        if (processedUsers === totalUsers) {
+          toast.success(
+            `✅ Successfully processed all ${processedUsers} users (${loggedOutUsers} had active sessions) in ${timeInSeconds}s`
+          );
+        } else {
+          toast.warning(
+            `⚠️ Processed ${processedUsers}/${totalUsers} users (${loggedOutUsers} logged out) in ${timeInSeconds}s. Some users may need manual processing.`
+          );
+        }
+
+        if (adminStats) {
+          handleLoadStats(); // Refresh stats
+        }
+      } else {
+        toast.error(data.error || "Failed to logout all users");
+
+        // Fallback to original method if bulk operations fail
+        if (data.error?.includes('Internal server error')) {
+          toast.info("Attempting fallback method...");
+          await attemptFallbackLogout();
+        }
+      }
+    } catch (error) {
+      console.error("Error logging out all users:", error);
+      toast.error("Network error occurred. The operation may have partially completed.");
+
+      // Try fallback method on network error
+      toast.info("Attempting fallback method...");
+      await attemptFallbackLogout();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fallback logout method using original API
+  const attemptFallbackLogout = async () => {
     try {
       const response = await fetch("/api/admin/manage-user", {
         method: "POST",
@@ -271,20 +350,16 @@ export default function AdminPage() {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success(
-          data.message || "All users have been logged out successfully"
-        );
+        toast.success("✅ Fallback logout completed: " + (data.message || "All users logged out"));
         if (adminStats) {
-          handleLoadStats(); // Refresh stats
+          handleLoadStats();
         }
       } else {
-        toast.error(data.error || "Failed to logout all users");
+        toast.error("❌ Fallback also failed: " + (data.error || "Unknown error"));
       }
-    } catch (error) {
-      console.error("Error logging out all users:", error);
-      toast.error("Network error occurred");
-    } finally {
-      setIsLoading(false);
+    } catch (fallbackError) {
+      console.error("Fallback logout also failed:", fallbackError);
+      toast.error("❌ Both primary and fallback methods failed. Please try again later.");
     }
   };
 
@@ -467,7 +542,7 @@ export default function AdminPage() {
     const confirmMessage = `⚠️ DANGER: This will permanently delete ALL data from the entire database (threads, messages, projects, summaries) for ALL users. This action cannot be undone. Type "DELETE ALL DATA" to confirm.`;
     const confirmation = prompt(confirmMessage);
 
-    if (confirmation !== "DELETE ALL DATA") {
+    if (confirmation?.trim().toUpperCase() !== "DELETE ALL DATA") {
       toast.error("Confirmation text did not match. Operation cancelled.");
       return;
     }
