@@ -207,10 +207,18 @@ async function performMonthlyReset(): Promise<number> {
 async function logoutAllUsers(): Promise<number> {
   let logoutCount = 0;
   let offset = 0;
-  const limit = 100; // Process users in batches
+  const limit = 50; // Reduced batch size to prevent timeouts
+  const maxProcessingTime = 25000; // 25 seconds max (leave 5s buffer for serverless timeout)
+  const startTime = Date.now();
 
   try {
     while (true) {
+      // Check if we're approaching timeout
+      if (Date.now() - startTime > maxProcessingTime) {
+        console.log(`Timeout approaching, processed ${logoutCount} users so far`);
+        break;
+      }
+
       // Get batch of users
       const usersList = await users.list([Query.limit(limit), Query.offset(offset)]);
 
@@ -218,30 +226,62 @@ async function logoutAllUsers(): Promise<number> {
         break; // No more users
       }
 
-      // Delete all sessions for each user in the batch
-      for (const user of usersList.users) {
-        try {
-          // Get all sessions for the user
-          const sessions = await users.listSessions(user.$id);
+      // Process users in smaller sub-batches to prevent overwhelming the API
+      const subBatchSize = 10;
+      for (let i = 0; i < usersList.users.length; i += subBatchSize) {
+        const subBatch = usersList.users.slice(i, i + subBatchSize);
 
-          // Delete each session
-          for (const session of sessions.sessions) {
+        // Process sub-batch in parallel with timeout protection
+        await Promise.allSettled(
+          subBatch.map(async (user) => {
             try {
-              await users.deleteSession(user.$id, session.$id);
-            } catch (sessionError) {
-              console.error(`Failed to delete session ${session.$id} for user ${user.$id}:`, sessionError);
-              // Continue with other sessions
-            }
-          }
+              // Set a timeout for each user's session deletion
+              const userTimeout = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('User session deletion timeout')), 3000)
+              );
 
-          logoutCount++;
-        } catch (error) {
-          console.error(`Failed to logout user ${user.$id}:`, error);
-          // Continue with other users
-        }
+              const deleteUserSessions = async () => {
+                try {
+                  // Get all sessions for the user
+                  const sessions = await users.listSessions(user.$id);
+
+                  // Delete sessions in parallel with limited concurrency
+                  const sessionDeletions = sessions.sessions.map(session =>
+                    users.deleteSession(user.$id, session.$id).catch(error => {
+                      console.error(`Failed to delete session ${session.$id} for user ${user.$id}:`, error);
+                      return null;
+                    })
+                  );
+
+                  await Promise.allSettled(sessionDeletions);
+                  return true;
+                } catch (error) {
+                  console.error(`Failed to process sessions for user ${user.$id}:`, error);
+                  return false;
+                }
+              };
+
+              // Race between user session deletion and timeout
+              await Promise.race([deleteUserSessions(), userTimeout]);
+              logoutCount++;
+            } catch (error) {
+              console.error(`Failed to logout user ${user.$id}:`, error);
+              // Continue with other users
+            }
+          })
+        );
+
+        // Small delay between sub-batches to prevent API rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       offset += limit;
+
+      // Check timeout again after processing batch
+      if (Date.now() - startTime > maxProcessingTime) {
+        console.log(`Timeout reached, processed ${logoutCount} users total`);
+        break;
+      }
     }
 
     console.log(`Logout all users completed for ${logoutCount} users`);
