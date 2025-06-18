@@ -17,6 +17,7 @@ import { HybridDB } from '@/lib/hybridDB';
 import { AppwriteRealtime } from '@/lib/appwriteRealtime';
 import { ensureUserTierInitialized } from '@/lib/tierSystem';
 import { globalErrorHandler } from '@/lib/globalErrorHandler';
+import { useWebSearchStore } from '@/frontend/stores/WebSearchStore';
 
 interface User extends Models.User<Models.Preferences> {}
 
@@ -212,6 +213,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       maxMessages: 2
     };
   });
+
+  // Reset web search when user becomes a guest
+  useEffect(() => {
+    if (guestUser?.isGuest) {
+      // Use setTimeout to avoid calling store during render
+      setTimeout(() => {
+        useWebSearchStore.getState().resetForGuest();
+      }, 0);
+    }
+  }, [guestUser?.isGuest]);
 
   // Check if user's email is verified
   const isEmailVerified = user?.emailVerification ?? false;
