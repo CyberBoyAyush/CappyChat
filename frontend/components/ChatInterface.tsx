@@ -236,6 +236,20 @@ export default function ChatInterface({
   const location = useLocation();
   const isHomePage = location.pathname === "/" || location.pathname === "/chat";
 
+  // Track messages that were just added by append() to prevent real-time sync from overwriting them
+  const recentlyAppendedMessages = useRef<Set<string>>(new Set());
+
+  // Function to track when a message is appended
+  const trackAppendedMessage = useCallback((messageId: string) => {
+    console.log("[ChatInterface] Tracking appended message:", messageId);
+    recentlyAppendedMessages.current.add(messageId);
+    // Remove from tracking after 2 seconds to allow normal sync
+    setTimeout(() => {
+      recentlyAppendedMessages.current.delete(messageId);
+      console.log("[ChatInterface] Stopped tracking appended message:", messageId);
+    }, 2000);
+  }, []);
+
   const [selectedPrompt, setSelectedPrompt] = useState("");
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
 
@@ -607,7 +621,9 @@ export default function ChatInterface({
       if (updatedThreadId === threadId) {
         console.log(
           "[ChatInterface] Updating messages in UI. Count:",
-          updatedMessages.length
+          updatedMessages.length,
+          "Current UI messages:",
+          messages.length
         );
 
         // Convert DB messages to UI messages format
@@ -626,24 +642,51 @@ export default function ChatInterface({
             } as any)
         );
 
-        // Lightweight comparison - check count and last message ID
-        const hasChanged =
-          uiMessages.length !== messages.length ||
-          (uiMessages.length > 0 &&
-            messages.length > 0 &&
-            uiMessages[uiMessages.length - 1]?.id !==
-              messages[messages.length - 1]?.id);
+        // Smart merge: Preserve messages that were recently added by append()
+        // and only add new messages from the database
+        const currentMessageIds = new Set(messages.map(msg => msg.id));
+        const dbMessageIds = new Set(uiMessages.map(msg => msg.id));
 
-        if (hasChanged) {
-          console.log("[ChatInterface] Messages changed, updating UI");
-          setMessages(deduplicateMessages(uiMessages));
+        // Check if there are new messages in the database that aren't in the UI
+        const hasNewMessages = uiMessages.some(dbMsg =>
+          !currentMessageIds.has(dbMsg.id) &&
+          !recentlyAppendedMessages.current.has(dbMsg.id)
+        );
+
+        // Check if there are messages in UI that aren't in database (shouldn't happen but safety check)
+        const hasMissingMessages = messages.some(uiMsg =>
+          !dbMessageIds.has(uiMsg.id) &&
+          !recentlyAppendedMessages.current.has(uiMsg.id)
+        );
+
+        if (hasNewMessages || hasMissingMessages) {
+          console.log("[ChatInterface] Smart merge: New messages detected, merging with current UI state");
+
+          // Merge strategy: Keep current UI messages and add any new ones from database
+          const mergedMessages = [...messages];
+
+          // Add new messages from database that aren't already in UI
+          uiMessages.forEach(dbMsg => {
+            if (!currentMessageIds.has(dbMsg.id) && !recentlyAppendedMessages.current.has(dbMsg.id)) {
+              mergedMessages.push(dbMsg);
+            }
+          });
+
+          // Sort by creation date to maintain order
+          mergedMessages.sort((a, b) => {
+            const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return aTime - bTime;
+          });
+
+          setMessages(deduplicateMessages(mergedMessages));
 
           // Auto-scroll to bottom for new messages unless user scrolled up
           if (!userHasScrolledUp) {
             setTimeout(() => scrollToBottom(), 30);
           }
         } else {
-          console.log("[ChatInterface] Messages unchanged, skipping UI update");
+          console.log("[ChatInterface] Smart merge: No new messages, preserving current UI state");
         }
       }
     };
@@ -1010,6 +1053,7 @@ export default function ChatInterface({
               onWebSearchMessage={handleWebSearchMessage}
               submitRef={chatInputSubmitRef}
               messages={messages}
+              onMessageAppended={trackAppendedMessage}
             />
           </div>
         </div>

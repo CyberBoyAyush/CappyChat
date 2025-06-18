@@ -60,6 +60,7 @@ interface InputFieldProps {
   onWebSearchMessage?: (messageId: string) => void;
   submitRef?: React.RefObject<(() => void) | null>;
   messages?: UIMessage[];
+  onMessageAppended?: (messageId: string) => void;
 }
 
 interface StopButtonProps {
@@ -96,6 +97,7 @@ function PureInputField({
   onWebSearchMessage,
   submitRef,
   messages,
+  onMessageAppended,
 }: InputFieldProps) {
   const { textareaRef, adjustHeight } = useTextAreaAutoResize({
     minHeight: 72,
@@ -497,16 +499,6 @@ function PureInputField({
         onWebSearchMessage(messageId);
       }
 
-      // Store the user message immediately to the database (skip for guest users)
-      if (!isGuest) {
-        console.log(
-          "💾 Storing user message immediately:",
-          messageId,
-          "Has attachments:",
-          !!userMessage.attachments
-        );
-        HybridDB.createMessage(threadId, userMessage);
-      }
     } else {
       // For image generation mode, we need to handle thread creation manually
       // since we're not using the chat completion flow
@@ -692,8 +684,7 @@ function PureInputField({
       }
     } else {
       // Normal text message flow
-      // The message will be persisted to database in ChatInterface's onFinish callback
-      // Pass attachments using experimental_attachments parameter AND include in message object for immediate UI display
+      // First add to UI with append(), then store to database to prevent race condition
       append(
         {
           id: messageId,
@@ -709,6 +700,25 @@ function PureInputField({
             finalAttachments.length > 0 ? finalAttachments : undefined,
         }
       );
+
+      // Track that this message was just appended to prevent real-time sync from overwriting it
+      if (onMessageAppended) {
+        onMessageAppended(messageId);
+      }
+
+      // Store the user message to database after append() to prevent race condition
+      if (!isGuest) {
+        console.log(
+          "💾 Storing user message after append():",
+          messageId,
+          "Has attachments:",
+          !!finalAttachments.length
+        );
+        // Use setTimeout to ensure append() completes first
+        setTimeout(() => {
+          HybridDB.createMessage(threadId, userMessage);
+        }, 0);
+      }
     }
     setInput("");
     setAttachments([]); // Clear attachments after sending
