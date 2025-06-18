@@ -705,6 +705,9 @@ export class HybridDB {
 
     // Instant local update
     LocalDB.addMessage(dbMessage);
+
+    // Emit messages_updated event for real-time sync
+    console.log('[HybridDB] ✅ Message stored locally, emitting messages_updated:', message.id, 'role:', message.role);
     debouncedEmitter.emitImmediate('messages_updated', threadId, LocalDB.getMessagesByThread(threadId));
     debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads()); // Thread order might change
 

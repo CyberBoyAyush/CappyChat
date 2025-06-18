@@ -25,6 +25,25 @@ export const metadata: Metadata = {
     shortcut: '/logo.png',
     apple: '/logo.png',
   },
+  openGraph: {
+    title: 'AVChat - Fastest AI Chat App',
+    description: 'Fastest AI Chat App',
+    images: [
+      {
+        url: '/banner.png',
+        width: 1200,
+        height: 630,
+        alt: 'AVChat - Fastest AI Chat App',
+      },
+    ],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AVChat - Fastest AI Chat App',
+    description: 'Fastest AI Chat App',
+    images: ['/banner.png'],
+  },
   other: {
     // Performance optimization meta tags
     'dns-prefetch': 'https://avchatbackend.ayush-sharma.in',
