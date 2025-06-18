@@ -80,6 +80,8 @@ export default function MessageEditor({
           },
         ],
         createdAt: new Date(),
+        // Preserve the model field if it exists (for assistant messages)
+        model: (message as any).model,
       };
 
       await HybridDB.createMessage(threadId, updatedMessage);

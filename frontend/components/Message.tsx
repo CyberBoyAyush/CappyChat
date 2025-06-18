@@ -44,8 +44,13 @@ function PureMessage({
   const [mode, setMode] = useState<"view" | "edit">("view");
   const { selectedModel } = useModelStore();
 
-  // Get model config for the current selected model (fallback approach)
-  const modelConfig = getModelConfig(selectedModel);
+  // Get model config for the message's stored model (for assistant messages) or current selected model (fallback)
+  const messageModel = message.role === "assistant" ? (message as any).model : undefined;
+  const modelToUse = messageModel || selectedModel;
+
+  // Ensure we have a valid model name
+  const validModelToUse = modelToUse && typeof modelToUse === 'string' ? modelToUse as AIModel : selectedModel;
+  const modelConfig = getModelConfig(validModelToUse);
   const modelIcon = getModelIcon(modelConfig.iconType, 16, "text-primary");
 
   return (
@@ -160,15 +165,30 @@ function PureMessage({
                 )}
 
                 {/* Show web search citations for assistant messages with search results */}
-                {message.role === "assistant" &&
-                  (message as any).webSearchResults && (
+                {(() => {
+                  const hasWebSearchResults = message.role === "assistant" &&
+                    (message as any).webSearchResults &&
+                    Array.isArray((message as any).webSearchResults) &&
+                    (message as any).webSearchResults.length > 0;
+
+                  console.log("🔗 Message component checking for citations:", {
+                    messageId: message.id,
+                    role: message.role,
+                    hasWebSearchResults,
+                    webSearchResults: (message as any).webSearchResults,
+                    isStreaming
+                  });
+
+                  return hasWebSearchResults && (
                     <div className="flex-shrink-0">
                       <WebSearchCitations
                         results={(message as any).webSearchResults}
                         searchQuery="web search"
+                        isStreaming={isStreaming}
                       />
                     </div>
-                  )}
+                  );
+                })()}
               </div>
             </div>
           );
@@ -182,6 +202,8 @@ const PreviewMessage = memo(PureMessage, (prevProps, nextProps) => {
   if (prevProps.isStreaming !== nextProps.isStreaming) return false;
   if (prevProps.message.id !== nextProps.message.id) return false;
   if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
+  // Check if model field changed (important for assistant messages)
+  if ((prevProps.message as any).model !== (nextProps.message as any).model) return false;
   return true;
 });
 
