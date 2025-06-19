@@ -482,9 +482,26 @@ function PureInputField({
                 .join(", ")}]`
             : finalInput;
 
-        complete(titlePrompt, {
-          body: { threadId, messageId, isTitle: true },
-        });
+        // Generate title with fallback mechanism
+        try {
+          complete(titlePrompt, {
+            body: { threadId, messageId, isTitle: true },
+          });
+        } catch (error) {
+          console.error('[ChatInputField] Title generation failed:', error);
+          // Fallback: Use a simplified title based on user input
+          const fallbackTitle = finalInput.length > 50 
+            ? finalInput.substring(0, 47) + "..." 
+            : finalInput;
+          
+          // Update thread title with fallback if title generation fails
+          if (!isGuest && fallbackTitle.trim()) {
+            setTimeout(() => {
+              HybridDB.updateThread(threadId, fallbackTitle.trim())
+                .catch(err => console.error('Fallback title update failed:', err));
+            }, 1000); // Small delay to ensure thread exists
+          }
+        }
       } else {
         // Existing conversation
         complete(finalInput, { body: { messageId, threadId } });
@@ -528,9 +545,23 @@ function PureInputField({
 
           // Generate title for the thread using the image prompt
           const titlePrompt = `Generate a short, descriptive title for an image generation request: "${finalInput}"`;
-          complete(titlePrompt, {
-            body: { threadId, messageId, isTitle: true },
-          });
+          try {
+            complete(titlePrompt, {
+              body: { threadId, messageId, isTitle: true },
+            });
+          } catch (error) {
+            console.error('[ChatInputField] Image title generation failed:', error);
+            // Fallback: Use a simplified title based on image prompt
+            const fallbackTitle = finalInput.length > 40 
+              ? "Image: " + finalInput.substring(0, 37) + "..." 
+              : "Image: " + finalInput;
+            
+            // Update thread title with fallback if title generation fails
+            setTimeout(() => {
+              HybridDB.updateThread(threadId, fallbackTitle.trim())
+                .catch(err => console.error('Image fallback title update failed:', err));
+            }, 1000); // Small delay to ensure thread exists
+          }
         }
       }
     }
