@@ -46,7 +46,6 @@ export class AppwriteRealtime {
   
   // Subscribe to all collections (threads, messages, message_summaries, projects)
   static subscribeToAll(userId: string): void {
-    console.log('[AppwriteRealtime] Subscribing to all collections for user:', userId);
     this.subscribeToThreads(userId);
     this.subscribeToMessages(userId);
     this.subscribeToMessageSummaries(userId);
@@ -68,33 +67,23 @@ export class AppwriteRealtime {
       return; // Already subscribed
     }
 
-    console.log('[AppwriteRealtime] Subscribing to threads collection');
     const unsubscribe = client.subscribe(
       `databases.${DATABASE_ID}.collections.${THREADS_COLLECTION_ID}.documents`,
       (response: RealtimeResponseEvent<AppwriteThread>) => {
-        console.log('[AppwriteRealtime] Thread event received:', response.events[0], response.payload);
-
         // Process only events for the current user
         if (response.payload?.userId !== userId) {
-          console.log('[AppwriteRealtime] Thread event ignored - different user:', response.payload?.userId, 'vs', userId);
           return;
         }
 
         // Handle different event types - check if event contains the action
         const eventType = response.events[0];
-        console.log('[AppwriteRealtime] Thread event type:', eventType);
 
         if (eventType.includes('.create')) {
-          console.log('[AppwriteRealtime] Thread created:', response.payload.threadId);
           this.handleThreadCreated(response.payload);
         } else if (eventType.includes('.update')) {
-          console.log('[AppwriteRealtime] Thread updated:', response.payload.threadId);
           this.handleThreadUpdated(response.payload);
         } else if (eventType.includes('.delete')) {
-          console.log('[AppwriteRealtime] Thread deleted:', response.payload.threadId);
           this.handleThreadDeleted(response.payload);
-        } else {
-          console.log('[AppwriteRealtime] Unknown thread event type:', eventType);
         }
       }
     );
@@ -110,33 +99,23 @@ export class AppwriteRealtime {
       return; // Already subscribed
     }
 
-    console.log('[AppwriteRealtime] Subscribing to messages collection');
     const unsubscribe = client.subscribe(
       `databases.${DATABASE_ID}.collections.${MESSAGES_COLLECTION_ID}.documents`,
       (response: RealtimeResponseEvent<AppwriteMessage>) => {
-        console.log('[AppwriteRealtime] Message event received:', response.events[0], response.payload);
-
         // Process only events for the current user
         if (response.payload?.userId !== userId) {
-          console.log('[AppwriteRealtime] Message event ignored - different user:', response.payload?.userId, 'vs', userId);
           return;
         }
 
         // Handle different event types - check if event contains the action
         const eventType = response.events[0];
-        console.log('[AppwriteRealtime] Message event type:', eventType);
 
         if (eventType.includes('.create')) {
-          console.log('[AppwriteRealtime] Message created:', response.payload.messageId, 'in thread:', response.payload.threadId);
           this.handleMessageCreated(response.payload);
         } else if (eventType.includes('.update')) {
-          console.log('[AppwriteRealtime] Message updated:', response.payload.messageId, 'in thread:', response.payload.threadId);
           this.handleMessageUpdated(response.payload);
         } else if (eventType.includes('.delete')) {
-          console.log('[AppwriteRealtime] Message deleted:', response.payload.messageId, 'in thread:', response.payload.threadId);
           this.handleMessageDeleted(response.payload);
-        } else {
-          console.log('[AppwriteRealtime] Unknown message event type:', eventType);
         }
       }
     );
@@ -184,33 +163,23 @@ export class AppwriteRealtime {
       return; // Already subscribed
     }
 
-    console.log('[AppwriteRealtime] Subscribing to projects collection');
     const unsubscribe = client.subscribe(
       `databases.${DATABASE_ID}.collections.${PROJECTS_COLLECTION_ID}.documents`,
       (response: RealtimeResponseEvent<AppwriteProject>) => {
-        console.log('[AppwriteRealtime] Project event received:', response.events[0], response.payload);
-
         // Process only events for the current user
         if (response.payload?.userId !== userId) {
-          console.log('[AppwriteRealtime] Project event ignored - different user:', response.payload?.userId, 'vs', userId);
           return;
         }
 
         // Handle different event types - check if event contains the action
         const eventType = response.events[0];
-        console.log('[AppwriteRealtime] Project event type:', eventType);
 
         if (eventType.includes('.create')) {
-          console.log('[AppwriteRealtime] Project created:', response.payload.projectId);
           this.handleProjectCreated(response.payload);
         } else if (eventType.includes('.update')) {
-          console.log('[AppwriteRealtime] Project updated:', response.payload.projectId);
           this.handleProjectUpdated(response.payload);
         } else if (eventType.includes('.delete')) {
-          console.log('[AppwriteRealtime] Project deleted:', response.payload.projectId);
           this.handleProjectDeleted(response.payload);
-        } else {
-          console.log('[AppwriteRealtime] Unknown project event type:', eventType);
         }
       }
     );
