@@ -270,8 +270,6 @@ class StreamingSyncManager {
 
             // Only process recent broadcasts (within 5 seconds)
             if (Date.now() - timestamp < 5000 && state.sessionId !== this.sessionId) {
-              console.log('[StreamingSync] Received cross-session broadcast:', state.messageId, 'from session:', state.sessionId);
-
               // Emit local event for this session
               dbEvents.emit('streaming_broadcast', state.threadId, state.messageId, state);
             }

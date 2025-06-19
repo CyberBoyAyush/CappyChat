@@ -685,8 +685,6 @@ export default function ChatInterface({
           if (!userHasScrolledUp) {
             setTimeout(() => scrollToBottom(), 30);
           }
-        } else {
-          console.log("[ChatInterface] Smart merge: No new messages, preserving current UI state");
         }
       }
     };
@@ -695,20 +693,12 @@ export default function ChatInterface({
     dbEvents.on("messages_updated", handleMessagesUpdated);
 
     return () => {
-      console.log(
-        "[ChatInterface] Cleaning up real-time message sync for thread:",
-        threadId
-      );
       dbEvents.off("messages_updated", handleMessagesUpdated);
     };
   }, [threadId, messages, setMessages, isGuest]);
 
   // Real-time streaming synchronization
   useEffect(() => {
-    console.log(
-      "[ChatInterface] Setting up streaming sync for thread:",
-      threadId
-    );
 
     // Listen for streaming broadcasts from other sessions
     const handleStreamingBroadcast = (
@@ -785,18 +775,12 @@ export default function ChatInterface({
 
   // Callback to track when a message is sent with web search enabled
   const handleWebSearchMessage = useCallback((messageId: string) => {
-    console.log(
-      "🔍 Web search enabled for next response. User message ID:",
-      messageId
-    );
     nextResponseNeedsWebSearch.current = true;
   }, []);
 
   // Handle retry with specific model
   const handleRetryWithModel = useCallback(
     async (model?: AIModel, message?: UIMessage) => {
-      console.log("🔄 Retry with model:", model || selectedModel);
-
       // Stop the current request
       stop();
 
