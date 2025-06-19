@@ -391,12 +391,14 @@ export default function ChatInterface({
             searchQuery
           );
           chatInputSubmitRef.current();
+        } else {
+          console.log("⚠️ chatInputSubmitRef.current is not available yet");
         }
-      }, 100);
+      }, 500); // Increased timeout to ensure components are fully loaded
 
       return () => clearTimeout(timer);
     }
-  }, [searchQuery, setInput]); // Only depend on searchQuery and setInput
+  }, [searchQuery, setInput, messages.length]); // Added messages.length to dependencies
 
   // Simple scroll detection - track if user manually scrolled up
   useEffect(() => {
