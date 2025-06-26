@@ -209,7 +209,21 @@ export async function POST(req: NextRequest) {
       - Display:
       $$\\frac{d}{dx}\\sin(x) = \\cos(x)$$
 
-      When analyzing documents or files, provide detailed and helpful information about their contents.`;
+      When analyzing documents or files, provide detailed and helpful information about their contents.
+
+      IMPORTANT: When displaying file/directory structures, tree diagrams, or any ASCII art with tree characters (├──, └──, │), always wrap them in code blocks with "text" language identifier to preserve formatting:
+
+      \`\`\`text
+      ├── public/
+      │   └── index.html
+      ├── src/
+      │   ├── components/
+      │   │   └── Button.jsx
+      │   └── App.jsx
+      └── package.json
+      \`\`\`
+
+      This ensures proper monospace formatting and preserves the visual structure.`;
 
     // Add custom profile information if available
     if (customProfile && (customProfile.customName || customProfile.aboutUser)) {
