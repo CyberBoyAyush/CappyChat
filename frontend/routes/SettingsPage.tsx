@@ -56,6 +56,7 @@ import {
 } from "@/lib/appwrite";
 import { GitHubIcon } from "../components/ui/icons";
 import SessionManager from "../components/SessionManager";
+import MemorySettings from "../components/MemorySettings";
 
 // Notification type
 type NotificationType = {
@@ -1128,6 +1129,9 @@ export default function SettingsPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Global Memory Settings */}
+                    <MemorySettings />
 
                     {/* Font Selection */}
                     <div className="p-6 border rounded-xl bg-card shadow-sm">

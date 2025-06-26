@@ -42,6 +42,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import { useAuthDialog } from "@/frontend/hooks/useAuthDialog";
 import AuthDialog from "./auth/AuthDialog";
+import { extractMemories, shouldAddMemory } from "@/lib/memoryExtractor";
+import { AppwriteDB } from "@/lib/appwriteDB";
 
 // Extended UIMessage type to include attachments
 type ExtendedUIMessage = UIMessage & {
@@ -84,6 +86,40 @@ const createUserMessage = (
   createdAt: new Date(),
   attachments,
 });
+
+// Extract and store memories from user message
+const extractAndStoreMemories = async (messageContent: string, userId?: string) => {
+  if (!userId || !messageContent.trim()) return;
+
+  try {
+    // Extract potential memories from the message
+    const extractedMemories = extractMemories(messageContent);
+
+    if (extractedMemories.length === 0) return;
+
+    // Get current global memory to check for duplicates
+    const currentMemory = await AppwriteDB.getGlobalMemory(userId);
+
+    // Only proceed if memory is enabled
+    if (!currentMemory?.enabled) return;
+
+    const existingMemories = currentMemory?.memories || [];
+
+    // Add new memories that pass the threshold and aren't duplicates
+    for (const extractedMemory of extractedMemories) {
+      if (shouldAddMemory(extractedMemory, existingMemories)) {
+        try {
+          await AppwriteDB.addMemory(userId, extractedMemory.text);
+          console.log('🧠 Added memory:', extractedMemory.text);
+        } catch (error) {
+          console.error('Failed to add memory:', error);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error extracting memories:', error);
+  }
+};
 
 function PureInputField({
   threadId,
@@ -748,6 +784,9 @@ function PureInputField({
         // Use setTimeout to ensure append() completes first
         setTimeout(() => {
           HybridDB.createMessage(threadId, userMessage);
+
+          // Extract and store memories from user message
+          extractAndStoreMemories(finalInput, user?.$id);
         }, 0);
       }
     }
