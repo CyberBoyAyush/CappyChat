@@ -144,9 +144,10 @@ NEXT_PUBLIC_APPWRITE_DATABASE_ID=AVChat-database
 
 # Collection IDs (use exactly these names)
 NEXT_PUBLIC_APPWRITE_THREADS_COLLECTION_ID=threads
-NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID=messages  
+NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID=messages
 NEXT_PUBLIC_APPWRITE_MESSAGE_SUMMARIES_COLLECTION_ID=message_summaries
 NEXT_PUBLIC_APPWRITE_PROJECTS_COLLECTION_ID=projects
+NEXT_PUBLIC_APPWRITE_GLOBAL_MEMORY_COLLECTION_ID=global_memory
 
 # Server-side Appwrite API Key (for admin operations)
 APPWRITE_API_KEY=your-server-api-key
@@ -281,6 +282,18 @@ pnpm run setup-appwrite
      prompt: string,          // optional - default prompt for project
      colorIndex: number,      // optional - color theme index
      createdAt: datetime,     // required - project creation timestamp
+     updatedAt: datetime      // required - last update timestamp
+   }
+   ```
+
+   **🧠 Global Memory Collection** (`global_memory`):
+   ```javascript
+   // Collection ID: global_memory
+   {
+     userId: string,          // required - memory owner
+     memories: string[],      // required - array of memory items
+     enabled: boolean,        // required - memory enabled status (default: false)
+     createdAt: datetime,     // required - memory creation timestamp
      updatedAt: datetime      // required - last update timestamp
    }
    ```

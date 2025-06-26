@@ -14,6 +14,7 @@ export const THREADS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_THREADS_CO
 export const MESSAGES_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID || 'messages';
 export const MESSAGE_SUMMARIES_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_MESSAGE_SUMMARIES_COLLECTION_ID || 'message_summaries';
 export const PROJECTS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECTS_COLLECTION_ID || 'projects';
+export const GLOBAL_MEMORY_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_GLOBAL_MEMORY_COLLECTION_ID || 'global_memory';
 
 // Initialize Appwrite databases service
 const databases = new Databases(client);
@@ -126,6 +127,25 @@ export interface MessageSummary {
   messageId: string;
   content: string;
   createdAt: Date;
+}
+
+// Interface for Appwrite Global Memory document
+export interface AppwriteGlobalMemory extends Models.Document {
+  userId: string;
+  memories: string[];
+  enabled: boolean;
+  createdAt: string; // ISO date string
+  updatedAt: string; // ISO date string
+}
+
+// Define GlobalMemory interface for internal use
+export interface GlobalMemory {
+  id: string;
+  userId: string;
+  memories: string[];
+  enabled: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Appwrite database service
@@ -1199,6 +1219,145 @@ export class AppwriteDB {
       return response.documents.length > 0;
     } catch (error) {
       return false;
+    }
+  }
+
+  // -------------- Global Memory Operations --------------
+
+  // Get user's global memory settings
+  static async getGlobalMemory(userId?: string): Promise<GlobalMemory | null> {
+    try {
+      const currentUserId = userId || await this.getCurrentUserId();
+
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        GLOBAL_MEMORY_COLLECTION_ID,
+        [Query.equal('userId', currentUserId)]
+      );
+
+      if (response.documents.length === 0) {
+        return null;
+      }
+
+      const doc = response.documents[0] as AppwriteGlobalMemory;
+      return {
+        id: doc.$id,
+        userId: doc.userId,
+        memories: doc.memories || [],
+        enabled: doc.enabled || false,
+        createdAt: new Date(doc.createdAt),
+        updatedAt: new Date(doc.updatedAt),
+      };
+    } catch (error) {
+      console.error('Error getting global memory:', error);
+      throw error;
+    }
+  }
+
+  // Update user's global memory settings
+  static async updateGlobalMemory(userId: string, memories: string[], enabled: boolean): Promise<void> {
+    try {
+      const currentUserId = userId || await this.getCurrentUserId();
+
+      // Check if memory document exists
+      const existing = await this.getGlobalMemory(currentUserId);
+
+      const memoryData = {
+        userId: currentUserId,
+        memories: memories.slice(0, 30), // Ensure max 30 items
+        enabled,
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (existing) {
+        // Update existing document
+        await databases.updateDocument(
+          DATABASE_ID,
+          GLOBAL_MEMORY_COLLECTION_ID,
+          existing.id,
+          memoryData
+        );
+      } else {
+        // Create new document
+        await databases.createDocument(
+          DATABASE_ID,
+          GLOBAL_MEMORY_COLLECTION_ID,
+          ID.unique(),
+          {
+            ...memoryData,
+            createdAt: new Date().toISOString(),
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Error updating global memory:', error);
+      throw error;
+    }
+  }
+
+  // Add a new memory (maintains 30 item limit)
+  static async addMemory(userId: string, memory: string): Promise<void> {
+    try {
+      const currentUserId = userId || await this.getCurrentUserId();
+      const existing = await this.getGlobalMemory(currentUserId);
+
+      let memories: string[] = [];
+      let enabled = false;
+
+      if (existing) {
+        memories = [...existing.memories];
+        enabled = existing.enabled;
+      }
+
+      // Add new memory if it doesn't already exist
+      if (!memories.includes(memory)) {
+        memories.unshift(memory); // Add to beginning
+
+        // Maintain 30 item limit
+        if (memories.length > 30) {
+          memories = memories.slice(0, 30);
+        }
+      }
+
+      await this.updateGlobalMemory(currentUserId, memories, enabled);
+    } catch (error) {
+      console.error('Error adding memory:', error);
+      throw error;
+    }
+  }
+
+  // Delete a specific memory by index
+  static async deleteMemory(userId: string, index: number): Promise<void> {
+    try {
+      const currentUserId = userId || await this.getCurrentUserId();
+      const existing = await this.getGlobalMemory(currentUserId);
+
+      if (!existing || index < 0 || index >= existing.memories.length) {
+        throw new Error('Invalid memory index');
+      }
+
+      const memories = [...existing.memories];
+      memories.splice(index, 1);
+
+      await this.updateGlobalMemory(currentUserId, memories, existing.enabled);
+    } catch (error) {
+      console.error('Error deleting memory:', error);
+      throw error;
+    }
+  }
+
+  // Clear all memories
+  static async clearAllMemories(userId: string): Promise<void> {
+    try {
+      const currentUserId = userId || await this.getCurrentUserId();
+      const existing = await this.getGlobalMemory(currentUserId);
+
+      if (existing) {
+        await this.updateGlobalMemory(currentUserId, [], existing.enabled);
+      }
+    } catch (error) {
+      console.error('Error clearing all memories:', error);
+      throw error;
     }
   }
 }
