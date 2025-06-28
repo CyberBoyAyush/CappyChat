@@ -35,6 +35,7 @@ import {
   Keyboard,
   MessageSquareMore,
   Sparkles,
+  Info,
 } from "lucide-react";
 import ThemeToggleButton from "../components/ui/ThemeComponents";
 import { useTheme } from "next-themes";
@@ -1479,6 +1480,25 @@ export default function SettingsPage() {
                 {/* Contact Us Section */}
                 {activeSection === "contact" && (
                   <div className="space-y-6">
+                    {/* About Us Section */}
+                    <div className="p-6 border rounded-xl bg-card shadow-sm">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Info className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-medium">About AVChat</h3>
+                      </div>
+                      <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                          Learn more about AVChat, our team, technology stack, and mission to create the fastest AI chat experience.
+                        </p>
+                        <Link to="/about">
+                          <Button className="w-full sm:w-auto flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground">
+                            <Info className="h-4 w-4" />
+                            Visit About Us Page
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+
                     {/* Contact Information */}
                     <div className="p-6 border rounded-xl bg-card shadow-sm">
                       <div className="flex items-center gap-2 mb-4">
