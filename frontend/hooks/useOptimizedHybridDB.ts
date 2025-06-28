@@ -55,6 +55,133 @@ export const useOptimizedThreads = () => {
   return { threads, isLoading };
 };
 
+// New hook with pagination support
+export const useOptimizedThreadsWithPagination = (pageSize: number = 40) => {
+  const [priorityThreads, setPriorityThreads] = useState<Thread[]>([]);
+  const [regularThreads, setRegularThreads] = useState<Thread[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentOffset, setCurrentOffset] = useState(0);
+  const mountedRef = useRef(true);
+
+  // Combine priority and regular threads for the final thread list
+  // Priority threads (pinned + project) always come first for instant access
+  const allThreads = [...priorityThreads, ...regularThreads];
+
+  const handleThreadsUpdated = useCallback((updatedThreads: Thread[]) => {
+    console.log('[useOptimizedThreadsWithPagination] Received threads_updated event with', updatedThreads.length, 'threads');
+    if (mountedRef.current) {
+      // Separate priority threads (pinned and project threads) from regular threads
+      const priority = updatedThreads.filter(thread => thread.isPinned || thread.projectId);
+      const regular = updatedThreads.filter(thread => !thread.isPinned && !thread.projectId);
+      
+      setTimeout(() => {
+        if (mountedRef.current) {
+          setPriorityThreads(priority);
+          setRegularThreads(regular);
+          setIsLoading(false);
+          console.log('[useOptimizedThreadsWithPagination] State updated via scheduler task');
+        }
+      }, 0);
+    }
+  }, []);
+
+  // Load more regular threads
+  const loadMoreThreads = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      const result = await HybridDB.loadRegularThreadsPaginated(pageSize, currentOffset);
+      
+      if (mountedRef.current) {
+        setRegularThreads(prev => {
+          // Remove duplicates and append new threads
+          const existingIds = new Set(prev.map(t => t.id));
+          const newThreads = result.threads.filter(t => !existingIds.has(t.id));
+          return [...prev, ...newThreads];
+        });
+        setHasMore(result.hasMore);
+        setCurrentOffset(prev => prev + pageSize);
+      }
+    } catch (error) {
+      console.error('Error loading more threads:', error);
+    } finally {
+      if (mountedRef.current) {
+        setIsLoadingMore(false);
+      }
+    }
+  }, [isLoadingMore, hasMore, currentOffset, pageSize]);
+
+  // Initial load
+  useEffect(() => {
+    mountedRef.current = true;
+    
+    const loadInitialData = async () => {
+      try {
+        // Phase 1: Load threads immediately from local cache for instant UI (snappy experience)
+        const localThreads = HybridDB.getThreads();
+        const localPriority = localThreads.filter(thread => thread.isPinned || thread.projectId);
+        const localRegular = localThreads.filter(thread => !thread.isPinned && !thread.projectId);
+        
+        // Show local data immediately for snappy experience
+        setPriorityThreads(localPriority);
+        setRegularThreads(localRegular.slice(0, pageSize));
+        setIsLoading(false);
+
+        // Phase 2: Load priority threads from remote in parallel for instant access
+        // These are pinned and project threads that should always be available
+        const remotePriorityPromise = HybridDB.loadPriorityThreadsFromRemote();
+        
+        // Phase 3: Load first 40 regular threads from remote in parallel
+        const firstPagePromise = HybridDB.loadRegularThreadsPaginated(pageSize, 0);
+
+        // Execute both remote calls in parallel for better performance
+        const [remotePriority, firstPageResult] = await Promise.all([
+          remotePriorityPromise,
+          firstPagePromise
+        ]);
+
+        if (mountedRef.current) {
+          // Update priority threads (pinned + project threads)
+          setPriorityThreads(remotePriority);
+          
+          // Update regular threads with first 40 from remote
+          setRegularThreads(firstPageResult.threads);
+          setHasMore(firstPageResult.hasMore);
+          setCurrentOffset(pageSize);
+        }
+      } catch (error) {
+        console.error('Error loading initial thread data:', error);
+        if (mountedRef.current) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadInitialData();
+
+    // Listen for real-time updates
+    dbEvents.on('threads_updated', handleThreadsUpdated);
+
+    return () => {
+      mountedRef.current = false;
+      dbEvents.off('threads_updated', handleThreadsUpdated);
+    };
+  }, [handleThreadsUpdated, pageSize]);
+
+  return { 
+    threads: allThreads, 
+    priorityThreads,
+    regularThreads,
+    isLoading, 
+    isLoadingMore,
+    hasMore,
+    loadMoreThreads
+  };
+};
+
 export const useOptimizedMessages = (threadId: string) => {
   const [messages, setMessages] = useState<DBMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
