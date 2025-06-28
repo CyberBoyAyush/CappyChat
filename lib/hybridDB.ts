@@ -1049,7 +1049,7 @@ export class HybridDB {
     }
 
     // Create parts array - include text part if content exists, or empty text part if imgurl exists
-    let parts: any[] = [];
+    const parts: any[] = [];
     if (appwriteMessage.content) {
       parts.push({ type: "text", text: appwriteMessage.content });
     } else if (appwriteMessage.imgurl) {
@@ -1118,7 +1118,7 @@ export class HybridDB {
     }
 
     // Create parts array - include text part if content exists, or empty text part if imgurl exists
-    let parts: any[] = [];
+    const parts: any[] = [];
     if (appwriteMessage.content) {
       parts.push({ type: "text", text: appwriteMessage.content });
     } else if (appwriteMessage.imgurl) {

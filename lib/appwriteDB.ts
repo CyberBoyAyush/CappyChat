@@ -970,7 +970,7 @@ export class AppwriteDB {
         }
 
         // Create parts array - include text part if content exists, or image part if imgurl exists
-        let parts: any[] = [];
+        const parts: any[] = [];
         if (messageDoc.content) {
           parts.push({ type: "text", text: messageDoc.content });
         } else if (messageDoc.imgurl) {
