@@ -63,6 +63,9 @@ export default function ChatSidebarPanel() {
     branchThread,
     isActiveThread,
     isLoading,
+    isLoadingMore,
+    hasMore,
+    loadMoreThreads,
   } = useThreadManager();
 
   // Project management
@@ -361,6 +364,27 @@ export default function ChatSidebarPanel() {
                   {lastSevenDays.length > 0 && previous.length > 0}
                   {/* Previous Threads */}
                   <ThreadCategory title="Previous" threads={previous} />
+
+                  {/* Load More Button */}
+                  {hasMore && (
+                    <SidebarMenuItem>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-center text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 h-8 border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50"
+                        onClick={loadMoreThreads}
+                        disabled={isLoadingMore}
+                      >
+                        {isLoadingMore ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin mr-2" />
+                            Loading...
+                          </>
+                        ) : (
+                          "Load More Chats (40)"
+                        )}
+                      </Button>
+                    </SidebarMenuItem>
+                  )}
                 </>
               ) : pinnedThreads.length === 0 &&
                 projects.length === 0 &&

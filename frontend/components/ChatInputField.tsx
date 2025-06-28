@@ -634,9 +634,10 @@ function PureInputField({
       const loadingAssistantMessage = {
         id: uuidv4(),
         role: "assistant" as const,
-        content: "🎨 Generating your image...",
-        parts: [{ type: "text" as const, text: "🎨 Generating your image..." }],
+        content: "🎨 Generating your image",
+        parts: [{ type: "text" as const, text: "🎨 Generating your image" }],
         createdAt: new Date(),
+        isImageGenerationLoading: true, // Flag to identify loading state
       };
 
       // Add loading message to UI
@@ -670,42 +671,45 @@ function PureInputField({
 
         console.log("✅ Image generated successfully:", result.imageUrl);
 
-        // Create assistant message with generated image
-        const assistantMessageId = uuidv4();
-        const assistantMessage = {
-          id: assistantMessageId,
-          role: "assistant" as const,
-          content: `I've generated an image based on your prompt: "${finalInput}"`,
-          parts: [
-            {
-              type: "text" as const,
-              text: `I've generated an image based on your prompt: "${finalInput}"`,
-            },
-          ],
-          createdAt: new Date(),
-          imgurl: result.imageUrl,
-          model: result.model,
-        };
-
-        // Replace the loading message with the actual result
+        // Update the existing loading message with the generated image
+        let updatedMessage: any = null;
+        
         setMessages((prevMessages: any) => {
           const updatedMessages = [...prevMessages];
-          // Find and replace the loading message (last assistant message)
+          // Find and update the loading message (last assistant message with loading flag)
           for (let i = updatedMessages.length - 1; i >= 0; i--) {
             if (
               updatedMessages[i].role === "assistant" &&
-              updatedMessages[i].content.includes("Generating your image")
+              (updatedMessages[i].isImageGenerationLoading || 
+               updatedMessages[i].content.includes("Generating your image"))
             ) {
-              updatedMessages[i] = assistantMessage;
+              // Update the same message object to include image and remove loading state
+              updatedMessages[i] = {
+                ...updatedMessages[i], // Keep the same ID and other properties
+                content: "", // Empty content - just show the image
+                parts: [
+                  {
+                    type: "text" as const,
+                    text: "", // Empty text - just show the image
+                  },
+                ],
+                imgurl: result.imageUrl,
+                model: result.model,
+                isImageGenerationLoading: false, // Remove loading flag
+                isImageGeneration: true, // Flag to identify this as image generation result
+              };
+              
+              // Keep reference for database storage
+              updatedMessage = updatedMessages[i];
               break;
             }
           }
           return updatedMessages;
         });
 
-        // Store assistant message to database
-        if (!isGuest) {
-          HybridDB.createMessage(threadId, assistantMessage);
+        // Store updated message to database
+        if (!isGuest && updatedMessage) {
+          HybridDB.createMessage(threadId, updatedMessage);
         }
 
         toast.success("Image generated successfully!");
@@ -715,34 +719,32 @@ function PureInputField({
           error instanceof Error ? error.message : "Failed to generate image"
         );
 
-        // Create error message
-        const errorMessage = {
-          id: uuidv4(),
-          role: "assistant" as const,
-          content: `Sorry, I couldn't generate an image. ${
-            error instanceof Error ? error.message : "Please try again."
-          }`,
-          parts: [
-            {
-              type: "text" as const,
-              text: `Sorry, I couldn't generate an image. ${
-                error instanceof Error ? error.message : "Please try again."
-              }`,
-            },
-          ],
-          createdAt: new Date(),
-        };
-
-        // Replace the loading message with the error message
+        // Update the loading message with the error message
         setMessages((prevMessages: any) => {
           const updatedMessages = [...prevMessages];
-          // Find and replace the loading message (last assistant message)
+          // Find and update the loading message (last assistant message with loading flag)
           for (let i = updatedMessages.length - 1; i >= 0; i--) {
             if (
               updatedMessages[i].role === "assistant" &&
-              updatedMessages[i].content.includes("Generating your image")
+              (updatedMessages[i].isImageGenerationLoading || 
+               updatedMessages[i].content.includes("Generating your image"))
             ) {
-              updatedMessages[i] = errorMessage;
+              // Update the same message object with error content
+              updatedMessages[i] = {
+                ...updatedMessages[i], // Keep the same ID and other properties
+                content: `Sorry, I couldn't generate an image. ${
+                  error instanceof Error ? error.message : "Please try again."
+                }`,
+                parts: [
+                  {
+                    type: "text" as const,
+                    text: `Sorry, I couldn't generate an image. ${
+                      error instanceof Error ? error.message : "Please try again."
+                    }`,
+                  },
+                ],
+                isImageGenerationLoading: false, // Remove loading flag
+              };
               break;
             }
           }

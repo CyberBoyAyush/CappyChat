@@ -112,29 +112,93 @@ export function MessageLoading() {
  * ImageGenerationLoading Component
  *
  * Used in: frontend/components/Message.tsx
- * Purpose: Displays a specialized loading animation for image generation.
- * Shows "Cooking Something For You Please Wait" message with animated cooking emoji.
+ * Purpose: Displays a 1:1 aspect ratio loading placeholder for image generation.
+ * Shows an advanced loading animation that mimics AI image generation in progress.
  */
 export function ImageGenerationLoading() {
   console.log("🍳 ImageGenerationLoading component rendered");
 
   return (
-    <div className="flex items-center gap-3 p-4 rounded-lg bg-card/30 border border-border/50">
-      {/* Animated cooking emoji */}
-      <div className="text-2xl animate-bounce">
-        🍳
-      </div>
-
-      {/* Loading message with animated dots */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-foreground">
-          Cooking Something For You Please Wait
-        </span>
-        <div className="flex gap-1">
-          <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
-          <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
-          <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
+    <div className="w-full max-w-md mx-auto">
+      <div className="relative aspect-square w-full rounded-lg border border-border/50 bg-card/30 overflow-hidden">
+        {/* Animated grid background */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5"></div>
+          
+          {/* Grid pattern */}
+          <div className="absolute inset-0 opacity-20 dark:opacity-30">
+            <div className="w-full h-full grid grid-cols-8 grid-rows-8 gap-0.5">
+              {Array.from({ length: 64 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-primary/20 dark:bg-primary/30 rounded-sm animate-pulse"
+                  style={{
+                    animationDelay: `${(i * 50) % 2000}ms`,
+                    animationDuration: '2s'
+                  }}
+                ></div>
+              ))}
+            </div>
+          </div>
         </div>
+        
+        {/* Scanning lines */}
+        <div className="absolute inset-0">
+          <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-primary/60 to-transparent animate-scan-vertical"></div>
+          <div className="absolute h-full w-0.5 bg-gradient-to-b from-transparent via-primary/60 to-transparent animate-scan-horizontal"></div>
+        </div>
+        
+        {/* Central loading area */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 dark:bg-background/70 backdrop-blur-sm">
+          {/* Rotating ring */}
+          <div className="relative mb-6">
+            <div className="w-16 h-16 rounded-full border-2 border-primary/20 dark:border-primary/30"></div>
+            <div className="absolute inset-0 w-16 h-16 rounded-full border-2 border-transparent border-t-primary animate-spin"></div>
+            <div className="absolute inset-2 w-12 h-12 rounded-full border border-primary/30 dark:border-primary/40"></div>
+            
+            {/* Center icon */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-lg animate-pulse">🎨</div>
+            </div>
+          </div>
+          
+          {/* Loading text with typewriter effect */}
+          <div className="text-center space-y-3">
+            <div className="text-sm font-medium text-foreground animate-pulse">
+              Generating Image
+            </div>
+            
+            {/* Progress bar */}
+            <div className="w-32 h-1 bg-muted/50 dark:bg-muted/30 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-primary/60 to-primary animate-progress"></div>
+            </div>
+            
+            {/* Status indicators */}
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                <span>Processing</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                <span>Rendering</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '600ms' }}></div>
+                <span>Finalizing</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Shimmer overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 dark:via-white/10 to-transparent transform -skew-x-12 animate-shimmer"></div>
+        
+        {/* Corner effects */}
+        <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-primary/40 dark:border-primary/50"></div>
+        <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-primary/40 dark:border-primary/50"></div>
+        <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-primary/40 dark:border-primary/50"></div>
+        <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-primary/40 dark:border-primary/50"></div>
       </div>
     </div>
   );

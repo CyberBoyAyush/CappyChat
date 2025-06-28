@@ -262,10 +262,23 @@ export class HybridDB {
 
       console.log('[HybridDB] Starting immediate sync for real-time experience...');
 
-      // Sync threads from remote with immediate UI update
-      const threads = await AppwriteDB.getThreads();
-      LocalDB.replaceAllThreads(threads);
-      debouncedEmitter.emitImmediate('threads_updated', threads);
+      // Phase 1: Load priority threads first for instant access (pinned + project threads)
+      // These are the most important threads that users access frequently
+      const priorityThreads = await AppwriteDB.getPriorityThreads();
+      
+      // Update local storage with priority threads immediately for snappy UI
+      priorityThreads.forEach(thread => LocalDB.upsertThread(thread));
+      debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
+      
+      // Phase 2: Load first 40 regular threads in parallel
+      const firstPageResult = await AppwriteDB.getRegularThreadsPaginated(40, 0);
+      
+      // Update local storage with regular threads
+      firstPageResult.threads.forEach(thread => LocalDB.upsertThread(thread));
+      
+      // Final update with all threads (priority + regular)
+      const allThreads = LocalDB.getThreads();
+      debouncedEmitter.emitImmediate('threads_updated', allThreads);
 
       // Sync projects from remote with immediate UI update
       const projects = await AppwriteDB.getProjects();
@@ -294,6 +307,52 @@ export class HybridDB {
   // Get threads (instant from local storage)
   static getThreads(): Thread[] {
     return LocalDB.getThreads();
+  }
+
+  // Load priority threads (pinned and project threads) from remote
+  static async loadPriorityThreadsFromRemote(): Promise<Thread[]> {
+    if (this.isGuestMode) {
+      return [];
+    }
+
+    try {
+      const priorityThreads = await AppwriteDB.getPriorityThreads();
+      
+      // Update local storage with priority threads
+      priorityThreads.forEach(thread => {
+        LocalDB.upsertThread(thread);
+      });
+
+      return priorityThreads;
+    } catch (error) {
+      console.error('Failed to load priority threads from remote:', error);
+      return [];
+    }
+  }
+
+  // Load regular threads with pagination from remote
+  static async loadRegularThreadsPaginated(limit: number = 25, offset: number = 0): Promise<{
+    threads: Thread[];
+    hasMore: boolean;
+    total: number;
+  }> {
+    if (this.isGuestMode) {
+      return { threads: [], hasMore: false, total: 0 };
+    }
+
+    try {
+      const result = await AppwriteDB.getRegularThreadsPaginated(limit, offset);
+      
+      // Update local storage with new threads (append, don't replace)
+      result.threads.forEach(thread => {
+        LocalDB.upsertThread(thread);
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Failed to load regular threads from remote:', error);
+      return { threads: [], hasMore: false, total: 0 };
+    }
   }
 
   // Create thread (instant local + async remote)
@@ -989,12 +1048,21 @@ export class HybridDB {
       }
     }
 
+    // Create parts array - include text part if content exists, or empty text part if imgurl exists
+    const parts: any[] = [];
+    if (appwriteMessage.content) {
+      parts.push({ type: "text", text: appwriteMessage.content });
+    } else if (appwriteMessage.imgurl) {
+      // For image-only messages, create an appropriate parts structure
+      parts.push({ type: "text", text: "" });
+    }
+
     const message: DBMessage = {
       id: appwriteMessage.messageId,
       threadId: appwriteMessage.threadId,
-      content: appwriteMessage.content,
+      content: appwriteMessage.content || "",
       role: appwriteMessage.role,
-      parts: appwriteMessage.content ? [{ type: "text", text: appwriteMessage.content }] : [],
+      parts: parts,
       createdAt: new Date(appwriteMessage.createdAt),
       webSearchResults: appwriteMessage.webSearchResults || undefined,
       attachments: attachments,
@@ -1014,9 +1082,12 @@ export class HybridDB {
     const existingMessage = existingMessages.find(m => m.id === appwriteMessage.messageId);
 
     if (existingMessage) {
-      // Check if the content is the same to avoid unnecessary updates
-      if (existingMessage.content === appwriteMessage.content) {
-        console.log('[HybridDB] Message content unchanged, skipping update:', appwriteMessage.messageId);
+      // Check if both content and imgurl are the same to avoid unnecessary updates
+      const contentUnchanged = existingMessage.content === appwriteMessage.content;
+      const imgUrlUnchanged = existingMessage.imgurl === appwriteMessage.imgurl;
+      
+      if (contentUnchanged && imgUrlUnchanged) {
+        console.log('[HybridDB] Message content and imgurl unchanged, skipping update:', appwriteMessage.messageId);
         return;
       }
     }
@@ -1046,12 +1117,21 @@ export class HybridDB {
       }
     }
 
+    // Create parts array - include text part if content exists, or empty text part if imgurl exists
+    const parts: any[] = [];
+    if (appwriteMessage.content) {
+      parts.push({ type: "text", text: appwriteMessage.content });
+    } else if (appwriteMessage.imgurl) {
+      // For image-only messages, create an appropriate parts structure
+      parts.push({ type: "text", text: "" });
+    }
+
     const message: DBMessage = {
       id: appwriteMessage.messageId,
       threadId: appwriteMessage.threadId,
-      content: appwriteMessage.content,
+      content: appwriteMessage.content || "",
       role: appwriteMessage.role,
-      parts: appwriteMessage.content ? [{ type: "text", text: appwriteMessage.content }] : [],
+      parts: parts,
       createdAt: new Date(appwriteMessage.createdAt),
       webSearchResults: appwriteMessage.webSearchResults || undefined,
       attachments: attachments,

@@ -202,6 +202,201 @@ export class AppwriteDB {
     }
   }
 
+  // Get threads with pagination for current user
+  static async getThreadsPaginated(limit: number = 25, offset: number = 0): Promise<{
+    threads: Thread[];
+    hasMore: boolean;
+    total: number;
+  }> {
+    try {
+      const userId = await this.getCurrentUserId();
+      
+      // Get threads from Appwrite with pagination
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('userId', userId),
+          Query.orderDesc('lastMessageAt'),
+          Query.limit(limit),
+          Query.offset(offset)
+        ]
+      );
+      
+      // Map Appwrite threads to Thread format
+      const threads = response.documents.map((doc) => {
+        const threadDoc = doc as unknown as AppwriteThread;
+        return {
+          id: threadDoc.threadId,
+          title: threadDoc.title,
+          createdAt: new Date(doc.$createdAt),
+          updatedAt: new Date(threadDoc.updatedAt),
+          lastMessageAt: new Date(threadDoc.lastMessageAt),
+          isPinned: threadDoc.isPinned || false, // Default to false for existing threads
+          tags: threadDoc.tags || [], // Default to empty array for existing threads
+          isBranched: threadDoc.isBranched || false, // Default to false for existing threads
+          projectId: threadDoc.projectId // Optional project ID
+        };
+      });
+      
+      return {
+        threads,
+        hasMore: response.total > offset + limit,
+        total: response.total
+      };
+    } catch (error) {
+      console.error('Error fetching paginated threads from Appwrite:', error);
+      return {
+        threads: [],
+        hasMore: false,
+        total: 0
+      };
+    }
+  }
+
+  // Get priority threads (pinned and project threads) - these load instantly
+  static async getPriorityThreads(): Promise<Thread[]> {
+    try {
+      const userId = await this.getCurrentUserId();
+      
+      // Optimized approach: Get pinned threads and project threads separately then combine
+      // This is faster than filtering all threads
+      const [pinnedResponse, projectResponse] = await Promise.all([
+        // Get pinned threads
+        databases.listDocuments(
+          DATABASE_ID,
+          THREADS_COLLECTION_ID,
+          [
+            Query.equal('userId', userId),
+            Query.equal('isPinned', true),
+            Query.orderDesc('lastMessageAt'),
+            Query.limit(100) // Reasonable limit for pinned threads
+          ]
+        ),
+        // Get project threads (we'll need to filter these since isNotNull might not work)
+        databases.listDocuments(
+          DATABASE_ID,
+          THREADS_COLLECTION_ID,
+          [
+            Query.equal('userId', userId),
+            Query.orderDesc('lastMessageAt'),
+            Query.limit(200) // Get more to filter for project threads
+          ]
+        )
+      ]);
+      
+      // Map pinned threads
+      const pinnedThreads = pinnedResponse.documents.map((doc: any) => {
+        const threadDoc = doc as unknown as AppwriteThread;
+        return {
+          id: threadDoc.threadId,
+          title: threadDoc.title,
+          createdAt: new Date(doc.$createdAt),
+          updatedAt: new Date(threadDoc.updatedAt),
+          lastMessageAt: new Date(threadDoc.lastMessageAt),
+          isPinned: threadDoc.isPinned || false,
+          tags: threadDoc.tags || [],
+          isBranched: threadDoc.isBranched || false,
+          projectId: threadDoc.projectId
+        };
+      });
+
+      // Map and filter project threads (exclude already pinned threads)
+      const projectThreads = projectResponse.documents
+        .map((doc: any) => {
+          const threadDoc = doc as unknown as AppwriteThread;
+          return {
+            id: threadDoc.threadId,
+            title: threadDoc.title,
+            createdAt: new Date(doc.$createdAt),
+            updatedAt: new Date(threadDoc.updatedAt),
+            lastMessageAt: new Date(threadDoc.lastMessageAt),
+            isPinned: threadDoc.isPinned || false,
+            tags: threadDoc.tags || [],
+            isBranched: threadDoc.isBranched || false,
+            projectId: threadDoc.projectId
+          };
+        })
+        .filter((thread: any) => 
+          // Only include threads with projectId that are not already pinned
+          thread.projectId && 
+          thread.projectId !== '' && 
+          !thread.isPinned
+        );
+
+      // Combine pinned and project threads, removing duplicates
+      const allPriorityThreads = [...pinnedThreads, ...projectThreads];
+      const uniquePriorityThreads = allPriorityThreads.filter(
+        (thread: any, index: number, arr: any[]) => 
+          arr.findIndex((t: any) => t.id === thread.id) === index
+      );
+      
+      return uniquePriorityThreads;
+    } catch (error) {
+      console.error('Error fetching priority threads from Appwrite:', error);
+      return [];
+    }
+  }
+
+  // Get regular threads (not pinned, not in projects) with pagination
+  static async getRegularThreadsPaginated(limit: number = 25, offset: number = 0): Promise<{
+    threads: Thread[];
+    hasMore: boolean;
+    total: number;
+  }> {
+    try {
+      const userId = await this.getCurrentUserId();
+      
+      // Get regular threads (not pinned and no projectId) - optimized for performance
+      // We fetch unpinned threads and filter out project threads for better performance
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('userId', userId),
+          Query.equal('isPinned', false), // Only get unpinned threads
+          Query.orderDesc('lastMessageAt'),
+          Query.limit(limit * 3), // Get more to account for filtering out project threads
+          Query.offset(offset)
+        ]
+      );
+      
+      // Map Appwrite threads to Thread format and filter out threads with projectId
+      const allThreads = response.documents.map((doc) => {
+        const threadDoc = doc as unknown as AppwriteThread;
+        return {
+          id: threadDoc.threadId,
+          title: threadDoc.title,
+          createdAt: new Date(doc.$createdAt),
+          updatedAt: new Date(threadDoc.updatedAt),
+          lastMessageAt: new Date(threadDoc.lastMessageAt),
+          isPinned: threadDoc.isPinned || false,
+          tags: threadDoc.tags || [],
+          isBranched: threadDoc.isBranched || false,
+          projectId: threadDoc.projectId
+        };
+      });
+
+      // Filter out threads that have a projectId
+      const regularThreads = allThreads
+        .filter(thread => !thread.projectId || thread.projectId === '')
+        .slice(0, limit); // Only return the requested limit
+      
+      return {
+        threads: regularThreads,
+        hasMore: response.total > offset + limit, // Approximate hasMore
+        total: response.total
+      };
+    } catch (error) {
+      console.error('Error fetching regular threads from Appwrite:', error);
+      return {
+        threads: [],
+        hasMore: false,
+        total: 0
+      };
+    }
+  }
+
   // Create a new thread (with duplicate check) - optimized for speed
   static async createThread(threadId: string, projectId?: string): Promise<string> {
     try {
@@ -774,12 +969,21 @@ export class AppwriteDB {
           }
         }
 
+        // Create parts array - include text part if content exists, or image part if imgurl exists
+        const parts: any[] = [];
+        if (messageDoc.content) {
+          parts.push({ type: "text", text: messageDoc.content });
+        } else if (messageDoc.imgurl) {
+          // For image-only messages, create an appropriate parts structure
+          parts.push({ type: "text", text: "" });
+        }
+
         return {
           id: messageDoc.messageId,
           threadId: messageDoc.threadId,
-          content: messageDoc.content,
+          content: messageDoc.content || "",
           role: messageDoc.role,
-          parts: messageDoc.content ? [{ type: "text", text: messageDoc.content }] : [],
+          parts: parts,
           createdAt: new Date(messageDoc.createdAt),
           webSearchResults: messageDoc.webSearchResults || undefined,
           attachments: attachments,
