@@ -38,7 +38,7 @@ interface TechStackItem {
 const teamMembers: TeamMember[] = [
   {
     name: 'Ayush Sharma',
-    role: 'Co-Founder & Lead Developer',
+    role: 'Co-Founder & Full Stack Developer',
     description: 'Full-stack developer passionate about AI and creating seamless user experiences. Loves building fast, scalable applications.',
     photo: 'https://media.licdn.com/dms/image/v2/D4D03AQHrimd9wDhXTQ/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1700307125570?e=1756339200&v=beta&t=kEc5XgGLCVSG09u7s8FyeCstvmaMqhXSnKu4RQJQS0I',
     github: 'cyberboyayush',
@@ -46,8 +46,8 @@ const teamMembers: TeamMember[] = [
   },
   {
     name: 'Vranda Garg',
-    role: 'Co-Founder & Product Designer',
-    description: 'UI/UX designer focused on creating intuitive and beautiful interfaces. Ensures every pixel serves a purpose.',
+    role: 'Co-Founder & Frontend Developer',
+    description: 'Frontend developer with a focus on creating beautiful and intuitive interfaces. Loves making complex things simple.',
     photo: 'https://avatars.githubusercontent.com/u/166229165?v=4',
     github: 'vrandaagarg',
     twitter: 'vranda_garg_'
