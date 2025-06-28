@@ -13,10 +13,11 @@ export const REALTIME_CONFIG = {
 
     // Session cache duration - 30 seconds for real-time auth state
     sessionCacheTimeout: 30 * 1000, // 30 seconds
-    
-    // Single session enforcement
-    enforceSingleSession: true,
-    
+
+    // Multi-session support with limit enforcement
+    maxSessions: 3, // Maximum 3 concurrent sessions per user
+    enforceSingleSession: false, // Changed to support multiple sessions
+
     // No long-term auth caching for real-time sync
     disableLongTermCache: true
   },
