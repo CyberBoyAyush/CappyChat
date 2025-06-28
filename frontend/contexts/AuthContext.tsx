@@ -18,6 +18,7 @@ import { AppwriteRealtime } from '@/lib/appwriteRealtime';
 import { ensureUserTierInitialized } from '@/lib/tierSystem';
 import { globalErrorHandler } from '@/lib/globalErrorHandler';
 import { useWebSearchStore } from '@/frontend/stores/WebSearchStore';
+import { SessionManager, type SessionInfo, type DetailedSession } from '@/lib/sessionManager';
 
 interface User extends Models.User<Models.Preferences> {}
 
@@ -41,6 +42,9 @@ interface AuthContextType {
   logout: () => Promise<void>;
   getCurrentUser: () => Promise<User | null>;
   checkActiveSessions: () => Promise<{ hasSession: boolean; sessionCount: number }>;
+  getDetailedSessionInfo: () => Promise<SessionInfo>;
+  deleteSession: (sessionId: string) => Promise<void>;
+  deleteAllOtherSessions: () => Promise<void>;
   refreshSession: () => Promise<void>;
   refreshUser: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -242,17 +246,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkActiveSessions = useCallback(async (): Promise<{ hasSession: boolean; sessionCount: number }> => {
     try {
       const sessions = await account.listSessions();
-      console.log(`Active sessions: ${sessions.sessions.length}`);
-
-      // Log session details for debugging
-      sessions.sessions.forEach((session, index) => {
-        console.log(`Session ${index + 1}:`, {
-          id: session.$id,
-          provider: session.provider,
-          current: session.current,
-          createdAt: session.$createdAt
-        });
-      });
 
       return {
         hasSession: sessions.sessions.length > 0,
@@ -274,14 +267,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const refreshSession = useCallback(async (): Promise<void> => {
     try {
       await account.updateSession('current');
-      console.log('Session refreshed successfully');
     } catch (error) {
       console.warn('Session refresh failed:', error);
 
       // If session refresh fails, it likely means the session is invalid
       // Perform automatic logout to clear invalid state
       if (error instanceof AppwriteException && (error.code === 401 || error.code === 403)) {
-        console.log('Session expired or invalid, performing automatic logout');
+
         await performCleanLogout();
       }
     }
@@ -290,7 +282,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Perform clean logout without API calls (for error scenarios)
   const performCleanLogout = useCallback(async (): Promise<void> => {
     try {
-      console.log('Performing clean logout...');
+
 
       // Unsubscribe from all Appwrite Realtime channels
       AppwriteRealtime.unsubscribeFromAll();
@@ -319,7 +311,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setLoading(false);
       });
 
-      console.log('Clean logout completed');
+
     } catch (error) {
       console.error('Error during clean logout:', error);
     }
@@ -708,35 +700,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setAuthPending(true, 'email');
       setLoading(true);
 
-      // Create session and get user data
+      // STEP 1: Enforce session limit BEFORE creating new session
+      try {
+        await SessionManager.enforceSessionLimit();
+      } catch (error) {
+        console.warn('Failed to enforce session limit before login:', error);
+        // Continue with login even if pre-enforcement fails
+      }
+
+      // STEP 2: Create session and get user data
       await account.createEmailPasswordSession(email, password);
       const currentUser = await account.get(); // Get fresh user data after session creation
 
-      // Implement single-session enforcement
-      const { sessionCount } = await checkActiveSessions();
-
-      // If multiple sessions exist, delete all others to enforce single session
-      if (sessionCount > 1) {
-        console.log('Multiple sessions detected, enforcing single session...');
-        try {
-          // Delete all sessions except current
-          await account.deleteSessions();
-          // Create new session to ensure we stay logged in
-          await account.createEmailPasswordSession(email, password);
-          const freshUser = await account.get();
-          setUser(freshUser);
-          setSessionAuthState(freshUser);
-        } catch (error) {
-          console.warn('Failed to enforce single session:', error);
-          // Continue with existing session
-          setUser(currentUser);
-          setSessionAuthState(currentUser);
-        }
-      } else {
-        // Single session - proceed normally
-        setUser(currentUser);
-        setSessionAuthState(currentUser);
+      // STEP 3: Cleanup any excess sessions (backup enforcement)
+      try {
+        await SessionManager.cleanupExcessSessions();
+      } catch (error) {
+        console.warn('Failed to cleanup excess sessions after login:', error);
+        // Continue with login even if cleanup fails
       }
+
+      // Update user state
+      setUser(currentUser);
+      setSessionAuthState(currentUser);
 
       // Clear pending auth state
       setAuthPending(false);
@@ -768,10 +754,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setAuthPending(true, 'email');
       setLoading(true);
 
-      // Create user account
+      // STEP 1: Enforce session limit BEFORE creating new session
+      try {
+        await SessionManager.enforceSessionLimit();
+      } catch (error) {
+        console.warn('Failed to enforce session limit before registration:', error);
+        // Continue with registration even if pre-enforcement fails
+      }
+
+      // STEP 2: Create user account and session
       await account.create(ID.unique(), email, password, name);
-      // Create session
       await account.createEmailPasswordSession(email, password);
+
+      // STEP 3: Cleanup any excess sessions (backup enforcement)
+      try {
+        await SessionManager.cleanupExcessSessions();
+      } catch (error) {
+        console.warn('Failed to cleanup excess sessions after registration:', error);
+        // Continue with registration even if cleanup fails
+      }
 
       // Send verification email immediately (not in background)
       await account.createVerification(APPWRITE_CONFIG.verificationUrl);
@@ -867,7 +868,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Try to delete sessions from server
       try {
         await account.deleteSessions();
-        console.log('Server sessions deleted successfully');
+
       } catch (sessionError) {
         console.warn('Failed to delete server sessions:', sessionError);
         // Continue with local cleanup even if server logout fails
@@ -1079,6 +1080,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
   };
 
+  // Enhanced session management functions
+  const getDetailedSessionInfo = async (): Promise<SessionInfo> => {
+    return await SessionManager.getDetailedSessionInfo();
+  };
+
+  const deleteSession = async (sessionId: string): Promise<void> => {
+    await SessionManager.deleteSession(sessionId);
+  };
+
+  const deleteAllOtherSessions = async (): Promise<void> => {
+    await SessionManager.deleteAllOtherSessions();
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -1095,6 +1109,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         logout,
         getCurrentUser,
         checkActiveSessions,
+        getDetailedSessionInfo,
+        deleteSession,
+        deleteAllOtherSessions,
         refreshSession,
         refreshUser,
         deleteAccount,

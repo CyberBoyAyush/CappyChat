@@ -11,6 +11,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/frontend/contexts/AuthContext';
 import AuthLoadingScreen from '@/frontend/components/auth/AuthLoadingScreen';
+import { SessionManager } from '@/lib/sessionManager';
 
 const AuthCallbackPage: React.FC = () => {
   const { getCurrentUser, refreshUser } = useAuth();
@@ -147,6 +148,14 @@ const AuthCallbackPage: React.FC = () => {
 
         if (user) {
           console.log('🎉 User authenticated successfully!', { userId: user.$id, email: user.email });
+
+          // Cleanup excess sessions after OAuth authentication
+          try {
+            await SessionManager.cleanupExcessSessions();
+          } catch (error) {
+            console.warn('Failed to cleanup excess sessions after OAuth:', error);
+            // Continue with authentication even if cleanup fails
+          }
 
           // Performance tracking
           const startTime = sessionStorage.getItem('oauth_start_time');
