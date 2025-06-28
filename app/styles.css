@@ -954,3 +954,76 @@ html {
     hyphens: auto;
   }
 }
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) skewX(-12deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-12deg);
+  }
+}
+
+@keyframes scan-vertical {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes scan-horizontal {
+  0% {
+    left: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes progress {
+  0% {
+    width: 0%;
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    width: 100%;
+    opacity: 0.6;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+.animate-scan-vertical {
+  animation: scan-vertical 3s infinite ease-in-out;
+}
+
+.animate-scan-horizontal {
+  animation: scan-horizontal 2.5s infinite ease-in-out 0.5s;
+}
+
+.animate-progress {
+  animation: progress 2s infinite ease-in-out;
+}
