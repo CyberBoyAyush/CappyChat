@@ -166,7 +166,7 @@ export default function SettingsPage() {
 
     // Handle hash-based navigation
     const hash = location.hash.replace("#", "");
-    if (hash && ["profile", "privacy", "settings"].includes(hash)) {
+    if (hash && ["profile", "customization", "storage", "application", "contact"].includes(hash)) {
       setActiveSection(hash);
     }
   }, [user, location.hash]);
@@ -577,7 +577,7 @@ export default function SettingsPage() {
                     label: "Customization",
                     icon: Sparkles,
                   },
-                  { id: "privacy", label: "Storage", icon: Database },
+                  { id: "storage", label: "Storage", icon: Database },
                   {
                     id: "application",
                     label: "Application",
@@ -921,8 +921,8 @@ export default function SettingsPage() {
                   </div>
                 )}
 
-                {/* Privacy & Security Section */}
-                {activeSection === "privacy" && (
+                {/* Storage Section */}
+                {activeSection === "storage" && (
                   <div className="space-y-6">
 
                     {/* File Management Section */}
