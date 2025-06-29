@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
       'FLUX.1 [schnell]': 'runware:100@1',
       'FLUX.1 Dev': 'runware:101@1',
       'Stable Defusion 3': 'runware:5@1',
+      'Juggernaut Pro': 'rundiffusion:130@100',
     };
 
     const runwareModelId = modelMapping[model];

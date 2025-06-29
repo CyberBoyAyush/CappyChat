@@ -18,6 +18,7 @@ export const AI_MODELS = [
   'FLUX.1 [schnell]',
   'FLUX.1 Dev',
   'Stable Defusion 3',
+  'Juggernaut Pro'
 ] as const;
 
 export type AIModel = (typeof AI_MODELS)[number];
@@ -232,7 +233,7 @@ export const MODEL_CONFIGS = {
   'FLUX.1 [schnell]': {
     modelId: 'runware:100@1',
     provider: 'runware',
-    displayName: 'AVChat Classic ImageGen',
+    displayName: 'Flux Model Classic',
     iconType: 'runware',
     company: 'Runware',
     isPremium: true,
@@ -240,12 +241,12 @@ export const MODEL_CONFIGS = {
     hasReasoning: false,
     isFileSupported: false,
     isImageGeneration: true,
-    description: 'For Ultra-fast Image Generation. HD',
+    description: 'For Ultra-fast Image Generation. FHD',
   },
   'FLUX.1 Dev': {
     modelId: 'runware:101@1',
     provider: 'runware',
-    displayName: 'AVChat Dev ImageGen',
+    displayName: 'Flux Dev',
     iconType: 'runware',
     company: 'Runware',
     isPremium: true,
@@ -253,12 +254,12 @@ export const MODEL_CONFIGS = {
     hasReasoning: false,
     isFileSupported: false,
     isImageGeneration: true,
-    description: 'Image Generation for Developers. HD',
+    description: 'Image Generation for Developers. FHD',
   },
   'Stable Defusion 3': {
     modelId: 'runware:5@1',
     provider: 'runware',
-    displayName: 'AVChat SD ImageGen',
+    displayName: 'Stable Diffusion 3',
     iconType: 'runware',
     company: 'Runware',
     isPremium: true,
@@ -266,7 +267,20 @@ export const MODEL_CONFIGS = {
     hasReasoning: false,
     isFileSupported: false,
     isImageGeneration: true,
-    description: 'For Realistic Image Generation. HD',
+    description: 'For Realistic Image Generation. FHD',
+  },
+  'Juggernaut Pro': {
+    modelId: 'rundiffusion:130@100',
+    provider: 'runware',
+    displayName: 'Juggernaut Pro (FHD)',
+    iconType: 'runware',
+    company: 'Runware',
+    isPremium: true,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: false,
+    isImageGeneration: true,
+    description: 'For Ultra Realistic Image Generation. FHD',
   },
 } as const satisfies Record<AIModel, ModelConfig>;
 
