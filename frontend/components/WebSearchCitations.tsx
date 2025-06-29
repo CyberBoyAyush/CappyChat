@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Globe, ExternalLink, Image as ImageIcon, Clock } from 'lucide-react';
+import { Globe, ExternalLink, Image as ImageIcon, Clock, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CitationData {
@@ -27,6 +27,7 @@ export function WebSearchCitations({
 }: WebSearchCitationsProps) {
   const [citations, setCitations] = useState<CitationData[]>([]);
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Convert URLs to citation data with metadata
   useEffect(() => {
@@ -88,33 +89,102 @@ export function WebSearchCitations({
   if (!results || results.length === 0) return null;
 
   return (
-    <div className={cn("mt-6 pt-4 border-t border-border/20", className)}>
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-5">
-        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 border border-primary/20">
-          <Globe className="h-3.5 w-3.5 text-primary" />
+    <div className={cn("mt-8 pt-6 pb-4 px-2 md:px-2 border-t border-border/30", className)}>
+      {/* Collapsible Header */}
+      <div 
+        className={cn(
+          "flex items-center gap-3 p-4 sm:p-5 md:p-4 mx-1 sm:mx-2 rounded-xl border border-border/50 bg-card/60 cursor-pointer",
+          "hover:bg-card/80 hover:border-border/80 hover:shadow-lg transition-all duration-300 ease-in-out",
+          "focus:outline-none focus:ring-2 focus:ring-primary/40",
+          "shadow-sm min-h-[60px] sm:min-h-[56px]", // Add minimum height for mobile
+          isExpanded && "rounded-b-none border-b-0 shadow-md"
+        )}
+        onClick={() => setIsExpanded(!isExpanded)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
+      >
+        {/* Icon and Title */}
+        <div className="flex items-center justify-center w-8 h-8 sm:w-8 sm:h-8 rounded-lg bg-primary/10 border border-primary/20 shadow-sm flex-shrink-0">
+          <Search className="h-4 w-4 text-primary" />
         </div>
-        <div className="flex-1">
-          <h3 className="text-sm font-semibold text-foreground">
-            Sources
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            {isStreaming ? 'Loading citations...' : `${results.length} result${results.length !== 1 ? 's' : ''} found`}
-          </p>
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-base sm:text-base font-semibold text-foreground">
+              Web Sources
+            </h3>
+            <span className="text-sm sm:text-sm font-medium text-muted-foreground bg-secondary/60 px-2 py-0.5 rounded-full">
+              {results.length}
+            </span>
+          </div>
         </div>
+
+        {/* Favicons Preview */}
+        <div className="flex items-center gap-1 sm:gap-1 mr-2 sm:mr-3">
+          {citations.slice(0, 4).map((citation, index) => (
+            <div key={index} className="relative">
+              {citation.favicon ? (
+                <img
+                  src={citation.favicon}
+                  alt=""
+                  className="w-6 h-6 sm:w-5 sm:h-5 rounded-sm border border-border/30 shadow-sm"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-sm bg-primary/20 border border-border/30 flex items-center justify-center shadow-sm">
+                  <Globe className="h-3.5 w-3.5 sm:h-3 sm:w-3 text-primary/70" />
+                </div>
+              )}
+            </div>
+          ))}
+          {results.length > 4 && (
+            <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-sm bg-secondary/80 border border-border/30 flex items-center justify-center shadow-sm">
+              <span className="text-[11px] sm:text-[10px] font-medium text-muted-foreground">
+                +{results.length - 4}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Loading Indicator */}
         {isLoadingMetadata && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Clock className="h-3 w-3 animate-spin" />
-            <span>Loading details...</span>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary/50 px-3 py-1.5 rounded-full mr-2 sm:mr-3">
+            <Clock className="h-3.5 w-3.5 animate-spin" />
+            <span className="hidden sm:inline">Loading...</span>
           </div>
         )}
+
+        {/* Expand/Collapse Icon */}
+        <div className="flex-shrink-0">
+          {isExpanded ? (
+            <ChevronDown className="h-5 w-5 sm:h-5 sm:w-5 text-muted-foreground transition-transform duration-200" />
+          ) : (
+            <ChevronRight className="h-5 w-5 sm:h-5 sm:w-5 text-muted-foreground transition-transform duration-200" />
+          )}
+        </div>
       </div>
 
-      {/* Citations Grid */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {citations.map((citation, index) => (
-          <CitationCard key={index} citation={citation} />
-        ))}
+      {/* Expandable Content */}
+      <div className={cn(
+        "overflow-hidden transition-all duration-300 ease-in-out mx-1 sm:mx-2",
+        isExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
+      )}>
+        <div className="border-l border-r border-b border-border/50 rounded-b-xl bg-card/40 p-4 sm:p-6 shadow-md">
+          {/* Citations Grid */}
+          <div className="grid gap-4 sm:gap-4 grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 p-1 sm:p-2">
+            {citations.map((citation, index) => (
+              <CitationCard key={index} citation={citation} />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -131,20 +201,21 @@ function CitationCard({ citation }: { citation: CitationData }) {
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-xl border border-border/40 bg-card/40",
-        "hover:border-border/80 hover:bg-card/60 hover:shadow-md transition-all duration-300",
-        "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
-        "backdrop-blur-sm"
+        "group relative flex flex-col overflow-hidden rounded-xl border border-border/50 bg-card/80",
+        "hover:border-border hover:bg-card hover:shadow-lg transition-all duration-300 ease-in-out",
+        "focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/60",
+        "backdrop-blur-sm min-h-[140px] sm:min-h-[120px] mobile-touch"
       )}
+      onClick={(e) => e.stopPropagation()} // Prevent triggering parent collapse
     >
       {/* Image Header */}
       {citation.image && !imageError && (
-        <div className="relative h-32 bg-muted/30 overflow-hidden">
+        <div className="relative h-32 sm:h-28 md:h-32 bg-secondary/30 overflow-hidden flex-shrink-0">
           <img
             src={citation.image}
             alt={citation.title || citation.domain}
             className={cn(
-              "w-full h-full object-cover transition-all duration-300",
+              "w-full h-full object-cover transition-all duration-500 ease-in-out",
               "group-hover:scale-105",
               imageLoaded ? "opacity-100" : "opacity-0"
             )}
@@ -152,52 +223,52 @@ function CitationCard({ citation }: { citation: CitationData }) {
             onError={() => setImageError(true)}
           />
           {!imageLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+            <div className="absolute inset-0 flex items-center justify-center bg-secondary/50">
+              <ImageIcon className="h-6 w-6 text-muted-foreground/60 animate-pulse" />
             </div>
           )}
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
         </div>
       )}
 
       {/* Content */}
-      <div className="flex-1 p-4 space-y-2">
+      <div className="flex-1 p-4 sm:p-4 space-y-3 min-h-0">
         {/* Favicon and Domain */}
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2.5 mb-2">
           {citation.favicon ? (
             <img
               src={citation.favicon}
               alt=""
-              className="w-4 h-4 rounded-sm flex-shrink-0"
+              className="w-4 h-4 sm:w-4 sm:h-4 rounded-sm flex-shrink-0 opacity-80"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
               }}
             />
           ) : (
-            <div className="w-4 h-4 rounded-sm bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <Globe className="h-2.5 w-2.5 text-primary" />
+            <div className="w-4 h-4 sm:w-4 sm:h-4 rounded-sm bg-primary/20 flex items-center justify-center flex-shrink-0">
+              <Globe className="h-2.5 w-2.5 sm:h-2.5 sm:w-2.5 text-primary/70" />
             </div>
           )}
-          <span className="text-xs font-medium text-muted-foreground truncate">
+          <span className="text-xs sm:text-xs font-medium text-muted-foreground truncate flex-1">
             {citation.domain}
           </span>
-          <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-            <ExternalLink className="h-3 w-3 text-muted-foreground" />
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <ExternalLink className="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 text-muted-foreground/70" />
           </div>
         </div>
 
         {/* Title */}
         <h4 className={cn(
-          "font-semibold text-sm leading-tight text-foreground line-clamp-2",
-          "group-hover:text-primary transition-colors"
+          "font-semibold text-sm sm:text-sm leading-tight text-foreground line-clamp-2 mb-2",
+          "group-hover:text-primary transition-colors duration-200"
         )}>
           {citation.title || citation.domain}
         </h4>
 
         {/* Description */}
         {citation.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+          <p className="text-xs sm:text-xs text-muted-foreground/90 line-clamp-2 leading-relaxed">
             {citation.description}
           </p>
         )}
@@ -211,7 +282,8 @@ function CitationCard({ citation }: { citation: CitationData }) {
         )}
       </div>
 
-
+      {/* Hover effect overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
     </a>
   );
 }
