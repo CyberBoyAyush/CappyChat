@@ -11,7 +11,7 @@ import PreviewMessage from "./Message";
 import { UIMessage } from "ai";
 import { UseChatHelpers } from "@ai-sdk/react";
 import equal from "fast-deep-equal";
-import ChatMessageLoading from "./ui/UIComponents";
+import { MessageLoading } from "./ui/UIComponents";
 import { Error } from "./ui/UIComponents";
 import { useOutletContext } from "react-router-dom";
 import { useIsMobile } from "@/hooks/useMobileDetection";
@@ -77,7 +77,7 @@ function PureMessageDisplay({
   }
 
   return (
-    <section className="chat-message-container flex flex-col w-full max-w-3xl space-y-12">
+    <section className="chat-message-container flex flex-col w-full max-w-3xl space-y-8">
       {deduplicatedMessages.map((message, index) => (
         <PreviewMessage
           key={message.id}
@@ -91,7 +91,20 @@ function PureMessageDisplay({
           onRetryWithModel={onRetryWithModel}
         />
       ))}
-      {status === "submitted" && <ChatMessageLoading />}
+      {status === "submitted" && (
+        <div className="flex gap-2 w-full max-w-full pr-4 pb-6">
+          {/* Assistant Avatar */}
+          <div className="flex-shrink-0 mt-1">
+            <div className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <div className="w-3.5 h-3.5 rounded-full bg-primary/70 animate-pulse" />
+            </div>
+          </div>
+          {/* Loading Animation */}
+          <div className="flex-1 mt-1">
+            <MessageLoading />
+          </div>
+        </div>
+      )}
       {error && <Error message={error.message} />}
     </section>
   );

@@ -60,8 +60,8 @@ function PureMessage({
     <div
       role="article"
       className={cn(
-        "flex flex-col w-full gap-2 py-1",
-        message.role === "user" ? "items-end" : "items-start"
+        "flex flex-col w-full gap-2",
+        message.role === "user" ? "items-end py-1" : "items-start py-1 pb-6",
       )}
     >
       {(message.parts || [{ type: "text", text: message.content || "" }]).map((part, index) => {
@@ -148,7 +148,7 @@ function PureMessage({
               </div>
 
               {/* Assistant Message Content */}
-              <div className="group flex-1 flex flex-col gap-2 min-w-0 overflow-hidden max-w-full">
+              <div className="group flex-1 flex flex-col gap-3 min-w-0 overflow-hidden max-w-full mb-2">
                 {/* Check if this is an image generation loading message */}
                 {(() => {
                   const messageText = (part as any).text || "";
@@ -239,7 +239,7 @@ function PureMessage({
                   // 2. It's an image generation result but has actual text content to show
                   if (!isImageGenerationLoading && !isImageGeneration && messageText.trim()) {
                     return (
-                      <div className="break-words overflow-hidden max-w-full">
+                      <div className="break-words overflow-hidden max-w-full mb-3">
                         <MarkdownRenderer content={messageText} id={message.id} />
                       </div>
                     );
@@ -249,7 +249,7 @@ function PureMessage({
                 })()}
 
                 {!isStreaming && (
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 mt-1">
                     <ChatMessageControls
                       threadId={threadId}
                       content={(part as any).text || ""}

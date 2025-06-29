@@ -1,238 +1,1110 @@
+# AVChat - Complete Project Documentation
 
-# AtChat Project Documentation
+## Table of Contents
+1. [Project Overview](#project-overview)
+2. [Architecture & Design](#architecture--design)
+3. [Technology Stack](#technology-stack)
+4. [Environment Configuration](#environment-configuration)
+5. [Project Structure](#project-structure)
+6. [Core Systems](#core-systems)
+7. [API Routes](#api-routes)
+8. [Frontend Components](#frontend-components)
+9. [State Management](#state-management)
+10. [Database Schema](#database-schema)
+11. [Real-time Features](#real-time-features)
+12. [Authentication & Security](#authentication--security)
+13. [File Management](#file-management)
+14. [AI Integration](#ai-integration)
+15. [Development Workflow](#development-workflow)
+16. [Deployment](#deployment)
+17. [Contributing Guidelines](#contributing-guidelines)
 
-## 1. Introduction
+---
 
-Welcome to the comprehensive documentation for AtChat, a next-generation AI chat platform built for performance, scalability, and a seamless user experience. This document serves as a guide for developers, contributors, and anyone interested in understanding the inner workings of the application.
+## Project Overview
 
-AVChat is a feature-rich chat application that integrates multiple AI models, real-time synchronization, and a modern, responsive user interface. It's built with a local-first architecture, ensuring a fast and reliable experience, even in offline scenarios.
+**AVChat** is a next-generation AI chat platform built with a local-first architecture, providing lightning-fast performance, real-time synchronization, and seamless multi-device experience. The application combines the speed of local storage with the reliability of cloud synchronization, offering users an unparalleled chat experience with multiple AI models.
 
-## 2. Features
+### Key Features
+- **Multi-Model AI Support**: Seamless integration with OpenRouter, OpenAI, Google, Anthropic, and more
+- **Local-First Architecture**: Instant UI updates with background cloud synchronization
+- **Real-Time Sync**: Live synchronization across all devices and browser tabs
+- **Image Generation**: Built-in support for DALL-E 3, Stable Diffusion via Runware
+- **Voice Input**: Speech-to-text using OpenAI Whisper
+- **File Attachments**: Upload and analyze documents, images via Cloudinary
+- **Web Search Integration**: Real-time web search capabilities
+- **Project Management**: Organize chats into projects with custom prompts
+- **Guest Mode**: Try the app without registration
+- **Mobile-First Design**: Fully responsive across all devices
+- **Session Management**: Monitor and control active sessions
+- **Admin Dashboard**: Comprehensive user and system management
 
-AVChat boasts a wide range of features designed to provide a powerful and intuitive chat experience:
+---
 
-*   **Multi-Model AI Support:** Seamlessly switch between various AI models from providers like OpenAI, Google, Anthropic, and more.
-*   **Real-Time Sync:** Instantaneous synchronization of messages and threads across all your devices and browser tabs.
-*   **Local-First Architecture:** The application is designed to work offline, with data stored locally in IndexedDB and synchronized with the cloud whenever a connection is available.
-*   **Image Generation:** Generate images directly within the chat interface using models like DALL-E 3 and Stable Diffusion.
-*   **Voice Input:** Use your voice to interact with the AI, powered by OpenAI's Whisper model for accurate speech-to-text transcription.
-*   **Mobile-First Design:** A fully responsive interface that looks and works great on any device, from mobile phones to widescreen monitors.
-*   **Project Management:** Organize your chats into projects, each with its own custom prompts and settings.
-*   **File Uploads:** Upload files and documents to the chat and have the AI analyze them.
-*   **Web Search:** The AI can search the web to provide you with the most up-to-date information.
-*   **Markdown and Code Formatting:** Rich text formatting for messages, including support for Markdown, code blocks with syntax highlighting, and LaTeX for mathematical equations.
-*   **Guest Mode:** Try out the application without creating an account.
-*   **User Authentication:** Secure user authentication with email/password and OAuth providers like Google and GitHub.
-*   **Session Management:** Monitor and manage your active sessions from the settings page.
-*   **Admin Dashboard:** A dedicated dashboard for administrators to manage users and monitor application usage.
+## Architecture & Design
 
-## 3. Tech Stack
+### Core Principles
+1. **Local-First**: All operations happen locally first, then sync to cloud
+2. **Optimistic Updates**: UI updates immediately, handles conflicts gracefully
+3. **Real-Time Sync**: Live updates across all connected devices
+4. **Progressive Enhancement**: Works offline, enhanced when online
+5. **Performance-First**: Sub-100ms response times for all interactions
 
-AVChat is built with a modern and powerful tech stack, carefully chosen to deliver a high-quality user experience and a robust, scalable backend.
+### System Architecture
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Backend       │    │   External      │
+│   (React SPA)   │    │   (Next.js API) │    │   Services      │
+├─────────────────┤    ├─────────────────┤    ├─────────────────┤
+│ • React Router  │◄──►│ • API Routes    │◄──►│ • OpenRouter    │
+│ • Zustand Store │    │ • Appwrite SDK  │    │ • OpenAI        │
+│ • IndexedDB     │    │ • Node.js       │    │ • Runware       │
+│ • WebSocket     │    │ • TypeScript    │    │ • Cloudinary    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌─────────────────┐
+                    │   Appwrite      │
+                    │   Database      │
+                    ├─────────────────┤
+                    │ • Collections   │
+                    │ • Real-time     │
+                    │ • Authentication│
+                    │ • File Storage  │
+                    └─────────────────┘
+```
 
-**Frontend:**
+---
 
-*   **Framework:** Next.js 15 with React 19
-*   **Language:** TypeScript
-*   **Styling:** TailwindCSS with PostCSS
-*   **UI Components:** Shadcn UI, Radix UI
-*   **State Management:** Zustand
-*   **Routing:** React Router
-*   **Forms:** React Hook Form with Zod for validation
-*   **Markdown Rendering:** `react-markdown` with `remark-gfm` and `rehype-katex`
+## Technology Stack
 
-**Backend:**
+### Frontend Stack
+- **Framework**: Next.js 15.3 with React 19
+- **Language**: TypeScript 5.8
+- **Styling**: TailwindCSS 4.1 with PostCSS
+- **UI Components**: Shadcn UI + Radix UI primitives
+- **State Management**: Zustand 5.0 (lightweight, performant)
+- **Routing**: React Router 7.6 (client-side routing)
+- **Forms**: React Hook Form + Zod validation
+- **Local Database**: Dexie.js (IndexedDB wrapper)
+- **Real-time**: WebSocket + Server-Sent Events
+- **Animations**: Framer Motion 12.17
+- **Icons**: Lucide React
+- **Markdown**: react-markdown + remark-gfm + rehype-katex
+- **Code Highlighting**: react-shiki
+- **Math Rendering**: KaTeX
 
-*   **Framework:** Next.js API Routes
-*   **Language:** TypeScript
-*   **Database:** Appwrite (self-hosted or cloud)
-*   **Real-time:** Appwrite Realtime
-*   **AI Integration:**
-    *   OpenRouter for multi-model support
-    *   OpenAI for Whisper and DALL-E
-    *   Runware for image generation
-*   **File Uploads:** Cloudinary
+### Backend Stack
+- **Runtime**: Node.js with Next.js API Routes
+- **Language**: TypeScript
+- **Database**: Appwrite (self-hosted/cloud)
+- **Authentication**: Appwrite Auth (email/password + OAuth)
+- **Real-time**: Appwrite Realtime WebSocket
+- **File Storage**: Cloudinary (images/documents)
+- **AI Integration**: 
+  - OpenRouter (multi-model access)
+  - OpenAI (Whisper, DALL-E)
+  - Runware (image generation)
+- **Email**: Appwrite Email Service
 
-**Local Storage:**
+### Development Tools
+- **Package Manager**: pnpm (fast, efficient)
+- **Build Tool**: Next.js with Turbopack
+- **Linting**: ESLint 9.28
+- **Type Checking**: TypeScript strict mode
+- **Git Hooks**: Husky (pre-commit checks)
+- **Testing**: Jest + React Testing Library
+- **Deployment**: Vercel (recommended)
 
-*   **Database:** IndexedDB via `dexie.js`
+---
 
-**Tooling:**
+## Environment Configuration
 
-*   **Package Manager:** pnpm
-*   **Linting:** ESLint
-*   **Formatting:** Prettier
-*   **Build Tool:** Next.js with Turbopack
+The application requires several environment variables for proper operation. Reference the `env.example` file:
 
-## 4. Getting Started
+### Required Variables
+```bash
+# AI Services
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+RUNWARE_API_KEY=your_runware_api_key_here
 
-Follow these instructions to set up and run the AVChat application on your local machine.
+# Appwrite Configuration
+NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
+NEXT_PUBLIC_APPWRITE_PROJECT_ID=your_project_id_here
+NEXT_PUBLIC_APPWRITE_DATABASE_ID=your_database_id_here
+NEXT_PUBLIC_APPWRITE_THREADS_COLLECTION_ID=threads
+NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID=messages
+NEXT_PUBLIC_APPWRITE_MESSAGE_SUMMARIES_COLLECTION_ID=message_summaries
+NEXT_PUBLIC_APPWRITE_PROJECTS_COLLECTION_ID=projects
+NEXT_PUBLIC_APPWRITE_GLOBAL_MEMORY_COLLECTION_ID=global_memory
 
-### Prerequisites
+# Authentication URLs
+NEXT_PUBLIC_AUTH_SUCCESS_URL=http://localhost:3000/auth/callback
+NEXT_PUBLIC_AUTH_FAILURE_URL=http://localhost:3000/auth/error
+NEXT_PUBLIC_VERIFICATION_URL=http://localhost:3000/auth/verify
 
-*   Node.js 18+
-*   pnpm
-*   An Appwrite instance (you can use the free cloud tier)
-*   API keys for the various AI services you want to use (OpenAI, OpenRouter, etc.)
+# Admin Configuration
+APPWRITE_API_KEY=your_appwrite_server_api_key_here
+ADMIN_SECRET_KEY=your_secure_admin_secret_key_here
+```
 
-### Installation
+### Environment-Specific Notes
+- **Development**: Use localhost URLs for auth callbacks
+- **Production**: Update URLs to your domain
+- **Security**: Never commit actual API keys to version control
+- **Admin Keys**: Generate secure random strings for admin operations
 
-1.  **Clone the repository:**
+---
 
-    ```bash
-    git clone https://github.com/cyberboyayush/AVChat.git
-    cd AVChat
-    ```
-
-2.  **Install dependencies:**
-
-    ```bash
-    pnpm install
-    ```
-
-3.  **Set up environment variables:**
-
-    Create a `.env.local` file in the root of the project and add the necessary environment variables. You can use the `env.example` file as a template.
-
-    For a detailed guide on all the environment variables, refer to the [README.md](README.md#--complete-environment-variables-guide).
-
-4.  **Set up the Appwrite database:**
-
-    You can either run the provided script to set up the database automatically or do it manually.
-
-    **Automatic Setup:**
-
-    ```bash
-    pnpm run setup-appwrite
-    ```
-
-    **Manual Setup:**
-
-    Refer to the [README.md](README.md#-step-3-database-setup-where-the-magic-lives) for detailed instructions on how to manually set up the Appwrite database, collections, and indexes.
-
-5.  **Run the development server:**
-
-    ```bash
-    pnpm dev
-    ```
-
-    The application will be available at `http://localhost:3000`.
-
-## 5. Project Structure
+## Project Structure
 
 ```
 AVChat/
-├── app/                     # Next.js 15 App Router
-│   ├── api/                    # API routes (the server magic)
-│   ├── layout.tsx              # Root layout (the foundation)
-│   └── static-app-shell/       # SPA shell (for client-side routing)
-├── frontend/                # React components & pages
-│   ├── components/             # Reusable UI components
-│   ├── contexts/               # React contexts (state management)
-│   ├── hooks/                  # Custom hooks (the useful bits)
-│   ├── routes/                 # Page components
-│   └── stores/                 # Zustand stores (simple state)
-├── lib/                     # Core utilities & configurations
-│   ├── appwrite.ts             # Appwrite client setup
-│   ├── hybridDB.ts             # Local-first database magic
-│   ├── models.ts               # AI model configurations
-│   └── tierSystem.ts           # User tier management
-├── public/                  # Static assets
-└── ── Various config files     # TypeScript, ESLint, etc.
+├── 📁 app/                          # Next.js 15 App Router
+│   ├── 📁 api/                      # Backend API routes
+│   │   ├── 📁 admin/                # Admin management endpoints
+│   │   │   ├── delete-user-data/    # User data deletion
+│   │   │   ├── manage-user/         # User management operations
+│   │   │   ├── reset-limits/        # Credit limit resets
+│   │   │   └── stats/               # System statistics
+│   │   ├── ai-text-generation/      # AI text generation endpoint
+│   │   ├── chat-messaging/          # Main chat messaging API
+│   │   ├── files/                   # File management operations
+│   │   ├── image-generation/        # Image generation via Runware
+│   │   ├── speech-to-text/          # Voice input processing
+│   │   ├── upload/                  # File upload to Cloudinary
+│   │   └── web-search/              # Web search integration
+│   ├── layout.tsx                   # Root application layout
+│   ├── styles.css                   # Global styles and Tailwind
+│   └── static-app-shell/            # SPA shell for client routing
+│       └── page.tsx                 # Entry point for React app
+├── 📁 frontend/                     # React application code
+│   ├── 📁 components/               # Reusable UI components
+│   │   ├── 📁 auth/                 # Authentication components
+│   │   ├── 📁 panel/                # Sidebar panel components
+│   │   ├── 📁 projects/             # Project management UI
+│   │   ├── 📁 ui/                   # Base UI components (Shadcn)
+│   │   ├── ChatInterface.tsx        # Main chat interface
+│   │   ├── ChatSidebarPanel.tsx     # Sidebar with threads/projects
+│   │   ├── ModelSelector.tsx        # AI model selection UI
+│   │   ├── FileUpload.tsx           # File attachment handling
+│   │   └── [50+ other components]   # Specialized UI components
+│   ├── 📁 contexts/                 # React Context providers
+│   │   └── AuthContext.tsx          # Authentication state management
+│   ├── 📁 hooks/                    # Custom React hooks
+│   │   ├── useAuthDialog.ts         # Authentication dialog logic
+│   │   ├── useOptimizedHybridDB.ts  # Database operations hook
+│   │   └── [other hooks]            # Specialized hooks
+│   ├── 📁 routes/                   # Page components
+│   │   ├── 📁 auth/                 # Authentication pages
+│   │   ├── ChatHomePage.tsx         # Home/new chat page
+│   │   ├── ChatThreadPage.tsx       # Individual thread view
+│   │   ├── SettingsPage.tsx         # User settings
+│   │   └── AdminPage.tsx            # Admin dashboard
+│   ├── 📁 stores/                   # Zustand state stores
+│   │   ├── ChatModelStore.ts        # AI model selection state
+│   │   ├── BYOKStore.ts             # Bring Your Own Key state
+│   │   └── [other stores]           # Feature-specific stores
+│   ├── ChatAppRouter.tsx            # Main application router
+│   └── ChatLayoutWrapper.tsx        # Layout wrapper component
+├── 📁 lib/                          # Core utilities and services
+│   ├── appwrite.ts                  # Appwrite client configuration
+│   ├── appwriteDB.ts                # Database operations & types
+│   ├── appwriteRealtime.ts          # Real-time sync service
+│   ├── hybridDB.ts                  # Local-first database layer
+│   ├── localDB.ts                   # IndexedDB operations
+│   ├── streamingSync.ts             # Real-time streaming sync
+│   ├── models.ts                    # AI model configurations
+│   ├── tierSystem.ts                # User tier & credit management
+│   ├── sessionManager.ts            # Session management utilities
+│   ├── cloudinary.ts                # File upload service
+│   ├── conversationStyles.ts        # Chat conversation styles
+│   └── [other utilities]            # Helper functions & configs
+├── 📁 docs/                         # Documentation files
+│   ├── AUTO_DATA_REFRESH.md         # Auto data refresh feature
+│   ├── REALTIMESYNC.md              # Real-time sync documentation
+│   ├── REALTIME_SYNC_OPTIMIZATION.md # Sync optimization details
+│   ├── SESSION_MANAGEMENT_IMPROVEMENTS.md # Session management
+│   └── Project.md                   # Original project documentation
+├── 📁 public/                       # Static assets
+│   ├── logo.png                     # Application logo
+│   ├── banner.png                   # Social media banner
+│   └── sw.js                        # Service worker
+├── 📁 scripts/                      # Build and setup scripts
+├── 📁 hooks/                        # Global custom hooks
+├── package.json                     # Dependencies and scripts
+├── env.example                      # Environment variables template
+├── next.config.ts                   # Next.js configuration
+├── tailwind.config.js               # Tailwind CSS configuration
+├── tsconfig.json                    # TypeScript configuration
+└── README.md                        # Project README
 ```
 
-## 6. Core Concepts
+---
 
-### HybridDB: The Local-First Database
+## Core Systems
 
-At the heart of AVChat's performance and offline capabilities is the `HybridDB`, a custom-built data layer that combines the speed of a local IndexedDB database with the persistence and real-time capabilities of Appwrite.
+### 1. HybridDB - Local-First Database System
+**File**: `lib/hybridDB.ts`
 
-**How it works:**
+The HybridDB is the heart of AVChat's performance, combining IndexedDB for local storage with Appwrite for cloud synchronization.
 
-1.  **Local-First:** All data operations (create, read, update, delete) are first performed on the local IndexedDB database. This makes the UI incredibly fast and responsive, as there's no need to wait for a network request to complete.
-2.  **Optimistic Updates:** The UI is immediately updated with the new data from the local database, providing a seamless user experience.
-3.  **Background Sync:** After the local operation is complete, the changes are queued up and sent to the Appwrite backend for synchronization. This ensures that the data is persisted in the cloud and available across all the user's devices.
-4.  **Real-time Updates:** The application subscribes to real-time updates from Appwrite. When a change is made on another device, the local database is updated with the new data, and the UI is automatically refreshed.
+**Key Features**:
+- Instant local operations (sub-10ms response times)
+- Automatic background synchronization
+- Conflict resolution for concurrent edits
+- Offline-first functionality
+- Real-time updates across devices
 
-This architecture provides the best of both worlds: the speed and offline capabilities of a local database, and the persistence and real-time features of a cloud database.
+**Architecture**:
+```typescript
+// Example usage
+await HybridDB.createMessage(threadId, content, attachments);
+// ↓ Immediately updates local UI
+// ↓ Queues for cloud sync
+// ↓ Broadcasts to other tabs/devices
+```
 
-### Real-Time Synchronization
+### 2. Real-Time Synchronization
+**Files**: `lib/appwriteRealtime.ts`, `lib/streamingSync.ts`
 
-Real-time sync is a critical feature of AVChat, and it's achieved through a combination of Appwrite Realtime and a custom streaming sync solution.
+Provides live updates across all connected devices and browser tabs.
 
-*   **Appwrite Realtime:** Used for synchronizing messages, threads, and projects across devices. The application subscribes to the relevant Appwrite collections, and whenever a change occurs, the local database is updated in real-time.
-*   **Streaming Sync:** For AI responses, a custom streaming solution is used to provide a real-time, character-by-character streaming effect. This is achieved using a combination of WebSockets and a custom implementation that broadcasts streaming updates to all connected clients.
+**Components**:
+- **Appwrite Realtime**: WebSocket connection for database changes
+- **Streaming Sync**: Custom solution for AI response streaming
+- **Event Broadcasting**: Cross-tab communication via BroadcastChannel
 
-For a more detailed explanation of the real-time sync architecture, refer to the [REALTIMESYNC.md](REALTIMESYNC.md) document.
+### 3. Authentication System
+**Files**: `frontend/contexts/AuthContext.tsx`, `lib/sessionManager.ts`
 
-### State Management
+Comprehensive authentication with multiple providers and session management.
 
-AVChat uses a combination of React Context and Zustand for state management.
+**Features**:
+- Email/password authentication
+- OAuth (Google, GitHub)
+- Email verification requirement
+- Session management (3 sessions max per user)
+- Guest mode support
+- Automatic session refresh
 
-*   **React Context:** Used for managing global state that doesn't change often, such as the authenticated user, theme, and application settings. The `AuthContext` is a key part of the application, providing authentication state and methods to the rest of the components.
-*   **Zustand:** Used for managing state that changes frequently, such as the list of messages in a thread, the current chat input, and the state of the various UI components. Zustand's simplicity and performance make it a great choice for managing the more dynamic parts of the application's state.
+### 4. Tier System & Credit Management
+**File**: `lib/tierSystem.ts`
 
-## 7. API Routes
+Manages user tiers, credit consumption, and feature access.
 
-The `app/api` directory contains all the backend API routes for the application. These routes are responsible for handling requests from the client, interacting with the Appwrite database, and calling the various AI services.
+**Tiers**:
+- **Guest**: 2 free messages
+- **Free**: Basic features with limits
+- **Pro**: Enhanced features and higher limits
+- **Admin**: Full system access
 
-Here's a breakdown of the most important API routes:
+---
 
-*   **`/api/ai-text-generation`:** Handles requests for text generation from the various AI models.
-*   **`/api/chat-messaging`:** Manages the creation and retrieval of chat messages.
-*   **`/api/image-generation`:** Handles requests for image generation.
-*   **`/api/speech-to-text`:** Processes audio files and returns the transcribed text.
-*   **`/api/upload`:** Handles file uploads to Cloudinary.
-*   **`/api/web-search`:** Performs web searches and returns the results to the AI.
-*   **`/api/admin/*`:** A collection of routes for administrative tasks, such as managing users, resetting limits, and viewing application stats.
+## API Routes
 
-## 8. Frontend Components
+The `app/api/` directory contains all backend endpoints that power AVChat's functionality.
 
-The `frontend` directory contains all the React components, hooks, contexts, and stores that make up the user interface of the application.
+### Core API Endpoints
 
-Here are some of the most important components:
+#### `/api/chat-messaging` - Main Chat API
+**File**: `app/api/chat-messaging/route.ts`
+- **Purpose**: Handles AI text generation and streaming responses
+- **Method**: POST
+- **Features**:
+  - Multi-model AI support via OpenRouter
+  - Streaming responses with word-level chunking
+  - Credit consumption tracking
+  - Project prompt integration
+  - File attachment processing
+  - Conversation style application
 
-*   **`ChatInterface.tsx`:** The main component that renders the chat interface, including the message list, input field, and model selector.
-*   **`ChatLayoutWrapper.tsx`:** A wrapper component that provides the basic layout for the chat interface, including the sidebar and main content area.
-*   **`AuthContext.tsx`:** The authentication context, which manages the user's authentication state and provides methods for logging in, logging out, and refreshing the session.
-*   **`HybridDB.ts`:** The local-first database implementation, which handles all data operations and synchronization with the Appwrite backend.
-*   **`ChatAppRouter.tsx`:** The main router for the application, which defines all the client-side routes.
-*   **`ChatSidebarPanel.tsx`:** The sidebar component, which displays the list of chat threads and projects.
-*   **`ChatMessage.tsx`:** A component that renders a single chat message, including the author's avatar, the message content, and any attachments.
+#### `/api/ai-text-generation` - Title Generation
+**File**: `app/api/ai-text-generation/route.ts`
+- **Purpose**: Generates thread titles from first messages
+- **Method**: POST
+- **Features**:
+  - Free service (no credits consumed)
+  - 80-character limit enforcement
+  - File attachment consideration
+  - Optimized for speed with nano models
 
-## 9. Contributing
+#### `/api/image-generation` - Image Creation
+**File**: `app/api/image-generation/route.ts`
+- **Purpose**: Generates images using Runware API
+- **Method**: POST
+- **Features**:
+  - Multiple model support (DALL-E, Stable Diffusion)
+  - Credit consumption (1 premium credit)
+  - Real-time sync compatibility
+  - Error handling and fallbacks
 
-Contributions are welcome! Please follow these guidelines when contributing to the project.
+#### `/api/speech-to-text` - Voice Input
+**File**: `app/api/speech-to-text/route.ts`
+- **Purpose**: Converts audio to text using OpenAI Whisper
+- **Method**: POST
+- **Features**:
+  - Multiple audio format support
+  - High accuracy transcription
+  - File size validation
+  - Error handling
 
-*   **Code Style:** Follow the existing code style. We use ESLint and Prettier to enforce a consistent code style.
-*   **Commit Messages:** Use conventional commit messages. This helps us automatically generate changelogs and understand the history of the project.
-*   **Pull Requests:** Before creating a pull request, please make sure that your code lints and builds without any errors. Provide a clear description of the changes you've made and why you've made them.
+#### `/api/web-search` - Search Integration
+**File**: `app/api/web-search/route.ts`
+- **Purpose**: Performs web searches for AI context
+- **Method**: POST
+- **Features**:
+  - Credit consumption (1 super premium credit)
+  - Search result formatting
+  - Citation support for Perplexity models
+  - Real-time integration
 
-## 10. Deployment
+#### `/api/upload` - File Management
+**File**: `app/api/upload/route.ts`
+- **Purpose**: Handles file uploads to Cloudinary
+- **Method**: POST
+- **Features**:
+  - 5MB file size limit
+  - Multiple format support (images, PDFs, documents)
+  - Automatic optimization
+  - Secure upload handling
 
-We recommend deploying the application to Vercel. It's the easiest way to get your application up and running in production.
+#### `/api/files` - File Operations
+**File**: `app/api/files/route.ts`
+- **Purpose**: Lists and manages user uploaded files
+- **Methods**: POST (list), DELETE (remove)
+- **Features**:
+  - User-specific file listing
+  - Cloudinary integration
+  - File metadata tracking
+  - Bulk operations support
 
-1.  **Fork the repository.**
-2.  **Create a new project on Vercel and import your forked repository.**
-3.  **Configure the environment variables.** Make sure to add all the environment variables from your `.env.local` file to the Vercel project settings.
-4.  **Deploy!** Vercel will automatically build and deploy your application.
+### Admin API Endpoints
 
-## 11. Troubleshooting
+#### `/api/admin/stats` - System Statistics
+**File**: `app/api/admin/stats/route.ts`
+- **Purpose**: Provides comprehensive system statistics
+- **Method**: POST
+- **Features**:
+  - User count and tier distribution
+  - Message and thread statistics
+  - Credit usage analytics
+  - System health metrics
 
-Here are some common issues you might encounter and how to solve them:
+#### `/api/admin/manage-user` - User Management
+**File**: `app/api/admin/manage-user/route.ts`
+- **Purpose**: Admin user management operations
+- **Method**: POST
+- **Features**:
+  - User lookup by email
+  - Tier management
+  - Credit reset functionality
+  - User preference access
 
-*   **"It's not working!"**
-    *   Check the browser console for errors.
-    *   Make sure that all the required environment variables are set correctly.
-    *   Try restarting the development server.
-    *   Clear your browser cache.
-*   **"API calls are failing!"**
-    *   Check your API keys.
-    *   Verify your Appwrite permissions.
-    *   Make sure that your Appwrite instance is running and accessible.
-*   **"Styles look weird!"**
-    *   Try running `pnpm build` to rebuild the TailwindCSS cache.
-    *   Check for conflicting styles.
-*   **"Real-time sync isn't working!"**
-    *   Make sure that you have enabled real-time in your Appwrite project.
-    *   Check the browser console for any WebSocket errors.
+#### `/api/admin/reset-limits` - Limit Management
+**File**: `app/api/admin/reset-limits/route.ts`
+- **Purpose**: Resets user credit limits
+- **Method**: POST
+- **Features**:
+  - Individual user reset
+  - Bulk user reset
+  - Monthly limit cycles
+  - Admin authentication
+
+#### `/api/admin/delete-user-data` - Data Management
+**File**: `app/api/admin/delete-user-data/route.ts`
+- **Purpose**: Handles user data deletion
+- **Method**: POST
+- **Features**:
+  - Complete data removal
+  - GDPR compliance
+  - Cascade deletion
+  - Audit logging
+
+---
+
+## Frontend Components
+
+The `frontend/components/` directory contains all React components organized by functionality.
+
+### Core Interface Components
+
+#### `ChatInterface.tsx` - Main Chat UI
+- **Purpose**: Primary chat interface with message display and input
+- **Features**:
+  - Real-time message streaming
+  - File attachment support
+  - Voice input integration
+  - Model selection
+  - Responsive design
+  - Keyboard shortcuts
+
+#### `ChatSidebarPanel.tsx` - Navigation Sidebar
+- **Purpose**: Thread and project navigation
+- **Features**:
+  - Thread listing with search
+  - Project organization
+  - Drag-and-drop support
+  - Context menus
+  - Real-time updates
+
+#### `ModelSelector.tsx` - AI Model Selection
+- **Purpose**: AI model and feature selection UI
+- **Features**:
+  - Model categorization
+  - Feature toggles (web search, image generation)
+  - Credit cost display
+  - Tier-based access control
+  - Compact responsive design
+
+#### `FileUpload.tsx` - File Attachment Handler
+- **Purpose**: Drag-and-drop file upload interface
+- **Features**:
+  - Multiple file support
+  - Progress indicators
+  - File type validation
+  - Preview generation
+  - Error handling
+
+### Authentication Components (`auth/`)
+
+#### `AuthDialog.tsx` - Authentication Modal
+- **Purpose**: Login/signup modal interface
+- **Features**:
+  - Email/password forms
+  - OAuth provider buttons
+  - Form validation
+  - Error handling
+  - Responsive design
+
+#### `LoginPage.tsx` & `SignupPage.tsx` - Auth Pages
+- **Purpose**: Dedicated authentication pages
+- **Features**:
+  - Full-page auth forms
+  - Social login integration
+  - Email verification flow
+  - Password reset functionality
+
+### UI Components (`ui/`)
+
+#### Base Components (Shadcn UI)
+- **Button.tsx**: Customizable button component
+- **Input.tsx**: Form input with validation
+- **Dialog.tsx**: Modal dialog system
+- **Dropdown.tsx**: Dropdown menu component
+- **Tooltip.tsx**: Hover tooltip system
+- **ScrollArea.tsx**: Custom scrollbar implementation
+
+#### Theme Components
+- **ThemeComponents.tsx**: Dark/light theme toggle
+- **ThemeProvider.tsx**: Theme context provider
+
+### Specialized Components
+
+#### `MarkdownRenderer.tsx` - Content Rendering
+- **Purpose**: Renders markdown content with syntax highlighting
+- **Features**:
+  - Code block highlighting
+  - Math equation rendering (KaTeX)
+  - Link handling
+  - Table support
+  - Custom styling
+
+#### `MessageAttachments.tsx` - File Display
+- **Purpose**: Displays file attachments in messages
+- **Features**:
+  - Image previews
+  - Document icons
+  - Download links
+  - File metadata display
+
+#### `WebSearchCitations.tsx` - Search Results
+- **Purpose**: Displays web search citations
+- **Features**:
+  - Source link formatting
+  - Citation numbering
+  - Expandable content
+  - Accessibility support
+
+---
+
+## State Management
+
+AVChat uses a hybrid approach to state management combining React Context and Zustand stores.
+
+### React Context
+
+#### `AuthContext.tsx` - Authentication State
+**File**: `frontend/contexts/AuthContext.tsx`
+- **Purpose**: Global authentication state management
+- **Features**:
+  - User session management
+  - Login/logout functionality
+  - Email verification status
+  - Session refresh handling
+  - Guest mode support
+
+### Zustand Stores
+
+#### `ChatModelStore.ts` - Model Selection
+**File**: `frontend/stores/ChatModelStore.ts`
+- **Purpose**: AI model selection and configuration
+- **State**:
+  - Selected model
+  - Model categories
+  - Feature toggles
+  - User preferences
+
+#### `BYOKStore.ts` - API Key Management
+**File**: `frontend/stores/BYOKStore.ts`
+- **Purpose**: Bring Your Own Key functionality
+- **State**:
+  - User API keys (encrypted)
+  - Provider configurations
+  - Key validation status
+  - Usage preferences
+
+#### `WebSearchStore.ts` - Search Configuration
+**File**: `frontend/stores/WebSearchStore.ts`
+- **Purpose**: Web search feature state
+- **State**:
+  - Search enabled/disabled
+  - Search providers
+  - Result preferences
+  - Citation settings
+
+#### `ConversationStyleStore.ts` - Chat Styles
+**File**: `frontend/stores/ConversationStyleStore.ts`
+- **Purpose**: Conversation style management
+- **State**:
+  - Selected style
+  - Style configurations
+  - Custom prompts
+  - User preferences
+
+#### `FontStore.ts` - Typography Settings
+**File**: `frontend/stores/FontStore.ts`
+- **Purpose**: Font and typography preferences
+- **State**:
+  - Font family selection
+  - Font size settings
+  - Line height preferences
+  - Accessibility options
+
+---
+
+## Database Schema
+
+AVChat uses Appwrite as the primary database with the following collections:
+
+### Collections Structure
+
+#### `threads` Collection
+```typescript
+interface Thread {
+  $id: string;              // Unique thread identifier
+  userId: string;           // Owner user ID
+  title: string;            // Thread title (auto-generated)
+  createdAt: string;        // ISO timestamp
+  updatedAt: string;        // ISO timestamp
+  projectId?: string;       // Optional project association
+  isPinned: boolean;        // Pin status
+  tags: string[];           // Thread tags
+  lastMessageAt: string;    // Last activity timestamp
+  messageCount: number;     // Total message count
+}
+```
+
+#### `messages` Collection
+```typescript
+interface DBMessage {
+  $id: string;              // Unique message identifier
+  threadId: string;         // Parent thread ID
+  userId: string;           // Message author ID
+  content: string;          // Message content
+  role: 'user' | 'assistant'; // Message role
+  createdAt: string;        // ISO timestamp
+  updatedAt: string;        // ISO timestamp
+  attachments?: FileAttachment[]; // File attachments
+  model?: string;           // AI model used
+  reasoning?: string;       // AI reasoning (if available)
+  webSearchResults?: any[]; // Web search results
+  isStreaming: boolean;     // Streaming status
+  streamingCompleted: boolean; // Streaming completion
+}
+```
+
+#### `message_summaries` Collection
+```typescript
+interface MessageSummary {
+  $id: string;              // Unique summary identifier
+  threadId: string;         // Parent thread ID
+  userId: string;           // Owner user ID
+  summary: string;          // Thread summary
+  messageCount: number;     // Messages included in summary
+  createdAt: string;        // ISO timestamp
+  updatedAt: string;        // ISO timestamp
+}
+```
+
+#### `projects` Collection
+```typescript
+interface Project {
+  $id: string;              // Unique project identifier
+  userId: string;           // Owner user ID
+  name: string;             // Project name
+  description?: string;     // Project description
+  prompt?: string;          // Project-specific prompt (max 500 chars)
+  color: string;            // Project color theme
+  createdAt: string;        // ISO timestamp
+  updatedAt: string;        // ISO timestamp
+  threadCount: number;      // Number of threads in project
+}
+```
+
+#### `global_memory` Collection
+```typescript
+interface GlobalMemory {
+  $id: string;              // Unique memory identifier
+  userId: string;           // Owner user ID
+  memories: string[];       // Array of memory items
+  enabled: boolean;         // Memory enabled status
+  createdAt: string;        // ISO timestamp
+  updatedAt: string;        // ISO timestamp
+}
+```
+
+### Indexes and Queries
+
+#### Performance Indexes
+- `threads`: `userId`, `createdAt`, `updatedAt`, `projectId`
+- `messages`: `threadId`, `userId`, `createdAt`
+- `message_summaries`: `threadId`, `userId`
+- `projects`: `userId`, `createdAt`
+- `global_memory`: `userId`, `createdAt`
+
+#### Common Query Patterns
+```typescript
+// Get user threads with pagination
+Query.equal('userId', userId),
+Query.orderDesc('updatedAt'),
+Query.limit(30)
+
+// Get thread messages
+Query.equal('threadId', threadId),
+Query.orderAsc('createdAt')
+
+// Get project threads
+Query.equal('userId', userId),
+Query.equal('projectId', projectId),
+Query.orderDesc('updatedAt')
+```
+
+---
+
+## Real-time Features
+
+AVChat's real-time capabilities are powered by multiple synchronization systems working together.
+
+### Real-time Architecture
+
+#### 1. Appwrite Realtime WebSocket
+**File**: `lib/appwriteRealtime.ts`
+- **Purpose**: Handles database change notifications
+- **Features**:
+  - Collection-level subscriptions
+  - Cross-device synchronization
+  - Automatic reconnection
+  - Event filtering and routing
+
+#### 2. Streaming Sync System
+**File**: `lib/streamingSync.ts`
+- **Purpose**: Real-time AI response streaming
+- **Features**:
+  - Character-by-character streaming
+  - Cross-tab broadcasting
+  - Stream resumption after page refresh
+  - Conflict resolution
+
+#### 3. Local Event Broadcasting
+- **Technology**: BroadcastChannel API
+- **Purpose**: Cross-tab communication
+- **Events**:
+  - Message updates
+  - Thread changes
+  - User actions
+  - System notifications
+
+### Synchronization Flow
+```
+User Action → Local Update → UI Update → Cloud Sync → Broadcast → Other Devices
+     ↓              ↓            ↓           ↓           ↓            ↓
+   Instant      IndexedDB    React State  Appwrite   WebSocket   Live Updates
+```
+
+### Real-time Events
+- **Message Creation**: Instant local display, background sync
+- **Message Streaming**: Live AI response updates
+- **Thread Updates**: Title changes, pin status, project moves
+- **User Presence**: Online/offline status (planned feature)
+- **Typing Indicators**: Real-time typing status (planned feature)
+
+---
+
+## Authentication & Security
+
+### Authentication Flow
+
+#### 1. Email/Password Authentication
+```typescript
+// Registration flow
+signup(email, password) → email verification → account activation → login
+```
+
+#### 2. OAuth Authentication
+- **Google OAuth**: Seamless Google account integration
+- **GitHub OAuth**: Developer-friendly GitHub login
+- **Profile Photos**: Automatic avatar from OAuth providers
+
+#### 3. Guest Mode
+- **Features**: 2 free messages without registration
+- **Limitations**: No data persistence, limited features
+- **Conversion**: Seamless upgrade to full account
+
+### Security Measures
+
+#### 1. Session Management
+**File**: `lib/sessionManager.ts`
+- **Session Limit**: Maximum 3 active sessions per user
+- **Auto-cleanup**: Oldest sessions automatically terminated
+- **Device Tracking**: Session metadata (device, location, time)
+- **Manual Control**: User can terminate sessions from settings
+
+#### 2. API Security
+- **Rate Limiting**: Prevents API abuse
+- **Input Validation**: Zod schema validation
+- **CORS Configuration**: Restricted cross-origin requests
+- **Admin Authentication**: Secure admin key verification
+
+#### 3. Data Protection
+- **Encryption**: API keys encrypted in browser storage
+- **HTTPS Only**: All communications encrypted
+- **GDPR Compliance**: Complete data deletion capabilities
+- **Privacy First**: Minimal data collection
+
+### User Tiers & Access Control
+
+#### Tier System
+**File**: `lib/tierSystem.ts`
+
+```typescript
+interface UserTier {
+  name: 'guest' | 'free' | 'pro' | 'admin';
+  limits: {
+    messagesPerMonth: number;
+    webSearchCredits: number;
+    imageGenerationCredits: number;
+    fileUploads: number;
+    projectCount: number;
+  };
+  features: string[];
+}
+```
+
+#### Credit System
+- **AI Text Generation**: Free (no credits consumed)
+- **Web Search**: 1 super premium credit
+- **Image Generation**: 1 premium credit
+- **File Uploads**: Free within limits
+- **Monthly Reset**: Automatic credit refresh
+
+---
+
+## File Management
+
+### File Upload System
+
+#### 1. Cloudinary Integration
+**Files**: `lib/cloudinary.ts`, `lib/cloudinary-client.ts`
+- **Storage**: Cloudinary cloud storage
+- **Optimization**: Automatic image optimization
+- **Transformations**: On-the-fly image processing
+- **CDN**: Global content delivery network
+
+#### 2. File Types Supported
+- **Images**: JPG, PNG, GIF, WebP, SVG
+- **Documents**: PDF, DOC, DOCX, TXT, MD
+- **Archives**: ZIP, RAR (limited support)
+- **Size Limit**: 5MB per file
+
+#### 3. File Management Features
+**Component**: `FileManager.tsx`
+- **File Listing**: User's uploaded files with metadata
+- **Download**: Direct file download links
+- **Delete**: Secure file deletion
+- **Search**: File search and filtering
+- **Bulk Operations**: Multiple file management
+
+### File Processing Pipeline
+```
+Upload → Validation → Cloudinary → Database → AI Processing → Display
+   ↓         ↓           ↓           ↓           ↓            ↓
+Security   Size/Type   Storage    Metadata   Analysis    User View
+```
+
+---
+
+## AI Integration
+
+### Multi-Model Support
+
+#### 1. OpenRouter Integration
+**File**: `lib/models.ts`
+- **Purpose**: Primary AI model provider
+- **Models**: 50+ models from various providers
+- **Features**:
+  - Unified API interface
+  - Model switching
+  - Cost optimization
+  - Rate limiting
+
+#### 2. Model Categories
+```typescript
+interface ModelCategory {
+  name: string;
+  models: AIModel[];
+  description: string;
+  costTier: 'free' | 'premium' | 'super-premium';
+}
+```
+
+**Categories**:
+- **Fast Models**: Quick responses, lower cost
+- **Smart Models**: Balanced performance and cost
+- **Advanced Models**: Highest quality, premium cost
+- **Specialized Models**: Task-specific models
+
+#### 3. Conversation Styles
+**File**: `lib/conversationStyles.ts`
+- **Normal**: Balanced, helpful responses
+- **Creative**: More imaginative and creative
+- **Precise**: Factual, concise responses
+- **Friendly**: Casual, conversational tone
+- **Professional**: Formal, business-appropriate
+
+### AI Features
+
+#### 1. Text Generation
+- **Streaming**: Real-time response generation
+- **Context Awareness**: Full conversation history
+- **Project Prompts**: Custom system prompts per project
+- **Style Application**: Conversation style integration
+
+#### 2. Image Generation
+**Integration**: Runware API
+- **Models**: DALL-E 3, Stable Diffusion, Midjourney
+- **Features**:
+  - High-quality image generation
+  - Style customization
+  - Aspect ratio control
+  - Batch generation
+
+#### 3. Voice Input
+**Integration**: OpenAI Whisper
+- **Accuracy**: High-precision speech recognition
+- **Languages**: Multi-language support
+- **Formats**: Multiple audio format support
+- **Real-time**: Live transcription
+
+#### 4. Web Search
+**Integration**: Search API providers
+- **Real-time**: Current information access
+- **Citations**: Proper source attribution
+- **Context**: Search results integrated into AI responses
+- **Filtering**: Relevant result selection
+
+---
+
+## Development Workflow
+
+### Getting Started
+
+#### 1. Prerequisites
+```bash
+# Required software
+Node.js 18+
+pnpm (package manager)
+Git
+
+# Required accounts
+Appwrite account (cloud or self-hosted)
+OpenRouter API key
+OpenAI API key (optional)
+Runware API key (optional)
+Cloudinary account (optional)
+```
+
+#### 2. Installation
+```bash
+# Clone repository
+git clone https://github.com/cyberboyayush/avchat.git
+cd avchat
+
+# Install dependencies
+pnpm install
+
+# Setup environment
+cp env.example .env.local
+# Edit .env.local with your API keys
+
+# Setup database
+pnpm run setup-appwrite
+
+# Start development server
+pnpm dev
+```
+
+#### 3. Development Scripts
+```bash
+# Development
+pnpm dev          # Start dev server with Turbopack
+pnpm build        # Build for production
+pnpm start        # Start production server
+pnpm lint         # Run ESLint
+```
+
+### Code Organization
+
+#### 1. File Naming Conventions
+- **Components**: PascalCase (e.g., `ChatInterface.tsx`)
+- **Hooks**: camelCase with `use` prefix (e.g., `useAuthDialog.ts`)
+- **Utilities**: camelCase (e.g., `hybridDB.ts`)
+- **Types**: PascalCase interfaces (e.g., `interface Thread`)
+
+#### 2. Import Organization
+```typescript
+// External libraries
+import React from 'react';
+import { NextRequest } from 'next/server';
+
+// Internal utilities
+import { HybridDB } from '@/lib/hybridDB';
+import { useAuth } from '@/frontend/contexts/AuthContext';
+
+// Components
+import ChatInterface from '@/frontend/components/ChatInterface';
+```
+
+---
+
+## Deployment
+
+### Recommended Platform: Vercel
+
+#### 1. Vercel Deployment
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+
+# Set environment variables in Vercel dashboard
+# Configure custom domain (optional)
+```
+
+#### 2. Environment Configuration
+- **Production URLs**: Update auth callback URLs
+- **API Keys**: Set all required environment variables
+- **Database**: Ensure Appwrite is accessible
+- **CDN**: Configure Cloudinary for production
+
+#### 3. Performance Optimizations
+- **Next.js**: Built-in optimizations
+- **Turbopack**: Fast build times
+- **Image Optimization**: Automatic image optimization
+- **Code Splitting**: Automatic bundle splitting
+- **Caching**: Aggressive caching strategies
+
+---
+
+## Contributing Guidelines
+
+### How to Contribute
+
+#### 1. Getting Started
+```bash
+# Fork the repository
+# Clone your fork
+git clone https://github.com/cyberboyayush/Avchat.git
+
+# Create feature branch
+git checkout -b feature/your-feature-name
+
+# Make changes and commit
+git commit -m "feat: add your feature"
+
+# Push and create PR
+git push origin feature/your-feature-name
+```
+
+#### 2. Code Standards
+- **TypeScript**: Strict mode enabled
+- **ESLint**: Follow configured rules
+- **Prettier**: Code formatting
+- **Conventional Commits**: Commit message format
+
+#### 3. Pull Request Process
+1. **Description**: Clear description of changes
+2. **Testing**: Ensure all tests pass
+3. **Documentation**: Update relevant documentation
+4. **Review**: Address review feedback
+5. **Merge**: Squash and merge when approved
+
+### Development Guidelines
+
+#### 1. Performance First
+- **Local-First**: Prioritize local operations
+- **Lazy Loading**: Load components on demand
+- **Memoization**: Prevent unnecessary re-renders
+- **Bundle Size**: Monitor and optimize bundle size
+
+#### 2. User Experience
+- **Responsive**: Mobile-first design
+- **Accessibility**: WCAG compliance
+- **Loading States**: Clear loading indicators
+- **Error Handling**: Graceful error recovery
+
+#### 3. Code Quality
+- **Type Safety**: Comprehensive TypeScript usage
+- **Error Boundaries**: Prevent app crashes
+- **Testing**: Unit and integration tests
+- **Documentation**: Inline code documentation
+
+---
+
+## Additional Resources
+
+### Documentation
+- **README.md**: Quick start guide
+- **docs/**: Detailed feature documentation
+- **API Documentation**: Endpoint specifications
+- **Component Docs**: Component usage guides
+
+### Community
+- **GitHub Issues**: Bug reports and feature requests
+- **Discussions**: Community discussions
+- **Discord**: Real-time community chat (planned)
+- **Blog**: Development updates and tutorials
+
+### Support
+- **Email**: connect@ayush-sharma.in
+- **GitHub**: Issue tracking and support
+- **Documentation**: Comprehensive guides
+- **Community**: Peer support
+
+---
+
+*This documentation is maintained by the AvChat development team. For the most up-to-date information, please refer to the GitHub repository and official documentation.*
