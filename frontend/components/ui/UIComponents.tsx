@@ -61,50 +61,41 @@ export function Error({ message }: { message: string }) {
  *
  * Used in: frontend/components/ChatMessageDisplay.tsx
  * Purpose: Displays a loading animation while AI is generating a response.
- * Shows animated dots to indicate message processing state.
+ * Shows a minimal, elegant typing indicator perfect for chat apps.
  */
 export function MessageLoading() {
   return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-      className="text-foreground"
-    >
-      <circle cx="4" cy="12" r="2" fill="currentColor">
-        <animate
-          id="spinner_qFRN"
-          begin="0;spinner_OcgL.end+0.25s"
-          attributeName="cy"
-          calcMode="spline"
-          dur="0.6s"
-          values="12;6;12"
-          keySplines=".33,.66,.66,1;.33,0,.66,.33"
+    <div className="flex items-center gap-3 py-2 px-3">
+      {/* Simple typing dots */}
+      <div className="flex items-center gap-1">
+        <div 
+          className="w-2 h-2 rounded-full bg-muted-foreground/60 animate-bounce"
+          style={{ 
+            animationDelay: '0ms',
+            animationDuration: '1.4s'
+          }}
         />
-      </circle>
-      <circle cx="12" cy="12" r="2" fill="currentColor">
-        <animate
-          begin="spinner_qFRN.begin+0.1s"
-          attributeName="cy"
-          calcMode="spline"
-          dur="0.6s"
-          values="12;6;12"
-          keySplines=".33,.66,.66,1;.33,0,.66,.33"
+        <div 
+          className="w-2 h-2 rounded-full bg-muted-foreground/60 animate-bounce"
+          style={{ 
+            animationDelay: '0.2s',
+            animationDuration: '1.4s'
+          }}
         />
-      </circle>
-      <circle cx="20" cy="12" r="2" fill="currentColor">
-        <animate
-          id="spinner_OcgL"
-          begin="spinner_qFRN.begin+0.2s"
-          attributeName="cy"
-          calcMode="spline"
-          dur="0.6s"
-          values="12;6;12"
-          keySplines=".33,.66,.66,1;.33,0,.66,.33"
+        <div 
+          className="w-2 h-2 rounded-full bg-muted-foreground/60 animate-bounce"
+          style={{ 
+            animationDelay: '0.4s',
+            animationDuration: '1.4s'
+          }}
         />
-      </circle>
-    </svg>
+      </div>
+      
+      {/* Simple status text */}
+      <span className="text-sm text-muted-foreground">
+        AI is typing...
+      </span>
+    </div>
   );
 }
 
@@ -119,7 +110,7 @@ export function ImageGenerationLoading() {
   console.log("🍳 ImageGenerationLoading component rendered");
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-md">
       <div className="relative aspect-square w-full rounded-lg border border-border/50 bg-card/30 overflow-hidden">
         {/* Animated grid background */}
         <div className="absolute inset-0">
