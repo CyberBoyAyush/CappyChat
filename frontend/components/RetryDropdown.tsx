@@ -72,7 +72,7 @@ export default function RetryDropdown({
     "OpenAI 4.1 Mini",
     "Gemini 2.5 Flash",
     "OpenAI o4-mini",
-    "DeepSeek R1-0528",
+    "DeepSeek R1 Fast",
   ];
 
   // Categorize models
