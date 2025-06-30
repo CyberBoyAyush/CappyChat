@@ -23,6 +23,7 @@ import { HybridDB } from "@/lib/hybridDB";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 import { ModelSelector } from "./ModelSelector";
 import { ConversationStyleSelector } from "./ConversationStyleSelector";
+import { AspectRatioSelector, ASPECT_RATIOS, AspectRatio, getDimensionsForModel } from "./AspectRatioSelector";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { getModelConfig } from "@/lib/models";
@@ -177,6 +178,9 @@ function PureInputField({
 
   // Model selection state
   const { selectedModel, setModel } = useModelStore();
+
+  // Aspect ratio state for image generation
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState<AspectRatio>(ASPECT_RATIOS[0]); // Default to 1:1
 
   // Track if input change was from user typing vs external source (like prompt selection)
   const lastInputRef = useRef("");
@@ -634,10 +638,11 @@ function PureInputField({
       const loadingAssistantMessage = {
         id: uuidv4(),
         role: "assistant" as const,
-        content: "🎨 Generating your image",
-        parts: [{ type: "text" as const, text: "🎨 Generating your image" }],
+        content: `🎨 Generating your image [aspectRatio:${selectedAspectRatio.id}]`,
+        parts: [{ type: "text" as const, text: `🎨 Generating your image [aspectRatio:${selectedAspectRatio.id}]` }],
         createdAt: new Date(),
         isImageGenerationLoading: true, // Flag to identify loading state
+        aspectRatio: selectedAspectRatio.id, // Store aspect ratio for loading component
       };
 
       // Add loading message to UI
@@ -645,6 +650,12 @@ function PureInputField({
         ...prevMessages,
         loadingAssistantMessage as any,
       ]);
+
+      // Get appropriate dimensions for the selected model and aspect ratio
+      const modelConfig = getModelConfig(selectedModel);
+      const dimensions = getDimensionsForModel(selectedAspectRatio, modelConfig.modelId);
+
+      console.log(`🎯 Using dimensions for ${selectedModel}: ${dimensions.width}x${dimensions.height}`);
 
       // Call image generation API
       try {
@@ -658,8 +669,9 @@ function PureInputField({
             model: selectedModel,
             userId: isGuest ? null : user?.$id,
             isGuest: isGuest,
-            width: 1024,
-            height: 1024,
+            width: dimensions.width,
+            height: dimensions.height,
+            attachments: finalAttachments,
           }),
         });
 
@@ -686,17 +698,18 @@ function PureInputField({
               // Update the same message object to include image and remove loading state
               updatedMessages[i] = {
                 ...updatedMessages[i], // Keep the same ID and other properties
-                content: "", // Empty content - just show the image
+                content: `[aspectRatio:${selectedAspectRatio.id}]`, // Store aspect ratio in content for persistence
                 parts: [
                   {
                     type: "text" as const,
-                    text: "", // Empty text - just show the image
+                    text: `[aspectRatio:${selectedAspectRatio.id}]`, // Store aspect ratio in parts for persistence
                   },
                 ],
                 imgurl: result.imageUrl,
                 model: result.model,
                 isImageGenerationLoading: false, // Remove loading flag
                 isImageGeneration: true, // Flag to identify this as image generation result
+                aspectRatio: selectedAspectRatio.id, // Preserve aspect ratio for display
               };
               
               // Keep reference for database storage
@@ -1167,12 +1180,22 @@ function PureInputField({
                     <div className="min-w-0 flex-shrink overflow-hidden">
                       <ModelSelector isImageGenMode={isImageGenMode} />
                     </div>
-                    <ConversationStyleSelector className="hidden md:flex flex-shrink-0" />
-                    <WebSearchToggle
-                      isEnabled={isWebSearchEnabled}
-                      onToggle={setWebSearchEnabled}
-                      className="hidden md:flex flex-shrink-0"
-                    />
+                    {isImageGenMode ? (
+                      <AspectRatioSelector
+                        selectedRatio={selectedAspectRatio}
+                        onRatioChange={setSelectedAspectRatio}
+                        className="hidden md:flex flex-shrink-0"
+                      />
+                    ) : (
+                      <>
+                        <ConversationStyleSelector className="hidden md:flex flex-shrink-0" />
+                        <WebSearchToggle
+                          isEnabled={isWebSearchEnabled}
+                          onToggle={setWebSearchEnabled}
+                          className="hidden md:flex flex-shrink-0"
+                        />
+                      </>
+                    )}
                   </>
                 )}
                 {isGuest && (
@@ -1185,12 +1208,22 @@ function PureInputField({
               <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 flex-shrink-0">
                 {!isGuest && (
                   <>
-                    <ConversationStyleSelector className="flex md:hidden" />
-                    <WebSearchToggle
-                      isEnabled={isWebSearchEnabled}
-                      onToggle={setWebSearchEnabled}
-                      className="flex md:hidden"
-                    />
+                    {isImageGenMode ? (
+                      <AspectRatioSelector
+                        selectedRatio={selectedAspectRatio}
+                        onRatioChange={setSelectedAspectRatio}
+                        className="flex md:hidden"
+                      />
+                    ) : (
+                      <>
+                        <ConversationStyleSelector className="flex md:hidden" />
+                        <WebSearchToggle
+                          isEnabled={isWebSearchEnabled}
+                          onToggle={setWebSearchEnabled}
+                          className="flex md:hidden"
+                        />
+                      </>
+                    )}
                     <Button
                       variant={isImageGenMode ? "default" : "outline"}
                       size="icon"
@@ -1248,7 +1281,12 @@ function PureInputField({
                       disabled={
                         status === "streaming" ||
                         status === "submitted" ||
-                        isImageGenMode
+                        (isImageGenMode && !getModelConfig(selectedModel).image2imageGen)
+                      }
+                      acceptedFileTypes={
+                        isImageGenMode && getModelConfig(selectedModel).image2imageGen
+                          ? "image/png,image/jpeg,image/jpg"
+                          : "image/*,.pdf"
                       }
                     />
                   </>

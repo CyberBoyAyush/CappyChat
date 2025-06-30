@@ -17,6 +17,7 @@ interface FileUploadProps {
   disabled?: boolean;
   className?: string;
   onUploadStatusChange?: (uploadingFiles: UploadingFile[]) => void;
+  acceptedFileTypes?: string;
 }
 
 export interface UploadingFile {
@@ -31,6 +32,7 @@ export default function FileUpload({
   disabled,
   className,
   onUploadStatusChange,
+  acceptedFileTypes = "image/*,.pdf",
 }: FileUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
@@ -38,13 +40,26 @@ export default function FileUpload({
 
   const validateFile = (file: File): { valid: boolean; error?: string } => {
     const maxSize = 5 * 1024 * 1024; // 5MB
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-      "application/pdf",
-    ];
+
+    // Determine allowed types based on acceptedFileTypes prop
+    let allowedTypes: string[] = [];
+    let errorMessage = "";
+
+    if (acceptedFileTypes.includes("image/png,image/jpeg,image/jpg")) {
+      // Image-to-image mode: only PNG, JPEG, JPG
+      allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
+      errorMessage = "Only PNG, JPEG, and JPG images are allowed for image-to-image generation";
+    } else {
+      // Default mode: images and PDFs
+      allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "application/pdf",
+      ];
+      errorMessage = "Only images (JPEG, PNG, GIF, WebP) and PDF files are allowed";
+    }
 
     if (file.size > maxSize) {
       return { valid: false, error: "File size must be less than 5MB" };
@@ -53,7 +68,7 @@ export default function FileUpload({
     if (!allowedTypes.includes(file.type)) {
       return {
         valid: false,
-        error: "Only images (JPEG, PNG, GIF, WebP) and PDF files are allowed",
+        error: errorMessage,
       };
     }
 
@@ -203,7 +218,7 @@ export default function FileUpload({
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,.pdf"
+        accept={acceptedFileTypes}
         onChange={(e) => handleFileSelect(e.target.files)}
         className="hidden"
         disabled={disabled}

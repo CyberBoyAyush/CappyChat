@@ -25,6 +25,37 @@ import { Button } from "@/frontend/components/ui/button";
 import { toast } from "sonner";
 import { ImageGenerationLoading } from "./ui/UIComponents";
 
+// Utility function to extract aspect ratio from message content
+const extractAspectRatio = (message: UIMessage): string => {
+  // Check if aspectRatio is directly available (for in-memory messages)
+  if ((message as any).aspectRatio) {
+    return (message as any).aspectRatio;
+  }
+
+  // Extract from content for persisted messages
+  const content = message.content || "";
+  const parts = (message as any).parts || [];
+
+  // Check content first
+  const contentMatch = content.match(/\[aspectRatio:([^\]]+)\]/);
+  if (contentMatch) {
+    return contentMatch[1];
+  }
+
+  // Check parts
+  for (const part of parts) {
+    if (part.text) {
+      const partMatch = part.text.match(/\[aspectRatio:([^\]]+)\]/);
+      if (partMatch) {
+        return partMatch[1];
+      }
+    }
+  }
+
+  // Default fallback
+  return "1:1";
+};
+
 function PureMessage({
   threadId,
   message,
@@ -152,7 +183,7 @@ function PureMessage({
                 {/* Check if this is an image generation loading message */}
                 {(() => {
                   const messageText = (part as any).text || "";
-                  const isImageGenerationLoading = (message as any).isImageGenerationLoading || 
+                  const isImageGenerationLoading = (message as any).isImageGenerationLoading ||
                                                    messageText.includes("🎨 Generating your image") ||
                                                    messageText.includes("Generating your image");
 
@@ -163,9 +194,11 @@ function PureMessage({
                   // Only show loading component if this is actually a loading message AND no image is present yet
                   if (isImageGenerationLoading && !(message as any).imgurl) {
                     console.log("🎨 Rendering ImageGenerationLoading component");
+                    const aspectRatio = extractAspectRatio(message);
+                    console.log("🎯 Extracted aspect ratio:", aspectRatio);
                     return (
                       <div className="mb-4">
-                        <ImageGenerationLoading />
+                        <ImageGenerationLoading aspectRatio={aspectRatio} />
                       </div>
                     );
                   }
@@ -176,56 +209,70 @@ function PureMessage({
                 {/* Show generated image if present */}
                 {(message as any).imgurl && (
                   <div className="mb-3">
-                    <div className="relative aspect-square w-full max-w-md rounded-xl overflow-hidden border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm hover:border-border/70 transition-all duration-200 group">
-                      <img
-                        src={(message as any).imgurl}
-                        alt="Generated image"
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        onError={(e) => {
-                          console.error('Failed to load generated image:', (message as any).imgurl);
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                      <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm rounded-md px-2 py-1">
-                        <span className="text-xs text-white font-medium">AI Generated</span>
-                      </div>
-                      <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="h-8 w-8 p-0 bg-black/50 hover:bg-black/70 border-none"
-                          onClick={async () => {
-                            try {
-                              const response = await fetch((message as any).imgurl);
-                              const blob = await response.blob();
-                              const url = window.URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = `generated-image-${message.id}.png`;
-                              document.body.appendChild(a);
-                              a.click();
-                              window.URL.revokeObjectURL(url);
-                              document.body.removeChild(a);
-                              toast.success('Image downloaded successfully!');
-                            } catch (error) {
-                              console.error('Failed to download image:', error);
-                              toast.error('Failed to download image');
-                            }
-                          }}
-                          title="Download image"
-                        >
-                          <Download className="h-4 w-4 text-white" />
-                        </Button>
-                      </div>
-                    </div>
+                    {(() => {
+                      const aspectRatio = extractAspectRatio(message);
+                      console.log("🎯 Extracted aspect ratio for image display:", aspectRatio);
+                      const aspectRatioClasses = {
+                        "1:1": "aspect-square max-w-md",
+                        "21:9": "aspect-[21/9] max-w-2xl",
+                        "16:9": "aspect-video max-w-2xl",
+                        "4:3": "aspect-[4/3] max-w-lg",
+                      };
+                      const aspectClass = aspectRatioClasses[aspectRatio as keyof typeof aspectRatioClasses] || "aspect-square max-w-md";
+
+                      return (
+                        <div className={cn("relative w-full rounded-xl overflow-hidden border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm hover:border-border/70 transition-all duration-200 group", aspectClass)}>
+                          <img
+                            src={(message as any).imgurl}
+                            alt="Generated image"
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              console.error('Failed to load generated image:', (message as any).imgurl);
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                          <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm rounded-md px-2 py-1">
+                            <span className="text-xs text-white font-medium">AI Generated</span>
+                          </div>
+                          <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-8 w-8 p-0 bg-black/50 hover:bg-black/70 border-none"
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch((message as any).imgurl);
+                                  const blob = await response.blob();
+                                  const url = window.URL.createObjectURL(blob);
+                                  const a = document.createElement('a');
+                                  a.href = url;
+                                  a.download = `generated-image-${message.id}.png`;
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  window.URL.revokeObjectURL(url);
+                                  document.body.removeChild(a);
+                                  toast.success('Image downloaded successfully!');
+                                } catch (error) {
+                                  console.error('Failed to download image:', error);
+                                  toast.error('Failed to download image');
+                                }
+                              }}
+                              title="Download image"
+                            >
+                              <Download className="h-4 w-4 text-white" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
                 {/* Only show regular markdown content if not an image generation message */}
                 {(() => {
                   const messageText = (part as any).text || "";
-                  const isImageGenerationLoading = (message as any).isImageGenerationLoading || 
+                  const isImageGenerationLoading = (message as any).isImageGenerationLoading ||
                                                    messageText.includes("🎨 Generating your image") ||
                                                    messageText.includes("Generating your image");
                   const isImageGeneration = (message as any).isImageGeneration;
@@ -238,11 +285,16 @@ function PureMessage({
                   // 1. It's not a loading message AND not an image generation result, OR
                   // 2. It's an image generation result but has actual text content to show
                   if (!isImageGenerationLoading && !isImageGeneration && messageText.trim()) {
-                    return (
-                      <div className="break-words overflow-hidden max-w-full mb-3">
-                        <MarkdownRenderer content={messageText} id={message.id} />
-                      </div>
-                    );
+                    // Filter out aspect ratio metadata from display
+                    const cleanedText = messageText.replace(/\[aspectRatio:[^\]]+\]/g, '').trim();
+
+                    if (cleanedText) {
+                      return (
+                        <div className="break-words overflow-hidden max-w-full mb-3">
+                          <MarkdownRenderer content={cleanedText} id={message.id} />
+                        </div>
+                      );
+                    }
                   }
 
                   return null;

@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { canUserUseModel, consumeCredits } from '@/lib/tierSystem';
 import { Runware } from '@runware/sdk-js';
+import { getModelConfig } from '@/lib/models';
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { 
-      prompt, 
-      model, 
-      userId, 
-      isGuest, 
+    const {
+      prompt,
+      model,
+      userId,
+      isGuest,
       userApiKey,
       width = 1024,
       height = 1024,
-      numberResults = 1
+      numberResults = 1,
+      attachments = []
     } = body;
 
     // Validate required fields
@@ -60,6 +62,7 @@ export async function POST(req: NextRequest) {
     const modelMapping: Record<string, string> = {
       'FLUX.1 [schnell]': 'runware:100@1',
       'FLUX.1 Dev': 'runware:101@1',
+      'FLUX.1 Kontext [dev]': 'runware:106@1',
       'Stable Defusion 3': 'runware:5@1',
       'Juggernaut Pro': 'rundiffusion:130@100',
     };
@@ -76,16 +79,52 @@ export async function POST(req: NextRequest) {
     console.log(`📝 Prompt: ${prompt}`);
     console.log(`📐 Dimensions: ${width}x${height}`);
 
+    // Check if this is an image-to-image model and has attachments
+    const modelConfig = getModelConfig(model as any);
+    const isImage2Image = modelConfig.image2imageGen && attachments.length > 0;
+
+    if (isImage2Image) {
+      console.log(`🖼️ Image-to-image mode with ${attachments.length} reference image(s)`);
+    }
+
+    // Prepare reference images for image-to-image models
+    const referenceImages = isImage2Image
+      ? attachments.map((attachment: any) => attachment.url).filter(Boolean)
+      : undefined;
+
+    // Log dimensions being used
+    if (runwareModelId === 'runware:106@1') {
+      console.log(`🎯 Using FLUX Kontext validated dimensions: ${width}x${height}`);
+    } else {
+      console.log(`🎯 Using standard dimensions: ${width}x${height}`);
+    }
+
     // Generate image using Runware
-    const imageResults = await runware.requestImages({
+    const requestParams: any = {
+      taskType: "imageInference",
       positivePrompt: prompt,
       model: runwareModelId,
       width: width,
       height: height,
       numberResults: numberResults,
-      outputType: 'URL' as const,
-      outputFormat: 'PNG' as const,
-    });
+      outputType: ['URL'] as const,
+      outputFormat: 'JPEG' as const,
+      includeCost: true,
+    };
+
+    // Add image-to-image specific parameters
+    if (isImage2Image && referenceImages && referenceImages.length > 0) {
+      requestParams.referenceImages = referenceImages;
+      requestParams.steps = 28;
+      requestParams.CFGScale = 2.5;
+      requestParams.scheduler = "Euler";
+      requestParams.advancedFeatures = {
+        guidanceEndStepPercentage: 75
+      };
+      console.log(`🔗 Reference images:`, referenceImages);
+    }
+
+    const imageResults = await runware.requestImages(requestParams);
 
     console.log(`✅ Image generation completed:`, imageResults);
 

@@ -20,6 +20,7 @@ export const AI_MODELS = [
   'Grok 3 Mini',
   'FLUX.1 [schnell]',
   'FLUX.1 Dev',
+  'FLUX.1 Kontext [dev]',
   'Stable Defusion 3',
   'Juggernaut Pro'
 ] as const;
@@ -38,6 +39,7 @@ export type ModelConfig = {
   isFileSupported: boolean;
   isFast: boolean;
   isImageGeneration?: boolean;
+  image2imageGen?: boolean;
   description: string;
 };
 
@@ -344,6 +346,21 @@ export const MODEL_CONFIGS = {
     isFast: false,
     isImageGeneration: true,
     description: 'For Ultra Realistic Image Generation. FHD',
+  },
+  'FLUX.1 Kontext [dev]': {
+    modelId: 'runware:106@1',
+    provider: 'runware',
+    displayName: 'Flux Image to Image',
+    iconType: 'runware',
+    company: 'Runware',
+    isPremium: false,
+    isSuperPremium: true,
+    hasReasoning: false,
+    isFileSupported: true,
+    isFast: false,
+    isImageGeneration: true,
+    image2imageGen: true,
+    description: 'Image-to-Image generation with Context, FHD',
   },
 } as const satisfies Record<AIModel, ModelConfig>;
 
