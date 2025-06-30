@@ -132,6 +132,14 @@ const ModelCard: React.FC<ModelCardProps> = ({
             <ModelBadge type="reasoning" size={16} />
           </div>
         )}
+        {modelConfig.isFast && (
+          <div
+            title="Fast Model - Optimized for speed and quick responses"
+            className="cursor-default"
+          >
+            <ModelBadge type="fast" size={16} />
+          </div>
+        )}
         {modelConfig.isFileSupported && (
           <div
             title="File Support - Can analyze images, documents, and other file types"

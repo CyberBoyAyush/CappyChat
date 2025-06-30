@@ -34,6 +34,7 @@ export type ModelConfig = {
   isSuperPremium: boolean;
   hasReasoning: boolean;
   isFileSupported: boolean;
+  isFast: boolean;
   isImageGeneration?: boolean;
   description: string;
 };
@@ -49,18 +50,20 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: true,
+    isFast: true,
     description: 'Fast and efficient model from Google',
   },
   'Gemini 2.5 Flash': {
-    modelId: 'google/gemini-2.5-flash',
+    modelId: 'google/gemini-2.5-flash-preview-05-20',
     provider: 'openrouter',
     displayName: 'Gemini 2.5 Flash',
     iconType: 'google',
     company: 'Google',
-    isPremium: true,
+    isPremium: false,
     isSuperPremium: false,
-    hasReasoning: true,
+    hasReasoning: false,
     isFileSupported: true,
+    isFast: true,
     description: 'Fast and efficient model from Google',
   },
   'Gemini 2.5 Flash Lite': {
@@ -73,10 +76,11 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: true,
+    isFast: true,
     description: 'Fast and efficient model from Google',
   },
   'Gemini 2.5 Flash Search': {
-    modelId: 'google/gemini-2.5-flash:online',
+    modelId: 'google/gemini-2.5-flash-preview-05-20:online',
     provider: 'openrouter',
     displayName: 'Gemini 2.5 Flash Search',
     iconType: 'google',
@@ -85,6 +89,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: true,
     hasReasoning: false,
     isFileSupported: true,
+    isFast: false,
     description: 'Fast and efficient model from Google with web search capabilities',
   },
   'OpenAI 4.1': {
@@ -97,6 +102,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: true,
+    isFast: false,
     description: 'Latest OpenAI flagship model',
   },
   'OpenAI 4.1 Mini': {
@@ -109,6 +115,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: true,
+    isFast: true,
     description: 'Efficient mini version of OpenAI 4.1',
   },
   'OpenAI 4.1 Mini Search': {
@@ -121,6 +128,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: true,
     hasReasoning: false,
     isFileSupported: true,
+    isFast: false,
     description: 'Efficient mini version of OpenAI 4.1 with web search capabilities',
   },
   'OpenAI o4-mini': {
@@ -133,6 +141,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: true,
     isFileSupported: true,
+    isFast: true,
     description: 'OpenAI\'s latest mini model with advanced reasoning capabilities and coding capabilities',
   },
   'Claude Sonnet 3.5 Haiku': {
@@ -145,6 +154,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: true,
+    isFast: true,
     description: 'Anthropic\'s lightest model for fast responses',
   },
   'DeepSeek R1-0528': {
@@ -157,6 +167,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: true,
     isFileSupported: false,
+    isFast: false,
     description: 'Deepseek Best in the class latest advanced reasoning model',
   },
   'DeepSeek V3': {
@@ -169,6 +180,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: false,
+    isFast: false,
     description: 'Deepseek Top in the class model for coding and fast responses',
   },
   'Qwen3 235B A22B': {
@@ -181,6 +193,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: true,
     isFileSupported: false,
+    isFast: true,
     description: 'Qwen3 235B A22B is a powerful model with advanced reasoning capabilities',
   },
   'Claude Sonnet 4': {
@@ -193,6 +206,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: true,
     hasReasoning: true,
     isFileSupported: true,
+    isFast: false,
     description: 'Best in the class OpenAI model with advanced reasoning',
   },
   'Gemini 2.5 Pro': {
@@ -205,6 +219,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: true,
     hasReasoning: true,
     isFileSupported: true,
+    isFast: false,
     description: 'Best in the class Google model with advanced reasoning and coding capabilities',
   },
   'Meta: Llama 4 Maverick': {
@@ -217,6 +232,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: true,
+    isFast: true,
     description: 'Best in the class Llama model from Meta. Fast and efficient.',
   },
   'OpenAI 4.1 Nano': {
@@ -229,6 +245,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: true,
+    isFast: true,
     description: 'Fastest model from OpenAI.',
   },
   'Grok 3 Mini': {
@@ -241,6 +258,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: true,
     isFileSupported: true,
+    isFast: true,
     description: 'Fastest model from XAI with advanced reasoning.',
   },
   'FLUX.1 [schnell]': {
@@ -253,6 +271,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: false,
+    isFast: true,
     isImageGeneration: true,
     description: 'For Ultra-fast Image Generation. FHD',
   },
@@ -266,6 +285,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: false,
+    isFast: true,
     isImageGeneration: true,
     description: 'Image Generation for Developers. FHD',
   },
@@ -279,6 +299,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: false,
+    isFast: false,
     isImageGeneration: true,
     description: 'For Realistic Image Generation. FHD',
   },
@@ -292,6 +313,7 @@ export const MODEL_CONFIGS = {
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: false,
+    isFast: false,
     isImageGeneration: true,
     description: 'For Ultra Realistic Image Generation. FHD',
   },

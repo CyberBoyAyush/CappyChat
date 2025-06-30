@@ -8,14 +8,14 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { Brain, Diamond, File, Gem } from "lucide-react";
+import { Brain, Diamond, File, Gem, Zap } from "lucide-react";
 
 // ===============================================
 // Model Badge Components
 // ===============================================
 
 interface ModelBadgeProps {
-  type: "premium" | "super-premium" | "reasoning" | "file-support";
+  type: "premium" | "super-premium" | "reasoning" | "file-support" | "fast";
   size?: number;
   className?: string;
 }
@@ -38,6 +38,12 @@ const FileIcon: React.FC<{ size?: number; className?: string }> = ({
   className = "",
 }) => <File width={size} height={size} className={className} />;
 
+// Lightning Icon for Fast Models
+const LightningIcon: React.FC<{ size?: number; className?: string }> = ({
+  size = 16,
+  className = "",
+}) => <Zap width={size} height={size} className={className} />;
+
 export const ModelBadge: React.FC<ModelBadgeProps> = ({
   type,
   size = 16,
@@ -57,6 +63,8 @@ export const ModelBadge: React.FC<ModelBadgeProps> = ({
         return <BrainIcon size={size} />;
       case "file-support":
         return <FileIcon size={size} />;
+      case "fast":
+        return <LightningIcon size={size} />;
       case "super-premium":
         return (
           <>
@@ -76,6 +84,8 @@ export const ModelBadge: React.FC<ModelBadgeProps> = ({
         return "Premium";
       case "reasoning":
         return "Reasoning";
+      case "fast":
+        return "Fast";
       default:
         return "";
     }
