@@ -157,12 +157,14 @@ export function ImageGenerationLoading() {
           <div className="text-center space-y-3">
             <div className="text-sm font-medium text-foreground animate-pulse">
               Generating Image
-            </div>
+            </div>          
             
             {/* Progress bar */}
             <div className="w-32 h-1 bg-muted/50 dark:bg-muted/30 rounded-full overflow-hidden">
               <div className="h-full bg-gradient-to-r from-primary/60 to-primary animate-progress"></div>
             </div>
+
+             <span className="font-sm text-foreground animate-pulse">Refresh Page After Confirmation Toast</span>
             
             {/* Status indicators */}
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
