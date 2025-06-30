@@ -187,8 +187,8 @@ async function getTierStats() {
 
     const TIER_LIMITS = {
       free: { freeCredits: 200, premiumCredits: 20, superPremiumCredits: 2 },
-      premium: { freeCredits: 1000, premiumCredits: 200, superPremiumCredits: 20 },
-      admin: { freeCredits: 10000, premiumCredits: 10000, superPremiumCredits: 10000 }
+      premium: { freeCredits: 1500, premiumCredits: 600, superPremiumCredits: 20 },
+      admin: { freeCredits: -1, premiumCredits: -1, superPremiumCredits: -1 }
     };
 
     for (const user of allUsers) {
