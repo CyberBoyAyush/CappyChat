@@ -324,8 +324,8 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
   const recommendedModels: AIModel[] = [
     "OpenAI 4.1 Mini",
     "OpenAI o4-mini",
-    "DeepSeek R1-0528",
-    "Claude Sonnet 3.5 Haiku",
+    "DeepSeek R1 Fast",
+    "Claude Sonnet 3.5",
   ];
 
   // Categorize models
