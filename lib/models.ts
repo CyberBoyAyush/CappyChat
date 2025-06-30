@@ -1,4 +1,5 @@
 export const AI_MODELS = [
+  'Gemini 2.0 Flash',
   'Gemini 2.5 Flash',
   'Gemini 2.5 Flash Lite',
   'Gemini 2.5 Flash Search',
@@ -38,6 +39,18 @@ export type ModelConfig = {
 };
 
 export const MODEL_CONFIGS = {
+  'Gemini 2.0 Flash': {
+    modelId: 'google/gemini-2.0-flash-001',
+    provider: 'openrouter',
+    displayName: 'Gemini 2.0 Flash',
+    iconType: 'google',
+    company: 'Google',
+    isPremium: false,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: true,
+    description: 'Fast and efficient model from Google',
+  },
   'Gemini 2.5 Flash': {
     modelId: 'google/gemini-2.5-flash',
     provider: 'openrouter',
@@ -46,7 +59,7 @@ export const MODEL_CONFIGS = {
     company: 'Google',
     isPremium: true,
     isSuperPremium: false,
-    hasReasoning: false,
+    hasReasoning: true,
     isFileSupported: true,
     description: 'Fast and efficient model from Google',
   },
@@ -63,7 +76,7 @@ export const MODEL_CONFIGS = {
     description: 'Fast and efficient model from Google',
   },
   'Gemini 2.5 Flash Search': {
-    modelId: 'google/gemini-2.5-flash-preview-05-20:online',
+    modelId: 'google/gemini-2.5-flash:online',
     provider: 'openrouter',
     displayName: 'Gemini 2.5 Flash Search',
     iconType: 'google',
