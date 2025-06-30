@@ -33,14 +33,35 @@ import { getModelIcon } from "./ui/ModelComponents";
 interface RetryDropdownProps {
   onRetry: (model?: AIModel) => void;
   disabled?: boolean;
+  message?: any; // The message being retried to determine context
 }
 
 export default function RetryDropdown({
   onRetry,
   disabled = false,
+  message,
 }: RetryDropdownProps) {
   const { selectedModel } = useModelStore();
   const { isGuest } = useAuth();
+
+  // Determine if the original message was for image generation
+  const isImageGenerationContext = useMemo(() => {
+    if (!message) return false;
+
+    // Check various indicators that this was an image generation message
+    const isImageGeneration = message.isImageGeneration;
+    const isImageGenerationLoading = message.isImageGenerationLoading;
+    const hasImageUrl = !!message.imgurl;
+    const messageText = message.content || "";
+    const hasImageGenText = messageText.includes("🎨 Generating your image") ||
+                           messageText.includes("Generating your image");
+
+    // Check if the model used was an image generation model
+    const messageModel = message.model;
+    const isImageGenModel = messageModel ? getModelConfig(messageModel as AIModel)?.isImageGeneration : false;
+
+    return isImageGeneration || isImageGenerationLoading || hasImageUrl || hasImageGenText || isImageGenModel;
+  }, [message]);
 
   // State for collapsible categories
   const [expandedCategories, setExpandedCategories] = useState<
@@ -60,20 +81,41 @@ export default function RetryDropdown({
         return model === "OpenAI 4.1 Mini";
       }
 
-      // For authenticated users, allow all models
-      // The server will handle the actual tier validation during the API call
-      return true;
+      const modelConfig = getModelConfig(model);
+
+      // Filter based on context: if original was image generation, show only image models
+      // If original was text generation, show only text models
+      if (isImageGenerationContext) {
+        // Show only image generation models
+        return !!modelConfig.isImageGeneration;
+      } else {
+        // Show only non-image generation models (text models)
+        return !modelConfig.isImageGeneration;
+      }
     },
-    [isGuest]
+    [isGuest, isImageGenerationContext]
   );
 
-  // Define recommended models
-  const recommendedModels: AIModel[] = [
-    "OpenAI 4.1 Mini",
-    "Gemini 2.5 Flash",
-    "OpenAI o4-mini",
-    "DeepSeek R1 Fast",
-  ];
+  // Define recommended models based on context
+  const recommendedModels: AIModel[] = useMemo(() => {
+    if (isImageGenerationContext) {
+      // Recommended image generation models
+      return [
+        "FLUX.1 [schnell]",
+        "FLUX.1 Dev",
+        "Stable Defusion 3",
+        "Juggernaut Pro",
+      ];
+    } else {
+      // Recommended text generation models
+      return [
+        "OpenAI 4.1 Mini",
+        "Gemini 2.5 Flash",
+        "OpenAI o4-mini",
+        "DeepSeek R1 Fast",
+      ];
+    }
+  }, [isImageGenerationContext]);
 
   // Categorize models
   const categorizeModels = useMemo(() => {
