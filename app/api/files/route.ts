@@ -24,6 +24,138 @@ const MESSAGES_COLLECTION_ID = 'messages';
 
 export const maxDuration = 60;
 
+// Helper function to handle bulk deletion of images
+async function handleBulkDeleteImages(userId: string) {
+  try {
+    console.log(`🗑️ Starting bulk deletion of images for user: ${userId}`);
+
+    // Get all messages for the user that have attachments
+    const messages = await databases.listDocuments(
+      DATABASE_ID,
+      MESSAGES_COLLECTION_ID,
+      [
+        Query.equal('userId', userId),
+        Query.isNotNull('attachments'),
+        Query.limit(1000)
+      ]
+    );
+
+    console.log(`📄 Found ${messages.documents.length} messages with attachments to process`);
+
+    const imagesToDelete: Array<{ publicId: string; messageId: string }> = [];
+    const messagesToUpdate: Array<{ messageId: string; updatedAttachments: any[] }> = [];
+
+    // Process each message to find images
+    for (const message of messages.documents) {
+      try {
+        const attachments = JSON.parse(message.attachments || '[]');
+        if (Array.isArray(attachments) && attachments.length > 0) {
+          const remainingAttachments: any[] = [];
+
+          for (const attachment of attachments) {
+            if (attachment.fileType === 'image') {
+              // Mark image for deletion
+              imagesToDelete.push({
+                publicId: attachment.publicId,
+                messageId: message.$id
+              });
+            } else {
+              // Keep non-image attachments
+              remainingAttachments.push(attachment);
+            }
+          }
+
+          // If attachments were removed, mark message for update
+          if (remainingAttachments.length !== attachments.length) {
+            messagesToUpdate.push({
+              messageId: message.$id,
+              updatedAttachments: remainingAttachments
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error processing message attachments:', message.$id, error);
+      }
+    }
+
+    console.log(`🎯 Found ${imagesToDelete.length} images to delete`);
+    console.log(`📝 Found ${messagesToUpdate.length} messages to update`);
+
+    if (imagesToDelete.length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: 'No images found to delete',
+        deletedCount: 0
+      });
+    }
+
+    // Delete images from Cloudinary in batches
+    const batchSize = 10; // Process in smaller batches to avoid timeouts
+    let deletedCount = 0;
+    let failedCount = 0;
+
+    for (let i = 0; i < imagesToDelete.length; i += batchSize) {
+      const batch = imagesToDelete.slice(i, i + batchSize);
+      console.log(`🗑️ Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(imagesToDelete.length / batchSize)}`);
+
+      const deletePromises = batch.map(async (item) => {
+        try {
+          const deleted = await CloudinaryService.deleteFile(item.publicId, 'image');
+          if (deleted) {
+            deletedCount++;
+            console.log(`✅ Deleted image: ${item.publicId}`);
+          } else {
+            failedCount++;
+            console.error(`❌ Failed to delete image: ${item.publicId}`);
+          }
+        } catch (error) {
+          failedCount++;
+          console.error(`❌ Error deleting image ${item.publicId}:`, error);
+        }
+      });
+
+      await Promise.all(deletePromises);
+    }
+
+    // Update messages in database to remove deleted image attachments
+    let updatedMessageCount = 0;
+    for (const messageUpdate of messagesToUpdate) {
+      try {
+        await databases.updateDocument(
+          DATABASE_ID,
+          MESSAGES_COLLECTION_ID,
+          messageUpdate.messageId,
+          {
+            attachments: messageUpdate.updatedAttachments.length > 0
+              ? JSON.stringify(messageUpdate.updatedAttachments)
+              : null
+          }
+        );
+        updatedMessageCount++;
+      } catch (error) {
+        console.error(`Error updating message ${messageUpdate.messageId}:`, error);
+      }
+    }
+
+    console.log(`🎉 Bulk deletion completed: ${deletedCount} images deleted, ${failedCount} failed, ${updatedMessageCount} messages updated`);
+
+    return NextResponse.json({
+      success: true,
+      message: `Successfully deleted ${deletedCount} images${failedCount > 0 ? ` (${failedCount} failed)` : ''}`,
+      deletedCount,
+      failedCount,
+      updatedMessageCount
+    });
+
+  } catch (error) {
+    console.error('Error in bulk delete images:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete images' },
+      { status: 500 }
+    );
+  }
+}
+
 // POST: List all files for current user (changed from GET to POST to receive userId in body)
 export async function POST(req: NextRequest) {
   try {
@@ -103,10 +235,10 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// DELETE: Delete a specific file
+// DELETE: Delete a specific file or bulk delete images
 export async function DELETE(req: NextRequest) {
   try {
-    const { userId, publicId, resourceType } = await req.json();
+    const { userId, publicId, resourceType, bulkDeleteImages } = await req.json();
 
     if (!userId) {
       return NextResponse.json(
@@ -114,7 +246,12 @@ export async function DELETE(req: NextRequest) {
         { status: 400 }
       );
     }
-    
+
+    // Handle bulk delete images
+    if (bulkDeleteImages) {
+      return await handleBulkDeleteImages(userId);
+    }
+
     if (!publicId) {
       return NextResponse.json(
         { error: 'Public ID is required' },

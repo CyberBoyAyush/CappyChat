@@ -6,7 +6,7 @@
  * Contains custom SVG icons, loading states, and error components not available in external libraries.
  */
 
-import { CircleAlert, Cross, Globe, X } from "lucide-react";
+import { CircleAlert, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
 
@@ -103,15 +103,29 @@ export function MessageLoading() {
  * ImageGenerationLoading Component
  *
  * Used in: frontend/components/Message.tsx
- * Purpose: Displays a 1:1 aspect ratio loading placeholder for image generation.
+ * Purpose: Displays a loading placeholder for image generation with dynamic aspect ratio.
  * Shows an advanced loading animation that mimics AI image generation in progress.
  */
-export function ImageGenerationLoading() {
-  console.log("🍳 ImageGenerationLoading component rendered");
+interface ImageGenerationLoadingProps {
+  aspectRatio?: string;
+}
+
+export function ImageGenerationLoading({ aspectRatio = "1:1" }: ImageGenerationLoadingProps) {
+  console.log("🍳 ImageGenerationLoading component rendered with aspect ratio:", aspectRatio);
+
+  // Map aspect ratios to CSS classes
+  const aspectRatioClasses = {
+    "1:1": "aspect-square",
+    "21:9": "aspect-[21/9]",
+    "16:9": "aspect-video",
+    "4:3": "aspect-[4/3]",
+  };
+
+  const aspectClass = aspectRatioClasses[aspectRatio as keyof typeof aspectRatioClasses] || "aspect-square";
 
   return (
-    <div className="w-full max-w-md">
-      <div className="relative aspect-square w-full rounded-lg border border-border/50 bg-card/30 overflow-hidden">
+    <div className="w-full max-w-2xl">
+      <div className={cn("relative w-full rounded-lg border border-border/50 bg-card/30 overflow-hidden", aspectClass)}>
         {/* Animated grid background */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5"></div>

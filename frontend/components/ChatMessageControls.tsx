@@ -123,7 +123,7 @@ export default function MessageControls({
         </Button>
       )}
       <div className="relative z-20">
-        <RetryDropdown onRetry={handleRegenerate} />
+        <RetryDropdown onRetry={handleRegenerate} message={message} />
       </div>
     </div>
   );

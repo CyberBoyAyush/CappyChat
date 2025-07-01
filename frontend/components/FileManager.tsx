@@ -16,7 +16,8 @@ import {
   Loader2,
   HardDrive,
   Calendar,
-  Eye
+  Eye,
+  ImageIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -46,6 +47,7 @@ export default function FileManager({ className }: FileManagerProps) {
   const [files, setFiles] = useState<UserFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [totalSize, setTotalSize] = useState(0);
   const { user } = useAuth();
 
@@ -142,6 +144,61 @@ export default function FileManager({ className }: FileManagerProps) {
     }
   };
 
+  const handleBulkDeleteImages = async () => {
+    if (!user?.$id) {
+      toast.error('User not authenticated');
+      return;
+    }
+
+    const imageFiles = files.filter(file => file.fileType === 'image');
+
+    if (imageFiles.length === 0) {
+      toast.error('No images found to delete');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ALL ${imageFiles.length} images? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setBulkDeleting(true);
+      console.log(`🗑️ Starting bulk deletion of ${imageFiles.length} images`);
+
+      const response = await fetch('/api/files', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.$id,
+          bulkDeleteImages: true
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete images');
+      }
+
+      const result = await response.json();
+      console.log('✅ Bulk deletion response:', result);
+
+      // Refresh the file list from server
+      setTimeout(() => {
+        console.log('🔄 Refreshing file list after bulk deletion...');
+        loadFiles();
+      }, 1500); // Longer delay for bulk operations
+
+      toast.success(result.message || `Successfully deleted ${result.deletedCount} images`);
+    } catch (error) {
+      console.error('Error bulk deleting images:', error);
+      toast.error(`Failed to delete images: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   const handleDownload = (file: UserFile) => {
     // Create a temporary link to download the file
     const link = document.createElement('a');
@@ -193,9 +250,33 @@ export default function FileManager({ className }: FileManagerProps) {
             {files.length} files • {formatFileSize(totalSize)} total
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <HardDrive className="w-4 h-4" />
-          <span>{formatFileSize(totalSize)}</span>
+        <div className="flex items-center gap-2">
+          {/* Delete All Images Button */}
+          {files.filter(f => f.fileType === 'image').length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleBulkDeleteImages}
+              disabled={bulkDeleting || loading}
+              className="text-xs text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 hover:bg-red-50"
+            >
+              {bulkDeleting ? (
+                <>
+                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="w-3 h-3 mr-1" />
+                  Delete All Images ({files.filter(f => f.fileType === 'image').length})
+                </>
+              )}
+            </Button>
+          )}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <HardDrive className="w-4 h-4" />
+            <span>{formatFileSize(totalSize)}</span>
+          </div>
         </div>
       </div>
 
@@ -260,6 +341,7 @@ export default function FileManager({ className }: FileManagerProps) {
                   size="sm"
                   variant="outline"
                   onClick={() => handleView(file)}
+                  disabled={bulkDeleting}
                   className="flex-1 h-8 text-xs"
                 >
                   <Eye className="w-3 h-3 mr-1" />
@@ -269,6 +351,7 @@ export default function FileManager({ className }: FileManagerProps) {
                   size="sm"
                   variant="outline"
                   onClick={() => handleDownload(file)}
+                  disabled={bulkDeleting}
                   className="flex-1 h-8 text-xs"
                 >
                   <Download className="w-3 h-3 mr-1" />
@@ -278,7 +361,7 @@ export default function FileManager({ className }: FileManagerProps) {
                   size="sm"
                   variant="outline"
                   onClick={() => handleDelete(file)}
-                  disabled={deleting === file.id}
+                  disabled={deleting === file.id || bulkDeleting}
                   className="h-8 text-xs text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
                 >
                   {deleting === file.id ? (
