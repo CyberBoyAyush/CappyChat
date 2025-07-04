@@ -345,7 +345,26 @@ function generateTitleFromUrl(url: string): string {
 
 // Utility function to extract URLs from text content
 export function extractUrlsFromContent(content: string): string[] {
-  // Enhanced URL regex that matches various URL patterns including special characters
+  console.log('🔗 extractUrlsFromContent called with content length:', content.length);
+  console.log('🔗 Content preview (first 200 chars):', content.substring(0, 200));
+  console.log('🔗 Content preview (last 200 chars):', content.substring(content.length - 200));
+
+  // First, check for search URLs marker (for web search results)
+  const searchUrlsMarker = /<!-- SEARCH_URLS: (.*?) -->/;
+  const markerMatch = content.match(searchUrlsMarker);
+
+  if (markerMatch && markerMatch[1]) {
+    console.log('🔗 Found search URLs marker:', markerMatch[1]);
+    const searchUrls = markerMatch[1].split('|').filter(url => url.trim());
+    if (searchUrls.length > 0) {
+      console.log('🔗 Extracted search URLs from marker:', searchUrls);
+      return searchUrls;
+    }
+  } else {
+    console.log('🔗 No search URLs marker found in content');
+  }
+
+  // Fallback: Enhanced URL regex that matches various URL patterns including special characters
   const urlRegex = /https?:\/\/(?:[-\w.])+(?:\:[0-9]+)?(?:\/(?:[\w\/_.\-~!$&'()*+,;=:@])*(?:\?(?:[\w&=%.\-~!$'()*+,;:@/])*)?(?:\#(?:[\w.\-~!$&'()*+,;=:@/])*)?)?/gi;
 
   const urls = content.match(urlRegex) || [];
@@ -375,6 +394,13 @@ export function extractUrlsFromContent(content: string): string[] {
   });
 
   return uniqueUrls.slice(0, 10); // Limit to 10 citations max
+}
+
+// Utility function to clean message content by removing search URLs marker
+export function cleanMessageContent(content: string): string {
+  // Remove the search URLs marker from the content
+  const searchUrlsMarker = /<!-- SEARCH_URLS: .*? -->/g;
+  return content.replace(searchUrlsMarker, '').trim();
 }
 
 export default WebSearchCitations;

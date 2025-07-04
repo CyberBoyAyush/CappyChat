@@ -60,7 +60,7 @@ interface InputFieldProps {
   setMessages: UseChatHelpers["setMessages"];
   stop: UseChatHelpers["stop"];
   pendingUserMessageRef: React.RefObject<UIMessage | null>;
-  onWebSearchMessage?: (messageId: string) => void;
+  onWebSearchMessage?: (messageId: string, searchQuery?: string) => void;
   submitRef?: React.RefObject<(() => void) | null>;
   messages?: UIMessage[];
   onMessageAppended?: (messageId: string) => void;
@@ -553,7 +553,7 @@ function PureInputField({
 
       // Track if this message was sent with web search enabled
       if (isWebSearchEnabled && onWebSearchMessage) {
-        onWebSearchMessage(messageId);
+        onWebSearchMessage(messageId, finalInput);
       }
 
     } else {

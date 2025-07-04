@@ -32,12 +32,33 @@
 - **Image Generation**: Built-in support for DALL-E 3, Stable Diffusion via Runware
 - **Voice Input**: Speech-to-text using OpenAI Whisper
 - **File Attachments**: Upload and analyze documents, images via Cloudinary
-- **Web Search Integration**: Real-time web search capabilities
+- **Web Search Integration**: Advanced web search powered by Tavily API with rich citations
 - **Project Management**: Organize chats into projects with custom prompts
 - **Guest Mode**: Try the app without registration
 - **Mobile-First Design**: Fully responsive across all devices
 - **Session Management**: Monitor and control active sessions
 - **Admin Dashboard**: Comprehensive user and system management
+
+### Recent Updates & Improvements
+
+#### Web Search Enhancement (Latest)
+- **Tavily Integration**: Upgraded from basic search to advanced Tavily API
+- **Universal Compatibility**: Web search now works with any AI model, not just specific ones
+- **Enhanced Citations**: Rich metadata display with clickable links, favicons, and descriptions
+- **Improved UX**: Better loading states, expandable citation grids, and responsive design
+- **Guest Restrictions**: Web search limited to authenticated users for better resource management
+
+#### Admin System Enhancements
+- **Bulk Operations**: New `/api/admin/bulk-operations` endpoint for batch user management
+- **Enhanced Data Deletion**: Improved `/api/admin/delete-data` with comprehensive cleanup
+- **Better Error Handling**: Robust error handling and rollback capabilities
+- **Performance Optimization**: Chunked processing for large-scale operations
+
+#### UI/UX Improvements
+- **AspectRatioSelector**: New component for image generation aspect ratio selection
+- **WebSearchLoader**: Dedicated loading component for search operations
+- **Enhanced Citations**: Rich metadata display with improved visual design
+- **Responsive Design**: Better mobile experience across all components
 
 ---
 
@@ -102,10 +123,11 @@
 - **Authentication**: Appwrite Auth (email/password + OAuth)
 - **Real-time**: Appwrite Realtime WebSocket
 - **File Storage**: Cloudinary (images/documents)
-- **AI Integration**: 
+- **AI Integration**:
   - OpenRouter (multi-model access)
   - OpenAI (Whisper, DALL-E)
   - Runware (image generation)
+  - Tavily (web search)
 - **Email**: Appwrite Email Service
 
 ### Development Tools
@@ -129,6 +151,7 @@ The application requires several environment variables for proper operation. Ref
 OPENROUTER_API_KEY=your_openrouter_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
 RUNWARE_API_KEY=your_runware_api_key_here
+TAVILY_API_KEY=your_tavily_api_key_here
 
 # Appwrite Configuration
 NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
@@ -165,9 +188,9 @@ AVChat/
 ├── 📁 app/                          # Next.js 15 App Router
 │   ├── 📁 api/                      # Backend API routes
 │   │   ├── 📁 admin/                # Admin management endpoints
-│   │   │   ├── delete-user-data/    # User data deletion
+│   │   │   ├── bulk-operations/     # Bulk admin operations
+│   │   │   ├── delete-data/         # Comprehensive user data deletion
 │   │   │   ├── manage-user/         # User management operations
-│   │   │   ├── reset-limits/        # Credit limit resets
 │   │   │   └── stats/               # System statistics
 │   │   ├── ai-text-generation/      # AI text generation endpoint
 │   │   ├── chat-messaging/          # Main chat messaging API
@@ -175,7 +198,7 @@ AVChat/
 │   │   ├── image-generation/        # Image generation via Runware
 │   │   ├── speech-to-text/          # Voice input processing
 │   │   ├── upload/                  # File upload to Cloudinary
-│   │   └── web-search/              # Web search integration
+│   │   └── web-search/              # Tavily web search integration
 │   ├── layout.tsx                   # Root application layout
 │   ├── styles.css                   # Global styles and Tailwind
 │   └── static-app-shell/            # SPA shell for client routing
@@ -202,7 +225,9 @@ AVChat/
 │   │   ├── ChatHomePage.tsx         # Home/new chat page
 │   │   ├── ChatThreadPage.tsx       # Individual thread view
 │   │   ├── SettingsPage.tsx         # User settings
-│   │   └── AdminPage.tsx            # Admin dashboard
+│   │   ├── AdminPage.tsx            # Admin dashboard
+│   │   ├── AboutPage.tsx            # About page with team and tech info
+│   │   └── ChangelogPage.tsx        # Changelog with version history
 │   ├── 📁 stores/                   # Zustand state stores
 │   │   ├── ChatModelStore.ts        # AI model selection state
 │   │   ├── BYOKStore.ts             # Bring Your Own Key state
@@ -220,7 +245,14 @@ AVChat/
 │   ├── tierSystem.ts                # User tier & credit management
 │   ├── sessionManager.ts            # Session management utilities
 │   ├── cloudinary.ts                # File upload service
+│   ├── cloudinary-client.ts         # Client-side Cloudinary utilities
 │   ├── conversationStyles.ts        # Chat conversation styles
+│   ├── adminService.ts              # Admin operations service
+│   ├── audioRecorder.ts             # Audio recording utilities
+│   ├── globalErrorHandler.ts        # Global error handling
+│   ├── memoryExtractor.ts           # Memory extraction utilities
+│   ├── realtimeConfig.ts            # Real-time configuration
+│   ├── utils.ts                     # General utility functions
 │   └── [other utilities]            # Helper functions & configs
 ├── 📁 docs/                         # Documentation files
 │   ├── AUTO_DATA_REFRESH.md         # Auto data refresh feature
@@ -353,13 +385,16 @@ The `app/api/` directory contains all backend endpoints that power AVChat's func
 
 #### `/api/web-search` - Search Integration
 **File**: `app/api/web-search/route.ts`
-- **Purpose**: Performs web searches for AI context
+- **Purpose**: Performs web searches using Tavily API for AI context
 - **Method**: POST
 - **Features**:
-  - Credit consumption (1 super premium credit)
-  - Search result formatting
-  - Citation support for Perplexity models
-  - Real-time integration
+  - Tavily advanced search integration
+  - Works with any AI model (not limited to specific models)
+  - Credit consumption tracking
+  - Search result formatting with citations
+  - Real-time integration with streaming responses
+  - Guest user restrictions (authenticated users only)
+  - Comprehensive error handling and validation
 
 #### `/api/upload` - File Management
 **File**: `app/api/upload/route.ts`
@@ -413,15 +448,29 @@ The `app/api/` directory contains all backend endpoints that power AVChat's func
   - Monthly limit cycles
   - Admin authentication
 
-#### `/api/admin/delete-user-data` - Data Management
-**File**: `app/api/admin/delete-user-data/route.ts`
-- **Purpose**: Handles user data deletion
+#### `/api/admin/delete-data` - Data Management
+**File**: `app/api/admin/delete-data/route.ts`
+- **Purpose**: Handles comprehensive user data deletion
 - **Method**: POST
 - **Features**:
-  - Complete data removal
-  - GDPR compliance
-  - Cascade deletion
-  - Audit logging
+  - Complete data removal across all collections
+  - GDPR compliance with thorough cleanup
+  - User lookup by email or ID
+  - Cascade deletion (threads, messages, projects, summaries)
+  - Detailed deletion reporting
+  - Error handling and rollback capabilities
+
+#### `/api/admin/bulk-operations` - Bulk Admin Operations
+**File**: `app/api/admin/bulk-operations/route.ts`
+- **Purpose**: Handles bulk administrative operations
+- **Method**: POST
+- **Features**:
+  - Chunked user logout operations
+  - User count and listing functionality
+  - Batch processing with configurable limits
+  - Time-bounded operations (10-30 seconds)
+  - Progress tracking and reporting
+  - Safe batch sizes (5-50 users per batch)
 
 ---
 
@@ -521,12 +570,31 @@ The `frontend/components/` directory contains all React components organized by 
   - File metadata display
 
 #### `WebSearchCitations.tsx` - Search Results
-- **Purpose**: Displays web search citations
+- **Purpose**: Displays web search citations with rich metadata
 - **Features**:
-  - Source link formatting
-  - Citation numbering
-  - Expandable content
-  - Accessibility support
+  - Clickable source links with favicons
+  - Citation numbering and domain display
+  - Expandable/collapsible citation grid
+  - Rich metadata fetching (titles, descriptions, images)
+  - Responsive grid layout (2-3 columns)
+  - Loading states and error handling
+  - Accessibility support with ARIA labels
+
+#### `WebSearchLoader.tsx` - Search Loading State
+- **Purpose**: Displays loading animation during web search
+- **Features**:
+  - Animated search indicator
+  - Search query display
+  - Smooth transitions
+  - Consistent with app design language
+
+#### `AspectRatioSelector.tsx` - Image Generation
+- **Purpose**: Aspect ratio selection for image generation
+- **Features**:
+  - Multiple aspect ratio presets
+  - Visual ratio indicators
+  - Responsive design
+  - Integration with image generation workflow
 
 ---
 
@@ -559,21 +627,29 @@ AVChat uses a hybrid approach to state management combining React Context and Zu
 
 #### `BYOKStore.ts` - API Key Management
 **File**: `frontend/stores/BYOKStore.ts`
-- **Purpose**: Bring Your Own Key functionality
-- **State**:
-  - User API keys (encrypted)
-  - Provider configurations
-  - Key validation status
-  - Usage preferences
+- **Purpose**: Bring Your Own Key functionality for multiple providers
+- **Supported Keys**:
+  - OpenRouter API key (AI models)
+  - OpenAI API key (voice input via Whisper)
+  - Tavily API key (web search functionality)
+- **Features**:
+  - Secure browser-only storage with Zustand persistence
+  - Key format validation for each provider
+  - Individual key management (add/remove per provider)
+  - Fallback to system keys when user keys fail
 
 #### `WebSearchStore.ts` - Search Configuration
 **File**: `frontend/stores/WebSearchStore.ts`
-- **Purpose**: Web search feature state
+- **Purpose**: Web search feature state management with Tavily integration
 - **State**:
-  - Search enabled/disabled
-  - Search providers
-  - Result preferences
-  - Citation settings
+  - Search enabled/disabled toggle
+  - Persistent user preferences
+  - Guest user restrictions
+  - Universal model compatibility (works with any AI model)
+- **Features**:
+  - Zustand persistence for user preferences
+  - Guest mode reset functionality
+  - Toggle and direct set methods
 
 #### `ConversationStyleStore.ts` - Chat Styles
 **File**: `frontend/stores/ConversationStyleStore.ts`
@@ -919,11 +995,14 @@ interface ModelCategory {
 - **Real-time**: Live transcription
 
 #### 4. Web Search
-**Integration**: Search API providers
-- **Real-time**: Current information access
-- **Citations**: Proper source attribution
-- **Context**: Search results integrated into AI responses
-- **Filtering**: Relevant result selection
+**Integration**: Tavily Search API
+- **Advanced Search**: Deep web search with Tavily's advanced search depth
+- **Universal Compatibility**: Works with any AI model via OpenRouter
+- **Real-time**: Current information access with live results
+- **Smart Citations**: Automatic source attribution with clickable links
+- **Context Integration**: Search results seamlessly integrated into AI responses
+- **Result Optimization**: Maximum 5 results for optimal performance
+- **Guest Restrictions**: Available only to authenticated users
 
 ---
 
@@ -1082,6 +1161,50 @@ git push origin feature/your-feature-name
 - **Error Boundaries**: Prevent app crashes
 - **Testing**: Unit and integration tests
 - **Documentation**: Inline code documentation
+
+---
+
+## Recent Updates & New Features
+
+### Web Search Enhancement (Latest Update)
+- **Tavily Integration**: Replaced previous search implementation with Tavily's advanced search API
+- **Universal Model Support**: Web search now works with any AI model, not limited to specific search models
+- **Enhanced Citations**: Rich citation display with metadata, favicons, and expandable content
+- **Improved UX**: Better loading states, error handling, and responsive design
+- **Guest Restrictions**: Web search limited to authenticated users only
+- **BYOK Support**: Users can now bring their own Tavily API key for web search functionality
+
+### New Components Added
+- **WebSearchCitations.tsx**: Rich citation display with metadata fetching
+- **WebSearchLoader.tsx**: Animated loading states for search operations
+- **AspectRatioSelector.tsx**: Enhanced image generation controls
+- **RetryDropdown.tsx**: Improved model retry functionality
+- **ChangelogPage.tsx**: Comprehensive changelog with version history and feature highlights
+
+### Enhanced BYOK (Bring Your Own Key) System
+- **Tavily API Key Support**: Added support for user's own Tavily API keys for web search
+- **Multi-Provider Management**: Comprehensive key management for OpenRouter, OpenAI, and Tavily
+- **Enhanced Settings UI**: Improved settings interface with individual key management sections
+- **Key Validation**: Robust validation for each provider's key format
+- **Secure Storage**: Browser-only storage with automatic fallback to system keys
+
+### Enhanced Admin Features
+- **Bulk Operations**: New `/api/admin/bulk-operations` endpoint for batch user management
+- **Enhanced Data Deletion**: Improved `/api/admin/delete-data` with comprehensive cleanup
+- **Better Error Handling**: Global error handling improvements across the platform
+
+### Performance & UX Improvements
+- **Streaming Optimizations**: Enhanced real-time message streaming
+- **Citation System**: Automatic URL extraction and citation formatting
+- **Mobile Responsiveness**: Improved mobile experience for web search features
+- **Error Boundaries**: Better error recovery and user feedback
+- **Navigation Enhancement**: Added changelog page accessible from user dropdown and settings
+- **Documentation**: Comprehensive changelog with version history and feature highlights
+
+### Security Enhancements
+- **Guest Mode Restrictions**: Stricter limitations on guest user capabilities
+- **API Validation**: Enhanced input validation across all endpoints
+- **Session Management**: Improved session handling and security
 
 ---
 

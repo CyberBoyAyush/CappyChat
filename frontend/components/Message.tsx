@@ -15,7 +15,7 @@ import ChatMessageControls from "./ChatMessageControls";
 import { UseChatHelpers } from "@ai-sdk/react";
 import ChatMessageEditor from "./ChatMessageEditor";
 import ChatMessageReasoning from "./ChatMessageReasoning";
-import WebSearchCitations from "./WebSearchCitations";
+import WebSearchCitations, { cleanMessageContent } from "./WebSearchCitations";
 import MessageAttachments from "./MessageAttachments";
 import { AIModel, getModelConfig } from "@/lib/models";
 import { User, Bot, Download } from "lucide-react";
@@ -95,7 +95,7 @@ function PureMessage({
         message.role === "user" ? "items-end py-1" : "items-start py-1 pb-6",
       )}
     >
-      {(message.parts || [{ type: "text", text: message.content || "" }]).map((part, index) => {
+      {(message.parts || [{ type: "text", text: cleanMessageContent(message.content || "") }]).map((part, index) => {
         const { type } = part;
         const key = `message-${message.id}-part-${index}`;
 
@@ -139,7 +139,7 @@ function PureMessage({
                   )}
                   {mode === "view" && (
                     <>
-                      <p className="break-words whitespace-pre-wrap text-sm leading-relaxed overflow-wrap-anywhere">{(part as any).text || ""}</p>
+                      <p className="break-words whitespace-pre-wrap text-sm leading-relaxed overflow-wrap-anywhere">{cleanMessageContent((part as any).text || "")}</p>
                       {/* Show attachments for user messages */}
                       {(message as any).attachments && (message as any).attachments.length > 0 && (
                         <div className="mt-3 pt-3 border-t border-border/30">
@@ -182,7 +182,7 @@ function PureMessage({
               <div className="group flex-1 flex flex-col gap-3 min-w-0 overflow-hidden max-w-full mb-2">
                 {/* Check if this is an image generation loading message */}
                 {(() => {
-                  const messageText = (part as any).text || "";
+                  const messageText = cleanMessageContent((part as any).text || "");
                   const isImageGenerationLoading = (message as any).isImageGenerationLoading ||
                                                    messageText.includes("🎨 Generating your image") ||
                                                    messageText.includes("Generating your image");
@@ -271,7 +271,7 @@ function PureMessage({
 
                 {/* Only show regular markdown content if not an image generation message */}
                 {(() => {
-                  const messageText = (part as any).text || "";
+                  const messageText = cleanMessageContent((part as any).text || "");
                   const isImageGenerationLoading = (message as any).isImageGenerationLoading ||
                                                    messageText.includes("🎨 Generating your image") ||
                                                    messageText.includes("Generating your image");
@@ -286,7 +286,9 @@ function PureMessage({
                   // 2. It's an image generation result but has actual text content to show
                   if (!isImageGenerationLoading && !isImageGeneration && messageText.trim()) {
                     // Filter out aspect ratio metadata from display
-                    const cleanedText = messageText.replace(/\[aspectRatio:[^\]]+\]/g, '').trim();
+                    // Clean the text by removing aspect ratio markers and search URLs markers
+                    let cleanedText = messageText.replace(/\[aspectRatio:[^\]]+\]/g, '').trim();
+                    cleanedText = cleanMessageContent(cleanedText);
 
                     if (cleanedText) {
                       return (

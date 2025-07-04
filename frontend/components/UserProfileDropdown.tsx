@@ -30,7 +30,8 @@ import {
   UserPlus,
   Sparkles,
   Github,
-  Info
+  Info,
+  Calendar
 } from "lucide-react";
 import { getUserTierInfo } from "@/lib/tierSystem";
 import AuthDialog from "./auth/AuthDialog";
@@ -266,6 +267,15 @@ const UserProfileDropdown: React.FC = () => {
         >
           <Info className="h-4 w-4" />
           <span>About</span>
+        </DropdownMenuItem>
+
+        {/* Changelog */}
+        <DropdownMenuItem
+          onClick={() => navigate("/changelog")}
+          className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <Calendar className="h-4 w-4" />
+          <span>Changelog</span>
         </DropdownMenuItem>
 
         {/* Settings */}

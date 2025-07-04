@@ -2,13 +2,12 @@
  * Web Search Store
  *
  * Used in: frontend/components/ChatInputField.tsx
- * Purpose: Manages web search toggle state and ensures model selection consistency.
- * When web search is enabled, automatically switches to OpenAI 4.1 Mini Search model.
+ * Purpose: Manages web search toggle state for Tavily-powered web search.
+ * Web search now works with any selected model via Tavily integration.
  */
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useModelStore } from './ChatModelStore';
 
 type WebSearchStore = {
   isWebSearchEnabled: boolean;
@@ -27,17 +26,8 @@ export const useWebSearchStore = create<WebSearchStore>()(
         // This store function should only be called for authenticated users
         set({ isWebSearchEnabled: enabled });
 
-        // When web search is enabled, switch to OpenAI 4.1 Mini Search (default)
-        // When disabled, switch back to regular OpenAI 4.1 Mini
-        const modelStore = useModelStore.getState();
-        if (enabled) {
-          modelStore.setModel('OpenAI 4.1 Mini Search');
-        } else {
-          // Only switch back if currently using a search model
-          if (modelStore.selectedModel === 'OpenAI 4.1 Mini Search' || modelStore.selectedModel === 'Gemini 2.5 Flash Search') {
-            modelStore.setModel('OpenAI 4.1 Mini');
-          }
-        }
+        // With Tavily integration, web search works with any model
+        // No need to switch models automatically
       },
 
       toggleWebSearch: () => {
@@ -46,12 +36,9 @@ export const useWebSearchStore = create<WebSearchStore>()(
       },
 
       resetForGuest: () => {
-        // Disable web search for guest users and reset to OpenAI 4.1 Mini
+        // Disable web search for guest users
         set({ isWebSearchEnabled: false });
-        const modelStore = useModelStore.getState();
-        if (modelStore.selectedModel === 'OpenAI 4.1 Mini Search' || modelStore.selectedModel === 'Gemini 2.5 Flash Search') {
-          modelStore.setModel('OpenAI 4.1 Mini');
-        }
+        // No need to change models since web search works with any model
       },
     }),
     {

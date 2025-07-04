@@ -36,6 +36,7 @@ import {
   MessageSquareMore,
   Sparkles,
   Info,
+  Calendar,
 } from "lucide-react";
 import ThemeToggleButton from "../components/ui/ThemeComponents";
 import { useTheme } from "next-themes";
@@ -108,22 +109,30 @@ export default function SettingsPage() {
   const {
     openRouterApiKey,
     openAIApiKey,
+    tavilyApiKey,
     setOpenRouterApiKey,
     setOpenAIApiKey,
+    setTavilyApiKey,
     hasOpenRouterKey,
     hasOpenAIKey,
+    hasTavilyKey,
     validateOpenRouterKey,
     validateOpenAIKey,
+    validateTavilyKey,
   } = useBYOKStore();
 
   const [keyInput, setKeyInput] = useState("");
   const [openAIKeyInput, setOpenAIKeyInput] = useState("");
+  const [tavilyKeyInput, setTavilyKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [showOpenAIKey, setShowOpenAIKey] = useState(false);
+  const [showTavilyKey, setShowTavilyKey] = useState(false);
   const [keyError, setKeyError] = useState("");
   const [openAIKeyError, setOpenAIKeyError] = useState("");
+  const [tavilyKeyError, setTavilyKeyError] = useState("");
   const [keySaved, setKeySaved] = useState(false);
   const [openAIKeySaved, setOpenAIKeySaved] = useState(false);
+  const [tavilyKeySaved, setTavilyKeySaved] = useState(false);
 
   // Tier management state
   const [tierInfo, setTierInfo] = useState<any>(null);
@@ -398,6 +407,32 @@ export default function SettingsPage() {
     setOpenAIApiKey(null);
     setOpenAIKeyInput("");
     setOpenAIKeyError("");
+  };
+
+  const handleSaveTavilyKey = () => {
+    if (!tavilyKeyInput.trim()) {
+      setTavilyKeyError("Please enter a Tavily API key");
+      return;
+    }
+
+    if (!validateTavilyKey(tavilyKeyInput.trim())) {
+      setTavilyKeyError(
+        "Invalid API key format. Tavily keys should start with 'tvly-' or 'tvly-dev-'"
+      );
+      return;
+    }
+
+    setTavilyApiKey(tavilyKeyInput.trim());
+    setTavilyKeyInput("");
+    setTavilyKeyError("");
+    setTavilyKeySaved(true);
+    setTimeout(() => setTavilyKeySaved(false), 3000);
+  };
+
+  const handleRemoveTavilyKey = () => {
+    setTavilyApiKey(null);
+    setTavilyKeyInput("");
+    setTavilyKeyError("");
   };
 
   const maskKey = (key: string) => {
@@ -1199,8 +1234,7 @@ export default function SettingsPage() {
                           </h3>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Use your own OpenRouter API key for unlimited access
-                          to AI models
+                          Use your own API keys for unlimited access to AI models, voice input, and web search
                         </p>
                       </div>
 
@@ -1474,6 +1508,150 @@ export default function SettingsPage() {
                       )}
                     </div>
 
+                    {/* Tavily API Key (for Web Search) Card */}
+                    <div className="p-6 border rounded-xl bg-card shadow-sm">
+                      <div className="space-y-1 mb-4">
+                        <div className="flex items-center gap-2">
+                          <Key className="h-5 w-5 text-primary" />
+                          <h3 className="text-lg font-medium">
+                            Tavily API Key
+                          </h3>
+                          <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full">
+                            Web Search
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Use your own Tavily API key for web search functionality
+                        </p>
+                      </div>
+
+                      {hasTavilyKey() ? (
+                        // Tavily Key is configured
+                        <div className="space-y-4">
+                          <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
+                                <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                  Tavily API Key Configured
+                                </p>
+                                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                  Key: {maskKey(tavilyApiKey || "")}
+                                </p>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleRemoveTavilyKey}
+                                className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+
+                          <div className="text-xs text-muted-foreground">
+                            <p>
+                              ✓ Your Tavily API key is stored securely in your
+                              browser only
+                            </p>
+                            <p>
+                              ✓ Used exclusively for web search functionality
+                            </p>
+                            <p>✓ Fallback to system key if your key fails</p>
+                          </div>
+                        </div>
+                      ) : (
+                        // No Tavily key configured
+                        <div className="space-y-4">
+                          <div className="rounded-lg bg-muted/50 p-4">
+                            <div className="flex items-start gap-4">
+                              <div className="p-2 rounded-full bg-muted">
+                                <Key className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm">
+                                  Add your Tavily API key to use your own
+                                  credits for web search functionality.
+                                </p>
+                                <p className="text-sm text-muted-foreground mt-2">
+                                  Get your API key from{" "}
+                                  <a
+                                    href="https://tavily.com/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                  >
+                                    Tavily Platform
+                                  </a>
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">
+                                Tavily API Key
+                              </label>
+                              <div className="relative">
+                                <Input
+                                  type={showTavilyKey ? "text" : "password"}
+                                  placeholder="tvly-dev-... or tvly-..."
+                                  value={tavilyKeyInput}
+                                  onChange={(e) => {
+                                    setTavilyKeyInput(e.target.value);
+                                    setTavilyKeyError("");
+                                  }}
+                                  className={
+                                    tavilyKeyError ? "border-red-500" : ""
+                                  }
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                                  onClick={() =>
+                                    setShowTavilyKey(!showTavilyKey)
+                                  }
+                                >
+                                  {showTavilyKey ? (
+                                    <EyeOff className="h-4 w-4" />
+                                  ) : (
+                                    <Eye className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
+                              {tavilyKeyError && (
+                                <p className="text-sm text-red-600">
+                                  {tavilyKeyError}
+                                </p>
+                              )}
+                              {tavilyKeySaved && (
+                                <p className="text-sm text-green-600">
+                                  ✓ Tavily API key saved successfully!
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={handleSaveTavilyKey}
+                                disabled={!tavilyKeyInput.trim()}
+                              >
+                                <Key className="h-4 w-4 mr-2" />
+                                Save Tavily Key
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                   </div>
                 )}
 
@@ -1490,12 +1668,20 @@ export default function SettingsPage() {
                         <p className="text-sm text-muted-foreground">
                           Learn more about AVChat, our team, technology stack, and mission to create the fastest AI chat experience.
                         </p>
-                        <Link to="/about">
-                          <Button className="w-full sm:w-auto flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground">
-                            <Info className="h-4 w-4" />
-                            Visit About Us Page
-                          </Button>
-                        </Link>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <Link to="/about">
+                            <Button className="w-full sm:w-auto flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground">
+                              <Info className="h-4 w-4" />
+                              Visit About Us Page
+                            </Button>
+                          </Link>
+                          <Link to="/changelog">
+                            <Button variant="outline" className="w-full sm:w-auto flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              View Changelog
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </div>
 

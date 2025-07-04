@@ -61,6 +61,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
 import GlobalSearchDialog from "./GlobalSearchDialog";
 import { extractUrlsFromContent } from "./WebSearchCitations";
+import WebSearchLoader from "./WebSearchLoader";
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -111,7 +112,7 @@ export default function ChatInterface({
   const selectedModel = useModelStore((state) => state.selectedModel);
   const { isWebSearchEnabled } = useWebSearchStore();
   const { selectedStyle } = useConversationStyleStore();
-  const { openRouterApiKey } = useBYOKStore();
+  const { openRouterApiKey, tavilyApiKey } = useBYOKStore();
   const {
     user,
     isGuest,
@@ -282,6 +283,12 @@ export default function ChatInterface({
       // End streaming synchronization
       streamingSync.endStreaming(threadId, message.id, message.content);
 
+      // Stop web search loading if it was active
+      if (isWebSearching) {
+        console.log("🔍 Stopping web search loading state");
+        setIsWebSearching(false);
+      }
+
       // Clear the pending user message ref (user message is now stored immediately in ChatInputField)
       if (pendingUserMessageRef.current) {
         console.log(
@@ -358,11 +365,21 @@ export default function ChatInterface({
       // Scroll to bottom when new message comes in
       scrollToBottom();
     },
+    onError: (error) => {
+      console.error("❌ Chat error:", error);
+      // Stop web search loading on error
+      if (isWebSearching) {
+        console.log("🔍 Stopping web search loading due to error");
+        setIsWebSearching(false);
+      }
+    },
+
     headers: {},
     body: {
       model: retryModel || selectedModel,
       conversationStyle: selectedStyle,
       userApiKey: openRouterApiKey,
+      userTavilyApiKey: tavilyApiKey,
       userId: user?.$id,
       threadId: threadId,
       isGuest: isGuest,
@@ -376,6 +393,8 @@ export default function ChatInterface({
       setSelectedPrompt("");
     }
   }, [selectedPrompt, setInput]);
+
+
 
   // Effect to handle search query from URL parameter - only run once
   useEffect(() => {
@@ -774,11 +793,31 @@ export default function ChatInterface({
 
   // Track when web search is enabled for the next assistant response
   const nextResponseNeedsWebSearch = useRef<boolean>(false);
+  const [isWebSearching, setIsWebSearching] = useState<boolean>(false);
+  const [webSearchQuery, setWebSearchQuery] = useState<string>("");
+
+  // Effect to stop web search loading when streaming starts
+  useEffect(() => {
+    if (status === "streaming" && isWebSearching) {
+      console.log("🔍 Stopping web search loading - streaming started");
+      setIsWebSearching(false);
+    }
+  }, [status, isWebSearching]);
 
   // Callback to track when a message is sent with web search enabled
-  const handleWebSearchMessage = useCallback((messageId: string) => {
+  const handleWebSearchMessage = useCallback((messageId: string, searchQuery?: string) => {
     nextResponseNeedsWebSearch.current = true;
-  }, []);
+    if (isWebSearchEnabled) {
+      setIsWebSearching(true);
+      // Use the provided search query or fallback to getting from messages
+      if (searchQuery) {
+        setWebSearchQuery(searchQuery);
+      } else {
+        const lastUserMessage = messages.filter(msg => msg.role === 'user').pop();
+        setWebSearchQuery(lastUserMessage?.content || "search query");
+      }
+    }
+  }, [isWebSearchEnabled, messages]);
 
   // Handle image generation retry
   const handleImageGenerationRetry = useCallback(
@@ -1118,6 +1157,8 @@ export default function ChatInterface({
               registerRef={registerRef}
               stop={stop}
               onRetryWithModel={handleRetryWithModel}
+              isWebSearching={isWebSearching}
+              webSearchQuery={webSearchQuery}
             />
           </div>
         )}

@@ -16,6 +16,8 @@ import { Error } from "./ui/UIComponents";
 import { useOutletContext } from "react-router-dom";
 import { useIsMobile } from "@/hooks/useMobileDetection";
 import { AIModel } from "@/lib/models";
+import WebSearchLoader from "./WebSearchLoader";
+import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 
 function PureMessageDisplay({
   threadId,
@@ -27,6 +29,8 @@ function PureMessageDisplay({
   stop,
   registerRef,
   onRetryWithModel,
+  isWebSearching,
+  webSearchQuery,
 }: {
   threadId: string;
   messages: UIMessage[];
@@ -37,7 +41,10 @@ function PureMessageDisplay({
   stop: UseChatHelpers["stop"];
   registerRef: (id: string, ref: HTMLDivElement | null) => void;
   onRetryWithModel?: (model?: AIModel, message?: UIMessage) => void;
+  isWebSearching?: boolean;
+  webSearchQuery?: string;
 }) {
+  const { isWebSearchEnabled } = useWebSearchStore();
   // Deduplicate messages at the React level to prevent duplicate keys
   const deduplicatedMessages = messages.reduce((acc: UIMessage[], message, index) => {
     // Check if message ID already exists in accumulated array
@@ -99,9 +106,13 @@ function PureMessageDisplay({
               <div className="w-3.5 h-3.5 rounded-full bg-primary/70 animate-pulse" />
             </div>
           </div>
-          {/* Loading Animation */}
+          {/* Loading Animation - Show WebSearchLoader if web search is enabled */}
           <div className="flex-1 mt-1">
-            <MessageLoading />
+            {(isWebSearching || isWebSearchEnabled) ? (
+              <WebSearchLoader searchQuery={webSearchQuery || "search query"} />
+            ) : (
+              <MessageLoading />
+            )}
           </div>
         </div>
       )}
