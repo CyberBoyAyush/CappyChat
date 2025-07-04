@@ -17,7 +17,6 @@ import {
   DropdownMenuTrigger,
 } from "@/frontend/components/ui/dropdown-menu";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
-import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 import { useBYOKStore } from "@/frontend/stores/BYOKStore";
 import { AI_MODELS, AIModel, getModelConfig } from "@/lib/models";
 import { canUserUseModel, TierValidationResult } from "@/lib/tierSystem";
@@ -207,7 +206,6 @@ interface ModelSelectorProps {
 
 const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
   const { selectedModel, setModel } = useModelStore();
-  const { isWebSearchEnabled } = useWebSearchStore();
   const { hasOpenRouterKey } = useBYOKStore();
   const { isGuest } = useAuth();
   const selectedModelConfig = getModelConfig(selectedModel);
@@ -284,13 +282,6 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
 
   const isModelEnabled = useCallback(
     (model: AIModel) => {
-      if (isWebSearchEnabled) {
-        // When web search is enabled, only show search models
-        return (
-          model === "OpenAI 4.1 Mini Search" ||
-          model === "Gemini 2.5 Flash Search"
-        );
-      }
       if (isGuest) {
         return model === "OpenAI 4.1 Mini";
       }
@@ -298,16 +289,11 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
         const config = getModelConfig(model);
         return config.isImageGeneration === true;
       }
-      // Hide search models when web search is not enabled
-      if (
-        model === "Gemini 2.5 Flash Search" ||
-        model === "OpenAI 4.1 Mini Search"
-      ) {
-        return false;
-      }
+      // With Tavily integration, all models support web search
+      // No need to restrict models based on web search state
       return true;
     },
-    [isWebSearchEnabled, isGuest, isImageGenMode]
+    [isGuest, isImageGenMode]
   );
 
   const handleModelSelect = useCallback(

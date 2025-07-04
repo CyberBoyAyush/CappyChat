@@ -219,8 +219,8 @@ export function ImageGenerationLoading({ aspectRatio = "1:1" }: ImageGenerationL
  * WebSearchToggle Component
  *
  * Used in: frontend/components/ChatInputField.tsx
- * Purpose: Toggle button for enabling/disabling web search functionality.
- * When enabled, forces the use of OpenAI 4.1 Mini Search model and routes through web-search endpoint.
+ * Purpose: Toggle button for enabling/disabling Tavily-powered web search functionality.
+ * When enabled, routes through web-search endpoint with Tavily integration for any selected model.
  */
 interface WebSearchToggleProps {
   isEnabled: boolean;
