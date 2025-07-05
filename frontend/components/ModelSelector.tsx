@@ -311,7 +311,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
     "OpenAI 4.1 Mini",
     "OpenAI o4-mini",
     "DeepSeek R1 Fast",
-    "Claude Sonnet 3.5",
+    "Grok 3 Mini",
   ];
 
   // Categorize models
