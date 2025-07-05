@@ -58,11 +58,21 @@ function CodeBlock({ children, className, ...props }: CodeComponentProps) {
   const match = /language-(\w+)/.exec(className || '');
   const isDarkMode = useThemeDetection();
 
-  if (match) {
-    const lang = match[1];
+  const codeContent = String(children);
+
+  // ReactMarkdown passes different props for code blocks vs inline code
+  // Code blocks (from ```) will have a parent <pre> element, which we detect via className or content
+  const isCodeBlock =
+    match || // Has language specifier
+    (className && className.includes('language-')) || // Has language class
+    codeContent.includes('\n') || // Multi-line content
+    codeContent.length > 80; // Long single line (likely a code block)
+
+  if (isCodeBlock) {
+    const lang = match ? match[1] : 'text';
     return (
       <div className="code-block-container rounded-lg overflow-hidden border border-border bg-background shadow-sm my-4 max-w-full">
-        <Codebar lang={lang} codeString={String(children)} />
+        <Codebar lang={lang} codeString={codeContent} />
         <div className="bg-background overflow-x-auto max-w-full">
           <ShikiHighlighter
             language={lang}
@@ -70,13 +80,14 @@ function CodeBlock({ children, className, ...props }: CodeComponentProps) {
             className="text-xs sm:text-sm font-mono overflow-x-auto mobile-text p-3 sm:p-4 bg-transparent min-w-0 max-w-full"
             showLanguage={false}
           >
-            {String(children)}
+            {codeContent}
           </ShikiHighlighter>
         </div>
       </div>
     );
   }
 
+  // For single-line inline code
   const inlineCodeClasses =
     size === 'small'
       ? 'mx-0.5 overflow-x-auto rounded-md px-1 py-0.5 bg-secondary text-foreground font-mono text-xs border border-border break-all max-w-full'
