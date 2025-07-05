@@ -97,6 +97,8 @@ export default function ChatThreadPage() {
         attachments: message.attachments, // ✅ Include attachments!
         model: message.model, // ✅ Include model field!
         imgurl: message.imgurl, // ✅ Include imgurl field!
+        isImageGenerationLoading: message.isImageGenerationLoading, // ✅ Include loading flag!
+        isImageGeneration: message.isImageGeneration, // ✅ Include generation flag!
       };
     });
   }, []);

@@ -14,6 +14,7 @@ export const THREADS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_THREADS_CO
 export const MESSAGES_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID || 'messages';
 export const MESSAGE_SUMMARIES_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_MESSAGE_SUMMARIES_COLLECTION_ID || 'message_summaries';
 export const PROJECTS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECTS_COLLECTION_ID || 'projects';
+export const GLOBAL_MEMORY_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_GLOBAL_MEMORY_COLLECTION_ID || 'global_memory';
 
 // Initialize Appwrite databases service
 const databases = new Databases(client);
@@ -128,6 +129,25 @@ export interface MessageSummary {
   createdAt: Date;
 }
 
+// Interface for Appwrite Global Memory document
+export interface AppwriteGlobalMemory extends Models.Document {
+  userId: string;
+  memories: string[];
+  enabled: boolean;
+  createdAt: string; // ISO date string
+  updatedAt: string; // ISO date string
+}
+
+// Define GlobalMemory interface for internal use
+export interface GlobalMemory {
+  id: string;
+  userId: string;
+  memories: string[];
+  enabled: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Appwrite database service
 export class AppwriteDB {
   static async getCurrentUserId(): Promise<string> {
@@ -179,6 +199,201 @@ export class AppwriteDB {
     } catch (error) {
       console.error('Error fetching threads from Appwrite:', error);
       return [];
+    }
+  }
+
+  // Get threads with pagination for current user
+  static async getThreadsPaginated(limit: number = 25, offset: number = 0): Promise<{
+    threads: Thread[];
+    hasMore: boolean;
+    total: number;
+  }> {
+    try {
+      const userId = await this.getCurrentUserId();
+      
+      // Get threads from Appwrite with pagination
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('userId', userId),
+          Query.orderDesc('lastMessageAt'),
+          Query.limit(limit),
+          Query.offset(offset)
+        ]
+      );
+      
+      // Map Appwrite threads to Thread format
+      const threads = response.documents.map((doc) => {
+        const threadDoc = doc as unknown as AppwriteThread;
+        return {
+          id: threadDoc.threadId,
+          title: threadDoc.title,
+          createdAt: new Date(doc.$createdAt),
+          updatedAt: new Date(threadDoc.updatedAt),
+          lastMessageAt: new Date(threadDoc.lastMessageAt),
+          isPinned: threadDoc.isPinned || false, // Default to false for existing threads
+          tags: threadDoc.tags || [], // Default to empty array for existing threads
+          isBranched: threadDoc.isBranched || false, // Default to false for existing threads
+          projectId: threadDoc.projectId // Optional project ID
+        };
+      });
+      
+      return {
+        threads,
+        hasMore: response.total > offset + limit,
+        total: response.total
+      };
+    } catch (error) {
+      console.error('Error fetching paginated threads from Appwrite:', error);
+      return {
+        threads: [],
+        hasMore: false,
+        total: 0
+      };
+    }
+  }
+
+  // Get priority threads (pinned and project threads) - these load instantly
+  static async getPriorityThreads(): Promise<Thread[]> {
+    try {
+      const userId = await this.getCurrentUserId();
+      
+      // Optimized approach: Get pinned threads and project threads separately then combine
+      // This is faster than filtering all threads
+      const [pinnedResponse, projectResponse] = await Promise.all([
+        // Get pinned threads
+        databases.listDocuments(
+          DATABASE_ID,
+          THREADS_COLLECTION_ID,
+          [
+            Query.equal('userId', userId),
+            Query.equal('isPinned', true),
+            Query.orderDesc('lastMessageAt'),
+            Query.limit(100) // Reasonable limit for pinned threads
+          ]
+        ),
+        // Get project threads (we'll need to filter these since isNotNull might not work)
+        databases.listDocuments(
+          DATABASE_ID,
+          THREADS_COLLECTION_ID,
+          [
+            Query.equal('userId', userId),
+            Query.orderDesc('lastMessageAt'),
+            Query.limit(200) // Get more to filter for project threads
+          ]
+        )
+      ]);
+      
+      // Map pinned threads
+      const pinnedThreads = pinnedResponse.documents.map((doc: any) => {
+        const threadDoc = doc as unknown as AppwriteThread;
+        return {
+          id: threadDoc.threadId,
+          title: threadDoc.title,
+          createdAt: new Date(doc.$createdAt),
+          updatedAt: new Date(threadDoc.updatedAt),
+          lastMessageAt: new Date(threadDoc.lastMessageAt),
+          isPinned: threadDoc.isPinned || false,
+          tags: threadDoc.tags || [],
+          isBranched: threadDoc.isBranched || false,
+          projectId: threadDoc.projectId
+        };
+      });
+
+      // Map and filter project threads (exclude already pinned threads)
+      const projectThreads = projectResponse.documents
+        .map((doc: any) => {
+          const threadDoc = doc as unknown as AppwriteThread;
+          return {
+            id: threadDoc.threadId,
+            title: threadDoc.title,
+            createdAt: new Date(doc.$createdAt),
+            updatedAt: new Date(threadDoc.updatedAt),
+            lastMessageAt: new Date(threadDoc.lastMessageAt),
+            isPinned: threadDoc.isPinned || false,
+            tags: threadDoc.tags || [],
+            isBranched: threadDoc.isBranched || false,
+            projectId: threadDoc.projectId
+          };
+        })
+        .filter((thread: any) => 
+          // Only include threads with projectId that are not already pinned
+          thread.projectId && 
+          thread.projectId !== '' && 
+          !thread.isPinned
+        );
+
+      // Combine pinned and project threads, removing duplicates
+      const allPriorityThreads = [...pinnedThreads, ...projectThreads];
+      const uniquePriorityThreads = allPriorityThreads.filter(
+        (thread: any, index: number, arr: any[]) => 
+          arr.findIndex((t: any) => t.id === thread.id) === index
+      );
+      
+      return uniquePriorityThreads;
+    } catch (error) {
+      console.error('Error fetching priority threads from Appwrite:', error);
+      return [];
+    }
+  }
+
+  // Get regular threads (not pinned, not in projects) with pagination
+  static async getRegularThreadsPaginated(limit: number = 25, offset: number = 0): Promise<{
+    threads: Thread[];
+    hasMore: boolean;
+    total: number;
+  }> {
+    try {
+      const userId = await this.getCurrentUserId();
+      
+      // Get regular threads (not pinned and no projectId) - optimized for performance
+      // We fetch unpinned threads and filter out project threads for better performance
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('userId', userId),
+          Query.equal('isPinned', false), // Only get unpinned threads
+          Query.orderDesc('lastMessageAt'),
+          Query.limit(limit * 3), // Get more to account for filtering out project threads
+          Query.offset(offset)
+        ]
+      );
+      
+      // Map Appwrite threads to Thread format and filter out threads with projectId
+      const allThreads = response.documents.map((doc) => {
+        const threadDoc = doc as unknown as AppwriteThread;
+        return {
+          id: threadDoc.threadId,
+          title: threadDoc.title,
+          createdAt: new Date(doc.$createdAt),
+          updatedAt: new Date(threadDoc.updatedAt),
+          lastMessageAt: new Date(threadDoc.lastMessageAt),
+          isPinned: threadDoc.isPinned || false,
+          tags: threadDoc.tags || [],
+          isBranched: threadDoc.isBranched || false,
+          projectId: threadDoc.projectId
+        };
+      });
+
+      // Filter out threads that have a projectId
+      const regularThreads = allThreads
+        .filter(thread => !thread.projectId || thread.projectId === '')
+        .slice(0, limit); // Only return the requested limit
+      
+      return {
+        threads: regularThreads,
+        hasMore: response.total > offset + limit, // Approximate hasMore
+        total: response.total
+      };
+    } catch (error) {
+      console.error('Error fetching regular threads from Appwrite:', error);
+      return {
+        threads: [],
+        hasMore: false,
+        total: 0
+      };
     }
   }
 
@@ -754,12 +969,21 @@ export class AppwriteDB {
           }
         }
 
+        // Create parts array - include text part if content exists, or image part if imgurl exists
+        const parts: any[] = [];
+        if (messageDoc.content) {
+          parts.push({ type: "text", text: messageDoc.content });
+        } else if (messageDoc.imgurl) {
+          // For image-only messages, create an appropriate parts structure
+          parts.push({ type: "text", text: "" });
+        }
+
         return {
           id: messageDoc.messageId,
           threadId: messageDoc.threadId,
-          content: messageDoc.content,
+          content: messageDoc.content || "",
           role: messageDoc.role,
-          parts: messageDoc.content ? [{ type: "text", text: messageDoc.content }] : [],
+          parts: parts,
           createdAt: new Date(messageDoc.createdAt),
           webSearchResults: messageDoc.webSearchResults || undefined,
           attachments: attachments,
@@ -1199,6 +1423,145 @@ export class AppwriteDB {
       return response.documents.length > 0;
     } catch (error) {
       return false;
+    }
+  }
+
+  // -------------- Global Memory Operations --------------
+
+  // Get user's global memory settings
+  static async getGlobalMemory(userId?: string): Promise<GlobalMemory | null> {
+    try {
+      const currentUserId = userId || await this.getCurrentUserId();
+
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        GLOBAL_MEMORY_COLLECTION_ID,
+        [Query.equal('userId', currentUserId)]
+      );
+
+      if (response.documents.length === 0) {
+        return null;
+      }
+
+      const doc = response.documents[0] as AppwriteGlobalMemory;
+      return {
+        id: doc.$id,
+        userId: doc.userId,
+        memories: doc.memories || [],
+        enabled: doc.enabled || false,
+        createdAt: new Date(doc.createdAt),
+        updatedAt: new Date(doc.updatedAt),
+      };
+    } catch (error) {
+      console.error('Error getting global memory:', error);
+      throw error;
+    }
+  }
+
+  // Update user's global memory settings
+  static async updateGlobalMemory(userId: string, memories: string[], enabled: boolean): Promise<void> {
+    try {
+      const currentUserId = userId || await this.getCurrentUserId();
+
+      // Check if memory document exists
+      const existing = await this.getGlobalMemory(currentUserId);
+
+      const memoryData = {
+        userId: currentUserId,
+        memories: memories.slice(0, 30), // Ensure max 30 items
+        enabled,
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (existing) {
+        // Update existing document
+        await databases.updateDocument(
+          DATABASE_ID,
+          GLOBAL_MEMORY_COLLECTION_ID,
+          existing.id,
+          memoryData
+        );
+      } else {
+        // Create new document
+        await databases.createDocument(
+          DATABASE_ID,
+          GLOBAL_MEMORY_COLLECTION_ID,
+          ID.unique(),
+          {
+            ...memoryData,
+            createdAt: new Date().toISOString(),
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Error updating global memory:', error);
+      throw error;
+    }
+  }
+
+  // Add a new memory (maintains 30 item limit)
+  static async addMemory(userId: string, memory: string): Promise<void> {
+    try {
+      const currentUserId = userId || await this.getCurrentUserId();
+      const existing = await this.getGlobalMemory(currentUserId);
+
+      let memories: string[] = [];
+      let enabled = false;
+
+      if (existing) {
+        memories = [...existing.memories];
+        enabled = existing.enabled;
+      }
+
+      // Add new memory if it doesn't already exist
+      if (!memories.includes(memory)) {
+        memories.unshift(memory); // Add to beginning
+
+        // Maintain 30 item limit
+        if (memories.length > 30) {
+          memories = memories.slice(0, 30);
+        }
+      }
+
+      await this.updateGlobalMemory(currentUserId, memories, enabled);
+    } catch (error) {
+      console.error('Error adding memory:', error);
+      throw error;
+    }
+  }
+
+  // Delete a specific memory by index
+  static async deleteMemory(userId: string, index: number): Promise<void> {
+    try {
+      const currentUserId = userId || await this.getCurrentUserId();
+      const existing = await this.getGlobalMemory(currentUserId);
+
+      if (!existing || index < 0 || index >= existing.memories.length) {
+        throw new Error('Invalid memory index');
+      }
+
+      const memories = [...existing.memories];
+      memories.splice(index, 1);
+
+      await this.updateGlobalMemory(currentUserId, memories, existing.enabled);
+    } catch (error) {
+      console.error('Error deleting memory:', error);
+      throw error;
+    }
+  }
+
+  // Clear all memories
+  static async clearAllMemories(userId: string): Promise<void> {
+    try {
+      const currentUserId = userId || await this.getCurrentUserId();
+      const existing = await this.getGlobalMemory(currentUserId);
+
+      if (existing) {
+        await this.updateGlobalMemory(currentUserId, [], existing.enabled);
+      }
+    } catch (error) {
+      console.error('Error clearing all memories:', error);
+      throw error;
     }
   }
 }

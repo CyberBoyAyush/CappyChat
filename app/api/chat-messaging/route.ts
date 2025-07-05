@@ -4,8 +4,42 @@ import { getModelConfig, AIModel } from '@/lib/models';
 import { getConversationStyleConfig, ConversationStyle, DEFAULT_CONVERSATION_STYLE } from '@/lib/conversationStyles';
 import { NextRequest, NextResponse } from 'next/server';
 import { canUserUseModel, consumeCredits, getUserCustomProfileServer, getProjectPromptServer } from '@/lib/tierSystem';
+import { Client, Databases, Query } from 'node-appwrite';
 
 export const maxDuration = 60;
+
+/**
+ * Get user's global memory using server-side API (for API routes)
+ */
+const getGlobalMemoryServer = async (userId: string): Promise<{ memories: string[]; enabled: boolean } | null> => {
+  try {
+    const client = new Client()
+      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
+      .setKey(process.env.APPWRITE_API_KEY!);
+
+    const databases = new Databases(client);
+
+    const response = await databases.listDocuments(
+      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+      process.env.NEXT_PUBLIC_APPWRITE_GLOBAL_MEMORY_COLLECTION_ID || 'global_memory',
+      [Query.equal('userId', userId)]
+    );
+
+    if (response.documents.length === 0) {
+      return null;
+    }
+
+    const doc = response.documents[0] as any;
+    return {
+      memories: doc.memories || [],
+      enabled: doc.enabled || false,
+    };
+  } catch (error) {
+    console.error('[Server] Failed to get global memory:', error);
+    return null;
+  }
+};
 
 
 
@@ -153,14 +187,17 @@ export async function POST(req: NextRequest) {
     // Get user custom profile for personalization (skip for guest users)
     let customProfile = null;
     let projectPrompt = null;
+    let globalMemory = null;
     if (userId && !isGuest) {
       try {
         customProfile = await getUserCustomProfileServer(userId);
         if (threadId) {
           projectPrompt = await getProjectPromptServer(userId, threadId);
         }
+        // Get global memory if enabled
+        globalMemory = await getGlobalMemoryServer(userId);
       } catch (error) {
-        console.error('Failed to get custom profile or project prompt:', error);
+        console.error('Failed to get custom profile, project prompt, or global memory:', error);
       }
     }
 
@@ -209,7 +246,21 @@ export async function POST(req: NextRequest) {
       - Display:
       $$\\frac{d}{dx}\\sin(x) = \\cos(x)$$
 
-      When analyzing documents or files, provide detailed and helpful information about their contents.`;
+      When analyzing documents or files, provide detailed and helpful information about their contents.
+
+      IMPORTANT: When displaying file/directory structures, tree diagrams, or any ASCII art with tree characters (├──, └──, │), always wrap them in code blocks with "text" language identifier to preserve formatting:
+
+      \`\`\`text
+      ├── public/
+      │   └── index.html
+      ├── src/
+      │   ├── components/
+      │   │   └── Button.jsx
+      │   └── App.jsx
+      └── package.json
+      \`\`\`
+
+      This ensures proper monospace formatting and preserves the visual structure.`;
 
     // Add custom profile information if available
     if (customProfile && (customProfile.customName || customProfile.aboutUser)) {
@@ -226,6 +277,16 @@ export async function POST(req: NextRequest) {
       }
 
       systemPrompt += `\n--- END USER PROFILE ---`;
+    }
+
+    // Add global memory if enabled
+    if (globalMemory && globalMemory.enabled && globalMemory.memories.length > 0) {
+      systemPrompt += `\n\n--- MEMORY ---`;
+      systemPrompt += `\nRemember these important details about the user:`;
+      globalMemory.memories.forEach((memory: string) => {
+        systemPrompt += `\n• ${memory}`;
+      });
+      systemPrompt += `\n--- END MEMORY ---`;
     }
 
     // Add project prompt if available

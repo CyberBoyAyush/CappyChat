@@ -6,7 +6,7 @@
  * Contains custom SVG icons, loading states, and error components not available in external libraries.
  */
 
-import { CircleAlert, Cross, Globe, X } from "lucide-react";
+import { CircleAlert, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
 
@@ -61,50 +61,41 @@ export function Error({ message }: { message: string }) {
  *
  * Used in: frontend/components/ChatMessageDisplay.tsx
  * Purpose: Displays a loading animation while AI is generating a response.
- * Shows animated dots to indicate message processing state.
+ * Shows a minimal, elegant typing indicator perfect for chat apps.
  */
 export function MessageLoading() {
   return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-      className="text-foreground"
-    >
-      <circle cx="4" cy="12" r="2" fill="currentColor">
-        <animate
-          id="spinner_qFRN"
-          begin="0;spinner_OcgL.end+0.25s"
-          attributeName="cy"
-          calcMode="spline"
-          dur="0.6s"
-          values="12;6;12"
-          keySplines=".33,.66,.66,1;.33,0,.66,.33"
+    <div className="flex items-center gap-3 py-2 px-3">
+      {/* Simple typing dots */}
+      <div className="flex items-center gap-1">
+        <div 
+          className="w-2 h-2 rounded-full bg-muted-foreground/60 animate-bounce"
+          style={{ 
+            animationDelay: '0ms',
+            animationDuration: '1.4s'
+          }}
         />
-      </circle>
-      <circle cx="12" cy="12" r="2" fill="currentColor">
-        <animate
-          begin="spinner_qFRN.begin+0.1s"
-          attributeName="cy"
-          calcMode="spline"
-          dur="0.6s"
-          values="12;6;12"
-          keySplines=".33,.66,.66,1;.33,0,.66,.33"
+        <div 
+          className="w-2 h-2 rounded-full bg-muted-foreground/60 animate-bounce"
+          style={{ 
+            animationDelay: '0.2s',
+            animationDuration: '1.4s'
+          }}
         />
-      </circle>
-      <circle cx="20" cy="12" r="2" fill="currentColor">
-        <animate
-          id="spinner_OcgL"
-          begin="spinner_qFRN.begin+0.2s"
-          attributeName="cy"
-          calcMode="spline"
-          dur="0.6s"
-          values="12;6;12"
-          keySplines=".33,.66,.66,1;.33,0,.66,.33"
+        <div 
+          className="w-2 h-2 rounded-full bg-muted-foreground/60 animate-bounce"
+          style={{ 
+            animationDelay: '0.4s',
+            animationDuration: '1.4s'
+          }}
         />
-      </circle>
-    </svg>
+      </div>
+      
+      {/* Simple status text */}
+      <span className="text-sm text-muted-foreground">
+        AI is typing...
+      </span>
+    </div>
   );
 }
 
@@ -112,29 +103,109 @@ export function MessageLoading() {
  * ImageGenerationLoading Component
  *
  * Used in: frontend/components/Message.tsx
- * Purpose: Displays a specialized loading animation for image generation.
- * Shows "Cooking Something For You Please Wait" message with animated cooking emoji.
+ * Purpose: Displays a loading placeholder for image generation with dynamic aspect ratio.
+ * Shows an advanced loading animation that mimics AI image generation in progress.
  */
-export function ImageGenerationLoading() {
-  console.log("🍳 ImageGenerationLoading component rendered");
+interface ImageGenerationLoadingProps {
+  aspectRatio?: string;
+}
+
+export function ImageGenerationLoading({ aspectRatio = "1:1" }: ImageGenerationLoadingProps) {
+  console.log("🍳 ImageGenerationLoading component rendered with aspect ratio:", aspectRatio);
+
+  // Map aspect ratios to CSS classes
+  const aspectRatioClasses = {
+    "1:1": "aspect-square",
+    "21:9": "aspect-[21/9]",
+    "16:9": "aspect-video",
+    "4:3": "aspect-[4/3]",
+  };
+
+  const aspectClass = aspectRatioClasses[aspectRatio as keyof typeof aspectRatioClasses] || "aspect-square";
 
   return (
-    <div className="flex items-center gap-3 p-4 rounded-lg bg-card/30 border border-border/50">
-      {/* Animated cooking emoji */}
-      <div className="text-2xl animate-bounce">
-        🍳
-      </div>
-
-      {/* Loading message with animated dots */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-foreground">
-          Cooking Something For You Please Wait
-        </span>
-        <div className="flex gap-1">
-          <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
-          <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
-          <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
+    <div className="w-full max-w-2xl">
+      <div className={cn("relative w-full rounded-lg border border-border/50 bg-card/30 overflow-hidden", aspectClass)}>
+        {/* Animated grid background */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5"></div>
+          
+          {/* Grid pattern */}
+          <div className="absolute inset-0 opacity-20 dark:opacity-30">
+            <div className="w-full h-full grid grid-cols-8 grid-rows-8 gap-0.5">
+              {Array.from({ length: 64 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-primary/20 dark:bg-primary/30 rounded-sm animate-pulse"
+                  style={{
+                    animationDelay: `${(i * 50) % 2000}ms`,
+                    animationDuration: '2s'
+                  }}
+                ></div>
+              ))}
+            </div>
+          </div>
         </div>
+        
+        {/* Scanning lines */}
+        <div className="absolute inset-0">
+          <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-primary/60 to-transparent animate-scan-vertical"></div>
+          <div className="absolute h-full w-0.5 bg-gradient-to-b from-transparent via-primary/60 to-transparent animate-scan-horizontal"></div>
+        </div>
+        
+        {/* Central loading area */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 dark:bg-background/70 backdrop-blur-sm">
+          {/* Rotating ring */}
+          <div className="relative mb-6">
+            <div className="w-16 h-16 rounded-full border-2 border-primary/20 dark:border-primary/30"></div>
+            <div className="absolute inset-0 w-16 h-16 rounded-full border-2 border-transparent border-t-primary animate-spin"></div>
+            <div className="absolute inset-2 w-12 h-12 rounded-full border border-primary/30 dark:border-primary/40"></div>
+            
+            {/* Center icon */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-lg animate-pulse">🎨</div>
+            </div>
+          </div>
+          
+          {/* Loading text with typewriter effect */}
+          <div className="text-center space-y-3">
+            <div className="text-sm font-medium text-foreground animate-pulse">
+              Generating Image
+            </div>          
+            
+            {/* Progress bar */}
+            <div className="w-32 h-1 bg-muted/50 dark:bg-muted/30 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-primary/60 to-primary animate-progress"></div>
+            </div>
+
+             <span className="font-sm text-foreground animate-pulse">Refresh Page After Confirmation Toast</span>
+            
+            {/* Status indicators */}
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                <span>Processing</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                <span>Rendering</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '600ms' }}></div>
+                <span>Finalizing</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Shimmer overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 dark:via-white/10 to-transparent transform -skew-x-12 animate-shimmer"></div>
+        
+        {/* Corner effects */}
+        <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-primary/40 dark:border-primary/50"></div>
+        <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-primary/40 dark:border-primary/50"></div>
+        <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-primary/40 dark:border-primary/50"></div>
+        <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-primary/40 dark:border-primary/50"></div>
       </div>
     </div>
   );
@@ -148,8 +219,8 @@ export function ImageGenerationLoading() {
  * WebSearchToggle Component
  *
  * Used in: frontend/components/ChatInputField.tsx
- * Purpose: Toggle button for enabling/disabling web search functionality.
- * When enabled, forces the use of OpenAI 4.1 Mini Search model and routes through web-search endpoint.
+ * Purpose: Toggle button for enabling/disabling Tavily-powered web search functionality.
+ * When enabled, routes through web-search endpoint with Tavily integration for any selected model.
  */
 interface WebSearchToggleProps {
   isEnabled: boolean;

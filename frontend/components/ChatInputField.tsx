@@ -23,6 +23,7 @@ import { HybridDB } from "@/lib/hybridDB";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 import { ModelSelector } from "./ModelSelector";
 import { ConversationStyleSelector } from "./ConversationStyleSelector";
+import { AspectRatioSelector, ASPECT_RATIOS, AspectRatio, getDimensionsForModel } from "./AspectRatioSelector";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { getModelConfig } from "@/lib/models";
@@ -42,6 +43,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import { useAuthDialog } from "@/frontend/hooks/useAuthDialog";
 import AuthDialog from "./auth/AuthDialog";
+import { extractMemories, shouldAddMemory } from "@/lib/memoryExtractor";
+import { AppwriteDB } from "@/lib/appwriteDB";
 
 // Extended UIMessage type to include attachments
 type ExtendedUIMessage = UIMessage & {
@@ -57,7 +60,7 @@ interface InputFieldProps {
   setMessages: UseChatHelpers["setMessages"];
   stop: UseChatHelpers["stop"];
   pendingUserMessageRef: React.RefObject<UIMessage | null>;
-  onWebSearchMessage?: (messageId: string) => void;
+  onWebSearchMessage?: (messageId: string, searchQuery?: string) => void;
   submitRef?: React.RefObject<(() => void) | null>;
   messages?: UIMessage[];
   onMessageAppended?: (messageId: string) => void;
@@ -84,6 +87,40 @@ const createUserMessage = (
   createdAt: new Date(),
   attachments,
 });
+
+// Extract and store memories from user message
+const extractAndStoreMemories = async (messageContent: string, userId?: string) => {
+  if (!userId || !messageContent.trim()) return;
+
+  try {
+    // Extract potential memories from the message
+    const extractedMemories = extractMemories(messageContent);
+
+    if (extractedMemories.length === 0) return;
+
+    // Get current global memory to check for duplicates
+    const currentMemory = await AppwriteDB.getGlobalMemory(userId);
+
+    // Only proceed if memory is enabled
+    if (!currentMemory?.enabled) return;
+
+    const existingMemories = currentMemory?.memories || [];
+
+    // Add new memories that pass the threshold and aren't duplicates
+    for (const extractedMemory of extractedMemories) {
+      if (shouldAddMemory(extractedMemory, existingMemories)) {
+        try {
+          await AppwriteDB.addMemory(userId, extractedMemory.text);
+          console.log('🧠 Added memory:', extractedMemory.text);
+        } catch (error) {
+          console.error('Failed to add memory:', error);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error extracting memories:', error);
+  }
+};
 
 function PureInputField({
   threadId,
@@ -141,6 +178,9 @@ function PureInputField({
 
   // Model selection state
   const { selectedModel, setModel } = useModelStore();
+
+  // Aspect ratio state for image generation
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState<AspectRatio>(ASPECT_RATIOS[0]); // Default to 1:1
 
   // Track if input change was from user typing vs external source (like prompt selection)
   const lastInputRef = useRef("");
@@ -513,7 +553,7 @@ function PureInputField({
 
       // Track if this message was sent with web search enabled
       if (isWebSearchEnabled && onWebSearchMessage) {
-        onWebSearchMessage(messageId);
+        onWebSearchMessage(messageId, finalInput);
       }
 
     } else {
@@ -598,9 +638,11 @@ function PureInputField({
       const loadingAssistantMessage = {
         id: uuidv4(),
         role: "assistant" as const,
-        content: "🎨 Generating your image...",
-        parts: [{ type: "text" as const, text: "🎨 Generating your image..." }],
+        content: `🎨 Generating your image [aspectRatio:${selectedAspectRatio.id}]`,
+        parts: [{ type: "text" as const, text: `🎨 Generating your image [aspectRatio:${selectedAspectRatio.id}]` }],
         createdAt: new Date(),
+        isImageGenerationLoading: true, // Flag to identify loading state
+        aspectRatio: selectedAspectRatio.id, // Store aspect ratio for loading component
       };
 
       // Add loading message to UI
@@ -608,6 +650,12 @@ function PureInputField({
         ...prevMessages,
         loadingAssistantMessage as any,
       ]);
+
+      // Get appropriate dimensions for the selected model and aspect ratio
+      const modelConfig = getModelConfig(selectedModel);
+      const dimensions = getDimensionsForModel(selectedAspectRatio, modelConfig.modelId);
+
+      console.log(`🎯 Using dimensions for ${selectedModel}: ${dimensions.width}x${dimensions.height}`);
 
       // Call image generation API
       try {
@@ -621,8 +669,9 @@ function PureInputField({
             model: selectedModel,
             userId: isGuest ? null : user?.$id,
             isGuest: isGuest,
-            width: 1024,
-            height: 1024,
+            width: dimensions.width,
+            height: dimensions.height,
+            attachments: finalAttachments,
           }),
         });
 
@@ -634,42 +683,46 @@ function PureInputField({
 
         console.log("✅ Image generated successfully:", result.imageUrl);
 
-        // Create assistant message with generated image
-        const assistantMessageId = uuidv4();
-        const assistantMessage = {
-          id: assistantMessageId,
-          role: "assistant" as const,
-          content: `I've generated an image based on your prompt: "${finalInput}"`,
-          parts: [
-            {
-              type: "text" as const,
-              text: `I've generated an image based on your prompt: "${finalInput}"`,
-            },
-          ],
-          createdAt: new Date(),
-          imgurl: result.imageUrl,
-          model: result.model,
-        };
-
-        // Replace the loading message with the actual result
+        // Update the existing loading message with the generated image
+        let updatedMessage: any = null;
+        
         setMessages((prevMessages: any) => {
           const updatedMessages = [...prevMessages];
-          // Find and replace the loading message (last assistant message)
+          // Find and update the loading message (last assistant message with loading flag)
           for (let i = updatedMessages.length - 1; i >= 0; i--) {
             if (
               updatedMessages[i].role === "assistant" &&
-              updatedMessages[i].content.includes("Generating your image")
+              (updatedMessages[i].isImageGenerationLoading || 
+               updatedMessages[i].content.includes("Generating your image"))
             ) {
-              updatedMessages[i] = assistantMessage;
+              // Update the same message object to include image and remove loading state
+              updatedMessages[i] = {
+                ...updatedMessages[i], // Keep the same ID and other properties
+                content: `[aspectRatio:${selectedAspectRatio.id}]`, // Store aspect ratio in content for persistence
+                parts: [
+                  {
+                    type: "text" as const,
+                    text: `[aspectRatio:${selectedAspectRatio.id}]`, // Store aspect ratio in parts for persistence
+                  },
+                ],
+                imgurl: result.imageUrl,
+                model: result.model,
+                isImageGenerationLoading: false, // Remove loading flag
+                isImageGeneration: true, // Flag to identify this as image generation result
+                aspectRatio: selectedAspectRatio.id, // Preserve aspect ratio for display
+              };
+              
+              // Keep reference for database storage
+              updatedMessage = updatedMessages[i];
               break;
             }
           }
           return updatedMessages;
         });
 
-        // Store assistant message to database
-        if (!isGuest) {
-          HybridDB.createMessage(threadId, assistantMessage);
+        // Store updated message to database
+        if (!isGuest && updatedMessage) {
+          HybridDB.createMessage(threadId, updatedMessage);
         }
 
         toast.success("Image generated successfully!");
@@ -679,34 +732,32 @@ function PureInputField({
           error instanceof Error ? error.message : "Failed to generate image"
         );
 
-        // Create error message
-        const errorMessage = {
-          id: uuidv4(),
-          role: "assistant" as const,
-          content: `Sorry, I couldn't generate an image. ${
-            error instanceof Error ? error.message : "Please try again."
-          }`,
-          parts: [
-            {
-              type: "text" as const,
-              text: `Sorry, I couldn't generate an image. ${
-                error instanceof Error ? error.message : "Please try again."
-              }`,
-            },
-          ],
-          createdAt: new Date(),
-        };
-
-        // Replace the loading message with the error message
+        // Update the loading message with the error message
         setMessages((prevMessages: any) => {
           const updatedMessages = [...prevMessages];
-          // Find and replace the loading message (last assistant message)
+          // Find and update the loading message (last assistant message with loading flag)
           for (let i = updatedMessages.length - 1; i >= 0; i--) {
             if (
               updatedMessages[i].role === "assistant" &&
-              updatedMessages[i].content.includes("Generating your image")
+              (updatedMessages[i].isImageGenerationLoading || 
+               updatedMessages[i].content.includes("Generating your image"))
             ) {
-              updatedMessages[i] = errorMessage;
+              // Update the same message object with error content
+              updatedMessages[i] = {
+                ...updatedMessages[i], // Keep the same ID and other properties
+                content: `Sorry, I couldn't generate an image. ${
+                  error instanceof Error ? error.message : "Please try again."
+                }`,
+                parts: [
+                  {
+                    type: "text" as const,
+                    text: `Sorry, I couldn't generate an image. ${
+                      error instanceof Error ? error.message : "Please try again."
+                    }`,
+                  },
+                ],
+                isImageGenerationLoading: false, // Remove loading flag
+              };
               break;
             }
           }
@@ -748,6 +799,9 @@ function PureInputField({
         // Use setTimeout to ensure append() completes first
         setTimeout(() => {
           HybridDB.createMessage(threadId, userMessage);
+
+          // Extract and store memories from user message
+          extractAndStoreMemories(finalInput, user?.$id);
         }, 0);
       }
     }
@@ -1126,12 +1180,22 @@ function PureInputField({
                     <div className="min-w-0 flex-shrink overflow-hidden">
                       <ModelSelector isImageGenMode={isImageGenMode} />
                     </div>
-                    <ConversationStyleSelector className="hidden md:flex flex-shrink-0" />
-                    <WebSearchToggle
-                      isEnabled={isWebSearchEnabled}
-                      onToggle={setWebSearchEnabled}
-                      className="hidden md:flex flex-shrink-0"
-                    />
+                    {isImageGenMode ? (
+                      <AspectRatioSelector
+                        selectedRatio={selectedAspectRatio}
+                        onRatioChange={setSelectedAspectRatio}
+                        className="hidden md:flex flex-shrink-0"
+                      />
+                    ) : (
+                      <>
+                        <ConversationStyleSelector className="hidden md:flex flex-shrink-0" />
+                        <WebSearchToggle
+                          isEnabled={isWebSearchEnabled}
+                          onToggle={setWebSearchEnabled}
+                          className="hidden md:flex flex-shrink-0"
+                        />
+                      </>
+                    )}
                   </>
                 )}
                 {isGuest && (
@@ -1144,12 +1208,22 @@ function PureInputField({
               <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 flex-shrink-0">
                 {!isGuest && (
                   <>
-                    <ConversationStyleSelector className="flex md:hidden" />
-                    <WebSearchToggle
-                      isEnabled={isWebSearchEnabled}
-                      onToggle={setWebSearchEnabled}
-                      className="flex md:hidden"
-                    />
+                    {isImageGenMode ? (
+                      <AspectRatioSelector
+                        selectedRatio={selectedAspectRatio}
+                        onRatioChange={setSelectedAspectRatio}
+                        className="flex md:hidden"
+                      />
+                    ) : (
+                      <>
+                        <ConversationStyleSelector className="flex md:hidden" />
+                        <WebSearchToggle
+                          isEnabled={isWebSearchEnabled}
+                          onToggle={setWebSearchEnabled}
+                          className="flex md:hidden"
+                        />
+                      </>
+                    )}
                     <Button
                       variant={isImageGenMode ? "default" : "outline"}
                       size="icon"
@@ -1207,7 +1281,12 @@ function PureInputField({
                       disabled={
                         status === "streaming" ||
                         status === "submitted" ||
-                        isImageGenMode
+                        (isImageGenMode && !getModelConfig(selectedModel).image2imageGen)
+                      }
+                      acceptedFileTypes={
+                        isImageGenMode && getModelConfig(selectedModel).image2imageGen
+                          ? "image/png,image/jpeg,image/jpg"
+                          : "image/*,.pdf"
                       }
                     />
                   </>

@@ -15,6 +15,8 @@ import ChatHomePage from "./routes/ChatHomePage";
 import ChatThreadPage from "./routes/ChatThreadPage";
 import SettingsPage from "./routes/SettingsPage";
 import AdminPage from "./routes/AdminPage";
+import AboutPage from "./routes/AboutPage";
+import ChangelogPage from "./routes/ChangelogPage";
 import AuthCallbackPage from "./routes/auth/AuthCallbackPage";
 import AuthErrorPage from "./routes/auth/AuthErrorPage";
 import LoginPage from "./routes/auth/LoginPage";
@@ -39,6 +41,12 @@ export default function ChatAppRouter() {
           </Route>
 
 
+
+          {/* About route (always accessible) */}
+          <Route path="/about" element={<AboutPage />} />
+
+          {/* Changelog route (always accessible) */}
+          <Route path="/changelog" element={<ChangelogPage />} />
 
           {/* Auth routes (always accessible) */}
           <Route path="/login" element={<LoginPage />} />

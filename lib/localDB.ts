@@ -194,14 +194,15 @@ export class LocalDB {
         // Primary check: same ID
         if (m.id === message.id) return true;
 
-        // Secondary check: same content, role, and threadId (potential duplicate with different ID)
+        // Secondary check: same content, role, threadId, and imgurl (potential duplicate with different ID)
         if (m.threadId === message.threadId &&
             m.role === message.role &&
             m.content === message.content &&
+            m.imgurl === message.imgurl &&
             Math.abs(new Date(m.createdAt).getTime() - new Date(message.createdAt).getTime()) < 1000) {
           console.warn('[LocalDB] Potential duplicate message detected:', {
-            existing: { id: m.id, content: m.content.substring(0, 50) },
-            new: { id: message.id, content: message.content.substring(0, 50) }
+            existing: { id: m.id, content: m.content.substring(0, 50), imgurl: m.imgurl },
+            new: { id: message.id, content: message.content.substring(0, 50), imgurl: message.imgurl }
           });
           return true;
         }

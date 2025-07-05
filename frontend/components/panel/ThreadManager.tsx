@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Thread } from '@/lib/appwriteDB';
 import { HybridDB, dbEvents } from '@/lib/hybridDB';
-import { useOptimizedThreads } from '@/frontend/hooks/useOptimizedHybridDB';
+import { useOptimizedThreadsWithPagination } from '@/frontend/hooks/useOptimizedHybridDB';
 import { useIsMobile } from '@/hooks/useMobileDetection';
 import { useOutletContext } from 'react-router-dom';
 
@@ -28,8 +28,14 @@ export const useThreadManager = () => {
     isMobile: boolean;
   } | null>();
   
-  // Use optimized hook for better performance
-  const { threads: threadCollection, isLoading } = useOptimizedThreads();
+  // Use optimized hook with pagination for better performance
+  const { 
+    threads: threadCollection, 
+    isLoading, 
+    isLoadingMore, 
+    hasMore, 
+    loadMoreThreads 
+  } = useOptimizedThreadsWithPagination(40);
 
   const navigateToThread = useCallback((threadId: string) => {
     if (currentThreadId === threadId) {
@@ -76,7 +82,7 @@ export const useThreadManager = () => {
 
     try {
       // Find the current thread to get its pin status
-      const thread = threadCollection.find(t => t.id === threadId);
+      const thread = threadCollection.find((t: Thread) => t.id === threadId);
       if (!thread) {
         console.error('Thread not found:', threadId);
         return;
@@ -150,6 +156,9 @@ export const useThreadManager = () => {
     branchThread,
     isActiveThread,
     isLoading,
+    isLoadingMore,
+    hasMore,
+    loadMoreThreads,
   };
 };
 

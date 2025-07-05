@@ -24,9 +24,14 @@ import {
   Settings,
   LogOut,
   Shield,
+  Database,
   ChevronDown,
   LogIn,
   UserPlus,
+  Sparkles,
+  Github,
+  Info,
+  Calendar
 } from "lucide-react";
 import { getUserTierInfo } from "@/lib/tierSystem";
 import AuthDialog from "./auth/AuthDialog";
@@ -219,11 +224,18 @@ const UserProfileDropdown: React.FC = () => {
           <span>Profile</span>
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={() => navigate("/settings#privacy")}
+          onClick={() => navigate("/settings#customization")}
           className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         >
-          <Shield className="h-4 w-4" />
-          <span>Privacy & Security</span>
+          <Sparkles className="h-4 w-4" />
+          <span>Customization</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => navigate("/settings#storage")}
+          className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <Database className="h-4 w-4" />
+          <span>Storage</span>
         </DropdownMenuItem>
 
         {/* Admin Panel - Only show for admin users */}
@@ -238,6 +250,33 @@ const UserProfileDropdown: React.FC = () => {
         )}
 
         <DropdownMenuSeparator />
+
+        {/* Github */}
+        <DropdownMenuItem
+          onClick={() => window.open("https://github.com/cyberboyayush/AVChat", "_blank")}
+          className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <Github className="h-4 w-4" />
+          <span>Github</span>
+        </DropdownMenuItem>
+
+        {/* About */}
+        <DropdownMenuItem
+          onClick={() => navigate("/about")}
+          className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <Info className="h-4 w-4" />
+          <span>About</span>
+        </DropdownMenuItem>
+
+        {/* Changelog */}
+        <DropdownMenuItem
+          onClick={() => navigate("/changelog")}
+          className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <Calendar className="h-4 w-4" />
+          <span>Changelog</span>
+        </DropdownMenuItem>
 
         {/* Settings */}
         <DropdownMenuItem

@@ -118,8 +118,74 @@ function Codebar({ lang, codeString }: { lang: string; codeString: string }) {
   );
 }
 
+function preprocessTreeStructures(content: string): string {
+  // Detect tree structures and wrap them in code blocks if not already wrapped
+  const lines = content.split('\n');
+  const processedLines: string[] = [];
+  let inCodeBlock = false;
+  let inTreeStructure = false;
+  let treeLines: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Track if we're inside a code block
+    if (line.trim().startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+
+      // If we were collecting tree lines and hit a code block, flush them
+      if (treeLines.length > 0) {
+        processedLines.push('```text');
+        processedLines.push(...treeLines);
+        processedLines.push('```');
+        treeLines = [];
+        inTreeStructure = false;
+      }
+
+      processedLines.push(line);
+      continue;
+    }
+
+    // Skip processing if we're inside a code block
+    if (inCodeBlock) {
+      processedLines.push(line);
+      continue;
+    }
+
+    // Check if line contains tree structure characters
+    const hasTreeChars = /[├└│]/.test(line) || /^[\s]*[├└]──/.test(line);
+
+    if (hasTreeChars) {
+      if (!inTreeStructure) {
+        inTreeStructure = true;
+      }
+      treeLines.push(line);
+    } else {
+      // If we were in a tree structure and hit a non-tree line, wrap the collected lines
+      if (inTreeStructure && treeLines.length > 0) {
+        processedLines.push('```text');
+        processedLines.push(...treeLines);
+        processedLines.push('```');
+        treeLines = [];
+        inTreeStructure = false;
+      }
+      processedLines.push(line);
+    }
+  }
+
+  // Handle any remaining tree lines at the end
+  if (treeLines.length > 0) {
+    processedLines.push('```text');
+    processedLines.push(...treeLines);
+    processedLines.push('```');
+  }
+
+  return processedLines.join('\n');
+}
+
 function parseMarkdownIntoBlocks(markdown: string): string[] {
-  const tokens = marked.lexer(markdown);
+  const preprocessed = preprocessTreeStructures(markdown);
+  const tokens = marked.lexer(preprocessed);
   return tokens.map((token) => token.raw);
 }
 

@@ -19,6 +19,7 @@ import { UIMessage } from "ai";
 import { HybridDB, dbEvents } from "@/lib/hybridDB";
 import { streamingSync, StreamingState } from "@/lib/streamingSync";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
+import { getModelConfig, AIModel } from "@/lib/models";
 import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
 import { useConversationStyleStore } from "@/frontend/stores/ConversationStyleStore";
 import { useBYOKStore } from "@/frontend/stores/BYOKStore";
@@ -58,9 +59,9 @@ import { useRef, useState, useEffect, useCallback, Fragment } from "react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
-import { AIModel } from "@/lib/models";
 import GlobalSearchDialog from "./GlobalSearchDialog";
 import { extractUrlsFromContent } from "./WebSearchCitations";
+import WebSearchLoader from "./WebSearchLoader";
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -111,7 +112,7 @@ export default function ChatInterface({
   const selectedModel = useModelStore((state) => state.selectedModel);
   const { isWebSearchEnabled } = useWebSearchStore();
   const { selectedStyle } = useConversationStyleStore();
-  const { openRouterApiKey } = useBYOKStore();
+  const { openRouterApiKey, tavilyApiKey } = useBYOKStore();
   const {
     user,
     isGuest,
@@ -282,6 +283,12 @@ export default function ChatInterface({
       // End streaming synchronization
       streamingSync.endStreaming(threadId, message.id, message.content);
 
+      // Stop web search loading if it was active
+      if (isWebSearching) {
+        console.log("🔍 Stopping web search loading state");
+        setIsWebSearching(false);
+      }
+
       // Clear the pending user message ref (user message is now stored immediately in ChatInputField)
       if (pendingUserMessageRef.current) {
         console.log(
@@ -358,11 +365,21 @@ export default function ChatInterface({
       // Scroll to bottom when new message comes in
       scrollToBottom();
     },
+    onError: (error) => {
+      console.error("❌ Chat error:", error);
+      // Stop web search loading on error
+      if (isWebSearching) {
+        console.log("🔍 Stopping web search loading due to error");
+        setIsWebSearching(false);
+      }
+    },
+
     headers: {},
     body: {
       model: retryModel || selectedModel,
       conversationStyle: selectedStyle,
       userApiKey: openRouterApiKey,
+      userTavilyApiKey: tavilyApiKey,
       userId: user?.$id,
       threadId: threadId,
       isGuest: isGuest,
@@ -376,6 +393,8 @@ export default function ChatInterface({
       setSelectedPrompt("");
     }
   }, [selectedPrompt, setInput]);
+
+
 
   // Effect to handle search query from URL parameter - only run once
   useEffect(() => {
@@ -774,11 +793,135 @@ export default function ChatInterface({
 
   // Track when web search is enabled for the next assistant response
   const nextResponseNeedsWebSearch = useRef<boolean>(false);
+  const [isWebSearching, setIsWebSearching] = useState<boolean>(false);
+  const [webSearchQuery, setWebSearchQuery] = useState<string>("");
+
+  // Effect to stop web search loading when streaming starts
+  useEffect(() => {
+    if (status === "streaming" && isWebSearching) {
+      console.log("🔍 Stopping web search loading - streaming started");
+      setIsWebSearching(false);
+    }
+  }, [status, isWebSearching]);
 
   // Callback to track when a message is sent with web search enabled
-  const handleWebSearchMessage = useCallback((messageId: string) => {
+  const handleWebSearchMessage = useCallback((messageId: string, searchQuery?: string) => {
     nextResponseNeedsWebSearch.current = true;
-  }, []);
+    if (isWebSearchEnabled) {
+      setIsWebSearching(true);
+      // Use the provided search query or fallback to getting from messages
+      if (searchQuery) {
+        setWebSearchQuery(searchQuery);
+      } else {
+        const lastUserMessage = messages.filter(msg => msg.role === 'user').pop();
+        setWebSearchQuery(lastUserMessage?.content || "search query");
+      }
+    }
+  }, [isWebSearchEnabled, messages]);
+
+  // Handle image generation retry
+  const handleImageGenerationRetry = useCallback(
+    async (prompt: string, model: AIModel, attachments: any[], originalMessage?: UIMessage) => {
+      // Create a loading message
+      const loadingMessageId = uuidv4();
+
+      try {
+        console.log("🎨 Starting image generation retry with model:", model);
+
+        const loadingMessage: UIMessage = {
+          id: loadingMessageId,
+          role: "assistant",
+          content: `🎨 Generating your image [aspectRatio:1:1]`,
+          parts: [{ type: "text", text: `🎨 Generating your image [aspectRatio:1:1]` }],
+          createdAt: new Date(),
+        };
+
+        // Add loading message to UI
+        setMessages((prev) => {
+          const filtered = prev.filter(m => m.id !== originalMessage?.id);
+          return [...filtered, loadingMessage];
+        });
+
+        // Call image generation API
+        const response = await fetch("/api/image-generation", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: prompt,
+            model: model,
+            userId: isGuest ? null : user?.$id,
+            isGuest: isGuest,
+            width: 1024,
+            height: 1024,
+            attachments: attachments,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to generate image');
+        }
+
+        const result = await response.json();
+        console.log("✅ Image generation retry completed:", result);
+
+        // Update the loading message with the result
+        setMessages((prev) => {
+          return prev.map(m => {
+            if (m.id === loadingMessageId) {
+              return {
+                ...m,
+                content: `[aspectRatio:1:1]`,
+                parts: [{ type: "text", text: `[aspectRatio:1:1]` }],
+                imgurl: result.imageUrl,
+                model: result.model,
+                isImageGenerationLoading: false,
+                isImageGeneration: true,
+                aspectRatio: "1:1",
+              } as UIMessage;
+            }
+            return m;
+          });
+        });
+
+        // Save to database if not guest
+        if (!isGuest) {
+          const finalMessage: UIMessage & { imgurl?: string; model?: string } = {
+            id: loadingMessageId,
+            role: "assistant",
+            content: `[aspectRatio:1:1]`,
+            parts: [{ type: "text", text: `[aspectRatio:1:1]` }],
+            createdAt: new Date(),
+            imgurl: result.imageUrl,
+            model: result.model,
+          };
+
+          HybridDB.createMessage(threadId, finalMessage);
+        }
+
+      } catch (error) {
+        console.error("Error in image generation retry:", error);
+
+        // Update loading message with error
+        setMessages((prev) => {
+          return prev.map(m => {
+            if (m.id === loadingMessageId) {
+              return {
+                ...m,
+                content: `❌ Failed to generate image: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                parts: [{ type: "text", text: `❌ Failed to generate image: ${error instanceof Error ? error.message : 'Unknown error'}` }],
+                isImageGenerationLoading: false,
+              } as UIMessage;
+            }
+            return m;
+          });
+        });
+      }
+    },
+    [user, isGuest, threadId, setMessages]
+  );
 
   // Handle retry with specific model
   const handleRetryWithModel = useCallback(
@@ -788,6 +931,20 @@ export default function ChatInterface({
 
       // Set the retry model temporarily
       setRetryModel(model || null);
+
+      // Determine if this is an image generation retry
+      const isImageGenerationRetry = message && (
+        (message as any).isImageGeneration ||
+        (message as any).isImageGenerationLoading ||
+        !!(message as any).imgurl ||
+        (message.content && (
+          message.content.includes("🎨 Generating your image") ||
+          message.content.includes("Generating your image")
+        )) ||
+        (message as any).model && getModelConfig((message as any).model as AIModel)?.isImageGeneration
+      );
+
+      console.log("🔄 Retry context:", { isImageGenerationRetry, message: message?.content, model: (message as any)?.model });
 
       // If we have message information, handle proper deletion
       if (message) {
@@ -823,7 +980,42 @@ export default function ChatInterface({
         }
       }
 
-      // Trigger reload which will use the retry model
+      // Handle image generation retry differently
+      if (isImageGenerationRetry) {
+        console.log("🎨 Handling image generation retry");
+
+        // Find the user message that triggered this image generation
+        let userPrompt = "";
+        let userAttachments: any[] = [];
+
+        if (message?.role === "assistant") {
+          // Find the preceding user message
+          const messageIndex = messages.findIndex(m => m.id === message.id);
+          if (messageIndex > 0) {
+            const userMessage = messages[messageIndex - 1];
+            if (userMessage.role === "user") {
+              userPrompt = userMessage.content;
+              userAttachments = (userMessage as any).attachments || [];
+            }
+          }
+        } else if (message?.role === "user") {
+          userPrompt = message.content;
+          userAttachments = (message as any).attachments || [];
+        }
+
+        if (!userPrompt) {
+          console.error("Could not find user prompt for image generation retry");
+          return;
+        }
+
+        console.log("🎨 Retrying image generation with prompt:", userPrompt);
+
+        // Call image generation API directly
+        handleImageGenerationRetry(userPrompt, model || selectedModel, userAttachments, message);
+        return;
+      }
+
+      // For text generation, use the normal reload flow
       setTimeout(() => {
         reload();
         // Reset retry model after reload
@@ -965,6 +1157,8 @@ export default function ChatInterface({
               registerRef={registerRef}
               stop={stop}
               onRetryWithModel={handleRetryWithModel}
+              isWebSearching={isWebSearching}
+              webSearchQuery={webSearchQuery}
             />
           </div>
         )}

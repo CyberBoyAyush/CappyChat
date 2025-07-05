@@ -30,12 +30,13 @@ import {
   Database,
   Server,
   FileCheck,
-  Users,
   Trash2,
   ArrowLeft,
   Keyboard,
   MessageSquareMore,
   Sparkles,
+  Info,
+  Calendar,
 } from "lucide-react";
 import ThemeToggleButton from "../components/ui/ThemeComponents";
 import { useTheme } from "next-themes";
@@ -54,8 +55,10 @@ import {
   clearUserCustomProfile,
   UserCustomProfile,
 } from "@/lib/appwrite";
-import { GitHubIcon } from "../components/ui/icons";
+import { GitHubIcon, GoogleIcon, XIcon } from "../components/ui/icons";
 import SessionManager from "../components/SessionManager";
+import MemorySettings from "../components/MemorySettings";
+import FileManager from "../components/FileManager";
 
 // Notification type
 type NotificationType = {
@@ -68,7 +71,7 @@ export default function SettingsPage() {
   const location = useLocation();
   const chatId = searchParams.get("from");
   const { setTheme, theme } = useTheme();
-  const { user, updateProfile, logout } = useAuth();
+  const { user, updateProfile, logout, getDetailedSessionInfo } = useAuth();
 
   // Platform detection helper
   const isMac =
@@ -106,26 +109,51 @@ export default function SettingsPage() {
   const {
     openRouterApiKey,
     openAIApiKey,
+    tavilyApiKey,
     setOpenRouterApiKey,
     setOpenAIApiKey,
+    setTavilyApiKey,
     hasOpenRouterKey,
     hasOpenAIKey,
+    hasTavilyKey,
     validateOpenRouterKey,
     validateOpenAIKey,
+    validateTavilyKey,
   } = useBYOKStore();
 
   const [keyInput, setKeyInput] = useState("");
   const [openAIKeyInput, setOpenAIKeyInput] = useState("");
+  const [tavilyKeyInput, setTavilyKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [showOpenAIKey, setShowOpenAIKey] = useState(false);
+  const [showTavilyKey, setShowTavilyKey] = useState(false);
   const [keyError, setKeyError] = useState("");
   const [openAIKeyError, setOpenAIKeyError] = useState("");
+  const [tavilyKeyError, setTavilyKeyError] = useState("");
   const [keySaved, setKeySaved] = useState(false);
   const [openAIKeySaved, setOpenAIKeySaved] = useState(false);
+  const [tavilyKeySaved, setTavilyKeySaved] = useState(false);
 
   // Tier management state
   const [tierInfo, setTierInfo] = useState<any>(null);
   const [loadingTier, setLoadingTier] = useState(true);
+
+  // Session info for provider detection
+  const [sessionInfo, setSessionInfo] = useState<any>(null);
+
+  // Get provider icon
+  const getProviderIcon = (provider: string) => {
+    switch (provider?.toLowerCase()) {
+      case 'google':
+        return <GoogleIcon className="w-4 h-4" />;
+      case 'github':
+        return <GitHubIcon className="w-4 h-4" />;
+      case 'email':
+        return <Mail className="w-4 h-4" />;
+      default:
+        return <Lock className="w-4 h-4" />;
+    }
+  };
 
   // Font store
   const { selectedFont, setFont } = useFontStore();
@@ -148,7 +176,7 @@ export default function SettingsPage() {
 
     // Handle hash-based navigation
     const hash = location.hash.replace("#", "");
-    if (hash && ["profile", "privacy", "settings"].includes(hash)) {
+    if (hash && ["profile", "customization", "storage", "application", "contact"].includes(hash)) {
       setActiveSection(hash);
     }
   }, [user, location.hash]);
@@ -172,6 +200,22 @@ export default function SettingsPage() {
 
     loadTierInfo();
   }, [user]);
+
+  // Load session info for provider detection
+  useEffect(() => {
+    const loadSessionInfo = async () => {
+      if (!user) return;
+
+      try {
+        const info = await getDetailedSessionInfo();
+        setSessionInfo(info);
+      } catch (error) {
+        console.error("Error loading session info:", error);
+      }
+    };
+
+    loadSessionInfo();
+  }, [user, getDetailedSessionInfo]);
 
   // Load custom profile data
   useEffect(() => {
@@ -365,6 +409,32 @@ export default function SettingsPage() {
     setOpenAIKeyError("");
   };
 
+  const handleSaveTavilyKey = () => {
+    if (!tavilyKeyInput.trim()) {
+      setTavilyKeyError("Please enter a Tavily API key");
+      return;
+    }
+
+    if (!validateTavilyKey(tavilyKeyInput.trim())) {
+      setTavilyKeyError(
+        "Invalid API key format. Tavily keys should start with 'tvly-' or 'tvly-dev-'"
+      );
+      return;
+    }
+
+    setTavilyApiKey(tavilyKeyInput.trim());
+    setTavilyKeyInput("");
+    setTavilyKeyError("");
+    setTavilyKeySaved(true);
+    setTimeout(() => setTavilyKeySaved(false), 3000);
+  };
+
+  const handleRemoveTavilyKey = () => {
+    setTavilyApiKey(null);
+    setTavilyKeyInput("");
+    setTavilyKeyError("");
+  };
+
   const maskKey = (key: string) => {
     if (!key) return "";
     return key.substring(0, 8) + "..." + key.substring(key.length - 4);
@@ -543,7 +613,7 @@ export default function SettingsPage() {
                     label: "Customization",
                     icon: Sparkles,
                   },
-                  { id: "privacy", label: "Privacy & Security", icon: Shield },
+                  { id: "storage", label: "Storage", icon: Database },
                   {
                     id: "application",
                     label: "Application",
@@ -653,7 +723,16 @@ export default function SettingsPage() {
                             <Lock className="w-4 h-4" />
                             Authentication
                           </dt>
-                          <dd className="font-medium">Email</dd>
+                          <dd className="font-medium flex items-center gap-2">
+                            {sessionInfo?.currentSession?.provider ? (
+                              <>
+                                {getProviderIcon(sessionInfo.currentSession.provider)}
+                                <span className="capitalize">{sessionInfo.currentSession.provider}</span>
+                              </>
+                            ) : (
+                              "Email"
+                            )}
+                          </dd>
                         </div>
                         <div className="space-y-1">
                           <dt className="text-sm text-muted-foreground flex items-center gap-2">
@@ -688,6 +767,55 @@ export default function SettingsPage() {
                           </dd>
                         </div>
                       </dl>
+
+                      {/* Upgrade to Pro Button - Only for Free Users */}
+                      {tierInfo && tierInfo.tier === "free" && (
+                        <div className="mt-6 pt-4 border-t border-border">
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <h4 className="text-sm font-medium text-muted-foreground">
+                                Upgrade Your Plan
+                              </h4>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Get more credits and access to premium features
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => {
+                                window.location.href = 'mailto:hi@aysh.me?subject=Upgrade%20to%20Pro%20in%20AVChat';
+                              }}
+                              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
+                            >
+                              <Sparkles className="w-4 h-4 mr-2" />
+                              Upgrade to Pro
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border border-purple-200/50 dark:border-purple-800/50">
+                            <div className="space-y-2">
+                              <h5 className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                                Pro Plan Benefits
+                              </h5>
+                              <ul className="text-xs text-purple-600 dark:text-purple-400 space-y-1">
+                                <li>• 1,500 Free Model Credits</li>
+                                <li>• 600 Premium Credits</li>
+                                <li>• 20 Super Premium Credits</li>
+                                <li>• Priority Support</li>
+                              </ul>
+                            </div>
+                            <div className="space-y-2">
+                              <h5 className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                                Current Free Plan
+                              </h5>
+                              <ul className="text-xs text-muted-foreground space-y-1">
+                                <li>• 200 Free Model Credits</li>
+                                <li>• 20 Premium Credits</li>
+                                <li>• 2 Super Premium Credits</li>
+                                <li>• Community Support</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Current Plan Limits */}
                       {tierInfo && tierInfo.tier !== "admin" && (
@@ -824,87 +952,29 @@ export default function SettingsPage() {
                       )}
                     </div>
 
-                    {/* Account Actions */}
-                    <div className="p-6 border rounded-xl bg-card shadow-sm">
-                      <h3 className="text-lg font-medium mb-4 pb-2 border-b border-border">
-                        Account Actions
-                      </h3>
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <Button
-                          onClick={handleLogout}
-                          variant="destructive"
-                          className="flex items-center gap-2"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Sign Out
-                        </Button>
-                      </div>
-                    </div>
-
                     {/* Session Management */}
                     <SessionManager />
                   </div>
                 )}
 
-                {/* Privacy & Security Section */}
-                {activeSection === "privacy" && (
+                {/* Storage Section */}
+                {activeSection === "storage" && (
                   <div className="space-y-6">
-                    {/* Privacy Principles */}
+
+                    {/* File Management Section */}
                     <div className="p-6 border rounded-xl bg-card shadow-sm">
                       <h3 className="text-lg font-medium mb-4 pb-2 border-b border-border">
-                        Privacy Principles
+                        File Management
                       </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                          <Lock className="w-5 h-5 text-primary mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-sm">
-                              End-to-End Encryption
-                            </h4>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Your conversations are encrypted in transit and at
-                              rest.
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                          <Eye className="w-5 h-5 text-primary mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-sm">
-                              Data Transparency
-                            </h4>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              We clearly explain what data we collect and how we
-                              use it.
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                          <Database className="w-5 h-5 text-primary mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-sm">
-                              Minimal Data Collection
-                            </h4>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              We only collect information necessary to provide
-                              our services.
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                          <Trash2 className="w-5 h-5 text-primary mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-sm">
-                              Data Deletion Controls
-                            </h4>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              You have full control over your data and can
-                              delete it anytime.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        View and manage all files you've uploaded to AV Chat. You can download or delete files to free up storage space.
+                      </p>
+                      <FileManager />
                     </div>
+
+                    {/* Global Memory Settings */}
+                    <MemorySettings />
+
                   </div>
                 )}
 
@@ -1072,63 +1142,8 @@ export default function SettingsPage() {
                         </div>
                       )}
                     </div>
-                    {/* Theme Settings Card */}
-                    <div className="p-6 border rounded-xl bg-card shadow-sm">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Sun className="h-5 w-5 text-primary" />
-                            <h3 className="text-lg font-medium">
-                              Theme Settings
-                            </h3>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Customize the visual appearance of AT Chat
-                          </p>
-                        </div>
-                        <ThemeToggleButton variant="inline" />
-                      </div>
 
-                      <div className="grid grid-cols-2 gap-4 mt-6">
-                        <div
-                          onClick={() => setTheme("light")}
-                          className={`flex flex-col items-center gap-3 p-6 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                            theme === "light"
-                              ? "border-primary bg-primary/5 shadow-sm"
-                              : "border-border hover:border-primary/50"
-                          }`}
-                        >
-                          <Sun className="h-8 w-8 text-amber-500" />
-                          <div className="text-center">
-                            <span className="text-sm font-medium">
-                              Light Mode
-                            </span>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Perfect for bright environments
-                            </p>
-                          </div>
-                        </div>
-                        <div
-                          onClick={() => setTheme("dark")}
-                          className={`flex flex-col items-center gap-3 p-6 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                            theme === "dark"
-                              ? "border-primary bg-primary/5 shadow-sm"
-                              : "border-border hover:border-primary/50"
-                          }`}
-                        >
-                          <Moon className="h-8 w-8 text-indigo-500" />
-                          <div className="text-center">
-                            <span className="text-sm font-medium">
-                              Dark Mode
-                            </span>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Reduce eye strain in low light
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
+                    
                     {/* Font Selection */}
                     <div className="p-6 border rounded-xl bg-card shadow-sm">
                       <div className="flex items-center gap-2 mb-4">
@@ -1203,94 +1218,6 @@ export default function SettingsPage() {
                         ))}
                       </div>
                     </div>
-
-                    {/* Security Measures */}
-                    <div className="p-6 border rounded-xl bg-card shadow-sm">
-                      <h3 className="text-lg font-medium mb-4 pb-2 border-b border-border">
-                        Security Measures
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                          <Server className="w-5 h-5 text-primary mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-sm">
-                              Secure Infrastructure
-                            </h4>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Industry-leading cloud providers with rigorous
-                              security controls.
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                          <FileCheck className="w-5 h-5 text-primary mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-sm">
-                              Regular Audits
-                            </h4>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Regular security assessments and vulnerability
-                              testing.
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                          <Users className="w-5 h-5 text-primary mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-sm">
-                              Access Controls
-                            </h4>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Strict internal access controls with comprehensive
-                              audit logging.
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                          <Shield className="w-5 h-5 text-primary mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-sm">Compliance</h4>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              We follow industry standards and best practices
-                              for data protection.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Data Information */}
-                    <div className="p-6 border rounded-xl bg-card shadow-sm">
-                      <h3 className="text-lg font-medium mb-4 pb-2 border-b border-border">
-                        Your Data
-                      </h3>
-                      <div className="space-y-3 text-sm">
-                        <div className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-emerald-500 mt-0.5" />
-                          <span>
-                            Your conversations are stored securely and encrypted
-                          </span>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-emerald-500 mt-0.5" />
-                          <span>
-                            We never sell your personal data to third parties
-                          </span>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-emerald-500 mt-0.5" />
-                          <span>
-                            You can export or delete your data at any time
-                          </span>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-emerald-500 mt-0.5" />
-                          <span>
-                            API keys are stored locally in your browser only
-                          </span>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 )}
 
@@ -1307,8 +1234,7 @@ export default function SettingsPage() {
                           </h3>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Use your own OpenRouter API key for unlimited access
-                          to AI models
+                          Use your own API keys for unlimited access to AI models, voice input, and web search
                         </p>
                       </div>
 
@@ -1582,206 +1508,183 @@ export default function SettingsPage() {
                       )}
                     </div>
 
-                    {/* Tier Management Card */}
+                    {/* Tavily API Key (for Web Search) Card */}
                     <div className="p-6 border rounded-xl bg-card shadow-sm">
                       <div className="space-y-1 mb-4">
                         <div className="flex items-center gap-2">
-                          <Users className="h-5 w-5 text-primary" />
-                          <h3 className="text-lg font-medium">Usage & Plan</h3>
+                          <Key className="h-5 w-5 text-primary" />
+                          <h3 className="text-lg font-medium">
+                            Tavily API Key
+                          </h3>
+                          <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full">
+                            Web Search
+                          </span>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          View your current plan and usage limits
+                          Use your own Tavily API key for web search functionality
                         </p>
                       </div>
 
-                      {loadingTier ? (
-                        <div className="flex items-center justify-center py-8">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        </div>
-                      ) : tierInfo ? (
+                      {hasTavilyKey() ? (
+                        // Tavily Key is configured
                         <div className="space-y-4">
-                          {/* Current Plan */}
-                          <div className="rounded-lg bg-primary/5 border border-primary/20 p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <h4 className="font-semibold text-primary capitalize">
-                                  {getTierDisplayInfo(tierInfo.tier).name} Plan
-                                </h4>
-                                <p className="text-sm text-muted-foreground">
-                                  {tierInfo.tier === "admin"
-                                    ? "Unlimited access to all models"
-                                    : "Monthly credit limits"}
+                          <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
+                                <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                  Tavily API Key Configured
+                                </p>
+                                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                  Key: {maskKey(tavilyApiKey || "")}
                                 </p>
                               </div>
-                              {tierInfo.tier !== "admin" && (
-                                <Button
-                                  size="sm"
-                                  onClick={() =>
-                                    window.open(
-                                      "mailto:connect@ayush-sharma.in?subject=Upgrade Plan Request",
-                                      "_blank"
-                                    )
-                                  }
-                                  className="text-foreground bg-primary border-primary hover:bg-primary/70 hover:text-primary-foreground"
-                                >
-                                  Upgrade Plan
-                                </Button>
-                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleRemoveTavilyKey}
+                                className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Remove
+                              </Button>
                             </div>
-
-                            {/* Usage Stats */}
-                            {tierInfo.tier !== "admin" && (
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                  <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">
-                                      Free Models
-                                    </span>
-                                    <span className="font-medium">
-                                      {tierInfo.freeCredits} /{" "}
-                                      {
-                                        getTierDisplayInfo(tierInfo.tier).limits
-                                          .freeCredits
-                                      }
-                                    </span>
-                                  </div>
-                                  <div className="w-full bg-muted rounded-full h-2">
-                                    <div
-                                      className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                                      style={{
-                                        width: `${Math.max(
-                                          0,
-                                          Math.min(
-                                            100,
-                                            (tierInfo.freeCredits /
-                                              getTierDisplayInfo(tierInfo.tier)
-                                                .limits.freeCredits) *
-                                              100
-                                          )
-                                        )}%`,
-                                      }}
-                                    ></div>
-                                  </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                  <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">
-                                      Premium Models
-                                    </span>
-                                    <span className="font-medium">
-                                      {tierInfo.premiumCredits} /{" "}
-                                      {
-                                        getTierDisplayInfo(tierInfo.tier).limits
-                                          .premiumCredits
-                                      }
-                                    </span>
-                                  </div>
-                                  <div className="w-full bg-muted rounded-full h-2">
-                                    <div
-                                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                                      style={{
-                                        width: `${Math.max(
-                                          0,
-                                          Math.min(
-                                            100,
-                                            (tierInfo.premiumCredits /
-                                              getTierDisplayInfo(tierInfo.tier)
-                                                .limits.premiumCredits) *
-                                              100
-                                          )
-                                        )}%`,
-                                      }}
-                                    ></div>
-                                  </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                  <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">
-                                      Super Premium
-                                    </span>
-                                    <span className="font-medium">
-                                      {tierInfo.superPremiumCredits} /{" "}
-                                      {
-                                        getTierDisplayInfo(tierInfo.tier).limits
-                                          .superPremiumCredits
-                                      }
-                                    </span>
-                                  </div>
-                                  <div className="w-full bg-muted rounded-full h-2">
-                                    <div
-                                      className="bg-purple-500 h-2 rounded-full transition-all duration-300"
-                                      style={{
-                                        width: `${Math.max(
-                                          0,
-                                          Math.min(
-                                            100,
-                                            (tierInfo.superPremiumCredits /
-                                              getTierDisplayInfo(tierInfo.tier)
-                                                .limits.superPremiumCredits) *
-                                              100
-                                          )
-                                        )}%`,
-                                      }}
-                                    ></div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {tierInfo.tier === "admin" && (
-                              <div className="text-center py-4">
-                                <p className="text-sm text-muted-foreground">
-                                  ✨ You have unlimited access to all models
-                                </p>
-                              </div>
-                            )}
                           </div>
 
-                          {/* Plan Information */}
-                          <div className="text-xs text-muted-foreground space-y-1">
+                          <div className="text-xs text-muted-foreground">
                             <p>
-                              • Credits reset monthly on the 1st of each month
+                              ✓ Your Tavily API key is stored securely in your
+                              browser only
                             </p>
                             <p>
-                              • Free models include basic AI models without
-                              premium features
+                              ✓ Used exclusively for web search functionality
                             </p>
-                            <p>
-                              • Premium models include advanced AI models with
-                              enhanced capabilities
-                            </p>
-                            <p>
-                              • Super Premium models include the most advanced
-                              AI models with cutting-edge features
-                            </p>
-                            {tierInfo.lastResetDate && (
-                              <p>
-                                • Last reset:{" "}
-                                {format(
-                                  new Date(tierInfo.lastResetDate),
-                                  "MMMM d, yyyy"
-                                )}
-                              </p>
-                            )}
+                            <p>✓ Fallback to system key if your key fails</p>
                           </div>
                         </div>
                       ) : (
-                        <div className="text-center py-8">
-                          <p className="text-sm text-muted-foreground">
-                            Unable to load tier information. Please refresh the
-                            page.
-                          </p>
+                        // No Tavily key configured
+                        <div className="space-y-4">
+                          <div className="rounded-lg bg-muted/50 p-4">
+                            <div className="flex items-start gap-4">
+                              <div className="p-2 rounded-full bg-muted">
+                                <Key className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm">
+                                  Add your Tavily API key to use your own
+                                  credits for web search functionality.
+                                </p>
+                                <p className="text-sm text-muted-foreground mt-2">
+                                  Get your API key from{" "}
+                                  <a
+                                    href="https://tavily.com/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                  >
+                                    Tavily Platform
+                                  </a>
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">
+                                Tavily API Key
+                              </label>
+                              <div className="relative">
+                                <Input
+                                  type={showTavilyKey ? "text" : "password"}
+                                  placeholder="tvly-dev-... or tvly-..."
+                                  value={tavilyKeyInput}
+                                  onChange={(e) => {
+                                    setTavilyKeyInput(e.target.value);
+                                    setTavilyKeyError("");
+                                  }}
+                                  className={
+                                    tavilyKeyError ? "border-red-500" : ""
+                                  }
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                                  onClick={() =>
+                                    setShowTavilyKey(!showTavilyKey)
+                                  }
+                                >
+                                  {showTavilyKey ? (
+                                    <EyeOff className="h-4 w-4" />
+                                  ) : (
+                                    <Eye className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
+                              {tavilyKeyError && (
+                                <p className="text-sm text-red-600">
+                                  {tavilyKeyError}
+                                </p>
+                              )}
+                              {tavilyKeySaved && (
+                                <p className="text-sm text-green-600">
+                                  ✓ Tavily API key saved successfully!
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={handleSaveTavilyKey}
+                                disabled={!tavilyKeyInput.trim()}
+                              >
+                                <Key className="h-4 w-4 mr-2" />
+                                Save Tavily Key
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
+
                   </div>
                 )}
 
                 {/* Contact Us Section */}
                 {activeSection === "contact" && (
                   <div className="space-y-6">
+                    {/* About Us Section */}
+                    <div className="p-6 border rounded-xl bg-card shadow-sm">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Info className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-medium">About AVChat</h3>
+                      </div>
+                      <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                          Learn more about AVChat, our team, technology stack, and mission to create the fastest AI chat experience.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <Link to="/about">
+                            <Button className="w-full sm:w-auto flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground">
+                              <Info className="h-4 w-4" />
+                              Visit About Us Page
+                            </Button>
+                          </Link>
+                          <Link to="/changelog">
+                            <Button variant="outline" className="w-full sm:w-auto flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              View Changelog
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Contact Information */}
                     <div className="p-6 border rounded-xl bg-card shadow-sm">
                       <div className="flex items-center gap-2 mb-4">
@@ -1800,10 +1703,10 @@ export default function SettingsPage() {
                                 Get help with your account or technical issues
                               </p>
                               <a
-                                href="mailto:connect@ayush-sharma.in"
+                                href="mailto:avchat@aysh.me"
                                 className="text-sm text-primary hover:underline mt-2 inline-block"
                               >
-                                connect@ayush-sharma.in
+                                avchat@aysh.me
                               </a>
                             </div>
                           </div>
@@ -1817,29 +1720,29 @@ export default function SettingsPage() {
                                 Found an issue? Let us know so we can fix it
                               </p>
                               <a
-                                href="mailto:connect@vrandacodz.xyz"
+                                href="mailto:connect@vrandacodz.in"
                                 className="text-sm text-primary hover:underline mt-2 inline-block"
                               >
-                                connect@vrandacodz.xyz
+                                connect@vrandacodz.in
                               </a>
                             </div>
                           </div>
                         </div>
                         <div className="space-y-4">
                           <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30">
-                            <Users className="w-5 h-5 text-primary mt-0.5" />
+                            <XIcon className="w-5 h-5 text-primary mt-0.5" />
                             <div>
-                              <h4 className="font-medium text-sm">Community</h4>
+                              <h4 className="font-medium text-sm">X (Twitter)</h4>
                               <p className="text-xs text-muted-foreground mt-1">
-                                Join our community for tips and discussions
+                                Connect on X
                               </p>
                               <a
-                                href="#"
+                                href="https://x.com/CyberBoyAyush"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm text-primary hover:underline mt-2 inline-block"
                               >
-                                Join Discord
+                                @CyberBoyAyush
                               </a>
                             </div>
                           </div>
@@ -1848,7 +1751,7 @@ export default function SettingsPage() {
                             <div>
                               <h4 className="font-medium text-sm">Github</h4>
                               <p className="text-xs text-muted-foreground mt-1">
-                                Learn how to get the most out of AT Chat
+                                Self Host or Contribute
                               </p>
                               <a
                                 href="https://github.com/CyberBoyAyush/AVChat"
@@ -1859,64 +1762,6 @@ export default function SettingsPage() {
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Quick Actions */}
-                    <div className="p-6 border rounded-xl bg-card shadow-sm">
-                      <h3 className="text-lg font-medium mb-4 pb-2 border-b border-border">
-                        Quick Actions
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <Button
-                          variant="outline"
-                          className="h-auto p-4 flex flex-col items-center gap-2"
-                          onClick={() =>
-                            window.open(
-                              "mailto:connect@ayush-sharma.in",
-                              "_blank"
-                            )
-                          }
-                        >
-                          <Mail className="w-5 h-5 text-primary" />
-                          <span className="text-sm">Email Support</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="h-auto p-4 flex flex-col items-center gap-2"
-                          onClick={() =>
-                            window.open(
-                              "mailto:connect@vrandacodz.xyz",
-                              "_blank"
-                            )
-                          }
-                        >
-                          <AlertTriangle className="w-5 h-5 text-primary" />
-                          <span className="text-sm">Report Bug</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="h-auto p-4 flex flex-col items-center gap-2"
-                          onClick={() =>
-                            window.open("https://x.com/CyberBoyAyush", "_blank")
-                          }
-                        >
-                          <MessageSquareMore className="w-5 h-5 text-primary" />
-                          <span className="text-sm">Twitter</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="h-auto p-4 flex flex-col items-center gap-2"
-                          onClick={() =>
-                            window.open(
-                              "https://github.com/CyberBoyAyush/AVChat",
-                              "_blank"
-                            )
-                          }
-                        >
-                          <GitHubIcon className="w-5 h-5 text-primary" />
-                          <span className="text-sm">Github</span>
-                        </Button>
                       </div>
                     </div>
                   </div>

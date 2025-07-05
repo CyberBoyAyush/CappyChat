@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Client, Users, Query } from 'node-appwrite';
+import { getUserPreferencesServer } from '@/lib/tierSystem';
+import { TIER_LIMITS } from '@/lib/appwrite';
 
 // Initialize server client
 const client = new Client()
@@ -39,6 +41,21 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           success: true,
           totalUsers: count
+        });
+
+      case 'getAllUsers':
+        const allUsers = await getAllUsers();
+        return NextResponse.json({
+          success: true,
+          users: allUsers
+        });
+
+      case 'resetAllUserLimits':
+        const resetCount = await resetAllUserLimits();
+        return NextResponse.json({
+          success: true,
+          message: `Monthly reset completed for ${resetCount} users`,
+          resetCount
         });
 
       default:
@@ -172,6 +189,110 @@ async function logoutAllUsersChunked(batchSize: number = 25, maxTime: number = 2
     };
   } catch (error) {
     console.error('Error in chunked logout:', error);
+    throw error;
+  }
+}
+
+async function getAllUsers() {
+  try {
+    const allUsers = [];
+    let offset = 0;
+    const limit = 100;
+
+    while (true) {
+      const usersList = await users.list([Query.limit(limit), Query.offset(offset)]);
+
+      if (usersList.users.length === 0) {
+        break;
+      }
+
+      // Get user preferences for each user
+      for (const user of usersList.users) {
+        try {
+          const preferences = await getUserPreferencesServer(user.$id);
+          allUsers.push({
+            $id: user.$id,
+            email: user.email,
+            name: user.name,
+            emailVerification: user.emailVerification,
+            status: user.status,
+            registration: user.registration,
+            preferences
+          });
+        } catch (error) {
+          console.error(`Failed to get preferences for user ${user.$id}:`, error);
+          // Add user without preferences
+          allUsers.push({
+            $id: user.$id,
+            email: user.email,
+            name: user.name,
+            emailVerification: user.emailVerification,
+            status: user.status,
+            registration: user.registration,
+            preferences: null
+          });
+        }
+      }
+
+      offset += limit;
+
+      if (usersList.users.length < limit) {
+        break;
+      }
+    }
+
+    return allUsers;
+  } catch (error) {
+    console.error('Error getting all users:', error);
+    throw error;
+  }
+}
+
+async function resetAllUserLimits(): Promise<number> {
+  let resetCount = 0;
+  let offset = 0;
+  const limit = 100; // Process users in batches
+
+  try {
+    while (true) {
+      // Get batch of users
+      const usersList = await users.list([Query.limit(limit), Query.offset(offset)]);
+
+      if (usersList.users.length === 0) {
+        break; // No more users
+      }
+
+      // Reset limits for each user in the batch
+      for (const user of usersList.users) {
+        try {
+          const prefs = user.prefs as Record<string, unknown>;
+          const tier = prefs.tier || 'free';
+          const limits = TIER_LIMITS[tier as keyof typeof TIER_LIMITS];
+
+          // Update user preferences with reset limits
+          const updatedPrefs = {
+            ...prefs,
+            freeCredits: limits.freeCredits,
+            premiumCredits: limits.premiumCredits,
+            superPremiumCredits: limits.superPremiumCredits,
+            lastResetDate: new Date().toISOString(),
+          };
+
+          await users.updatePrefs(user.$id, updatedPrefs);
+          resetCount++;
+        } catch (error) {
+          console.error(`Failed to reset limits for user ${user.$id}:`, error);
+          // Continue with other users
+        }
+      }
+
+      offset += limit;
+    }
+
+    console.log(`Monthly reset completed for ${resetCount} users`);
+    return resetCount;
+  } catch (error) {
+    console.error('Error performing monthly reset:', error);
     throw error;
   }
 }

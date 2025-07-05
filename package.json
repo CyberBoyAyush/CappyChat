@@ -1,13 +1,15 @@
 {
   "name": "atchat",
-  "version": "0.1.0",
+  "version": "3.0.1",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "setup-appwrite": "node scripts/setup-appwrite-db.js"
+    "setup-appwrite": "node scripts/setup-appwrite-db.js",
+    "tag-version": "node scripts/tag-version.js",
+    "update-changelog": "node scripts/update-changelog.js"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.2.19",
@@ -23,6 +25,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tooltip": "^1.2.7",
     "@runware/sdk-js": "^1.1.40",
+    "@tavily/core": "^0.5.9",
     "@types/multer": "^1.4.13",
     "@vercel/analytics": "^1.5.0",
     "ai": "^4.3.16",

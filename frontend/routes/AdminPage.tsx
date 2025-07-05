@@ -17,6 +17,7 @@ import {
 } from "@/frontend/components/ui/card";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import { getUserTierInfo } from "@/lib/tierSystem";
+import { adminService, type AdminUser, type AdminStats } from "@/lib/adminService";
 import {
   Shield,
   User,
@@ -49,22 +50,14 @@ export default function AdminPage() {
 
   // User management
   const [userEmail, setUserEmail] = useState("");
-  const [selectedUser, setSelectedUser] = useState<{
-    $id: string;
-    email: string;
-    name?: string;
-    emailVerification?: boolean;
-    status?: boolean;
-    registration?: string;
-    preferences?: any;
-  } | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
 
   // Statistics
-  const [adminStats, setAdminStats] = useState<any>(null);
+  const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
 
   // All users list
-  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [allUsers, setAllUsers] = useState<AdminUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [showAllUsers, setShowAllUsers] = useState(false);
 
@@ -93,27 +86,12 @@ export default function AdminPage() {
 
     setLoadingStats(true);
     try {
-      const response = await fetch("/api/admin/stats", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          adminKey: adminKey.trim(),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setAdminStats(data.stats);
-        toast.success("Statistics loaded successfully");
-      } else {
-        toast.error(data.error || "Failed to load statistics");
-      }
+      const stats = await adminService.getStats(adminKey.trim());
+      setAdminStats(stats);
+      toast.success("Statistics loaded successfully");
     } catch (error) {
       console.error("Error loading stats:", error);
-      toast.error("Network error occurred");
+      toast.error(error instanceof Error ? error.message : "Failed to load statistics");
     } finally {
       setLoadingStats(false);
     }
@@ -128,30 +106,12 @@ export default function AdminPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/manage-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          adminKey: adminKey.trim(),
-          action: "getUserByEmail",
-          email: userEmail.trim(),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSelectedUser(data.user);
-        toast.success("User found successfully");
-      } else {
-        toast.error(data.error || "Failed to search user");
-        setSelectedUser(null);
-      }
+      const user = await adminService.getUserByEmail(adminKey.trim(), userEmail.trim());
+      setSelectedUser(user);
+      toast.success("User found successfully");
     } catch (error) {
       console.error("Error searching user:", error);
-      toast.error("Network error occurred");
+      toast.error(error instanceof Error ? error.message : "Failed to search user");
       setSelectedUser(null);
     } finally {
       setIsLoading(false);
@@ -169,30 +129,12 @@ export default function AdminPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/manage-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          adminKey: adminKey.trim(),
-          action: "updateTier",
-          userId: selectedUser.$id,
-          tier: newTier,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success(`User tier updated to ${newTier}`);
-        handleSearchUser(); // Refresh user data
-      } else {
-        toast.error(data.error || "Failed to update user tier");
-      }
+      await adminService.updateUserTier(adminKey.trim(), selectedUser.$id, newTier);
+      toast.success(`User tier updated to ${newTier}`);
+      handleSearchUser(); // Refresh user data
     } catch (error) {
       console.error("Error updating user tier:", error);
-      toast.error("Network error occurred");
+      toast.error(error instanceof Error ? error.message : "Failed to update user tier");
     } finally {
       setIsLoading(false);
     }
@@ -213,30 +155,14 @@ export default function AdminPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/manage-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          adminKey: adminKey.trim(),
-          action: "monthlyReset",
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success(data.message || "Monthly reset completed successfully");
-        if (adminStats) {
-          handleLoadStats(); // Refresh stats
-        }
-      } else {
-        toast.error(data.error || "Failed to perform monthly reset");
+      const result = await adminService.resetAllUserLimits(adminKey.trim());
+      toast.success(result.message || "Monthly reset completed successfully");
+      if (adminStats) {
+        handleLoadStats(); // Refresh stats
       }
     } catch (error) {
       console.error("Error performing monthly reset:", error);
-      toast.error("Network error occurred");
+      toast.error(error instanceof Error ? error.message : "Failed to perform monthly reset");
     } finally {
       setIsLoading(false);
     }
@@ -258,19 +184,7 @@ export default function AdminPage() {
     setIsLoading(true);
     try {
       // First get user count to show progress
-      const countResponse = await fetch("/api/admin/bulk-operations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          adminKey: adminKey.trim(),
-          action: "getUserCount",
-        }),
-      });
-
-      const countData = await countResponse.json();
-      const totalUsers = countData.totalUsers || 0;
+      const totalUsers = await adminService.getUserCount(adminKey.trim());
 
       if (totalUsers === 0) {
         toast.info("No users found to logout");
@@ -280,23 +194,10 @@ export default function AdminPage() {
       toast.info(`Starting logout process for ${totalUsers} users...`);
 
       // Perform chunked logout
-      const response = await fetch("/api/admin/bulk-operations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          adminKey: adminKey.trim(),
-          action: "logoutAllUsersChunked",
-          batchSize: 25,
-          maxTime: 25000,
-        }),
-      });
+      const result = await adminService.logoutAllUsers(adminKey.trim(), 25, 25000);
 
-      const data = await response.json();
-
-      if (response.ok) {
-        const { processedUsers, loggedOutUsers, timeElapsed } = data.details;
+      if (result.details) {
+        const { processedUsers, loggedOutUsers, timeElapsed } = result.details;
         const timeInSeconds = Math.round(timeElapsed / 1000);
 
         if (processedUsers === totalUsers) {
@@ -308,60 +209,22 @@ export default function AdminPage() {
             `⚠️ Processed ${processedUsers}/${totalUsers} users (${loggedOutUsers} logged out) in ${timeInSeconds}s. Some users may need manual processing.`
           );
         }
-
-        if (adminStats) {
-          handleLoadStats(); // Refresh stats
-        }
       } else {
-        toast.error(data.error || "Failed to logout all users");
+        toast.success(result.message || "Logout operation completed");
+      }
 
-        // Fallback to original method if bulk operations fail
-        if (data.error?.includes('Internal server error')) {
-          toast.info("Attempting fallback method...");
-          await attemptFallbackLogout();
-        }
+      if (adminStats) {
+        handleLoadStats(); // Refresh stats
       }
     } catch (error) {
       console.error("Error logging out all users:", error);
-      toast.error("Network error occurred. The operation may have partially completed.");
-
-      // Try fallback method on network error
-      toast.info("Attempting fallback method...");
-      await attemptFallbackLogout();
+      toast.error(error instanceof Error ? error.message : "Failed to logout all users");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fallback logout method using original API
-  const attemptFallbackLogout = async () => {
-    try {
-      const response = await fetch("/api/admin/manage-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          adminKey: adminKey.trim(),
-          action: "logoutAllUsers",
-        }),
-      });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success("✅ Fallback logout completed: " + (data.message || "All users logged out"));
-        if (adminStats) {
-          handleLoadStats();
-        }
-      } else {
-        toast.error("❌ Fallback also failed: " + (data.error || "Unknown error"));
-      }
-    } catch (fallbackError) {
-      console.error("Fallback logout also failed:", fallbackError);
-      toast.error("❌ Both primary and fallback methods failed. Please try again later.");
-    }
-  };
 
   // Load all users
   const handleLoadAllUsers = async () => {
@@ -372,29 +235,13 @@ export default function AdminPage() {
 
     setLoadingUsers(true);
     try {
-      const response = await fetch("/api/admin/manage-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          adminKey: adminKey.trim(),
-          action: "getAllUsers",
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setAllUsers(data.users);
-        setShowAllUsers(true);
-        toast.success(`Loaded ${data.users.length} users`);
-      } else {
-        toast.error(data.error || "Failed to load users");
-      }
+      const users = await adminService.getAllUsers(adminKey.trim());
+      setAllUsers(users);
+      setShowAllUsers(true);
+      toast.success(`Loaded ${users.length} users`);
     } catch (error) {
       console.error("Error loading users:", error);
-      toast.error("Network error occurred");
+      toast.error(error instanceof Error ? error.message : "Failed to load users");
     } finally {
       setLoadingUsers(false);
     }
@@ -415,28 +262,11 @@ export default function AdminPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/manage-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          adminKey: adminKey.trim(),
-          action: "clearUserSession",
-          userId: userId,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success(data.message || "User session cleared successfully");
-      } else {
-        toast.error(data.error || "Failed to clear user session");
-      }
+      await adminService.clearUserSession(adminKey.trim(), userId);
+      toast.success("User session cleared successfully");
     } catch (error) {
       console.error("Error clearing user session:", error);
-      toast.error("Network error occurred");
+      toast.error(error instanceof Error ? error.message : "Failed to clear user session");
     } finally {
       setIsLoading(false);
     }
@@ -457,31 +287,14 @@ export default function AdminPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/manage-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          adminKey: adminKey.trim(),
-          action: "resetUserCredits",
-          userId: userId,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success(data.message || "User credits reset successfully");
-        if (selectedUser && selectedUser.$id === userId) {
-          handleSearchUser(); // Refresh selected user data
-        }
-      } else {
-        toast.error(data.error || "Failed to reset user credits");
+      await adminService.resetUserCredits(adminKey.trim(), userId);
+      toast.success("User credits reset successfully");
+      if (selectedUser && selectedUser.$id === userId) {
+        handleSearchUser(); // Refresh selected user data
       }
     } catch (error) {
       console.error("Error resetting user credits:", error);
-      toast.error("Network error occurred");
+      toast.error(error instanceof Error ? error.message : "Failed to reset user credits");
     } finally {
       setIsLoading(false);
     }
@@ -501,32 +314,14 @@ export default function AdminPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/delete-user-data", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          adminKey: adminKey.trim(),
-          action: "deleteUserData",
-          userId: userId,
-          email: email,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success(data.message || "User data deleted successfully");
-        if (adminStats) {
-          handleLoadStats(); // Refresh stats
-        }
-      } else {
-        toast.error(data.error || "Failed to delete user data");
+      const result = await adminService.deleteUserData(adminKey.trim(), userId, email);
+      toast.success(result.message || "User data deleted successfully");
+      if (adminStats) {
+        handleLoadStats(); // Refresh stats
       }
     } catch (error) {
       console.error("Error deleting user data:", error);
-      toast.error("Network error occurred");
+      toast.error(error instanceof Error ? error.message : "Failed to delete user data");
     } finally {
       setIsLoading(false);
     }
@@ -549,30 +344,14 @@ export default function AdminPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/delete-user-data", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          adminKey: adminKey.trim(),
-          action: "deleteAllData",
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success(data.message || "All database data deleted successfully");
-        if (adminStats) {
-          handleLoadStats(); // Refresh stats
-        }
-      } else {
-        toast.error(data.error || "Failed to delete all data");
+      const result = await adminService.deleteAllData(adminKey.trim());
+      toast.success(result.message || "All database data deleted successfully");
+      if (adminStats) {
+        handleLoadStats(); // Refresh stats
       }
     } catch (error) {
       console.error("Error deleting all data:", error);
-      toast.error("Network error occurred");
+      toast.error(error instanceof Error ? error.message : "Failed to delete all data");
     } finally {
       setIsLoading(false);
     }
