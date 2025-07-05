@@ -229,14 +229,14 @@ export default function GuestWelcomeScreen({
                   <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                     <Check className="h-3 w-3 text-primary" />
                   </div>
-                  <span className="text-sm">200 free model prompts</span>
+                  <span className="text-sm">80 free model prompts</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                     <Check className="h-3 w-3 text-primary" />
                   </div>
                   <span className="text-sm">
-                    20 premium credits (Chat + Image Gen)
+                    10 premium credits (Chat + Image Gen)
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
@@ -297,14 +297,14 @@ export default function GuestWelcomeScreen({
                   <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                     <Check className="h-3 w-3 text-primary" />
                   </div>
-                  <span className="text-sm">1,500 free model prompts</span>
+                  <span className="text-sm">800 free model prompts</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                     <Check className="h-3 w-3 text-primary" />
                   </div>
                   <span className="text-sm">
-                    600 premium credits (Chat + Image Gen)
+                    400 premium credits (Chat + Image Gen)
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
