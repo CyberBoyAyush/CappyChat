@@ -57,13 +57,13 @@ export interface UserPreferences extends UserTierPreferences {
 // Default tier limits
 export const TIER_LIMITS = {
   free: {
-    freeCredits: 200,
-    premiumCredits: 20,
+    freeCredits: 80,
+    premiumCredits: 10,
     superPremiumCredits: 2,
   },
   premium: {
-    freeCredits: 1500,
-    premiumCredits: 600,
+    freeCredits: 800,
+    premiumCredits: 400,
     superPremiumCredits: 20,
   },
   admin: {
