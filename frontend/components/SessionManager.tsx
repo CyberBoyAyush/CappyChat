@@ -5,8 +5,8 @@
  * individual session controls, and 3-session limit enforcement.
  */
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/frontend/contexts/AuthContext';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "@/frontend/contexts/AuthContext";
 import {
   Monitor,
   Smartphone,
@@ -21,17 +21,29 @@ import {
   X,
   CheckCircle2,
   Trash2,
-  Mail
-} from 'lucide-react';
-import { GoogleIcon, GitHubIcon } from '@/frontend/components/ui/icons';
-import { SessionManager as SessionService, type SessionInfo, type DetailedSession } from '@/lib/sessionManager';
+  Mail,
+} from "lucide-react";
+import { GoogleIcon, GitHubIcon } from "@/frontend/components/ui/icons";
+import {
+  SessionManager as SessionService,
+  type SessionInfo,
+  type DetailedSession,
+} from "@/lib/sessionManager";
 
 const SessionManager: React.FC = () => {
-  const { getDetailedSessionInfo, deleteSession, deleteAllOtherSessions, logout, user } = useAuth();
+  const {
+    getDetailedSessionInfo,
+    deleteSession,
+    deleteAllOtherSessions,
+    logout,
+    user,
+  } = useAuth();
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(
+    null
+  );
 
   const refreshSessionInfo = async () => {
     if (!user) return;
@@ -43,8 +55,8 @@ const SessionManager: React.FC = () => {
       const info = await getDetailedSessionInfo();
       setSessionInfo(info);
     } catch (err) {
-      setError('Failed to fetch session information');
-      console.error('Session info error:', err);
+      setError("Failed to fetch session information");
+      console.error("Session info error:", err);
     } finally {
       setLoading(false);
     }
@@ -58,7 +70,7 @@ const SessionManager: React.FC = () => {
 
   const handleDeleteSession = async (sessionId: string) => {
     if (sessionId === sessionInfo?.currentSession?.$id) {
-      setError('Cannot delete your current session');
+      setError("Cannot delete your current session");
       return;
     }
 
@@ -68,8 +80,8 @@ const SessionManager: React.FC = () => {
       await deleteSession(sessionId);
       await refreshSessionInfo(); // Refresh to show updated list
     } catch (err) {
-      setError('Failed to delete session');
-      console.error('Delete session error:', err);
+      setError("Failed to delete session");
+      console.error("Delete session error:", err);
     } finally {
       setDeletingSessionId(null);
     }
@@ -82,8 +94,8 @@ const SessionManager: React.FC = () => {
       await deleteAllOtherSessions();
       await refreshSessionInfo(); // Refresh to show updated list
     } catch (err) {
-      setError('Failed to logout from other sessions');
-      console.error('Logout other sessions error:', err);
+      setError("Failed to logout from other sessions");
+      console.error("Logout other sessions error:", err);
     } finally {
       setLoading(false);
     }
@@ -94,22 +106,29 @@ const SessionManager: React.FC = () => {
       setLoading(true);
       await logout();
     } catch (err) {
-      setError('Failed to logout from all sessions');
-      console.error('Logout error:', err);
+      setError("Failed to logout from all sessions");
+      console.error("Logout error:", err);
     } finally {
       setLoading(false);
     }
   };
 
   const getDeviceIcon = (session: DetailedSession) => {
-    const deviceType = session.deviceName?.toLowerCase() || '';
-    const clientType = session.clientType?.toLowerCase() || '';
+    const deviceType = session.deviceName?.toLowerCase() || "";
+    const clientType = session.clientType?.toLowerCase() || "";
 
-    if (deviceType.includes('mobile') || deviceType.includes('phone') || clientType.includes('mobile')) {
+    if (
+      deviceType.includes("mobile") ||
+      deviceType.includes("phone") ||
+      clientType.includes("mobile")
+    ) {
       return <Smartphone className="w-4 h-4" />;
-    } else if (deviceType.includes('tablet') || deviceType.includes('ipad')) {
+    } else if (deviceType.includes("tablet") || deviceType.includes("ipad")) {
       return <Tablet className="w-4 h-4" />;
-    } else if (deviceType.includes('desktop') || clientType.includes('browser')) {
+    } else if (
+      deviceType.includes("desktop") ||
+      clientType.includes("browser")
+    ) {
       return <Monitor className="w-4 h-4" />;
     } else {
       return <Globe className="w-4 h-4" />;
@@ -118,11 +137,11 @@ const SessionManager: React.FC = () => {
 
   const getProviderIcon = (provider: string) => {
     switch (provider.toLowerCase()) {
-      case 'google':
+      case "google":
         return <GoogleIcon className="w-3 h-3" />;
-      case 'github':
+      case "github":
         return <GitHubIcon className="w-3 h-3" />;
-      case 'email':
+      case "email":
         return <Mail className="w-3 h-3" />;
       default:
         return <Shield className="w-3 h-3" />;
@@ -143,7 +162,9 @@ const SessionManager: React.FC = () => {
             disabled={loading}
             className="inline-flex items-center px-3 py-1.5 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors disabled:opacity-50"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+            />
             Refresh
           </button>
         </div>
@@ -166,7 +187,9 @@ const SessionManager: React.FC = () => {
           disabled={loading}
           className="inline-flex items-center px-3 py-1.5 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors disabled:opacity-50"
         >
-          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw
+            className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+          />
           Refresh
         </button>
       </div>
@@ -185,7 +208,9 @@ const SessionManager: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium text-foreground">Active Sessions</span>
+            <span className="text-sm font-medium text-foreground">
+              Active Sessions
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-foreground">
@@ -202,12 +227,14 @@ const SessionManager: React.FC = () => {
           <div
             className={`h-3 rounded-full transition-all duration-300 ${
               sessionInfo.sessionCount >= 3
-                ? 'bg-gradient-to-r from-amber-500 to-orange-500'
+                ? "bg-gradient-to-r from-amber-500 to-orange-500"
                 : sessionInfo.sessionCount >= 2
-                  ? 'bg-gradient-to-r from-blue-500 to-indigo-500'
-                  : 'bg-gradient-to-r from-green-500 to-emerald-500'
+                ? "bg-gradient-to-r from-blue-500 to-indigo-500"
+                : "bg-gradient-to-r from-green-500 to-emerald-500"
             }`}
-            style={{ width: `${Math.min((sessionInfo.sessionCount / 3) * 100, 100)}%` }}
+            style={{
+              width: `${Math.min((sessionInfo.sessionCount / 3) * 100, 100)}%`,
+            }}
           />
         </div>
 
@@ -224,19 +251,25 @@ const SessionManager: React.FC = () => {
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Monitor className="w-4 h-4 text-primary" />
-            <h4 className="text-sm font-medium text-foreground">Session Details</h4>
+            <h4 className="text-sm font-medium text-foreground">
+              Session Details
+            </h4>
           </div>
           {sessionInfo.sessions.map((session) => (
             <div
               key={session.$id}
               className={`p-5 border rounded-xl transition-all duration-200 hover:shadow-md ${
                 session.current
-                  ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800 shadow-sm'
-                  : 'bg-card border-border hover:border-primary/30'
-              } ${SessionService.isSuspiciousSession(session, sessionInfo.currentSession)
-                  ? 'ring-2 ring-amber-200 dark:ring-amber-800 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20'
-                  : ''
-                }`}
+                  ? "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800 shadow-sm"
+                  : "bg-card border-border hover:border-primary/30"
+              } ${
+                SessionService.isSuspiciousSession(
+                  session,
+                  sessionInfo.currentSession
+                )
+                  ? "ring-2 ring-amber-200 dark:ring-amber-800 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20"
+                  : ""
+              }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-4">
@@ -245,7 +278,7 @@ const SessionManager: React.FC = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-2">
-                      <p className="text-sm font-semibold text-foreground truncate">
+                      <p className="text-sm font-semibold  text-foreground whitespace-pre-line">
                         {SessionService.getDeviceInfo(session)}
                       </p>
                       {session.current && (
@@ -254,7 +287,10 @@ const SessionManager: React.FC = () => {
                           Current
                         </span>
                       )}
-                      {SessionService.isSuspiciousSession(session, sessionInfo.currentSession) && (
+                      {SessionService.isSuspiciousSession(
+                        session,
+                        sessionInfo.currentSession
+                      ) && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800">
                           <Shield className="w-3 h-3 mr-1" />
                           Different Location
@@ -268,16 +304,22 @@ const SessionManager: React.FC = () => {
                       </div>
                       <div className="flex items-center space-x-2">
                         <Clock className="w-3 h-3 text-primary" />
-                        <span>{SessionService.getRelativeTime(session.$createdAt)}</span>
+                        <span>
+                          {SessionService.getRelativeTime(session.$createdAt)}
+                        </span>
                       </div>
                       <div className="flex items-center space-x-2">
                         {getProviderIcon(session.provider)}
-                        <span className="capitalize font-medium">{session.provider}</span>
+                        <span className="capitalize font-medium">
+                          {session.provider}
+                        </span>
                       </div>
                     </div>
                     {session.ip && (
-                      <div className="mt-2 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded">
-                        <span className="font-mono">IP: {session.ip}</span>
+                      <div className="mt-2 text-xs text-muted-foreground  py-1 rounded">
+                        <span className="font-mono bg-muted/50 p-1 px-1.5">
+                          IP: {session.ip}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -306,7 +348,7 @@ const SessionManager: React.FC = () => {
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3 p-4 bg-muted/30 rounded-xl border">
-        {sessionInfo.sessions.filter(s => !s.current).length > 0 && (
+        {sessionInfo.sessions.filter((s) => !s.current).length > 0 && (
           <button
             onClick={handleLogoutOtherSessions}
             disabled={loading}
@@ -330,7 +372,9 @@ const SessionManager: React.FC = () => {
       <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200/50 dark:border-blue-800/50">
         <div className="flex items-center gap-2 mb-3">
           <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          <h5 className="text-sm font-medium text-blue-800 dark:text-blue-200">Security Information</h5>
+          <h5 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+            Security Information
+          </h5>
         </div>
         <div className="text-xs text-blue-700 dark:text-blue-300 space-y-2">
           <p className="flex items-start gap-2">
