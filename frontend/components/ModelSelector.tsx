@@ -47,9 +47,10 @@ const ModelCard: React.FC<ModelCardProps> = ({
   return (
     <div
       onClick={() => !isDisabled && onSelect(model)}
+      title={isDisabled ? tierValidation?.message : modelConfig.description}
       className={cn(
-        "relative group p-2 sm:p-4 rounded-lg border-2 transition-all duration-200",
-        "flex flex-col gap-1.5 sm:gap-3 min-h-[80px] sm:min-h-[120px]",
+        "relative group p-2 sm:p-3 rounded-lg border-2 transition-all duration-200",
+        "flex flex-col gap-1.5 sm:gap-3 ",
         isDisabled
           ? "cursor-not-allowed opacity-50 border-muted bg-muted/20"
           : "cursor-pointer hover:shadow-md hover:border-primary/50 hover:bg-accent/50",
@@ -59,100 +60,99 @@ const ModelCard: React.FC<ModelCardProps> = ({
           ? "border-border bg-card hover:bg-accent/30"
           : "border-muted"
       )}
-      title={isDisabled ? tierValidation?.message : undefined}
+      // title={isDisabled ? tierValidation?.message : undefined}
     >
       {/* Selection indicator */}
       {isSelected && (
         <div className="absolute top-1 sm:top-2 right-1 sm:right-2">
-          <div className="w-3.5 h-3.5 sm:w-5 sm:h-5 rounded-full bg-primary flex items-center justify-center">
-            <Check className="w-2 h-2 sm:w-3 sm:h-3 text-primary-foreground" />
+          <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-primary flex items-center justify-center">
+            <Check className="w-1.5 h-1.5 sm:w-2 sm:h-2 text-primary-foreground" />
           </div>
         </div>
       )}
 
       {/* Header with icon and name */}
-      <div className="flex items-start gap-1.5 sm:gap-3">
-        <div className="flex-shrink-0 mt-0.5 sm:mt-1">
-          {getModelIcon(modelConfig.iconType, 16)}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <h3
+      <div className="flex justify-between">
+        <div className="flex items-center gap-1.5 sm:gap-3">
+          <div className="flex-shrink-0">
+            {getModelIcon(modelConfig.iconType, 16)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h3
+                className={cn(
+                  "font-semibold text-xs sm:text-sm truncate",
+                  isSelected && !isDisabled
+                    ? "text-primary"
+                    : isDisabled
+                    ? "text-muted-foreground"
+                    : "text-foreground"
+                )}
+              >
+                {modelConfig.displayName}
+              </h3>
+              {showKeyIcon && !isDisabled && (
+                <div className="flex-shrink-0" title="Using your API key">
+                  <Key className="w-3 h-3 text-primary" />
+                </div>
+              )}
+            </div>
+            {/* <p
               className={cn(
-                "font-semibold text-xs sm:text-sm leading-tight truncate",
-                isSelected && !isDisabled
-                  ? "text-primary"
-                  : isDisabled
-                  ? "text-muted-foreground"
-                  : "text-foreground"
+                "text-xs mt-0.5 sm:mt-1 font-medium hidden sm:block",
+                isDisabled
+                  ? "text-muted-foreground/70"
+                  : "text-muted-foreground"
               )}
             >
-              {modelConfig.displayName}
-            </h3>
-            {showKeyIcon && !isDisabled && (
-              <div className="flex-shrink-0" title="Using your API key">
-                <Key className="w-3 h-3 text-primary" />
-              </div>
+              {modelConfig.company}
+            </p> */}
+            {isDisabled && tierValidation?.message && (
+              <p className="text-xs text-red-500 mt-1 font-medium">
+                Credits exhausted
+              </p>
             )}
           </div>
-          <p
-            className={cn(
-              "text-xs mt-0.5 sm:mt-1 font-medium hidden sm:block",
-              isDisabled ? "text-muted-foreground/70" : "text-muted-foreground"
-            )}
-          >
-            {modelConfig.company}
-          </p>
-          {isDisabled && tierValidation?.message && (
-            <p className="text-xs text-red-500 mt-1 font-medium">
-              Credits exhausted
-            </p>
+        </div>
+
+        {/* Badges */}
+        <div className="flex items-start  flex-wrap">
+          {modelConfig.isSuperPremium && (
+            <div title="Super Premium Model" className="cursor-default">
+              <ModelBadge type="super-premium" size={16} />
+            </div>
+          )}
+          {modelConfig.isPremium && !modelConfig.isSuperPremium && (
+            <div title="Premium Model" className="cursor-default">
+              <ModelBadge type="premium" size={16} />
+            </div>
+          )}
+          {modelConfig.hasReasoning && (
+            <div
+              title="Reasoning Model - Advanced problem-solving capabilities"
+              className="cursor-default"
+            >
+              <ModelBadge type="reasoning" size={16} />
+            </div>
+          )}
+          {/* {modelConfig.isFast && (
+            <div
+              title="Fast Model - Optimized for speed and quick responses"
+              className="cursor-default"
+            >
+              <ModelBadge type="fast" size={16} />
+            </div>
+          )} */}
+          {modelConfig.isFileSupported && (
+            <div
+              title="File Support - Can analyze images, documents, and other file types"
+              className="cursor-default"
+            >
+              <ModelBadge type="file-support" size={16} />
+            </div>
           )}
         </div>
       </div>
-
-      {/* Badges */}
-      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-        {modelConfig.isSuperPremium && (
-          <div title="Super Premium Model" className="cursor-default">
-            <ModelBadge type="super-premium" size={16} />
-          </div>
-        )}
-        {modelConfig.isPremium && !modelConfig.isSuperPremium && (
-          <div title="Premium Model" className="cursor-default">
-            <ModelBadge type="premium" size={16} />
-          </div>
-        )}
-        {modelConfig.hasReasoning && (
-          <div
-            title="Reasoning Model - Advanced problem-solving capabilities"
-            className="cursor-default"
-          >
-            <ModelBadge type="reasoning" size={16} />
-          </div>
-        )}
-        {modelConfig.isFast && (
-          <div
-            title="Fast Model - Optimized for speed and quick responses"
-            className="cursor-default"
-          >
-            <ModelBadge type="fast" size={16} />
-          </div>
-        )}
-        {modelConfig.isFileSupported && (
-          <div
-            title="File Support - Can analyze images, documents, and other file types"
-            className="cursor-default"
-          >
-            <ModelBadge type="file-support" size={16} />
-          </div>
-        )}
-      </div>
-
-      {/* Description */}
-      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed hidden sm:block">
-        {modelConfig.description}
-      </p>
 
       {/* Hover effect overlay */}
       <div
@@ -436,9 +436,9 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent
           className={cn(
-            "w-[320px] sm:w-[480px] max-w-[95vw] p-3 sm:p-4 main-chat-scrollbar",
+            "w-[320px] sm:w-[480px] max-w-[95vw] p-3 sm:p-4 ",
             "border-border dark:bg-zinc-900/50 backdrop-blur-3xl",
-            "max-h-[70vh] overflow-y-auto",
+            "max-h-[70vh] overflow-y-auto no-scrollbar",
             "shadow-lg"
           )}
           align="end"
@@ -447,7 +447,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
           {/* Header */}
           <div className="mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-border flex gap-3.5 justify-between">
             <div className="">
-              <h2 className="text-sm font-semibold text-foreground">
+              <h2 className="text-md font-semibold text-foreground">
                 Select AI Model
               </h2>
               <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
@@ -465,7 +465,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
               placeholder="Search models..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-3 py-2 text-sm border-border bg-background focus:ring-primary focus:border-primary"
+              className="pl-9 pr-3 py-4 text-sm border-border rounded-md ring-1 ring-border transition-all duration-200 bg-background focus:ring-primary focus:border-primary/70"
             />
           </div>
 
@@ -475,13 +475,12 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
             {filteredModels.recommended.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                  <span className="text-primary">⭐</span>
                   Recommended
                 </h3>
                 <span className="text-xs text-muted-foreground block mb-2">
-                  AVChat Recommened Models - Best Overall Performance
+                  Best Overall Performance
                 </span>
-                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                <div className="grid grid-cols-1 gap-2 sm:gap-3">
                   {filteredModels.recommended.map((model) => (
                     <ModelCard
                       key={model}
@@ -500,14 +499,12 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
             {filteredModels.freeModels.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                  <span className="text-green-500">✴️</span>
                   Budget Models
                 </h3>
                 <span className="text-xs text-muted-foreground block mb-2">
-                  Best Price To Performance Ratio Models - Good For Most Of The
-                  Tasks
+                  Cost Effective Models For Most Of The Tasks
                 </span>
-                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                <div className="grid grid-cols-1 gap-2 sm:gap-3">
                   {filteredModels.freeModels.map((model) => (
                     <ModelCard
                       key={model}
@@ -526,13 +523,12 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
             {filteredModels.premiumModels.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                  <span className="text-primary">💎</span>
                   Premium
                 </h3>
                 <span className="text-xs text-muted-foreground block mb-2">
                   Finest Models For Most of The Tasks
                 </span>
-                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                <div className="grid grid-cols-1 gap-2 sm:gap-3">
                   {filteredModels.premiumModels.map((model) => (
                     <ModelCard
                       key={model}
@@ -551,13 +547,12 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
             {filteredModels.superPremiumModels.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                  <span className="text-primary">💎💎</span>
                   Super Premium
                 </h3>
                 <span className="text-xs text-muted-foreground block mb-2">
                   Super Advanced Models For Advanced Tasks
                 </span>
-                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                <div className="grid grid-cols-1 gap-2 sm:gap-3">
                   {filteredModels.superPremiumModels.map((model) => (
                     <ModelCard
                       key={model}
@@ -577,13 +572,12 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
               filteredModels.imageGenModels.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                    <span className="text-primary">🎨</span>
                     Image Generation
                   </h3>
                   <span className="text-xs text-muted-foreground block mb-2">
                     AI Models For Creating Images From Text Prompts
                   </span>
-                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  <div className="grid grid-cols-1 gap-2 sm:gap-3">
                     {filteredModels.imageGenModels.map((model) => (
                       <ModelCard
                         key={model}

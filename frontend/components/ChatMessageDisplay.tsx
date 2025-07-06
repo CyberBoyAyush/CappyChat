@@ -11,8 +11,7 @@ import PreviewMessage from "./Message";
 import { UIMessage } from "ai";
 import { UseChatHelpers } from "@ai-sdk/react";
 import equal from "fast-deep-equal";
-import { MessageLoading } from "./ui/UIComponents";
-import { Error } from "./ui/UIComponents";
+import { MessageLoading, SmartError } from "./ui/UIComponents";
 import { useOutletContext } from "react-router-dom";
 import { useIsMobile } from "@/hooks/useMobileDetection";
 import { AIModel } from "@/lib/models";
@@ -46,41 +45,51 @@ function PureMessageDisplay({
 }) {
   const { isWebSearchEnabled } = useWebSearchStore();
   // Deduplicate messages at the React level to prevent duplicate keys
-  const deduplicatedMessages = messages.reduce((acc: UIMessage[], message, index) => {
-    // Check if message ID already exists in accumulated array
-    const existingIndex = acc.findIndex(m => m.id === message.id);
+  const deduplicatedMessages = messages.reduce(
+    (acc: UIMessage[], message, index) => {
+      // Check if message ID already exists in accumulated array
+      const existingIndex = acc.findIndex((m) => m.id === message.id);
 
-    if (existingIndex === -1) {
-      // New message - add it
-      acc.push(message);
-    } else {
-      // Duplicate ID found - keep the one with more recent content or later in array
-      const existing = acc[existingIndex];
-      const current = message;
-
-      // Prefer message with more content, or if same content, prefer later one (higher index)
-      if (current.content.length > existing.content.length ||
-          (current.content.length === existing.content.length && index > messages.findIndex(m => m.id === existing.id))) {
-        acc[existingIndex] = current;
-        console.warn('[ChatMessageDisplay] Replaced duplicate message:', {
-          id: message.id,
-          existingContent: existing.content.substring(0, 50),
-          newContent: current.content.substring(0, 50)
-        });
+      if (existingIndex === -1) {
+        // New message - add it
+        acc.push(message);
       } else {
-        console.warn('[ChatMessageDisplay] Skipped duplicate message:', {
-          id: message.id,
-          content: current.content.substring(0, 50)
-        });
-      }
-    }
+        // Duplicate ID found - keep the one with more recent content or later in array
+        const existing = acc[existingIndex];
+        const current = message;
 
-    return acc;
-  }, []);
+        // Prefer message with more content, or if same content, prefer later one (higher index)
+        if (
+          current.content.length > existing.content.length ||
+          (current.content.length === existing.content.length &&
+            index > messages.findIndex((m) => m.id === existing.id))
+        ) {
+          acc[existingIndex] = current;
+          console.warn("[ChatMessageDisplay] Replaced duplicate message:", {
+            id: message.id,
+            existingContent: existing.content.substring(0, 50),
+            newContent: current.content.substring(0, 50),
+          });
+        } else {
+          console.warn("[ChatMessageDisplay] Skipped duplicate message:", {
+            id: message.id,
+            content: current.content.substring(0, 50),
+          });
+        }
+      }
+
+      return acc;
+    },
+    []
+  );
 
   // Log if we found duplicates
   if (deduplicatedMessages.length !== messages.length) {
-    console.warn(`[ChatMessageDisplay] Removed ${messages.length - deduplicatedMessages.length} duplicate messages from ${messages.length} total`);
+    console.warn(
+      `[ChatMessageDisplay] Removed ${
+        messages.length - deduplicatedMessages.length
+      } duplicate messages from ${messages.length} total`
+    );
   }
 
   return (
@@ -90,7 +99,9 @@ function PureMessageDisplay({
           key={message.id}
           threadId={threadId}
           message={message}
-          isStreaming={status === "streaming" && deduplicatedMessages.length - 1 === index}
+          isStreaming={
+            status === "streaming" && deduplicatedMessages.length - 1 === index
+          }
           setMessages={setMessages}
           reload={reload}
           registerRef={registerRef}
@@ -108,7 +119,7 @@ function PureMessageDisplay({
           </div>
           {/* Loading Animation - Show WebSearchLoader if web search is enabled */}
           <div className="flex-1 mt-1">
-            {(isWebSearching || isWebSearchEnabled) ? (
+            {isWebSearching || isWebSearchEnabled ? (
               <WebSearchLoader searchQuery={webSearchQuery || "search query"} />
             ) : (
               <MessageLoading />
@@ -116,7 +127,7 @@ function PureMessageDisplay({
           </div>
         </div>
       )}
-      {error && <Error message={error.message} />}
+      {error && <SmartError message={error.message} />}
     </section>
   );
 }

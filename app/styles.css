@@ -1029,7 +1029,8 @@ html {
 }
 
 @keyframes wave {
-  0%, 100% {
+  0%,
+  100% {
     transform: scaleY(1);
     opacity: 0.7;
   }
@@ -1057,7 +1058,8 @@ html {
 }
 
 @keyframes gradient-shift {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 50%;
   }
   50% {
@@ -1066,7 +1068,8 @@ html {
 }
 
 @keyframes wave-complex {
-  0%, 100% {
+  0%,
+  100% {
     transform: scaleY(1) scaleX(1);
     opacity: 0.7;
   }
@@ -1099,7 +1102,8 @@ html {
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px) rotate(0deg);
     opacity: 0.3;
   }
@@ -1144,5 +1148,29 @@ html {
 }
 
 .animate-shimmer-slow {
-  animation: shimmer-slow 4s ease-in-out infinite;
+  animation: shimmer-slow 3s ease-in-out infinite;
+}
+
+/* Mobile error optimization */
+.error-mobile-optimized {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+@media (max-width: 640px) {
+  .error-mobile-optimized {
+    font-size: 0.75rem;
+    line-height: 1.25rem;
+  }
+
+  .error-container-mobile {
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+  }
+
+  .error-button-mobile {
+    min-height: 2.5rem;
+    font-size: 0.875rem;
+  }
 }

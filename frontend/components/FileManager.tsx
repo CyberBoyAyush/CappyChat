@@ -1,12 +1,12 @@
 /**
  * FileManager Component
- * 
+ *
  * Displays and manages user uploaded files.
  * Shows files in a grid with options to view, download, and delete.
  */
 
-import React, { useState, useEffect } from 'react';
-import { Button } from './ui/button';
+import React, { useState, useEffect } from "react";
+import { Button } from "./ui/button";
 import {
   Download,
   Trash2,
@@ -17,18 +17,18 @@ import {
   HardDrive,
   Calendar,
   Eye,
-  ImageIcon
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { useAuth } from '../contexts/AuthContext';
+  ImageIcon,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { useAuth } from "../contexts/AuthContext";
 
 interface UserFile {
   id: string;
   filename: string;
   originalName: string;
-  fileType: 'image' | 'pdf';
+  fileType: "image" | "pdf";
   mimeType: string;
   size: number;
   url: string;
@@ -66,10 +66,10 @@ export default function FileManager({ className }: FileManagerProps) {
 
     try {
       setLoading(true);
-      const response = await fetch('/api/files', {
-        method: 'POST',
+      const response = await fetch("/api/files", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userId: user.$id,
@@ -77,15 +77,15 @@ export default function FileManager({ className }: FileManagerProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to load files');
+        throw new Error("Failed to load files");
       }
 
       const data = await response.json();
       setFiles(data.files || []);
       setTotalSize(data.totalSize || 0);
     } catch (error) {
-      console.error('Error loading files:', error);
-      toast.error('Failed to load files');
+      console.error("Error loading files:", error);
+      toast.error("Failed to load files");
     } finally {
       setLoading(false);
     }
@@ -93,11 +93,15 @@ export default function FileManager({ className }: FileManagerProps) {
 
   const handleDelete = async (file: UserFile) => {
     if (!user?.$id) {
-      toast.error('User not authenticated');
+      toast.error("User not authenticated");
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete "${file.originalName}"? This action cannot be undone.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete "${file.originalName}"? This action cannot be undone.`
+      )
+    ) {
       return;
     }
 
@@ -105,40 +109,44 @@ export default function FileManager({ className }: FileManagerProps) {
       setDeleting(file.id);
       console.log(`🗑️ Deleting file: ${file.originalName} (${file.publicId})`);
 
-      const response = await fetch('/api/files', {
-        method: 'DELETE',
+      const response = await fetch("/api/files", {
+        method: "DELETE",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userId: user.$id,
           publicId: file.publicId,
-          resourceType: file.fileType
+          resourceType: file.fileType,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete file');
+        throw new Error(errorData.error || "Failed to delete file");
       }
 
       const result = await response.json();
-      console.log('✅ File deletion response:', result);
+      console.log("✅ File deletion response:", result);
 
       // Remove from local state and refresh from server to ensure consistency
-      setFiles(prev => prev.filter(f => f.id !== file.id));
-      setTotalSize(prev => prev - file.size);
+      setFiles((prev) => prev.filter((f) => f.id !== file.id));
+      setTotalSize((prev) => prev - file.size);
 
       // Refresh the file list from server to ensure consistency
       setTimeout(() => {
-        console.log('🔄 Refreshing file list after deletion...');
+        console.log("🔄 Refreshing file list after deletion...");
         loadFiles();
       }, 1000); // Increased delay to ensure database updates are complete
 
-      toast.success('File deleted successfully');
+      toast.success("File deleted successfully");
     } catch (error) {
-      console.error('Error deleting file:', error);
-      toast.error(`Failed to delete file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("Error deleting file:", error);
+      toast.error(
+        `Failed to delete file: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setDeleting(null);
     }
@@ -146,18 +154,22 @@ export default function FileManager({ className }: FileManagerProps) {
 
   const handleBulkDeleteImages = async () => {
     if (!user?.$id) {
-      toast.error('User not authenticated');
+      toast.error("User not authenticated");
       return;
     }
 
-    const imageFiles = files.filter(file => file.fileType === 'image');
+    const imageFiles = files.filter((file) => file.fileType === "image");
 
     if (imageFiles.length === 0) {
-      toast.error('No images found to delete');
+      toast.error("No images found to delete");
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete ALL ${imageFiles.length} images? This action cannot be undone.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete ALL ${imageFiles.length} images? This action cannot be undone.`
+      )
+    ) {
       return;
     }
 
@@ -165,35 +177,41 @@ export default function FileManager({ className }: FileManagerProps) {
       setBulkDeleting(true);
       console.log(`🗑️ Starting bulk deletion of ${imageFiles.length} images`);
 
-      const response = await fetch('/api/files', {
-        method: 'DELETE',
+      const response = await fetch("/api/files", {
+        method: "DELETE",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userId: user.$id,
-          bulkDeleteImages: true
+          bulkDeleteImages: true,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete images');
+        throw new Error(errorData.error || "Failed to delete images");
       }
 
       const result = await response.json();
-      console.log('✅ Bulk deletion response:', result);
+      console.log("✅ Bulk deletion response:", result);
 
       // Refresh the file list from server
       setTimeout(() => {
-        console.log('🔄 Refreshing file list after bulk deletion...');
+        console.log("🔄 Refreshing file list after bulk deletion...");
         loadFiles();
       }, 1500); // Longer delay for bulk operations
 
-      toast.success(result.message || `Successfully deleted ${result.deletedCount} images`);
+      toast.success(
+        result.message || `Successfully deleted ${result.deletedCount} images`
+      );
     } catch (error) {
-      console.error('Error bulk deleting images:', error);
-      toast.error(`Failed to delete images: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("Error bulk deleting images:", error);
+      toast.error(
+        `Failed to delete images: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setBulkDeleting(false);
     }
@@ -201,32 +219,34 @@ export default function FileManager({ className }: FileManagerProps) {
 
   const handleDownload = (file: UserFile) => {
     // Create a temporary link to download the file
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = file.url;
     link.download = file.originalName;
-    link.target = '_blank';
+    link.target = "_blank";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   const handleView = (file: UserFile) => {
-    window.open(file.url, '_blank');
+    window.open(file.url, "_blank");
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   if (!user) {
     return (
       <div className={cn("text-center py-8", className)}>
         <FileImage className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-        <p className="text-sm text-muted-foreground">Please log in to view your files</p>
+        <p className="text-sm text-muted-foreground">
+          Please log in to view your files
+        </p>
       </div>
     );
   }
@@ -235,7 +255,9 @@ export default function FileManager({ className }: FileManagerProps) {
     return (
       <div className={cn("flex items-center justify-center py-8", className)}>
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        <span className="ml-2 text-sm text-muted-foreground">Loading files...</span>
+        <span className="ml-2 text-sm text-muted-foreground">
+          Loading files...
+        </span>
       </div>
     );
   }
@@ -243,22 +265,22 @@ export default function FileManager({ className }: FileManagerProps) {
   return (
     <div className={cn("space-y-4", className)}>
       {/* Header with stats */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <div className="space-y-1">
           <h4 className="text-sm font-medium">Your Uploaded Files</h4>
           <p className="text-xs text-muted-foreground">
             {files.length} files • {formatFileSize(totalSize)} total
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="md:flex items-center justify-end gap-2">
           {/* Delete All Images Button */}
-          {files.filter(f => f.fileType === 'image').length > 0 && (
+          {files.filter((f) => f.fileType === "image").length > 0 && (
             <Button
               size="sm"
               variant="outline"
               onClick={handleBulkDeleteImages}
               disabled={bulkDeleting || loading}
-              className="text-xs text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 hover:bg-red-50"
+              className="text-xs text-red-600 px-0 hover:text-red-700 border-red-200 hover:border-red-300 hover:bg-red-50"
             >
               {bulkDeleting ? (
                 <>
@@ -268,12 +290,13 @@ export default function FileManager({ className }: FileManagerProps) {
               ) : (
                 <>
                   <ImageIcon className="w-3 h-3 mr-1" />
-                  Delete All Images ({files.filter(f => f.fileType === 'image').length})
+                  Delete All Images (
+                  {files.filter((f) => f.fileType === "image").length})
                 </>
               )}
             </Button>
           )}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
             <HardDrive className="w-4 h-4" />
             <span>{formatFileSize(totalSize)}</span>
           </div>
@@ -298,7 +321,7 @@ export default function FileManager({ className }: FileManagerProps) {
               {/* File icon and type */}
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  {file.fileType === 'image' ? (
+                  {file.fileType === "image" ? (
                     <FileImage className="w-5 h-5 text-blue-500" />
                   ) : (
                     <FileText className="w-5 h-5 text-red-500" />
@@ -314,17 +337,20 @@ export default function FileManager({ className }: FileManagerProps) {
 
               {/* File name */}
               <div className="mb-2">
-                <p className="text-sm font-medium truncate" title={file.originalName}>
+                <p
+                  className="text-sm font-medium truncate"
+                  title={file.originalName}
+                >
                   {file.originalName}
                 </p>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                   <Calendar className="w-3 h-3" />
-                  <span>{format(file.uploadedAt, 'MMM d, yyyy')}</span>
+                  <span>{format(file.uploadedAt, "MMM d, yyyy")}</span>
                 </div>
               </div>
 
               {/* Image preview for images */}
-              {file.fileType === 'image' && (
+              {file.fileType === "image" && (
                 <div className="mb-3">
                   <img
                     src={file.url}

@@ -144,11 +144,11 @@ export default function SettingsPage() {
   // Get provider icon
   const getProviderIcon = (provider: string) => {
     switch (provider?.toLowerCase()) {
-      case 'google':
+      case "google":
         return <GoogleIcon className="w-4 h-4" />;
-      case 'github':
+      case "github":
         return <GitHubIcon className="w-4 h-4" />;
-      case 'email':
+      case "email":
         return <Mail className="w-4 h-4" />;
       default:
         return <Lock className="w-4 h-4" />;
@@ -176,7 +176,16 @@ export default function SettingsPage() {
 
     // Handle hash-based navigation
     const hash = location.hash.replace("#", "");
-    if (hash && ["profile", "customization", "storage", "application", "contact"].includes(hash)) {
+    if (
+      hash &&
+      [
+        "profile",
+        "customization",
+        "storage",
+        "application",
+        "contact",
+      ].includes(hash)
+    ) {
       setActiveSection(hash);
     }
   }, [user, location.hash]);
@@ -726,8 +735,12 @@ export default function SettingsPage() {
                           <dd className="font-medium flex items-center gap-2">
                             {sessionInfo?.currentSession?.provider ? (
                               <>
-                                {getProviderIcon(sessionInfo.currentSession.provider)}
-                                <span className="capitalize">{sessionInfo.currentSession.provider}</span>
+                                {getProviderIcon(
+                                  sessionInfo.currentSession.provider
+                                )}
+                                <span className="capitalize">
+                                  {sessionInfo.currentSession.provider}
+                                </span>
                               </>
                             ) : (
                               "Email"
@@ -782,7 +795,8 @@ export default function SettingsPage() {
                             </div>
                             <Button
                               onClick={() => {
-                                window.location.href = 'mailto:hi@aysh.me?subject=Upgrade%20to%20Pro%20in%20AVChat';
+                                window.location.href =
+                                  "mailto:hi@aysh.me?subject=Upgrade%20to%20Pro%20in%20AVChat";
                               }}
                               className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
                             >
@@ -960,21 +974,21 @@ export default function SettingsPage() {
                 {/* Storage Section */}
                 {activeSection === "storage" && (
                   <div className="space-y-6">
-
                     {/* File Management Section */}
                     <div className="p-6 border rounded-xl bg-card shadow-sm">
                       <h3 className="text-lg font-medium mb-4 pb-2 border-b border-border">
                         File Management
                       </h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        View and manage all files you've uploaded to AV Chat. You can download or delete files to free up storage space.
+                        View and manage all files you've uploaded to AV Chat.
+                        You can download or delete files to free up storage
+                        space.
                       </p>
                       <FileManager />
                     </div>
 
                     {/* Global Memory Settings */}
                     <MemorySettings />
-
                   </div>
                 )}
 
@@ -1143,7 +1157,6 @@ export default function SettingsPage() {
                       )}
                     </div>
 
-                    
                     {/* Font Selection */}
                     <div className="p-6 border rounded-xl bg-card shadow-sm">
                       <div className="flex items-center gap-2 mb-4">
@@ -1234,7 +1247,8 @@ export default function SettingsPage() {
                           </h3>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Use your own API keys for unlimited access to AI models, voice input, and web search
+                          Use your own API keys for unlimited access to AI
+                          models, voice input, and web search
                         </p>
                       </div>
 
@@ -1521,7 +1535,8 @@ export default function SettingsPage() {
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Use your own Tavily API key for web search functionality
+                          Use your own Tavily API key for web search
+                          functionality
                         </p>
                       </div>
 
@@ -1651,7 +1666,6 @@ export default function SettingsPage() {
                         </div>
                       )}
                     </div>
-
                   </div>
                 )}
 
@@ -1666,7 +1680,8 @@ export default function SettingsPage() {
                       </div>
                       <div className="space-y-4">
                         <p className="text-sm text-muted-foreground">
-                          Learn more about AVChat, our team, technology stack, and mission to create the fastest AI chat experience.
+                          Learn more about AVChat, our team, technology stack,
+                          and mission to create the fastest AI chat experience.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-2">
                           <Link to="/about">
@@ -1676,7 +1691,10 @@ export default function SettingsPage() {
                             </Button>
                           </Link>
                           <Link to="/changelog">
-                            <Button variant="outline" className="w-full sm:w-auto flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              className="w-full sm:w-auto flex items-center gap-2"
+                            >
                               <Calendar className="h-4 w-4" />
                               View Changelog
                             </Button>
@@ -1720,10 +1738,10 @@ export default function SettingsPage() {
                                 Found an issue? Let us know so we can fix it
                               </p>
                               <a
-                                href="mailto:connect@vrandacodz.in"
+                                href="mailto:connect@vrandagarg.in"
                                 className="text-sm text-primary hover:underline mt-2 inline-block"
                               >
-                                connect@vrandacodz.in
+                                connect@vrandagarg.in
                               </a>
                             </div>
                           </div>
@@ -1732,7 +1750,9 @@ export default function SettingsPage() {
                           <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30">
                             <XIcon className="w-5 h-5 text-primary mt-0.5" />
                             <div>
-                              <h4 className="font-medium text-sm">X (Twitter)</h4>
+                              <h4 className="font-medium text-sm">
+                                X (Twitter)
+                              </h4>
                               <p className="text-xs text-muted-foreground mt-1">
                                 Connect on X
                               </p>
