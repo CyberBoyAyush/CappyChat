@@ -86,6 +86,16 @@ export default function ChatLayoutWrapper() {
     if (!isDragging) return;
 
     const handleMouseMove = (e: MouseEvent) => {
+      // Check if user is trying to resize below minimum width
+      if (e.clientX < minWidth) {
+        // Automatically close the sidebar
+        setSidebarOpen(false);
+        localStorage.setItem("sidebarOpen", "false");
+        setIsDragging(false);
+        document.body.style.userSelect = ""; // Restore text selection
+        return;
+      }
+
       // Calculate new width based on mouse position
       const newWidth = Math.max(minWidth, Math.min(maxWidth, e.clientX));
       setSidebarWidth(newWidth);

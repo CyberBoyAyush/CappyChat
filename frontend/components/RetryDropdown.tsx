@@ -53,14 +53,23 @@ export default function RetryDropdown({
     const isImageGenerationLoading = message.isImageGenerationLoading;
     const hasImageUrl = !!message.imgurl;
     const messageText = message.content || "";
-    const hasImageGenText = messageText.includes("🎨 Generating your image") ||
-                           messageText.includes("Generating your image");
+    const hasImageGenText =
+      messageText.includes("🎨 Generating your image") ||
+      messageText.includes("Generating your image");
 
     // Check if the model used was an image generation model
     const messageModel = message.model;
-    const isImageGenModel = messageModel ? getModelConfig(messageModel as AIModel)?.isImageGeneration : false;
+    const isImageGenModel = messageModel
+      ? getModelConfig(messageModel as AIModel)?.isImageGeneration
+      : false;
 
-    return isImageGeneration || isImageGenerationLoading || hasImageUrl || hasImageGenText || isImageGenModel;
+    return (
+      isImageGeneration ||
+      isImageGenerationLoading ||
+      hasImageUrl ||
+      hasImageGenText ||
+      isImageGenModel
+    );
   }, [message]);
 
   // State for collapsible categories
@@ -254,13 +263,12 @@ export default function RetryDropdown({
           )}
         >
           <RefreshCcw className="w-4 h-4 text-foreground transition-colors" />
-          <ChevronDown className="w-2.5 h-2.5 absolute -bottom-0.5 -right-0.5 opacity-60 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
         className={cn(
-          "w-72 bg-card/95 backdrop-blur-sm border border-border/50 shadow-xl",
+          "w-72 max-h-[600px] main-chat-scrollbar bg-card/95 backdrop-blur-sm border border-border/50 shadow-xl",
           "animate-in slide-in-from-top-2 duration-200 rounded-xl p-2"
         )}
       >
@@ -278,7 +286,11 @@ export default function RetryDropdown({
           </span>
         </DropdownMenuItem>
 
-        <div className="h-px bg-border/50 mx-2 my-1" />
+        <div className="flex items-center justify-center my-2">
+          <div className="h-px bg-muted-foreground/10 mx-2 my-1 w-full" />
+          <span className="text-sm text-muted-foreground px-2">OR</span>
+          <div className="h-px bg-muted-foreground/10 mx-2 my-1 w-full" />
+        </div>
 
         {/* Recommended Models */}
         {availableRecommended.length > 0 && (
