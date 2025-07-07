@@ -10,6 +10,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
+import CompareDemo from "./compare-drag-demo";
 import {
   MessageSquare,
   Zap,
@@ -868,6 +869,31 @@ export default function GuestWelcomeScreen({
 
           <div className="max-w-4xl mx-auto">
             <DemoChat />
+          </div>
+
+          {/* Theme Demo Section */}
+          <div className="text-center mb-5 mt-16">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6 }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-sm font-medium text-primary mb-6"
+            >
+              <Sparkles className="h-4 w-4" />
+              Theme Customization
+            </motion.div>
+            <h3 className="text-2xl md:text-4xl font-bold mb-4">
+              Light & Dark Theme
+            </h3>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              AVChat automatically adapts to your system preferences or manual
+              theme selection. Experience the seamless transition between our
+              beautifully crafted light and dark modes.
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto flex justify-center">
+            <CompareDemo />
           </div>
         </motion.div>
 
