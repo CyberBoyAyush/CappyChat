@@ -7,9 +7,8 @@
  */
 
 import { memo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { Button } from "../ui/button";
-import { buttonVariants } from "../ui/button";
 import { Trash2, GitBranch, Settings, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThreadData, ThreadOperations } from "./ThreadManager";
@@ -18,6 +17,27 @@ import { DeleteThreadDialog } from "./DeleteThreadDialog";
 import { ThreadSearch } from "./ThreadSearch";
 import { ThreadMenuDropdown } from "./ThreadMenuDropdown";
 import { useAuth } from "@/frontend/contexts/AuthContext";
+import { getUserTierInfo } from "@/lib/tierSystem";
+import { useEffect } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import {
+  ChevronDown,
+  User,
+  Sparkles,
+  Database,
+  Shield,
+  Github,
+  Info,
+  Calendar,
+  LogOut,
+} from "lucide-react";
 
 // ===============================================
 // Panel Header Components
@@ -85,8 +105,58 @@ const PanelHeaderComponent = ({
   threads = [],
   onFilteredThreadsChange,
 }: PanelHeaderProps) => {
-  const { isGuest } = useAuth();
+  const { isGuest, logout } = useAuth();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Get user initials for avatar
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const [tierInfo, setTierInfo] = useState<any>(null);
+
+  // Load tier information
+  useEffect(() => {
+    const loadTierInfo = async () => {
+      if (!user) return;
+
+      try {
+        const info = await getUserTierInfo();
+        setTierInfo(info);
+      } catch (error) {
+        console.error("Error loading tier info:", error);
+      }
+    };
+
+    loadTierInfo();
+  }, [user]);
+
+  const userInitials = user?.name ? getInitials(user.name) : "U";
+  const displayName = user?.name || "User";
+  const displayEmail = user?.email || "";
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logout();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const handleSettings = () => {
+    navigate("/settings");
+  };
 
   return (
     <div className="flex flex-col gap-3 p-3 sm:p-4">
@@ -101,10 +171,142 @@ const PanelHeaderComponent = ({
             onClick={() => navigate("/login")}
           />
         ) : (
-          <Settings
-            className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-foreground md:hidden cursor-pointer hover:text-primary transition-colors"
-            onClick={() => navigate("/settings")}
-          />
+          <div className="md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Settings
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-foreground md:hidden cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => navigate("/settings")}
+                />
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent
+                align="end"
+                className="w-64 p-2 bg-card border-border"
+                sideOffset={8}
+              >
+                {/* User Header */}
+                <DropdownMenuLabel className="px-3 py-2">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-medium shadow-sm">
+                      {userInitials}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground truncate">
+                          {displayName}
+                        </span>
+                        {tierInfo?.tier === "premium" && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
+                            PRO
+                          </span>
+                        )}
+                        {tierInfo?.tier === "admin" && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full">
+                            ADMIN
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-sm text-muted-foreground truncate">
+                        {displayEmail}
+                      </span>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+
+                <DropdownMenuSeparator />
+
+                {/* User Actions */}
+                <DropdownMenuItem
+                  onClick={() => navigate("/settings#profile")}
+                  className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  <User className="h-4 w-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => navigate("/settings#customization")}
+                  className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span>Customization</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => navigate("/settings#storage")}
+                  className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  <Database className="h-4 w-4" />
+                  <span>Storage</span>
+                </DropdownMenuItem>
+
+                {/* Admin Panel - Only show for admin users */}
+                {tierInfo?.tier === "admin" && (
+                  <DropdownMenuItem
+                    onClick={() => navigate("/admin")}
+                    className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-orange-600 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-950/20 dark:hover:text-orange-300"
+                  >
+                    <Shield className="h-4 w-4" />
+                    <span>Admin Panel</span>
+                  </DropdownMenuItem>
+                )}
+
+                <DropdownMenuSeparator />
+
+                {/* Github */}
+                <DropdownMenuItem
+                  onClick={() =>
+                    window.open(
+                      "https://github.com/cyberboyayush/AVChat",
+                      "_blank"
+                    )
+                  }
+                  className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  <Github className="h-4 w-4" />
+                  <span>Github</span>
+                </DropdownMenuItem>
+
+                {/* About */}
+                <DropdownMenuItem
+                  onClick={() => navigate("/about")}
+                  className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  <Info className="h-4 w-4" />
+                  <span>About</span>
+                </DropdownMenuItem>
+
+                {/* Changelog */}
+                <DropdownMenuItem
+                  onClick={() => navigate("/changelog")}
+                  className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  <Calendar className="h-4 w-4" />
+                  <span>Changelog</span>
+                </DropdownMenuItem>
+
+                {/* Settings */}
+                <DropdownMenuItem
+                  onClick={handleSettings}
+                  className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                {/* Logout */}
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-destructive hover:bg-destructive/10 focus:text-destructive"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>{isLoggingOut ? "Signing out..." : "Sign out"}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )}
       </div>
 

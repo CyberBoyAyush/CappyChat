@@ -18,7 +18,17 @@ import {
   Calendar,
   Eye,
   ImageIcon,
+  AlertTriangle,
+  RotateCcw,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -43,12 +53,219 @@ interface FileManagerProps {
   className?: string;
 }
 
+// File Delete Confirmation Dialog Component
+interface FileDeleteDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  file: UserFile | null;
+  onConfirm: () => void;
+  isDeleting: boolean;
+}
+
+const FileDeleteDialog = ({
+  isOpen,
+  onOpenChange,
+  file,
+  onConfirm,
+  isDeleting,
+}: FileDeleteDialogProps) => {
+  if (!file) return null;
+
+  const handleConfirm = () => {
+    onConfirm();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md border-border shadow-lg bg-background">
+        <DialogHeader className="space-y-4 pb-2">
+          <div className="flex items-center justify-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-destructive/20 to-destructive/10 border border-destructive/30">
+              <Trash2 className="h-5 w-5 text-destructive" />
+            </div>
+          </div>
+          <div className="text-center space-y-2">
+            <DialogTitle className="text-lg font-semibold text-foreground">
+              Delete File?
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              This action cannot be undone. The file will be permanently removed
+              from your account.
+            </DialogDescription>
+          </div>
+        </DialogHeader>
+
+        <div className="rounded-lg bg-gradient-to-r from-secondary/80 to-muted/60 border border-border/50 p-4 my-2">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2">
+              {file.fileType === "image" ? (
+                <FileImage className="w-4 h-4 text-blue-500" />
+              ) : (
+                <FileText className="w-4 h-4 text-red-500" />
+              )}
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {file.fileType}
+              </span>
+            </div>
+            <span className="text-xs text-muted-foreground ml-auto">
+              {formatFileSize(file.size)}
+            </span>
+          </div>
+          <p className="text-sm font-medium text-foreground break-all">
+            {file.originalName}
+          </p>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+            <Calendar className="w-3 h-3" />
+            <span>Uploaded {format(file.uploadedAt, "MMM d, yyyy")}</span>
+          </div>
+        </div>
+
+        <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 p-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <div className="text-xs text-amber-800 dark:text-amber-200">
+              <p className="font-medium">This action is permanent</p>
+              <p className="mt-1">
+                The file will be completely removed and cannot be recovered.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-3 pt-4 flex-col sm:flex-row">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isDeleting}
+            className="w-full sm:w-auto sm:flex-1 h-10 font-medium border-border hover:bg-accent hover:text-accent-foreground transition-all duration-200"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleConfirm}
+            disabled={isDeleting}
+            className="w-full sm:w-auto sm:flex-1 h-10 font-medium bg-gradient-to-r from-destructive to-destructive/90 hover:from-destructive/90 hover:to-destructive/80 shadow-sm transition-all duration-200 gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            {isDeleting ? "Deleting..." : "Delete File"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Bulk Delete Images Confirmation Dialog Component
+interface BulkDeleteDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  imageCount: number;
+  totalSize: number;
+  onConfirm: () => void;
+  isDeleting: boolean;
+}
+
+const BulkDeleteDialog = ({
+  isOpen,
+  onOpenChange,
+  imageCount,
+  totalSize,
+  onConfirm,
+  isDeleting,
+}: BulkDeleteDialogProps) => {
+  const handleConfirm = () => {
+    onConfirm();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md border-border shadow-lg bg-background">
+        <DialogHeader className="space-y-4 pb-2">
+          <div className="flex items-center justify-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-destructive/20 to-destructive/10 border border-destructive/30">
+              <ImageIcon className="h-5 w-5 text-destructive" />
+            </div>
+          </div>
+          <div className="text-center space-y-2">
+            <DialogTitle className="text-lg font-semibold text-foreground">
+              Delete All Images?
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              This will permanently remove all your uploaded images. This action
+              cannot be undone.
+            </DialogDescription>
+          </div>
+        </DialogHeader>
+
+        <div className="rounded-lg bg-gradient-to-r from-secondary/80 to-muted/60 border border-border/50 p-4 my-2">
+          <div className="flex items-center gap-2 mb-2">
+            <ImageIcon className="w-4 h-4 text-blue-500" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Images to Delete
+            </span>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">
+              {imageCount} {imageCount === 1 ? "image" : "images"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Total size: {formatFileSize(totalSize)}
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/30 p-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+            <div className="text-xs text-red-800 dark:text-red-200">
+              <p className="font-medium">
+                This action is permanent and irreversible
+              </p>
+              <p className="mt-1">
+                All {imageCount} images will be completely removed from your
+                account and cannot be recovered.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-3 pt-4 flex-col sm:flex-row">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isDeleting}
+            className="w-full sm:w-auto sm:flex-1 h-10 font-medium border-border hover:bg-accent hover:text-accent-foreground transition-all duration-200"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleConfirm}
+            disabled={isDeleting}
+            className="w-full sm:w-auto sm:flex-1 h-10 font-medium bg-gradient-to-r from-destructive to-destructive/90 hover:from-destructive/90 hover:to-destructive/80 shadow-sm transition-all duration-200 gap-2"
+          >
+            <ImageIcon className="h-4 w-4" />
+            {isDeleting ? "Deleting..." : `Delete ${imageCount} Images`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default function FileManager({ className }: FileManagerProps) {
   const [files, setFiles] = useState<UserFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [totalSize, setTotalSize] = useState(0);
+
+  // Dialog states
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState<UserFile | null>(null);
+
   const { user } = useAuth();
 
   // Load user files
@@ -91,23 +308,22 @@ export default function FileManager({ className }: FileManagerProps) {
     }
   };
 
-  const handleDelete = async (file: UserFile) => {
-    if (!user?.$id) {
+  const handleDeleteClick = (file: UserFile) => {
+    setFileToDelete(file);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!user?.$id || !fileToDelete) {
       toast.error("User not authenticated");
       return;
     }
 
-    if (
-      !confirm(
-        `Are you sure you want to delete "${file.originalName}"? This action cannot be undone.`
-      )
-    ) {
-      return;
-    }
-
     try {
-      setDeleting(file.id);
-      console.log(`🗑️ Deleting file: ${file.originalName} (${file.publicId})`);
+      setDeleting(fileToDelete.id);
+      console.log(
+        `🗑️ Deleting file: ${fileToDelete.originalName} (${fileToDelete.publicId})`
+      );
 
       const response = await fetch("/api/files", {
         method: "DELETE",
@@ -116,8 +332,8 @@ export default function FileManager({ className }: FileManagerProps) {
         },
         body: JSON.stringify({
           userId: user.$id,
-          publicId: file.publicId,
-          resourceType: file.fileType,
+          publicId: fileToDelete.publicId,
+          resourceType: fileToDelete.fileType,
         }),
       });
 
@@ -130,8 +346,12 @@ export default function FileManager({ className }: FileManagerProps) {
       console.log("✅ File deletion response:", result);
 
       // Remove from local state and refresh from server to ensure consistency
-      setFiles((prev) => prev.filter((f) => f.id !== file.id));
-      setTotalSize((prev) => prev - file.size);
+      setFiles((prev) => prev.filter((f) => f.id !== fileToDelete.id));
+      setTotalSize((prev) => prev - fileToDelete.size);
+
+      // Close dialog and reset state
+      setDeleteDialogOpen(false);
+      setFileToDelete(null);
 
       // Refresh the file list from server to ensure consistency
       setTimeout(() => {
@@ -152,6 +372,10 @@ export default function FileManager({ className }: FileManagerProps) {
     }
   };
 
+  const handleBulkDeleteClick = () => {
+    setBulkDeleteDialogOpen(true);
+  };
+
   const handleBulkDeleteImages = async () => {
     if (!user?.$id) {
       toast.error("User not authenticated");
@@ -162,14 +386,6 @@ export default function FileManager({ className }: FileManagerProps) {
 
     if (imageFiles.length === 0) {
       toast.error("No images found to delete");
-      return;
-    }
-
-    if (
-      !confirm(
-        `Are you sure you want to delete ALL ${imageFiles.length} images? This action cannot be undone.`
-      )
-    ) {
       return;
     }
 
@@ -195,6 +411,9 @@ export default function FileManager({ className }: FileManagerProps) {
 
       const result = await response.json();
       console.log("✅ Bulk deletion response:", result);
+
+      // Close dialog
+      setBulkDeleteDialogOpen(false);
 
       // Refresh the file list from server
       setTimeout(() => {
@@ -240,6 +459,12 @@ export default function FileManager({ className }: FileManagerProps) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
+  const imageFiles = files.filter((f) => f.fileType === "image");
+  const imagesTotalSize = imageFiles.reduce(
+    (total, file) => total + file.size,
+    0
+  );
+
   if (!user) {
     return (
       <div className={cn("text-center py-8", className)}>
@@ -274,13 +499,13 @@ export default function FileManager({ className }: FileManagerProps) {
         </div>
         <div className="md:flex items-center justify-end gap-2">
           {/* Delete All Images Button */}
-          {files.filter((f) => f.fileType === "image").length > 0 && (
+          {imageFiles.length > 0 && (
             <Button
               size="sm"
               variant="outline"
-              onClick={handleBulkDeleteImages}
+              onClick={handleBulkDeleteClick}
               disabled={bulkDeleting || loading}
-              className="text-xs text-red-600 px-0 hover:text-red-700 border-red-200 hover:border-red-300 hover:bg-red-50"
+              className="text-xs text-red-600 px-0 hover:text-red-700 border-red-200 hover:border-red-300 hover:bg-red-50 dark:border-red-800 dark:hover:border-red-700 dark:hover:bg-red-950/20"
             >
               {bulkDeleting ? (
                 <>
@@ -290,8 +515,7 @@ export default function FileManager({ className }: FileManagerProps) {
               ) : (
                 <>
                   <ImageIcon className="w-3 h-3 mr-1" />
-                  Delete All Images (
-                  {files.filter((f) => f.fileType === "image").length})
+                  Delete All Images ({imageFiles.length})
                 </>
               )}
             </Button>
@@ -386,9 +610,9 @@ export default function FileManager({ className }: FileManagerProps) {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleDelete(file)}
+                  onClick={() => handleDeleteClick(file)}
                   disabled={deleting === file.id || bulkDeleting}
-                  className="h-8 text-xs text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                  className="h-8 text-xs text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 dark:border-red-800 dark:hover:border-red-700 dark:hover:bg-red-950/20"
                 >
                   {deleting === file.id ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -401,6 +625,34 @@ export default function FileManager({ className }: FileManagerProps) {
           ))}
         </div>
       )}
+
+      {/* Delete File Confirmation Dialog */}
+      <FileDeleteDialog
+        isOpen={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        file={fileToDelete}
+        onConfirm={handleDelete}
+        isDeleting={deleting === fileToDelete?.id}
+      />
+
+      {/* Bulk Delete Images Confirmation Dialog */}
+      <BulkDeleteDialog
+        isOpen={bulkDeleteDialogOpen}
+        onOpenChange={setBulkDeleteDialogOpen}
+        imageCount={imageFiles.length}
+        totalSize={imagesTotalSize}
+        onConfirm={handleBulkDeleteImages}
+        isDeleting={bulkDeleting}
+      />
     </div>
   );
+}
+
+// Helper function needs to be accessible by dialog components
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
