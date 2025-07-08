@@ -1,4 +1,4 @@
-AtChat - AI-Powered Chat Application
+AVChat - AI-Powered Chat Application
 Copyright (C) 2024 Ayush Sharma and Vranda Garg
 
 This program is free software: you can redistribute it and/or modify
@@ -649,7 +649,7 @@ to attach them to the start of each source file to most effectively
 state the exclusion of warranty; and each file should have at least
 the "copyright" line and a pointer to where the full notice is found.
 
-    AtChat - AI-Powered Chat Application
+    AVChat - AI-Powered Chat Application
     Copyright (C) 2024 Ayush Sharma and Vranda Garg
 
     This program is free software: you can redistribute it and/or modify
@@ -672,7 +672,7 @@ Contact Information:
   If the program does web interaction, it should display a notice like this
   in the about section or footer:
 
-    AtChat Copyright (C) 2024 Ayush Sharma and Vranda Garg
+    AVChat Copyright (C) 2024 Ayush Sharma and Vranda Garg
     This program comes with ABSOLUTELY NO WARRANTY.
     This is free software, and you are welcome to redistribute it
     under certain conditions as specified in the GPL v3 license.
