@@ -22,7 +22,8 @@ export const AI_MODELS = [
   'FLUX.1 Dev',
   'FLUX.1 Kontext [dev]',
   'Stable Defusion 3',
-  'Juggernaut Pro'
+  'Juggernaut Pro',
+  'MoonshotAI: Kimi K2',
 ] as const;
 
 export type AIModel = (typeof AI_MODELS)[number];
@@ -227,6 +228,19 @@ export const MODEL_CONFIGS = {
     isFileSupported: false,
     isFast: true,
     description: 'Qwen 3 30B A3B is a powerful model with advanced reasoning capabilities',
+  },
+  'MoonshotAI: Kimi K2': {
+    modelId: 'moonshotai/kimi-k2',
+    provider: 'openrouter',
+    displayName: 'MoonshotAI: Kimi K2',
+    iconType: 'huggingface',
+    company: 'MoonshotAI',
+    isPremium: false,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: true,
+    isFast: true,
+    description: 'MoonshotAI: Kimi K2 is a powerful model with amazing tool call capabilities',
   },
   'Claude Sonnet 4': {
     modelId: 'anthropic/claude-sonnet-4',
