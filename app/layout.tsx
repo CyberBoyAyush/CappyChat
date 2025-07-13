@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import Script from 'next/script';
 import './styles.css';
 import 'katex/dist/katex.min.css';
 import { Toaster } from '@/frontend/components/ui/BasicComponents';
@@ -102,6 +103,13 @@ export default function RootLayout({
           <Toaster richColors position="top-right" />
         </ThemeProvider>
         <Analytics />
+        
+        {/* Analytics Tracking Script */}
+        <Script
+          src="https://stats.ayush-sharma.in/script.js"
+          data-website-id="07137fa5-ef9f-43f3-afca-6700de099829"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
