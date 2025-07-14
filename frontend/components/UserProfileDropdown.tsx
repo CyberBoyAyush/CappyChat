@@ -31,7 +31,8 @@ import {
   Sparkles,
   Github,
   Info,
-  Calendar
+  Calendar,
+  Activity
 } from "lucide-react";
 import { getUserTierInfo } from "@/lib/tierSystem";
 import AuthDialog from "./auth/AuthDialog";
@@ -276,6 +277,15 @@ const UserProfileDropdown: React.FC = () => {
         >
           <Calendar className="h-4 w-4" />
           <span>Changelog</span>
+        </DropdownMenuItem>
+
+        {/* Status */}
+        <DropdownMenuItem
+          onClick={() => window.open("https://status.avchat.xyz", "_blank")}
+          className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <Activity className="h-4 w-4" />
+          <span>Status</span>
         </DropdownMenuItem>
 
         {/* Settings */}
