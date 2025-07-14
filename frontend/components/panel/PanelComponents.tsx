@@ -37,6 +37,7 @@ import {
   Info,
   Calendar,
   LogOut,
+  Activity,
 } from "lucide-react";
 
 // ===============================================
@@ -282,6 +283,20 @@ const PanelHeaderComponent = ({
                 >
                   <Calendar className="h-4 w-4" />
                   <span>Changelog</span>
+                </DropdownMenuItem>
+
+                {/* Status */}
+                <DropdownMenuItem
+                  onClick={() =>
+                    window.open(
+                      "https://status.avchat.xyz",
+                      "_blank"
+                    )
+                  }
+                  className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  <Activity className="h-4 w-4" />
+                  <span>Status</span>
                 </DropdownMenuItem>
 
                 {/* Settings */}
