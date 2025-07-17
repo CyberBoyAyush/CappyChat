@@ -12,14 +12,13 @@ import {
   Trash2,
   FileImage,
   FileText,
-  ExternalLink,
   Loader2,
   HardDrive,
   Calendar,
   Eye,
   ImageIcon,
   AlertTriangle,
-  RotateCcw,
+  File,
 } from "lucide-react";
 import {
   Dialog,
@@ -34,11 +33,27 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useAuth } from "../contexts/AuthContext";
 
+// Helper function to get file icon and color
+const getFileIcon = (fileType: string) => {
+  switch (fileType) {
+    case 'image':
+      return { icon: FileImage, color: 'text-blue-500' };
+    case 'pdf':
+      return { icon: FileText, color: 'text-red-500' };
+    case 'text':
+      return { icon: FileText, color: 'text-green-500' };
+    case 'document':
+      return { icon: File, color: 'text-purple-500' };
+    default:
+      return { icon: File, color: 'text-gray-500' };
+  }
+};
+
 interface UserFile {
   id: string;
   filename: string;
   originalName: string;
-  fileType: "image" | "pdf";
+  fileType: "image" | "pdf" | "text" | "document";
   mimeType: string;
   size: number;
   url: string;
@@ -98,11 +113,10 @@ const FileDeleteDialog = ({
         <div className="rounded-lg bg-gradient-to-r from-secondary/80 to-muted/60 border border-border/50 p-4 my-2">
           <div className="flex items-center gap-2 mb-2">
             <div className="flex items-center gap-2">
-              {file.fileType === "image" ? (
-                <FileImage className="w-4 h-4 text-blue-500" />
-              ) : (
-                <FileText className="w-4 h-4 text-red-500" />
-              )}
+              {(() => {
+                const { icon: IconComponent, color } = getFileIcon(file.fileType);
+                return <IconComponent className={`w-4 h-4 ${color}`} />;
+              })()}
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 {file.fileType}
               </span>
@@ -545,11 +559,10 @@ export default function FileManager({ className }: FileManagerProps) {
               {/* File icon and type */}
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  {file.fileType === "image" ? (
-                    <FileImage className="w-5 h-5 text-blue-500" />
-                  ) : (
-                    <FileText className="w-5 h-5 text-red-500" />
-                  )}
+                  {(() => {
+                    const { icon: IconComponent, color } = getFileIcon(file.fileType);
+                    return <IconComponent className={`w-5 h-5 ${color}`} />;
+                  })()}
                   <span className="text-xs font-medium text-muted-foreground uppercase">
                     {file.fileType}
                   </span>

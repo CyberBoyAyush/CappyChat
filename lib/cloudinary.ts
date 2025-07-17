@@ -7,6 +7,7 @@
  */
 
 import { FileAttachment } from './appwriteDB';
+import * as mammoth from 'mammoth';
 
 // Dynamic import for server-side only
 let cloudinary: any = null;
@@ -34,6 +35,10 @@ export class CloudinaryService {
   private static readonly MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
   private static readonly ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
   private static readonly ALLOWED_PDF_TYPE = 'application/pdf';
+  private static readonly ALLOWED_TEXT_TYPES = [
+    'text/plain',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  ];
 
   /**
    * Validate file before upload
@@ -47,9 +52,10 @@ export class CloudinaryService {
     // Check file type
     const isImage = this.ALLOWED_IMAGE_TYPES.includes(file.type);
     const isPdf = file.type === this.ALLOWED_PDF_TYPE;
+    const isText = this.ALLOWED_TEXT_TYPES.includes(file.type);
 
-    if (!isImage && !isPdf) {
-      return { valid: false, error: 'Only images (JPEG, PNG, GIF, WebP) and PDF files are allowed' };
+    if (!isImage && !isPdf && !isText) {
+      return { valid: false, error: 'Only images (JPEG, PNG, GIF, WebP), PDF, text (.txt), and Word (.docx) files are allowed' };
     }
 
     return { valid: true };
@@ -71,6 +77,8 @@ export class CloudinaryService {
 
       // Determine resource type and folder
       const isImage = this.ALLOWED_IMAGE_TYPES.includes(file.type);
+      const isPdf = file.type === this.ALLOWED_PDF_TYPE;
+      const isText = this.ALLOWED_TEXT_TYPES.includes(file.type);
       const resourceType = isImage ? 'image' : 'raw';
       const folder = isImage ? 'atchat/images' : 'atchat/documents';
 
@@ -88,17 +96,38 @@ export class CloudinaryService {
         type: 'upload', // Ensure it's an upload type
       });
 
+      // Extract text content for text/docx files
+      let textContent: string | undefined;
+      if (isText) {
+        textContent = await this.extractTextContent(file);
+      }
+
+      // Determine file type for attachment
+      let fileType: 'image' | 'pdf' | 'text' | 'document';
+      if (isImage) {
+        fileType = 'image';
+      } else if (isPdf) {
+        fileType = 'pdf';
+      } else if (file.type === 'text/plain') {
+        fileType = 'text';
+      } else {
+        fileType = 'document'; // for .docx files
+      }
+
+
+
       // Create attachment object
       const attachment: FileAttachment = {
-        id: `attachment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: `attachment_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
         filename: uploadResult.public_id,
         originalName: file.name,
-        fileType: isImage ? 'image' : 'pdf',
+        fileType,
         mimeType: file.type,
         size: file.size,
         url: uploadResult.secure_url,
         publicId: uploadResult.public_id,
         createdAt: new Date(),
+        textContent,
       };
 
       return { success: true, attachment };
@@ -138,6 +167,34 @@ export class CloudinaryService {
     const buffer = Buffer.from(arrayBuffer);
     const base64 = buffer.toString('base64');
     return `data:${file.type};base64,${base64}`;
+  }
+
+  /**
+   * Extract text content from text/docx files
+   */
+  private static async extractTextContent(file: File): Promise<string> {
+    try {
+      if (file.type === 'text/plain') {
+        // For .txt files, read content directly
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        return buffer.toString('utf-8');
+      } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        // For .docx files, use mammoth to extract text
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // Use buffer instead of arrayBuffer for mammoth
+        const result = await mammoth.extractRawText({ buffer });
+        return result.value || '';
+      }
+
+      throw new Error('Unsupported file type for text extraction');
+    } catch (error) {
+      console.error('Error extracting text content:', error);
+      // Return a fallback message instead of throwing
+      return `[Error: Could not extract text from ${file.name}. File may be corrupted or in an unsupported format.]`;
+    }
   }
 
   /**

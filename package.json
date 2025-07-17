@@ -44,6 +44,7 @@
     "framer-motion": "^12.17.0",
     "katex": "^0.16.22",
     "lucide-react": "^0.510.0",
+    "mammoth": "^1.9.1",
     "marked": "^15.0.12",
     "motion": "^12.23.0",
     "multer": "^2.0.1",
