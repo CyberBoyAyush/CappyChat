@@ -8,7 +8,7 @@
 import React from 'react';
 import { FileAttachment } from '@/lib/appwriteDB';
 import { Button } from './ui/button';
-import { Download, FileImage, FileText, ExternalLink } from 'lucide-react';
+import { Download, FileImage, FileText, ExternalLink, File } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CloudinaryClientService from '@/lib/cloudinary-client';
 
@@ -143,9 +143,71 @@ export default function MessageAttachments({ attachments, className }: MessageAt
     </div>
   );
 
-  // Separate images and PDFs
+  const renderTextAttachment = (attachment: FileAttachment) => (
+    <div key={attachment.id} className="border rounded-lg p-3 bg-muted/50">
+      <div className="flex items-center gap-3">
+        <div className="flex-shrink-0">
+          <FileText className="w-8 h-8 text-blue-500" />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-sm truncate">{attachment.originalName}</div>
+          <div className="text-xs text-muted-foreground">
+            Text File • {formatFileSize(attachment.size)}
+          </div>
+        </div>
+
+        <div className="flex gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleDownload(attachment)}
+            className="h-7 px-2"
+            title="Download text file"
+          >
+            <Download className="w-3 h-3 mr-1" />
+            Download
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderDocumentAttachment = (attachment: FileAttachment) => (
+    <div key={attachment.id} className="border rounded-lg p-3 bg-muted/50">
+      <div className="flex items-center gap-3">
+        <div className="flex-shrink-0">
+          <File className="w-8 h-8 text-purple-500" />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-sm truncate">{attachment.originalName}</div>
+          <div className="text-xs text-muted-foreground">
+            Word Document • {formatFileSize(attachment.size)}
+          </div>
+        </div>
+
+        <div className="flex gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleDownload(attachment)}
+            className="h-7 px-2"
+            title="Download document"
+          >
+            <Download className="w-3 h-3 mr-1" />
+            Download
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Separate different file types
   const images = attachments.filter(att => att.fileType === 'image');
   const pdfs = attachments.filter(att => att.fileType === 'pdf');
+  const textFiles = attachments.filter(att => att.fileType === 'text');
+  const documents = attachments.filter(att => att.fileType === 'document');
 
   return (
     <div className={cn("space-y-3", className)}>
@@ -155,11 +217,25 @@ export default function MessageAttachments({ attachments, className }: MessageAt
           {images.map(renderImageAttachment)}
         </div>
       )}
-      
+
       {/* PDFs */}
       {pdfs.length > 0 && (
         <div className="space-y-2">
           {pdfs.map(renderPdfAttachment)}
+        </div>
+      )}
+
+      {/* Text Files */}
+      {textFiles.length > 0 && (
+        <div className="space-y-2">
+          {textFiles.map(renderTextAttachment)}
+        </div>
+      )}
+
+      {/* Document Files */}
+      {documents.length > 0 && (
+        <div className="space-y-2">
+          {documents.map(renderDocumentAttachment)}
         </div>
       )}
     </div>

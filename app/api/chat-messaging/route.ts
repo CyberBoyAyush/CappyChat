@@ -201,23 +201,79 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Collect all files from the conversation history for context
+    const conversationFiles: any[] = [];
+
+    // First pass: collect all files from all messages in the conversation
+    messages.forEach((message: Record<string, unknown>) => {
+      if (message.experimental_attachments && Array.isArray(message.experimental_attachments)) {
+        message.experimental_attachments.forEach((attachment: Record<string, unknown>) => {
+          const fileType = attachment.fileType as string;
+          if ((fileType === 'text' || fileType === 'document') && attachment.textContent) {
+            conversationFiles.push({
+              fileName: attachment.originalName as string,
+              fileType: fileType,
+              textContent: attachment.textContent as string,
+              messageRole: message.role as string
+            });
+          }
+        });
+      }
+    });
+
+    console.log(`📂 Collected ${conversationFiles.length} files from conversation history:`,
+      conversationFiles.map(f => ({ fileName: f.fileName, fileType: f.fileType, contentLength: f.textContent.length }))
+    );
+
     // Process messages to handle experimental_attachments
     const processedMessages = messages.map((message: Record<string, unknown>) => {
       if (message.experimental_attachments && Array.isArray(message.experimental_attachments) && message.experimental_attachments.length > 0) {
         console.log('Processing message with experimental_attachments:', message.experimental_attachments.length);
 
-        // Convert our attachment format to AI SDK format
-        const aiSdkAttachments = message.experimental_attachments.map((attachment: Record<string, unknown>) => ({
+        // Separate text/document attachments from other attachments
+        const textAttachments: any[] = [];
+        const otherAttachments: any[] = [];
+
+        message.experimental_attachments.forEach((attachment: Record<string, unknown>) => {
+          const fileType = attachment.fileType as string;
+
+          if (fileType === 'text' || fileType === 'document') {
+            textAttachments.push(attachment);
+          } else {
+            otherAttachments.push(attachment);
+          }
+        });
+
+        // Build message content with text attachments included
+        let messageContent = message.content as string;
+
+        if (textAttachments.length > 0) {
+          // For the current message, just indicate that files were uploaded
+          // The actual content is already in the system prompt for context
+          const fileNames = textAttachments.map((attachment: Record<string, unknown>) => {
+            const fileName = attachment.originalName as string;
+            const fileType = attachment.fileType as string;
+            const fileTypeLabel = fileType === 'text' ? 'text file' : 'document';
+            return `${fileTypeLabel} "${fileName}"`;
+          });
+
+          messageContent = messageContent + `\n\n[User uploaded: ${fileNames.join(', ')}]`;
+        }
+
+        // Convert remaining attachments to AI SDK format (only non-text files)
+        const aiSdkAttachments = otherAttachments.map((attachment: Record<string, unknown>) => ({
           name: (attachment.originalName || attachment.filename) as string,
           contentType: (attachment.mimeType || attachment.contentType) as string,
           url: attachment.url as string,
         }));
 
-        console.log('AI SDK attachments:', JSON.stringify(aiSdkAttachments, null, 2));
+
 
         return {
           ...message,
-          experimental_attachments: aiSdkAttachments,
+          content: messageContent,
+          // Only pass non-text attachments to the AI model
+          experimental_attachments: aiSdkAttachments.length > 0 ? aiSdkAttachments : undefined,
         };
       }
       return message;
@@ -294,6 +350,23 @@ export async function POST(req: NextRequest) {
       systemPrompt += `\n\n--- PROJECT CONTEXT ---`;
       systemPrompt += `\n${projectPrompt}`;
       systemPrompt += `\n--- END PROJECT CONTEXT ---`;
+    }
+
+    // Add conversation file context if there are uploaded files
+    if (conversationFiles.length > 0) {
+      console.log(`📁 Adding ${conversationFiles.length} files to conversation context`);
+
+      systemPrompt += `\n\n--- UPLOADED FILES IN THIS CONVERSATION ---`;
+      systemPrompt += `\nThe user has uploaded the following files in this conversation:`;
+
+      conversationFiles.forEach((file, index) => {
+        const fileTypeLabel = file.fileType === 'text' ? 'text file' : 'document';
+        systemPrompt += `\n\n${index + 1}. ${fileTypeLabel}: "${file.fileName}"`;
+        systemPrompt += `\nContent:\n${file.textContent}`;
+      });
+
+      systemPrompt += `\n\nWhen the user refers to "this file", "the file", "uploaded file", or mentions a specific filename, they are referring to one of these uploaded files. You can directly reference and work with the content shown above.`;
+      systemPrompt += `\n--- END UPLOADED FILES ---`;
     }
 
     const result = streamText({

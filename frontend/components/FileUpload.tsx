@@ -32,7 +32,7 @@ export default function FileUpload({
   disabled,
   className,
   onUploadStatusChange,
-  acceptedFileTypes = "image/*,.pdf",
+  acceptedFileTypes = "image/*,.pdf,.txt,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }: FileUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
@@ -50,15 +50,17 @@ export default function FileUpload({
       allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
       errorMessage = "Only PNG, JPEG, and JPG images are allowed for image-to-image generation";
     } else {
-      // Default mode: images and PDFs
+      // Default mode: images, PDFs, text, and docx files
       allowedTypes = [
         "image/jpeg",
         "image/png",
         "image/gif",
         "image/webp",
         "application/pdf",
+        "text/plain",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ];
-      errorMessage = "Only images (JPEG, PNG, GIF, WebP) and PDF files are allowed";
+      errorMessage = "Only images (JPEG, PNG, GIF, WebP), PDF, text (.txt), and Word (.docx) files are allowed";
     }
 
     if (file.size > maxSize) {
@@ -240,7 +242,7 @@ export default function FileUpload({
         title={
           uploadingFiles.length > 0
             ? "Uploading files..."
-            : "Upload files (Images and PDFs)"
+            : "Upload files (Images, PDFs, text, and Word documents)"
         }
       >
         {uploadingFiles.length > 0 ? (
@@ -280,7 +282,7 @@ export default function FileUpload({
                 Drop files here to upload
               </p>
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                Images (JPEG, PNG, GIF, WebP) and PDF files
+                Images (JPEG, PNG, GIF, WebP), PDF, text (.txt), and Word (.docx) files
               </p>
               <p className="text-xs sm:text-sm text-muted-foreground">
                 Maximum file size: 5MB each
