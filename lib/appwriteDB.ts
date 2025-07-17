@@ -74,12 +74,13 @@ export interface FileAttachment {
   id: string;
   filename: string;
   originalName: string;
-  fileType: 'image' | 'pdf';
+  fileType: 'image' | 'pdf' | 'text' | 'document';
   mimeType: string;
   size: number;
   url: string;
   publicId: string; // Cloudinary public ID
   createdAt: Date;
+  textContent?: string; // For text and document files, store extracted content
 }
 
 // Interface for Appwrite Message document

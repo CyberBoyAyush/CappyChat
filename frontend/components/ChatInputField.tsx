@@ -371,6 +371,8 @@ function PureInputField({
             "image/gif",
             "image/webp",
             "application/pdf",
+            "text/plain",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
           ];
 
           // Validate file size (5MB limit)
@@ -1286,7 +1288,7 @@ function PureInputField({
                       acceptedFileTypes={
                         isImageGenMode && getModelConfig(selectedModel).image2imageGen
                           ? "image/png,image/jpeg,image/jpg"
-                          : "image/*,.pdf"
+                          : "image/*,.pdf,.txt,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                       }
                     />
                   </>
