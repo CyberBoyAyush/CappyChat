@@ -20,7 +20,7 @@ import { HybridDB, dbEvents } from "@/lib/hybridDB";
 import { streamingSync, StreamingState } from "@/lib/streamingSync";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { getModelConfig, AIModel } from "@/lib/models";
-import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
+import { useSearchTypeStore } from "@/frontend/stores/SearchTypeStore";
 import { useConversationStyleStore } from "@/frontend/stores/ConversationStyleStore";
 import { useBYOKStore } from "@/frontend/stores/BYOKStore";
 import { useAuth } from "@/frontend/contexts/AuthContext";
@@ -62,6 +62,7 @@ import { v4 as uuidv4 } from "uuid";
 import GlobalSearchDialog from "./GlobalSearchDialog";
 import { extractUrlsFromContent } from "./WebSearchCitations";
 import WebSearchLoader from "./WebSearchLoader";
+import RedditSearchLoader from "./RedditSearchLoader";
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -110,7 +111,7 @@ export default function ChatInterface({
   searchQuery,
 }: ChatInterfaceProps) {
   const selectedModel = useModelStore((state) => state.selectedModel);
-  const { isWebSearchEnabled } = useWebSearchStore();
+  const { selectedSearchType } = useSearchTypeStore();
   const { selectedStyle } = useConversationStyleStore();
   const { openRouterApiKey, tavilyApiKey } = useBYOKStore();
   const {
@@ -273,7 +274,9 @@ export default function ChatInterface({
     reload,
     error,
   } = useChat({
-    api: (isWebSearchEnabled && !isGuest) ? "/api/web-search" : "/api/chat-messaging",
+    api: (!isGuest && selectedSearchType !== 'chat')
+      ? (selectedSearchType === 'reddit' ? "/api/reddit-search" : "/api/web-search")
+      : "/api/chat-messaging",
     id: threadId,
     initialMessages,
     experimental_throttle: 0, // Zero throttle for instant real-time streaming
@@ -804,10 +807,10 @@ export default function ChatInterface({
     }
   }, [status, isWebSearching]);
 
-  // Callback to track when a message is sent with web search enabled
+  // Callback to track when a message is sent with search enabled
   const handleWebSearchMessage = useCallback((messageId: string, searchQuery?: string) => {
     nextResponseNeedsWebSearch.current = true;
-    if (isWebSearchEnabled) {
+    if (selectedSearchType !== 'chat') {
       setIsWebSearching(true);
       // Use the provided search query or fallback to getting from messages
       if (searchQuery) {
@@ -817,7 +820,7 @@ export default function ChatInterface({
         setWebSearchQuery(lastUserMessage?.content || "search query");
       }
     }
-  }, [isWebSearchEnabled, messages]);
+  }, [selectedSearchType, messages]);
 
   // Handle image generation retry
   const handleImageGenerationRetry = useCallback(
@@ -1159,6 +1162,7 @@ export default function ChatInterface({
               onRetryWithModel={handleRetryWithModel}
               isWebSearching={isWebSearching}
               webSearchQuery={webSearchQuery}
+              selectedSearchType={selectedSearchType}
             />
           </div>
         )}
