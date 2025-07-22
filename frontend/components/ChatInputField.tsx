@@ -18,13 +18,14 @@ import { useParams } from "react-router";
 import { useNavigate, useLocation } from "react-router";
 import { UIMessage } from "ai";
 import { v4 as uuidv4 } from "uuid";
-import { StopIcon, WebSearchToggle } from "./ui/UIComponents";
+import { StopIcon } from "./ui/UIComponents";
 import { HybridDB } from "@/lib/hybridDB";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 import { ModelSelector } from "./ModelSelector";
 import { ConversationStyleSelector } from "./ConversationStyleSelector";
 import { AspectRatioSelector, ASPECT_RATIOS, AspectRatio, getDimensionsForModel } from "./AspectRatioSelector";
-import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
+import { SearchTypeSelector } from "./SearchTypeSelector";
+import { useSearchTypeStore } from "@/frontend/stores/SearchTypeStore";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { getModelConfig } from "@/lib/models";
 import VoiceInputButton from "./ui/VoiceInputButton";
@@ -173,8 +174,8 @@ function PureInputField({
 
   const { complete } = useChatMessageSummary();
 
-  // Web search state
-  const { isWebSearchEnabled, setWebSearchEnabled } = useWebSearchStore();
+  // Search state (Chat, Web Search, or Reddit Search)
+  const { selectedSearchType } = useSearchTypeStore();
 
   // Model selection state
   const { selectedModel, setModel } = useModelStore();
@@ -553,8 +554,8 @@ function PureInputField({
       // Store the user message in ref so it can be persisted in ChatInterface's onFinish callback
       pendingUserMessageRef.current = userMessage;
 
-      // Track if this message was sent with web search enabled
-      if (isWebSearchEnabled && onWebSearchMessage) {
+      // Track if this message was sent with search enabled (web or reddit)
+      if ((selectedSearchType === 'web' || selectedSearchType === 'reddit') && onWebSearchMessage) {
         onWebSearchMessage(messageId, finalInput);
       }
 
@@ -824,7 +825,7 @@ function PureInputField({
     pendingUserMessageRef,
     attachments,
     messages,
-    isWebSearchEnabled,
+    selectedSearchType,
     onWebSearchMessage,
     isGuest,
     canGuestSendMessage,
@@ -1191,11 +1192,7 @@ function PureInputField({
                     ) : (
                       <>
                         <ConversationStyleSelector className="hidden md:flex flex-shrink-0" />
-                        <WebSearchToggle
-                          isEnabled={isWebSearchEnabled}
-                          onToggle={setWebSearchEnabled}
-                          className="hidden md:flex flex-shrink-0"
-                        />
+                        <SearchTypeSelector className="hidden md:flex flex-shrink-0" />
                       </>
                     )}
                   </>
@@ -1219,11 +1216,7 @@ function PureInputField({
                     ) : (
                       <>
                         <ConversationStyleSelector className="flex md:hidden" />
-                        <WebSearchToggle
-                          isEnabled={isWebSearchEnabled}
-                          onToggle={setWebSearchEnabled}
-                          className="flex md:hidden"
-                        />
+                        <SearchTypeSelector className="flex md:hidden" />
                       </>
                     )}
                     <Button

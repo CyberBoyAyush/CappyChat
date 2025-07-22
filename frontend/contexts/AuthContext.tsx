@@ -17,7 +17,7 @@ import { HybridDB } from '@/lib/hybridDB';
 import { AppwriteRealtime } from '@/lib/appwriteRealtime';
 import { ensureUserTierInitialized } from '@/lib/tierSystem';
 import { globalErrorHandler } from '@/lib/globalErrorHandler';
-import { useWebSearchStore } from '@/frontend/stores/WebSearchStore';
+import { useSearchTypeStore } from '@/frontend/stores/SearchTypeStore';
 import { SessionManager, type SessionInfo, type DetailedSession } from '@/lib/sessionManager';
 
 interface User extends Models.User<Models.Preferences> {}
@@ -218,12 +218,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   });
 
-  // Reset web search when user becomes a guest
+  // Reset search type when user becomes a guest
   useEffect(() => {
     if (guestUser?.isGuest) {
       // Use setTimeout to avoid calling store during render
       setTimeout(() => {
-        useWebSearchStore.getState().resetForGuest();
+        useSearchTypeStore.getState().resetForGuest();
       }, 0);
     }
   }, [guestUser?.isGuest]);
