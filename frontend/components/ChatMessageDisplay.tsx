@@ -16,7 +16,8 @@ import { useOutletContext } from "react-router-dom";
 import { useIsMobile } from "@/hooks/useMobileDetection";
 import { AIModel } from "@/lib/models";
 import WebSearchLoader from "./WebSearchLoader";
-import { useWebSearchStore } from "@/frontend/stores/WebSearchStore";
+import RedditSearchLoader from "./RedditSearchLoader";
+import { useSearchTypeStore, SearchType } from "@/frontend/stores/SearchTypeStore";
 
 function PureMessageDisplay({
   threadId,
@@ -30,6 +31,7 @@ function PureMessageDisplay({
   onRetryWithModel,
   isWebSearching,
   webSearchQuery,
+  selectedSearchType,
 }: {
   threadId: string;
   messages: UIMessage[];
@@ -42,8 +44,11 @@ function PureMessageDisplay({
   onRetryWithModel?: (model?: AIModel, message?: UIMessage) => void;
   isWebSearching?: boolean;
   webSearchQuery?: string;
+  selectedSearchType?: SearchType;
 }) {
-  const { isWebSearchEnabled } = useWebSearchStore();
+  const { selectedSearchType: storeSearchType } = useSearchTypeStore();
+  // Use the passed selectedSearchType prop if available, otherwise fall back to store
+  const currentSearchType = selectedSearchType || storeSearchType;
   // Deduplicate messages at the React level to prevent duplicate keys
   const deduplicatedMessages = messages.reduce(
     (acc: UIMessage[], message, index) => {
@@ -117,10 +122,16 @@ function PureMessageDisplay({
               <div className="w-3.5 h-3.5 rounded-full bg-primary/70 animate-pulse" />
             </div>
           </div>
-          {/* Loading Animation - Show WebSearchLoader if web search is enabled */}
+          {/* Loading Animation - Show appropriate search loader if search is enabled */}
           <div className="flex-1 mt-1">
-            {isWebSearching || isWebSearchEnabled ? (
-              <WebSearchLoader searchQuery={webSearchQuery || "search query"} />
+            {isWebSearching || currentSearchType !== 'chat' ? (
+              currentSearchType === 'reddit' ? (
+                <RedditSearchLoader searchQuery={webSearchQuery || "search query"} />
+              ) : currentSearchType === 'web' ? (
+                <WebSearchLoader searchQuery={webSearchQuery || "search query"} />
+              ) : (
+                <MessageLoading />
+              )
             ) : (
               <MessageLoading />
             )}
