@@ -86,7 +86,7 @@ export const MODEL_CONFIGS = {
     description: 'Fast and efficient model from Google',
   },
   'Gemini 2.5 Flash Lite': {
-    modelId: 'google/gemini-2.5-flash-lite-preview-06-17',
+    modelId: 'google/gemini-2.5-flash-lite',
     provider: 'openrouter',
     displayName: 'Gemini 2.5 Flash Lite',
     iconType: 'google',
