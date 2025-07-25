@@ -372,18 +372,16 @@ export async function POST(req: NextRequest) {
     const result = streamText({
       model: aiModel,
       messages: processedMessages,
-      onError: (error) => {
-        console.error('OpenRouter API error:', error);
-      },
       system: systemPrompt,
-      experimental_transform: [smoothStream({ chunking: 'word' })],
       abortSignal: req.signal,
     });
 
     return result.toDataStreamResponse({
       sendReasoning: true,
       headers: { 
+        'Content-Type': 'text/plain; charset=utf-8',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Connection': 'keep-alive',
         'X-Accel-Buffering': 'no',
         'Transfer-Encoding': 'chunked'
       },
