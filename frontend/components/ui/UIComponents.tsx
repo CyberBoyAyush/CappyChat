@@ -355,26 +355,25 @@ export function ImageGenerationLoading({
     aspectRatio
   );
 
-  // Map aspect ratios to CSS classes
+  // Map aspect ratios to CSS classes - matching the generated image display classes
   const aspectRatioClasses = {
-    "1:1": "aspect-square",
-    "21:9": "aspect-[21/9]",
-    "16:9": "aspect-video",
-    "4:3": "aspect-[4/3]",
+    "1:1": "aspect-square max-w-md",
+    "21:9": "aspect-[21/9] max-w-2xl",
+    "16:9": "aspect-video max-w-2xl",
+    "4:3": "aspect-[4/3] max-w-lg",
   };
 
   const aspectClass =
     aspectRatioClasses[aspectRatio as keyof typeof aspectRatioClasses] ||
-    "aspect-square";
+    "aspect-square max-w-md";
 
   return (
-    <div className="w-full max-w-2xl">
-      <div
-        className={cn(
-          "relative w-full rounded-lg border border-border/50 bg-card/30 overflow-hidden",
-          aspectClass
-        )}
-      >
+    <div
+      className={cn(
+        "relative w-full rounded-lg border border-border/50 bg-card/30 overflow-hidden",
+        aspectClass
+      )}
+    >
         {/* Animated grid background */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5"></div>
@@ -466,7 +465,6 @@ export function ImageGenerationLoading({
         <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-primary/40 dark:border-primary/50"></div>
         <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-primary/40 dark:border-primary/50"></div>
         <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-primary/40 dark:border-primary/50"></div>
-      </div>
     </div>
   );
 }
