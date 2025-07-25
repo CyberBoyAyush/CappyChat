@@ -1000,6 +1000,76 @@ export class AppwriteDB {
     }
   }
 
+  // Update an existing message (for image generation updates, etc.)
+  static async updateMessage(threadId: string, message: any): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+      
+      // Find the existing message document
+      const messagesResponse = await databases.listDocuments(
+        DATABASE_ID,
+        MESSAGES_COLLECTION_ID,
+        [
+          Query.equal('messageId', message.id),
+          Query.equal('threadId', threadId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (messagesResponse.documents.length === 0) {
+        console.log('[AppwriteDB] Message not found for update, creating new one:', message.id);
+        // If message doesn't exist, create it
+        return this.createMessage(threadId, message);
+      }
+
+      const existingDoc = messagesResponse.documents[0];
+      console.log('[AppwriteDB] Updating existing message:', message.id);
+
+      // Update message data
+      const messageData: any = {
+        content: message.content,
+        role: message.role,
+      };
+
+      // Add webSearchResults if present
+      if (message.webSearchResults && message.webSearchResults.length > 0) {
+        messageData.webSearchResults = message.webSearchResults;
+      }
+
+      // Add attachments if present (serialize to JSON string for Appwrite)
+      if (message.attachments && message.attachments.length > 0) {
+        console.log('💾 Updating attachments in Appwrite:', message.attachments);
+        messageData.attachments = JSON.stringify(message.attachments);
+      }
+
+      // Add model if present (for assistant messages)
+      if (message.model) {
+        messageData.model = message.model;
+      }
+
+      // Add imgurl if present (for image generation messages)
+      if (message.imgurl) {
+        messageData.imgurl = message.imgurl;
+      }
+
+      // Update the existing document
+      await databases.updateDocument(
+        DATABASE_ID,
+        MESSAGES_COLLECTION_ID,
+        existingDoc.$id,
+        messageData
+      );
+
+      // Update thread timestamp
+      const now = new Date();
+      const messageCreatedAt = message.createdAt || now;
+      await this.updateThreadLastMessage(threadId, messageCreatedAt, now);
+    } catch (error) {
+      console.error('Error updating message:', error);
+      throw error;
+    }
+  }
+
   // Create a message (optimized with batch operations and error recovery)
   static async createMessage(threadId: string, message: any): Promise<void> {
     try {

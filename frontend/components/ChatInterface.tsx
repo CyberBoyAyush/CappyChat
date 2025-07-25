@@ -683,27 +683,92 @@ export default function ChatInterface({
           !recentlyAppendedMessages.current.has(uiMsg.id)
         );
 
-        if (hasNewMessages || hasMissingMessages) {
-          console.log("[ChatInterface] Smart merge: New messages detected, merging with current UI state");
+        // Check if there are existing messages that need updates (e.g., image generation completed)
+        const hasUpdatedMessages = uiMessages.some(dbMsg => {
+          const currentMsg = messages.find(msg => msg.id === dbMsg.id);
+          if (!currentMsg) return false;
+          
+          // Check for image generation updates (loading -> completed)
+          const wasLoading = currentMsg.content?.includes("Generating your image") || 
+                           (currentMsg as any).isImageGenerationLoading;
+          const nowHasImage = (dbMsg as any).imgurl && !dbMsg.content?.includes("Generating your image");
+          
+          // Check for any content or imgurl differences
+          const contentChanged = currentMsg.content !== dbMsg.content;
+          const imgUrlChanged = (currentMsg as any).imgurl !== (dbMsg as any).imgurl;
+          
+          return wasLoading && nowHasImage || contentChanged || imgUrlChanged;
+        });
 
-          // Merge strategy: Keep current UI messages and add any new ones from database
-          const mergedMessages = [...messages];
-
-          // Add new messages from database that aren't already in UI
-          uiMessages.forEach(dbMsg => {
-            if (!currentMessageIds.has(dbMsg.id) && !recentlyAppendedMessages.current.has(dbMsg.id)) {
-              mergedMessages.push(dbMsg);
-            }
+        if (hasNewMessages || hasMissingMessages || hasUpdatedMessages) {
+          console.log("[ChatInterface] Smart merge: Changes detected", {
+            hasNewMessages,
+            hasMissingMessages, 
+            hasUpdatedMessages,
+            currentCount: messages.length,
+            dbCount: uiMessages.length
           });
 
-          // Sort by creation date to maintain order
-          mergedMessages.sort((a, b) => {
-            const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            return aTime - bTime;
-          });
+          // For image generation updates, we need to replace existing messages with updated DB versions
+          if (hasUpdatedMessages) {
+            console.log("[ChatInterface] Handling image generation message updates");
+            
+            // Build a map of DB messages by ID for quick lookup
+            const dbMessageMap = new Map(uiMessages.map(msg => [msg.id, msg]));
+            
+            // Update existing messages with DB versions, keeping UI messages that aren't in DB
+            const updatedMessages = messages.map(uiMsg => {
+              const dbMsg = dbMessageMap.get(uiMsg.id);
+              if (dbMsg) {
+                // Check if this was an image generation update
+                const wasLoading = uiMsg.content?.includes("Generating your image") || 
+                                 (uiMsg as any).isImageGenerationLoading;
+                                 const nowHasImage = (dbMsg as any).imgurl && !dbMsg.content?.includes("Generating your image");
+                
+                if (wasLoading && nowHasImage) {
+                  console.log("[ChatInterface] Updating image generation message:", uiMsg.id);
+                }
+                
+                return dbMsg; // Use the updated DB version
+              }
+              return uiMsg; // Keep the UI version if no DB match
+            });
+            
+            // Add any new messages from DB that aren't in UI
+            uiMessages.forEach(dbMsg => {
+              if (!currentMessageIds.has(dbMsg.id) && !recentlyAppendedMessages.current.has(dbMsg.id)) {
+                updatedMessages.push(dbMsg);
+              }
+            });
+            
+            // Sort by creation date to maintain order
+            updatedMessages.sort((a, b) => {
+              const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return aTime - bTime;
+            });
 
-          setMessages(deduplicateMessages(mergedMessages));
+            setMessages(deduplicateMessages(updatedMessages));
+          } else {
+            // Regular merge for new messages
+            const mergedMessages = [...messages];
+
+            // Add new messages from database that aren't already in UI
+            uiMessages.forEach(dbMsg => {
+              if (!currentMessageIds.has(dbMsg.id) && !recentlyAppendedMessages.current.has(dbMsg.id)) {
+                mergedMessages.push(dbMsg);
+              }
+            });
+
+            // Sort by creation date to maintain order
+            mergedMessages.sort((a, b) => {
+              const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return aTime - bTime;
+            });
+
+            setMessages(deduplicateMessages(mergedMessages));
+          }
 
           // Auto-scroll to bottom for new messages unless user scrolled up
           if (!userHasScrolledUp) {

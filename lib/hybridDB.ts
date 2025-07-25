@@ -728,6 +728,46 @@ export class HybridDB {
     return LocalDB.getMessagesByThread(threadId);
   }
 
+  // Update message (instant local + async remote)
+  static async updateMessage(threadId: string, message: any): Promise<void> {
+    console.log('[HybridDB] Updating message:', message.id, 'role:', message.role);
+
+    const dbMessage: DBMessage = {
+      id: message.id,
+      threadId,
+      content: message.content,
+      role: message.role,
+      parts: message.parts || [],
+      createdAt: message.createdAt || new Date(),
+      webSearchResults: message.webSearchResults || undefined,
+      attachments: message.attachments || undefined,
+      model: message.model || undefined,
+      imgurl: message.imgurl || undefined
+    };
+
+    // Instant local update (LocalDB.addMessage handles both create and update)
+    LocalDB.addMessage(dbMessage);
+
+    // Emit messages_updated event for real-time sync
+    console.log('[HybridDB] ✅ Message updated locally, emitting messages_updated:', message.id, 'role:', message.role);
+    debouncedEmitter.emitImmediate('messages_updated', threadId, LocalDB.getMessagesByThread(threadId));
+    debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads()); // Thread order might change
+
+    // Skip remote sync for guest users
+    if (this.isGuestMode) {
+      return;
+    }
+
+    // Async remote update
+    this.queueSync(async () => {
+      try {
+        await AppwriteDB.updateMessage(threadId, message); // Use updateMessage for proper updates
+      } catch (error) {
+        console.error('Failed to sync message update:', error);
+      }
+    });
+  }
+
   // Create message (instant local + async remote)
   static async createMessage(threadId: string, message: any): Promise<void> {
     // Prevent duplicate message creation
@@ -846,13 +886,34 @@ export class HybridDB {
       const remoteMessages = await AppwriteDB.getMessagesByThreadId(threadId);
       const localMessages = LocalDB.getMessagesByThread(threadId);
 
+      // Check if there are differences (count or content changes)
+      let hasChanges = remoteMessages.length !== localMessages.length;
+      
+      if (!hasChanges) {
+        // Check for content changes in existing messages (e.g., image generation updates)
+        const localMessageMap = new Map(localMessages.map(msg => [msg.id, msg]));
+        
+        hasChanges = remoteMessages.some(remoteMsg => {
+          const localMsg = localMessageMap.get(remoteMsg.id);
+          if (!localMsg) return true; // New message
+          
+          // Check for content or imgurl differences
+          return localMsg.content !== remoteMsg.content || 
+                 localMsg.imgurl !== remoteMsg.imgurl ||
+                 localMsg.model !== remoteMsg.model;
+        });
+      }
+
       // Only update if there's a difference to avoid unnecessary events
-      if (remoteMessages.length !== localMessages.length) {
+      if (hasChanges) {
+        console.log('[HybridDB] Background sync detected changes, updating local messages for thread:', threadId, 'Remote count:', remoteMessages.length, 'Local count:', localMessages.length);
         LocalDB.clearMessagesByThread(threadId);
         remoteMessages.forEach(message => {
           LocalDB.addMessage(message);
         });
+        // Use emitImmediate for instant cross-session sync
         debouncedEmitter.emitImmediate('messages_updated', threadId, remoteMessages);
+        debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
       }
     } catch (error) {
       console.warn('Immediate message sync failed:', error);
@@ -1085,11 +1146,22 @@ export class HybridDB {
       // Check if both content and imgurl are the same to avoid unnecessary updates
       const contentUnchanged = existingMessage.content === appwriteMessage.content;
       const imgUrlUnchanged = existingMessage.imgurl === appwriteMessage.imgurl;
+      const modelUnchanged = existingMessage.model === appwriteMessage.model;
       
-      if (contentUnchanged && imgUrlUnchanged) {
-        console.log('[HybridDB] Message content and imgurl unchanged, skipping update:', appwriteMessage.messageId);
+      if (contentUnchanged && imgUrlUnchanged && modelUnchanged) {
+        console.log('[HybridDB] Message content, imgurl, and model unchanged, skipping update:', appwriteMessage.messageId);
         return;
       }
+      
+      console.log('[HybridDB] Message update detected:', appwriteMessage.messageId, {
+        contentChanged: !contentUnchanged,
+        imgUrlChanged: !imgUrlUnchanged, 
+        modelChanged: !modelUnchanged,
+        newImgUrl: appwriteMessage.imgurl,
+        oldImgUrl: existingMessage.imgurl
+      });
+    } else {
+      console.log('[HybridDB] New message received via update event:', appwriteMessage.messageId);
     }
 
     // Parse attachments from JSON string if present
