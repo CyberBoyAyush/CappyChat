@@ -654,6 +654,11 @@ function PureInputField({
         loadingAssistantMessage as any,
       ]);
 
+      // Store loading message to database to ensure proper sync (skip for guest users)
+      if (!isGuest) {
+        HybridDB.createMessage(threadId, loadingAssistantMessage);
+      }
+
       // Get appropriate dimensions for the selected model and aspect ratio
       const modelConfig = getModelConfig(selectedModel);
       const dimensions = getDimensionsForModel(selectedAspectRatio, modelConfig.modelId);
@@ -725,7 +730,7 @@ function PureInputField({
 
         // Store updated message to database
         if (!isGuest && updatedMessage) {
-          HybridDB.createMessage(threadId, updatedMessage);
+          HybridDB.updateMessage(threadId, updatedMessage);
         }
 
         toast.success("Image generated successfully!");

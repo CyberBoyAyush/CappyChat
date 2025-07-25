@@ -99,6 +99,7 @@ export default function ChatThreadPage() {
         imgurl: message.imgurl, // ✅ Include imgurl field!
         isImageGenerationLoading: message.isImageGenerationLoading, // ✅ Include loading flag!
         isImageGeneration: message.isImageGeneration, // ✅ Include generation flag!
+        aspectRatio: message.aspectRatio, // ✅ Include aspect ratio for image generation!
       };
     });
   }, []);
