@@ -382,6 +382,11 @@ export async function POST(req: NextRequest) {
 
     return result.toDataStreamResponse({
       sendReasoning: true,
+      headers: { 
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'X-Accel-Buffering': 'no',
+        'Transfer-Encoding': 'chunked'
+      },
       getErrorMessage: (error) => {
         return (error as { message: string }).message;
       },
