@@ -24,9 +24,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Use the provided model or default to OpenAI 4.1 Mini
+    // Use the provided model or default to OpenAI 5 Mini
     // Allow any model for web search with Tavily integration
-    const selectedModel = model || 'OpenAI 4.1 Mini';
+    const selectedModel = model || 'OpenAI 5 Mini';
     const modelConfig = getModelConfig(selectedModel);
 
     if (!modelConfig) {

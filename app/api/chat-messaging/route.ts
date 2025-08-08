@@ -69,11 +69,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Guest user restrictions - force OpenAI 4.1 Mini for guest users
+    // Guest user restrictions - force OpenAI 5 Mini for guest users
     let actualModel = model;
     if (isGuest) {
-      // Force guest users to use OpenAI 4.1 Mini regardless of what model is sent
-      actualModel = 'OpenAI 4.1 Mini';
+      // Force guest users to use OpenAI 5 Mini regardless of what model is sent
+      actualModel = 'OpenAI 5 Mini';
     }
 
     const modelConfig = getModelConfig(actualModel as AIModel);

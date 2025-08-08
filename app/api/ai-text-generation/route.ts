@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
   try {
     const { text: title } = await generateText({
-      model: openrouter('openai/gpt-4.1-nano'),
+      model: openrouter('openai/gpt-5-nano'),
       system: `\n
       - you will generate a short title based on the first message a user begins a conversation with
       - ensure it is not more than 80 characters long
