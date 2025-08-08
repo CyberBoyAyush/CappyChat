@@ -85,9 +85,9 @@ export default function RetryDropdown({
   // For client-side, we'll use a simpler approach to determine available models
   const isModelAvailable = useCallback(
     (model: AIModel) => {
-      // Guest users can only use OpenAI 4.1 Mini
+      // Guest users can only use OpenAI 5 Mini
       if (isGuest) {
-        return model === "OpenAI 4.1 Mini";
+        return model === "OpenAI 5 Mini";
       }
 
       const modelConfig = getModelConfig(model);
@@ -118,7 +118,7 @@ export default function RetryDropdown({
     } else {
       // Recommended text generation models
       return [
-        "OpenAI 4.1 Mini",
+        "OpenAI 5 Mini",
         "Gemini 2.5 Flash",
         "OpenAI o4-mini",
         "DeepSeek R1 Fast",

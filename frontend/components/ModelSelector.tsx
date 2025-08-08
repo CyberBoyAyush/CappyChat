@@ -214,19 +214,19 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
     Record<AIModel, TierValidationResult>
   >({} as Record<AIModel, TierValidationResult>);
 
-  // For guest users, lock to OpenAI 4.1 Mini
+  // For guest users, lock to OpenAI 5 Mini
   // For image generation mode, allow selection but only among image generation models
   // Web search mode allows selection between search models
   const isLocked = isGuest;
   const usingBYOK = hasOpenRouterKey();
 
-  // Force guest users to use OpenAI 4.1 Mini
+  // Force guest users to use OpenAI 5 Mini
   useEffect(() => {
-    if (isGuest && selectedModel !== "OpenAI 4.1 Mini") {
+    if (isGuest && selectedModel !== "OpenAI 5 Mini") {
       console.log(
-        "[ModelSelector] Guest user detected, forcing model to OpenAI 4.1 Mini"
+        "[ModelSelector] Guest user detected, forcing model to OpenAI 5 Mini"
       );
-      setModel("OpenAI 4.1 Mini");
+      setModel("OpenAI 5 Mini");
     }
   }, [isGuest, selectedModel, setModel]);
 
@@ -246,9 +246,9 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
       const currentConfig = getModelConfig(selectedModel);
       if (currentConfig.isImageGeneration) {
         console.log(
-          "[ModelSelector] Not in image generation mode, switching to OpenAI 4.1 Mini"
+          "[ModelSelector] Not in image generation mode, switching to OpenAI 5 Mini"
         );
-        setModel("OpenAI 4.1 Mini");
+        setModel("OpenAI 5 Mini");
       }
     }
   }, [isImageGenMode, selectedModel, setModel]);
@@ -283,7 +283,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
   const isModelEnabled = useCallback(
     (model: AIModel) => {
       if (isGuest) {
-        return model === "OpenAI 4.1 Mini";
+        return model === "OpenAI 5 Mini";
       }
       if (isImageGenMode) {
         const config = getModelConfig(model);
@@ -308,7 +308,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
 
   // Define recommended models
   const recommendedModels: AIModel[] = [
-    "OpenAI 4.1 Mini",
+    "OpenAI 5 Mini",
     "OpenAI o4-mini",
     "DeepSeek R1 Fast",
     "Grok 3 Mini",

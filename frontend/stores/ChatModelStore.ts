@@ -30,7 +30,7 @@ export const withStorageDOMEvents = (store: StoreWithPersist) => {
 export const useModelStore = create<ModelStore>()(
   persist(
     (set, get) => ({
-      selectedModel: 'OpenAI 4.1 Mini',
+      selectedModel: 'OpenAI 5 Mini',
 
       setModel: (model) => {
         set({ selectedModel: model });

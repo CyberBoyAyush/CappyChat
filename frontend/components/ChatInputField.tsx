@@ -1204,7 +1204,7 @@ function PureInputField({
                 )}
                 {isGuest && (
                   <div className="text-xs text-muted-foreground">
-                    Using OpenAI 4.1 Mini • Sign up for more models
+                    Using OpenAI 5 Mini • Sign up for more models
                   </div>
                 )}
               </div>
@@ -1249,7 +1249,7 @@ function PureInputField({
                             console.log(
                               "💬 Switching back to default model: Gemini 2.5 Flash"
                             );
-                            setModel("OpenAI 4.1 Mini");
+                            setModel("OpenAI 5 Mini");
                           }
                         }
                       }}
