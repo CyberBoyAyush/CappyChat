@@ -5,8 +5,9 @@
  * All data is stored directly in Appwrite for better synchronization.
  */
 
-import { Client, Databases, ID, Models, Query } from 'appwrite';
-import { account, client } from './appwrite';
+import { Databases, ID, Models, Query } from 'appwrite';
+import { client } from './appwrite';
+import { getCachedAccount } from './accountCache';
 
 // Database and Collection IDs
 export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
@@ -153,12 +154,12 @@ export interface GlobalMemory {
 export class AppwriteDB {
   static async getCurrentUserId(): Promise<string> {
     try {
-      const user = await account.get();
+      const user = await getCachedAccount();
       if (!user || !user.$id) {
         throw new Error('No authenticated user found');
       }
       return user.$id;
-    } catch (error) {
+    } catch {
       throw new Error('User is not authenticated');
     }
   }
@@ -469,7 +470,7 @@ export class AppwriteDB {
       );
 
       if (response.documents.length > 0) {
-        const doc = response.documents[0] as AppwriteThread;
+        const doc = response.documents[0] as unknown as AppwriteThread;
 
         // Update in Appwrite - strictly adhering to schema
         await databases.updateDocument(
@@ -508,7 +509,7 @@ export class AppwriteDB {
       );
 
       if (response.documents.length > 0) {
-        const doc = response.documents[0] as AppwriteThread;
+        const doc = response.documents[0] as unknown as AppwriteThread;
 
         // Update pin status in Appwrite
         await databases.updateDocument(
@@ -547,7 +548,7 @@ export class AppwriteDB {
       );
 
       if (response.documents.length > 0) {
-        const doc = response.documents[0] as AppwriteThread;
+        const doc = response.documents[0] as unknown as AppwriteThread;
 
         // Update tags in Appwrite
         await databases.updateDocument(
@@ -586,7 +587,7 @@ export class AppwriteDB {
       );
 
       if (response.documents.length > 0) {
-        const doc = response.documents[0] as AppwriteThread;
+        const doc = response.documents[0] as unknown as AppwriteThread;
 
         // Update project in Appwrite
         const updateData: any = {
@@ -673,7 +674,7 @@ export class AppwriteDB {
       }
       
       // Delete the thread itself
-      const threadDoc = threadsResponse.documents[0] as AppwriteThread;
+      const threadDoc = threadsResponse.documents[0] as unknown as AppwriteThread;
       await databases.deleteDocument(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
@@ -699,7 +700,7 @@ export class AppwriteDB {
       
       // Delete each thread, which will cascade to delete messages and summaries
       for (const threadDoc of threadsResponse.documents) {
-        await this.deleteThread((threadDoc as AppwriteThread).threadId);
+        await this.deleteThread((threadDoc as unknown as AppwriteThread).threadId);
       }
       
       // No need to clear local DB as we're using Appwrite exclusively now
@@ -794,7 +795,7 @@ export class AppwriteDB {
       );
 
       if (response.documents.length > 0) {
-        const doc = response.documents[0] as AppwriteProject;
+        const doc = response.documents[0] as unknown as AppwriteProject;
 
         // Update project in Appwrite
         await databases.updateDocument(
@@ -834,7 +835,7 @@ export class AppwriteDB {
       );
 
       if (response.documents.length > 0) {
-        const doc = response.documents[0] as AppwriteProject;
+        const doc = response.documents[0] as unknown as AppwriteProject;
 
         // Update project color in Appwrite
         await databases.updateDocument(
@@ -907,7 +908,7 @@ export class AppwriteDB {
       }
 
       // Delete the project itself
-      const projectDoc = projectsResponse.documents[0] as AppwriteProject;
+      const projectDoc = projectsResponse.documents[0] as unknown as AppwriteProject;
       await databases.deleteDocument(
         DATABASE_ID,
         PROJECTS_COLLECTION_ID,
@@ -1146,7 +1147,7 @@ export class AppwriteDB {
       );
       
       if (threadsResponse.documents.length > 0) {
-        const doc = threadsResponse.documents[0] as AppwriteThread;
+        const doc = threadsResponse.documents[0] as unknown as AppwriteThread;
         await databases.updateDocument(
           DATABASE_ID,
           THREADS_COLLECTION_ID,
@@ -1177,18 +1178,19 @@ export class AppwriteDB {
       const userId = await this.getCurrentUserId();
       
       // Find messages to delete in Appwrite
-      const comparator = gte ? '>=' : '>';
       const messagesResponse = await databases.listDocuments(
         DATABASE_ID,
         MESSAGES_COLLECTION_ID,
         [
           Query.equal('threadId', threadId),
           Query.equal('userId', userId),
-          Query.greaterThanEqual('createdAt', createdAt.toISOString())
+          gte
+            ? Query.greaterThanEqual('createdAt', createdAt.toISOString())
+            : Query.greaterThan('createdAt', createdAt.toISOString())
         ]
       );
       
-      const messageIds = messagesResponse.documents.map(doc => (doc as AppwriteMessage).messageId);
+      const messageIds = messagesResponse.documents.map(doc => (doc as unknown as AppwriteMessage).messageId);
       
       // Delete messages from Appwrite
       for (const doc of messagesResponse.documents) {
@@ -1315,7 +1317,7 @@ export class AppwriteDB {
       
       const messagesMap = new Map();
       for (const doc of messagesResponse.documents) {
-        const message = doc as AppwriteMessage;
+        const message = doc as unknown as AppwriteMessage;
         messagesMap.set(message.messageId, message);
       }
       
@@ -1355,7 +1357,7 @@ export class AppwriteDB {
         throw new Error('Original thread not found');
       }
 
-      const originalThread = originalThreadResponse.documents[0] as AppwriteThread;
+      const originalThread = originalThreadResponse.documents[0] as unknown as AppwriteThread;
 
       // Create the new branched thread
       const branchedThreadData = {
@@ -1389,7 +1391,7 @@ export class AppwriteDB {
 
       // Copy all messages to the new thread
       for (const messageDoc of messagesResponse.documents) {
-        const originalMessage = messageDoc as AppwriteMessage;
+        const originalMessage = messageDoc as unknown as AppwriteMessage;
         const newMessageData: any = {
           messageId: ID.unique(), // Generate new message ID
           threadId: newThreadId,
@@ -1446,7 +1448,7 @@ export class AppwriteDB {
       const userId = await this.getCurrentUserId();
       
       // Check connection by getting threads from Appwrite
-      const appwriteResponse = await databases.listDocuments(
+      await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
         [Query.equal('userId', userId)]
@@ -1463,18 +1465,19 @@ export class AppwriteDB {
   static async testConnection(): Promise<boolean> {
     try {
       // Test basic connectivity
-      const user = await account.get();
-      
+      const user = await getCachedAccount();
+      if (!user) return false;
+
       // Test database access
-      const response = await databases.listDocuments(
+      await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
         [Query.limit(1)]
       );
-      
+
       return true;
-    } catch (error) {
-      console.error('Appwrite connection test failed:', error);
+    } catch (err) {
+      console.error('Appwrite connection test failed:', err);
       return false;
     }
   }
@@ -1492,7 +1495,7 @@ export class AppwriteDB {
         ]
       );
       return response.documents.length > 0;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -1514,7 +1517,7 @@ export class AppwriteDB {
         return null;
       }
 
-      const doc = response.documents[0] as AppwriteGlobalMemory;
+      const doc = response.documents[0] as unknown as AppwriteGlobalMemory;
       return {
         id: doc.$id,
         userId: doc.userId,

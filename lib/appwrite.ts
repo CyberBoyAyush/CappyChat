@@ -6,6 +6,7 @@
  */
 
 import { Client, Account, ID } from 'appwrite';
+import { getCachedAccount, invalidateAccountCache } from './accountCache';
 
 // Validate required environment variables
 if (!process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT) {
@@ -76,7 +77,9 @@ export const TIER_LIMITS = {
 // User preferences helper functions
 export const getUserPreferences = async (): Promise<UserTierPreferences | null> => {
   try {
-    const user = await account.get();
+    const user = await getCachedAccount();
+    if (!user) return null;
+
     const prefs = user.prefs as Record<string, unknown>;
 
     console.log('Raw user preferences:', prefs);
@@ -104,7 +107,9 @@ export const getUserPreferences = async (): Promise<UserTierPreferences | null> 
 
 export const updateUserPreferences = async (preferences: Partial<UserTierPreferences>): Promise<void> => {
   try {
-    const currentUser = await account.get();
+    const currentUser = await getCachedAccount();
+    if (!currentUser) throw new Error('User not found');
+
     const currentPrefs = currentUser.prefs as Record<string, unknown>;
 
     const updatedPrefs = {
@@ -113,6 +118,9 @@ export const updateUserPreferences = async (preferences: Partial<UserTierPrefere
     };
 
     await account.updatePrefs(updatedPrefs);
+
+    // Invalidate cache after update to ensure fresh data on next fetch
+    invalidateAccountCache();
   } catch (error) {
     console.error('Failed to update user preferences:', error);
     throw error;
@@ -122,7 +130,9 @@ export const updateUserPreferences = async (preferences: Partial<UserTierPrefere
 // Custom Profile Management Functions
 export const getUserCustomProfile = async (): Promise<UserCustomProfile | null> => {
   try {
-    const user = await account.get();
+    const user = await getCachedAccount();
+    if (!user) return null;
+
     const prefs = user.prefs as Record<string, unknown>;
 
     if (prefs && prefs.customProfile) {
@@ -138,7 +148,9 @@ export const getUserCustomProfile = async (): Promise<UserCustomProfile | null> 
 
 export const updateUserCustomProfile = async (customProfile: UserCustomProfile): Promise<void> => {
   try {
-    const currentUser = await account.get();
+    const currentUser = await getCachedAccount();
+    if (!currentUser) throw new Error('User not found');
+
     const currentPrefs = currentUser.prefs as Record<string, unknown>;
 
     const updatedPrefs = {
@@ -147,6 +159,9 @@ export const updateUserCustomProfile = async (customProfile: UserCustomProfile):
     };
 
     await account.updatePrefs(updatedPrefs);
+
+    // Invalidate cache after update
+    invalidateAccountCache();
   } catch (error) {
     console.error('Failed to update user custom profile:', error);
     throw error;
@@ -155,7 +170,9 @@ export const updateUserCustomProfile = async (customProfile: UserCustomProfile):
 
 export const clearUserCustomProfile = async (): Promise<void> => {
   try {
-    const currentUser = await account.get();
+    const currentUser = await getCachedAccount();
+    if (!currentUser) throw new Error('User not found');
+
     const currentPrefs = currentUser.prefs as Record<string, unknown>;
 
     const updatedPrefs = {
@@ -164,6 +181,9 @@ export const clearUserCustomProfile = async (): Promise<void> => {
     };
 
     await account.updatePrefs(updatedPrefs);
+
+    // Invalidate cache after update
+    invalidateAccountCache();
   } catch (error) {
     console.error('Failed to clear user custom profile:', error);
     throw error;

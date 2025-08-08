@@ -62,43 +62,8 @@ const AuthLoadingScreen: React.FC<AuthLoadingScreenProps> = ({
   // Animation variants
   const containerVariants = {
     initial: { opacity: 0, scale: 0.9 },
-    animate: { 
-      opacity: 1, 
-      scale: 1,
-      transition: {
-        duration: 0.3,
-        ease: "easeOut"
-      }
-    },
-    exit: { 
-      opacity: 0, 
-      scale: 0.95,
-      transition: {
-        duration: 0.2
-      }
-    }
-  };
-
-  const pulseVariants = {
-    animate: {
-      scale: [1, 1.05, 1],
-      transition: {
-        duration: 2,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }
-    }
-  };
-
-  const progressVariants = {
-    animate: {
-      width: ["0%", "100%"],
-      transition: {
-        duration: 3,
-        ease: "easeInOut",
-        repeat: Infinity
-      }
-    }
+    animate: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 0.95 }
   };
 
   return (
@@ -107,6 +72,7 @@ const AuthLoadingScreen: React.FC<AuthLoadingScreenProps> = ({
       initial="initial"
       animate="animate"
       exit="exit"
+      transition={{ duration: 0.3, ease: "easeOut" }}
       className={cn(
         "fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm",
         className
@@ -150,8 +116,8 @@ const AuthLoadingScreen: React.FC<AuthLoadingScreenProps> = ({
       <div className="relative z-10 text-center space-y-6 max-w-md mx-auto px-6">
         {/* Loading icon with pulse animation */}
         <motion.div
-          variants={pulseVariants}
-          animate="animate"
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           className="flex items-center justify-center"
         >
           <div className="relative">
@@ -205,8 +171,8 @@ const AuthLoadingScreen: React.FC<AuthLoadingScreenProps> = ({
         >
           <div className="h-1 bg-muted rounded-full overflow-hidden">
             <motion.div
-              variants={progressVariants}
-              animate="animate"
+              animate={{ width: ["0%", "100%"] }}
+              transition={{ duration: 3, ease: "easeInOut", repeat: Infinity }}
               className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full"
             />
           </div>

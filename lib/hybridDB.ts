@@ -5,7 +5,7 @@
  * Provides instant UI updates while maintaining data consistency.
  */
 
-import { AppwriteDB, Thread, DBMessage, MessageSummary, AppwriteMessage, FileAttachment, Project } from './appwriteDB';
+import { AppwriteDB, Thread, DBMessage, MessageSummary, FileAttachment, Project } from './appwriteDB';
 import { LocalDB } from './localDB';
 import { AppwriteRealtime } from './appwriteRealtime';
 
@@ -65,7 +65,6 @@ class DebouncedEventEmitter {
     // Quick comparison for messages - use count and last message ID instead of full JSON
     let hasChanged = true;
     if (eventName === 'messages_updated' && args.length >= 2) {
-      const threadId = args[0];
       const messages = args[1];
       const quickHash = `${messages.length}_${messages[messages.length - 1]?.id || 'empty'}`;
       const lastHash = this.lastEmittedData.get(eventKey);
@@ -262,28 +261,20 @@ export class HybridDB {
 
       console.log('[HybridDB] Starting immediate sync for real-time experience...');
 
-      // Phase 1: Load priority threads first for instant access (pinned + project threads)
-      // These are the most important threads that users access frequently
-      const priorityThreads = await AppwriteDB.getPriorityThreads();
-      
-      // Update local storage with priority threads immediately for snappy UI
-      priorityThreads.forEach(thread => LocalDB.upsertThread(thread));
-      debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
-      
-      // Phase 2: Load first 40 regular threads in parallel
-      const firstPageResult = await AppwriteDB.getRegularThreadsPaginated(40, 0);
-      
-      // Update local storage with regular threads
-      firstPageResult.threads.forEach(thread => LocalDB.upsertThread(thread));
-      
-      // Final update with all threads (priority + regular)
-      const allThreads = LocalDB.getThreads();
-      debouncedEmitter.emitImmediate('threads_updated', allThreads);
+      // OPTIMIZED: Load only essential data first for faster initial load
 
-      // Sync projects from remote with immediate UI update
-      const projects = await AppwriteDB.getProjects();
-      LocalDB.replaceAllProjects(projects);
-      debouncedEmitter.emitImmediate('projects_updated', projects);
+      // Phase 1: Load only first 15 recent threads (reduced from 40+ for speed)
+      const recentThreadsResult = await AppwriteDB.getThreadsPaginated(15, 0);
+
+      // Update local storage with recent threads immediately
+      recentThreadsResult.threads.forEach(thread => LocalDB.upsertThread(thread));
+      debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
+
+      // Phase 2: Load projects and priority threads in background (non-blocking)
+      Promise.all([
+        this.loadProjectsInBackground(),
+        this.loadPriorityThreadsInBackground()
+      ]).catch(error => console.warn('Background loading failed:', error));
 
       console.log('[HybridDB] Immediate sync completed successfully');
 
@@ -299,6 +290,37 @@ export class HybridDB {
       const localProjects = LocalDB.getProjects();
       debouncedEmitter.emitImmediate('threads_updated', localThreads);
       debouncedEmitter.emitImmediate('projects_updated', localProjects);
+    }
+  }
+
+  // Load projects in background (non-blocking)
+  private static async loadProjectsInBackground(): Promise<void> {
+    try {
+      const projects = await AppwriteDB.getProjects();
+      LocalDB.replaceAllProjects(projects);
+      debouncedEmitter.emitImmediate('projects_updated', projects);
+      console.log('[HybridDB] Projects loaded in background');
+    } catch (error) {
+      console.warn('[HybridDB] Background projects loading failed:', error);
+    }
+  }
+
+  // Load priority threads in background (non-blocking)
+  private static async loadPriorityThreadsInBackground(): Promise<void> {
+    try {
+      // Load priority threads (pinned + project threads)
+      const priorityThreads = await AppwriteDB.getPriorityThreads();
+      priorityThreads.forEach(thread => LocalDB.upsertThread(thread));
+
+      // Load more regular threads (next 25)
+      const moreThreadsResult = await AppwriteDB.getRegularThreadsPaginated(25, 15);
+      moreThreadsResult.threads.forEach(thread => LocalDB.upsertThread(thread));
+
+      // Update UI with all loaded threads
+      debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
+      console.log('[HybridDB] Priority and additional threads loaded in background');
+    } catch (error) {
+      console.warn('[HybridDB] Background threads loading failed:', error);
     }
   }
 

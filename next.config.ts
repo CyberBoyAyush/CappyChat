@@ -1,6 +1,51 @@
 import type { NextConfig } from 'next';
 
+// Bundle analyzer for optimization
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 const nextConfig: NextConfig = {
+  // Performance optimizations
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      'framer-motion',
+      'react-markdown',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-tooltip',
+      '@radix-ui/react-scroll-area',
+      'sonner',
+      'date-fns',
+    ],
+
+  },
+
+  // Compiler optimizations
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+
+  // Turbopack configuration
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
+      },
+    },
+  },
+
+  // Minimal webpack optimizations (let Next.js handle chunking)
+  webpack: (config) => {
+    // Only add tree shaking optimizations, let Next.js handle bundle splitting
+    config.optimization.usedExports = true;
+    config.optimization.sideEffects = false;
+
+    return config;
+  },
+
   rewrites: async () => {
     return [
       {
@@ -49,4 +94,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

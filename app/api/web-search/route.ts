@@ -56,7 +56,6 @@ export async function POST(req: NextRequest) {
     // Check if user can use this model (tier validation)
     // For web search, consider both OpenRouter BYOK and Tavily BYOK
     const usingBYOK = !!userApiKey;
-    const usingTavilyBYOK = !!userTavilyApiKey;
 
     const tierValidation = await canUserUseModel(selectedModel as AIModel, usingBYOK, userId, isGuest);
 
@@ -213,7 +212,7 @@ export async function POST(req: NextRequest) {
     const openrouter = createOpenRouter({
       apiKey,
       headers: {
-        'HTTP-Referer': 'https://avchat.ayush-sharma.in/',
+        'HTTP-Referer': 'https://avchat.xyz/',
         'X-Title': 'AVChat - AI Chat Application',
         'User-Agent': 'AVChat/1.0.0'
       }

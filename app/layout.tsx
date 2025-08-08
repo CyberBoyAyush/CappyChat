@@ -29,11 +29,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'AVChat - Fastest AI Chat App',
     description: 'Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.',
-    url: 'https://avchat.ayush-sharma.in',
+    url: 'https://avchat.xyz',
     siteName: 'AVChat',
     images: [
       {
-        url: 'https://avchat.ayush-sharma.in/banner.png',
+        url: 'https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPZVsBMANYVhDAoFJpwBTRvjuNX3c1dgE7CIGe',
         width: 1200,
         height: 630,
         alt: 'AVChat - Fastest AI Chat App',
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'AVChat - Fastest AI Chat App',
     description: 'Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.',
-    images: ['https://avchat.ayush-sharma.in/banner.png'],
+    images: ['https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPZVsBMANYVhDAoFJpwBTRvjuNX3c1dgE7CIGe'],
     creator: '@cyberboyayush',
     site: '@cyberboyayush',
   },
@@ -67,18 +67,18 @@ export const metadata: Metadata = {
   },
   other: {
     // Performance optimization meta tags
-    'dns-prefetch': 'https://avchatbackend.ayush-sharma.in',
-    'preconnect': 'https://avchatbackend.ayush-sharma.in',
+    'dns-prefetch': 'https://avchatbackend.avchat.xyz',
+    'preconnect': 'https://avchatbackend.avchat.xyz',
     'viewport': 'width=device-width, initial-scale=1, maximum-scale=1',
     // Additional Open Graph meta tags for better link previews
-    'og:image:secure_url': 'https://avchat.ayush-sharma.in/banner.png',
+    'og:image:secure_url': 'https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPZVsBMANYVhDAoFJpwBTRvjuNX3c1dgE7CIGe',
     'og:image:width': '1200',
     'og:image:height': '630',
     'og:image:alt': 'AVChat - Fastest AI Chat App',
     // LinkedIn specific
     'linkedin:owner': 'cyberboyayush',
     // WhatsApp specific
-    'whatsapp:image': 'https://avchat.ayush-sharma.in/banner.png',
+    'whatsapp:image': 'https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPZVsBMANYVhDAoFJpwBTRvjuNX3c1dgE7CIGe',
   },
 };
 
@@ -106,7 +106,7 @@ export default function RootLayout({
         
         {/* Analytics Tracking Script */}
         <Script
-          src="https://stats.ayush-sharma.in/script.js"
+          src="https://stats.avchat.xyz/script.js"
           data-website-id="07137fa5-ef9f-43f3-afca-6700de099829"
           strategy="afterInteractive"
         />

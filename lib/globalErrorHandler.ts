@@ -139,9 +139,9 @@ class GlobalErrorHandler {
   // Check if current session is valid
   async validateSession(): Promise<boolean> {
     try {
-      const { account } = await import('./appwrite');
-      await account.get();
-      return true;
+      const { getCachedAccount } = await import('./accountCache');
+      const user = await getCachedAccount();
+      return !!user;
     } catch (error) {
       if (this.isAuthError(error)) {
         await this.performCleanLogout();

@@ -438,6 +438,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  // Non-blocking user services initialization for faster UI
+  const initializeUserServicesNonBlocking = useCallback((userId: string, forceRefresh: boolean = false) => {
+    // Run initialization in background without blocking UI
+    initializeUserServices(userId, forceRefresh).catch(error => {
+      console.error('Background user services initialization failed:', error);
+    });
+  }, [initializeUserServices]);
+
   useEffect(() => {
     // Always verify for real-time sync - no caching delays
     const initAuth = async () => {
@@ -459,14 +467,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setInitialized(true);
           });
 
-          // Initialize services and wait for completion to ensure data sync
-          try {
-            await initializeUserServices(currentUser.$id);
-            setLoading(false); // Set loading to false only after services are ready
-          } catch (err) {
-            console.error('Service initialization failed:', err);
-            setLoading(false); // Still set loading to false even if services fail
-          }
+          // Initialize services in background for faster UI (non-blocking)
+          initializeUserServicesNonBlocking(currentUser.$id);
+          setLoading(false); // Set loading to false immediately for faster UI
         } else {
           // Clear cache if no user found
           setCachedAuthState(null);
