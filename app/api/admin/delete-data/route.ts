@@ -46,7 +46,8 @@ export async function POST(req: NextRequest) {
               );
             }
             targetUserId = userList.users[0].$id;
-          } catch (error) {
+          } catch (err) {
+            console.error('Error finding user:', err);
             return NextResponse.json(
               { error: 'Failed to find user' },
               { status: 500 }

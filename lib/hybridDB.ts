@@ -5,7 +5,7 @@
  * Provides instant UI updates while maintaining data consistency.
  */
 
-import { AppwriteDB, Thread, DBMessage, MessageSummary, AppwriteMessage, FileAttachment, Project } from './appwriteDB';
+import { AppwriteDB, Thread, DBMessage, MessageSummary, FileAttachment, Project } from './appwriteDB';
 import { LocalDB } from './localDB';
 import { AppwriteRealtime } from './appwriteRealtime';
 
@@ -65,7 +65,6 @@ class DebouncedEventEmitter {
     // Quick comparison for messages - use count and last message ID instead of full JSON
     let hasChanged = true;
     if (eventName === 'messages_updated' && args.length >= 2) {
-      const threadId = args[0];
       const messages = args[1];
       const quickHash = `${messages.length}_${messages[messages.length - 1]?.id || 'empty'}`;
       const lastHash = this.lastEmittedData.get(eventKey);

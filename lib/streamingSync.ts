@@ -157,12 +157,6 @@ class StreamingSyncManager {
     threadId: string,
     callback: (state: StreamingState) => void
   ): () => void {
-    const threadCallback = (state: StreamingState) => {
-      if (state.threadId === threadId) {
-        callback(state);
-      }
-    };
-
     // Listen to streaming events
     const handleStreamingStarted = (tId: string, messageId: string) => {
       if (tId === threadId) {
@@ -206,7 +200,7 @@ class StreamingSyncManager {
 
   // Check if any message in a thread is currently streaming
   isThreadStreaming(threadId: string): boolean {
-    for (const [key, state] of this.streamingStates) {
+    for (const [, state] of this.streamingStates) {
       if (state.threadId === threadId && state.isStreaming) {
         return true;
       }
@@ -217,7 +211,7 @@ class StreamingSyncManager {
   // Get all streaming messages for a thread
   getThreadStreamingStates(threadId: string): StreamingState[] {
     const states: StreamingState[] = [];
-    for (const [key, state] of this.streamingStates) {
+    for (const [, state] of this.streamingStates) {
       if (state.threadId === threadId) {
         states.push(state);
       }
@@ -296,12 +290,12 @@ class StreamingSyncManager {
         setTimeout(() => {
           try {
             localStorage.removeItem('atchat_streaming_broadcast');
-          } catch (error) {
+          } catch {
             // Ignore cleanup errors
           }
         }, 100);
-      } catch (error) {
-        console.error('[StreamingSync] Error broadcasting to other sessions:', error);
+      } catch (err) {
+        console.error('[StreamingSync] Error broadcasting to other sessions:', err);
       }
     }
   }

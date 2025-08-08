@@ -56,7 +56,6 @@ export async function POST(req: NextRequest) {
     // Check if user can use this model (tier validation)
     // For web search, consider both OpenRouter BYOK and Tavily BYOK
     const usingBYOK = !!userApiKey;
-    const usingTavilyBYOK = !!userTavilyApiKey;
 
     const tierValidation = await canUserUseModel(selectedModel as AIModel, usingBYOK, userId, isGuest);
 
