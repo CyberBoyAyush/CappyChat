@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   const openrouter = createOpenRouter({
     apiKey,
     headers: {
-      'HTTP-Referer': 'https://atchat.ayush-sharma.in',
+      'HTTP-Referer': 'https://avchat.xyz',
       'X-Title': 'AVChat - AI Chat Application',
       'User-Agent': 'AVChat/1.0.0'
     }

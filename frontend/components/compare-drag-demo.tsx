@@ -54,7 +54,7 @@ export default function CompareDemo() {
         height: img.naturalHeight,
       });
     };
-    img.src = "/compareFirst.png";
+    img.src = "https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPRqkvasWUXBJDNsC5iPZHT482KSbkML3t1VmU";
   }, []);
 
   // Calculate responsive dimensions
@@ -101,8 +101,8 @@ export default function CompareDemo() {
         {imageDimensions && containerDimensions && (
           <div className="bg-gradient-to-br from-background/50 to-muted/20 backdrop-blur-sm border border-border/50 rounded-lg md:rounded-3xl p-2 md:p-4 shadow-lg">
             <Compare
-              firstImage="/compareFirst.png"
-              secondImage="/compareSecond.png"
+              firstImage="https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPRqkvasWUXBJDNsC5iPZHT482KSbkML3t1VmU"
+              secondImage="https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAP5ya54cLon9Lj4eUVmCI2isR7uXcaGv0zyEfS"
               firstImageClassName="object-contain select-none w-full h-full rounded-lg md:rounded-xl"
               secondImageClassname="object-contain select-none w-full h-full rounded-lg md:rounded-xl"
               className="rounded-lg md:rounded-xl overflow-hidden shadow-md"
