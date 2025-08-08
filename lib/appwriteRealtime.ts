@@ -5,7 +5,7 @@
  * UI state is updated directly from Appwrite events with no local DB.
  */
 
-import { Client, RealtimeResponseEvent } from 'appwrite';
+import { RealtimeResponseEvent } from 'appwrite';
 import { client } from './appwrite';
 import {
   DATABASE_ID,

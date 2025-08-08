@@ -44,12 +44,18 @@ const UserProfileDropdown: React.FC = () => {
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [tierInfo, setTierInfo] = useState<any>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const authDialog = useAuthDialog();
 
-  // Load tier information
+  // Clear tier info when user changes
+  useEffect(() => {
+    setTierInfo(null);
+  }, [user]);
+
+  // Load tier information only when dropdown is opened
   useEffect(() => {
     const loadTierInfo = async () => {
-      if (!user) return;
+      if (!user || !isDropdownOpen || tierInfo) return; // Don't reload if already loaded
 
       try {
         const info = await getUserTierInfo();
@@ -60,7 +66,7 @@ const UserProfileDropdown: React.FC = () => {
     };
 
     loadTierInfo();
-  }, [user]);
+  }, [user, isDropdownOpen, tierInfo]);
 
   const handleLogout = async () => {
     try {
@@ -146,7 +152,7 @@ const UserProfileDropdown: React.FC = () => {
   const displayEmail = user.email || "";
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={setIsDropdownOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"

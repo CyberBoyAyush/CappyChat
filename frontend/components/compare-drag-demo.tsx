@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Compare } from "@/frontend/components/ui/compare";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { Moon, Sun } from "lucide-react";
 
 export default function CompareDemo() {

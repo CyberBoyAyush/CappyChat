@@ -25,14 +25,29 @@ import EmailVerificationPage from "./routes/auth/EmailVerificationPage";
 import ResetPasswordPage from "./routes/auth/ResetPasswordPage";
 import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { Suspense } from "react";
+import { Loader2 } from "lucide-react";
+
+// Fast loading component for better UX
+function AppLoadingFallback() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-center space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+        <p className="text-muted-foreground">Loading AVChat...</p>
+      </div>
+    </div>
+  );
+}
 
 export default function ChatAppRouter() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <AuthProvider>
-          <GlobalKeyboardShortcuts>
-            <Routes>
+        <Suspense fallback={<AppLoadingFallback />}>
+          <AuthProvider>
+            <GlobalKeyboardShortcuts>
+              <Routes>
           {/* Main chat routes - accessible to both guests and authenticated users */}
           <Route path="/" element={<ChatLayoutWrapper />}>
             <Route index element={<ChatHomePage />} />
@@ -164,6 +179,7 @@ export default function ChatAppRouter() {
             </Routes>
           </GlobalKeyboardShortcuts>
         </AuthProvider>
+        </Suspense>
       </BrowserRouter>
     </ErrorBoundary>
   );

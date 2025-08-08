@@ -5,8 +5,9 @@
  * All data is stored directly in Appwrite for better synchronization.
  */
 
-import { Client, Databases, ID, Models, Query } from 'appwrite';
-import { account, client } from './appwrite';
+import { Databases, ID, Models, Query } from 'appwrite';
+import { client } from './appwrite';
+import { getCachedAccount } from './accountCache';
 
 // Database and Collection IDs
 export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
@@ -153,7 +154,7 @@ export interface GlobalMemory {
 export class AppwriteDB {
   static async getCurrentUserId(): Promise<string> {
     try {
-      const user = await account.get();
+      const user = await getCachedAccount();
       if (!user || !user.$id) {
         throw new Error('No authenticated user found');
       }
@@ -1463,15 +1464,16 @@ export class AppwriteDB {
   static async testConnection(): Promise<boolean> {
     try {
       // Test basic connectivity
-      const user = await account.get();
-      
+      const user = await getCachedAccount();
+      if (!user) return false;
+
       // Test database access
       const response = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
         [Query.limit(1)]
       );
-      
+
       return true;
     } catch (error) {
       console.error('Appwrite connection test failed:', error);

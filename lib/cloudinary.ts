@@ -7,10 +7,10 @@
  */
 
 import { FileAttachment } from './appwriteDB';
-import * as mammoth from 'mammoth';
 
-// Dynamic import for server-side only
+// Dynamic imports for server-side only
 let cloudinary: any = null;
+let mammoth: any = null;
 
 async function getCloudinary() {
   if (!cloudinary) {
@@ -23,6 +23,13 @@ async function getCloudinary() {
     cloudinary = v2;
   }
   return cloudinary;
+}
+
+async function getMammoth() {
+  if (!mammoth) {
+    mammoth = await import('mammoth');
+  }
+  return mammoth;
 }
 
 export interface UploadResult {
@@ -185,7 +192,8 @@ export class CloudinaryService {
         const buffer = Buffer.from(arrayBuffer);
 
         // Use buffer instead of arrayBuffer for mammoth
-        const result = await mammoth.extractRawText({ buffer });
+        const mammothLib = await getMammoth();
+        const result = await mammothLib.extractRawText({ buffer });
         return result.value || '';
       }
 
