@@ -49,8 +49,12 @@ AVChat is a **next-generation AI chat platform** that combines the power of mult
 
 - 🤖 **Multiple AI Models**: From OpenAI's to Sonnet, we've got them all!
 - ⚡ **Real-time Sync**: Works across devices faster than a cat knocking things off a table
-- 🖼️ **Image Generation**: Because sometimes words aren't enough
+- 🖼️ **Image Generation**: Text-to-image and image-to-image with aspect ratio selection
 - 🗣️ **Voice Input**: Talk to your AI like you would to your cat (but it actually listens)
+- 🔍 **Web & Reddit Search**: Live search with Tavily integration and rich citations
+- 🔑 **BYOK Support**: Bring Your Own API Keys for enhanced privacy and control
+- 📊 **Version Management**: Automated changelog and semantic versioning system
+- ⚡ **Performance Optimized**: Sub-100ms local operations with smart caching
 - 📱 **Mobile-First Design**: Looks great on everything from phones to ultrawide monitors
 - 🎨 **Beautiful UI**: So pretty, it makes other apps jealous
 
@@ -66,9 +70,11 @@ AVChat is a **next-generation AI chat platform** that combines the power of mult
 - **Backend**: Node.js with Appwrite (because who has time for PHP?)
 - **Database**: Appwrite + LocalDB hybrid (local-first, cloud-synced magic)
 - **AI Integration**: OpenRouter, OpenAI, Runware (all the AIs!)
+- **Search**: Tavily API for web and Reddit search with citations
 - **Styling**: TailwindCSS (because CSS-in-JS makes us cry)
 - **State Management**: Zustand (simpler than Redux, fight us)
 - **Real-time**: Appwrite Realtime + Custom streaming sync
+- **Version Control**: Automated changelog and semantic versioning
 
 ## 🚀 Getting Started (Don't Panic!)
 
@@ -90,7 +96,7 @@ Before you begin, make sure you have:
 
 ```bash
 # Clone the repo (obviously)
-git clone https://github.com/your-username/AVChat.git
+git clone https://github.com/cyberboyayush/AVChat.git
 cd AVChat
 
 # Install dependencies (this might take a while, perfect time for a coffee break)
@@ -159,15 +165,15 @@ APPWRITE_API_KEY=your-server-api-key
 
 # Success redirect after login
 NEXT_PUBLIC_AUTH_SUCCESS_URL=http://localhost:3000/auth/callback
-# Production: https://yourdomain.com/auth/callback
+# Production: https://avchat.xyz/auth/callback
 
 # Error redirect for failed auth
 NEXT_PUBLIC_AUTH_FAILURE_URL=http://localhost:3000/auth/error
-# Production: https://yourdomain.com/auth/error
+# Production: https://avchat.xyz/auth/error
 
 # Email verification redirect
 NEXT_PUBLIC_VERIFICATION_URL=http://localhost:3000/auth/verify
-# Production: https://yourdomain.com/auth/verify
+# Production: https://avchat.xyz/auth/verify
 
 # 👑 ADMIN CONFIGURATION (For the Power Users)
 # ================================================
@@ -175,6 +181,15 @@ NEXT_PUBLIC_VERIFICATION_URL=http://localhost:3000/auth/verify
 # Super secret admin key (make it REALLY secure!)
 ADMIN_SECRET_KEY=your-super-duper-secret-admin-key-that-no-one-can-guess-2024
 # Use a strong, unique key - this controls admin access!
+
+# 🔍 WEB SEARCH (Optional but Awesome)
+# ================================================
+
+# Tavily - For intelligent web search and Reddit search
+TAVILY_API_KEY=tvly-dev-your-tavily-key-here
+# Get from: https://tavily.com/
+# Used for: Web search, Reddit search, real-time information
+# Note: Users can also provide their own Tavily API key via BYOK settings
 
 # 📁 FILE UPLOAD (Optional but Cool)
 # ================================================
@@ -192,9 +207,9 @@ CLOUDINARY_API_SECRET=your-cloudinary-secret
 NODE_ENV=development
 # Set to 'production' when deploying
 
-# API base URL  
+# API base URL
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
-# Production: https://yourdomain.com
+# Production: https://avchat.xyz
 ```
 
 ### 🚨 Security Pro Tips (Because We Care About Your Data)
@@ -478,9 +493,16 @@ AVChat/
 - Watch your words appear like magic
 
 **Image Generation:**
-- Type `/image` followed by your prompt
-- Wait for the AI to work its magic
+- Enable image mode and select aspect ratio
+- Choose from text-to-image or image-to-image generation
+- Use FLUX.1 models for stunning results
 - Marvel at the results (or laugh at the failures)
+
+**Web & Reddit Search:**
+- Enable web search mode for any AI model
+- Get real-time information with rich citations
+- Search Reddit communities with dedicated mode
+- Use your own Tavily API key for enhanced privacy
 
 **File Upload:**
 - Drag and drop files into the chat
@@ -778,7 +800,8 @@ Having issues? Found a bug? Want to chat about cats and AI?
 
 - 🐛 **Report Issues**: [GitHub Issues](https://github.com/cyberboyayush/AVChat/issues)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/cyberboyayush/AVChat/discussions)
-- 📧 **Email**: connect@ayush-sharma.in or connect@vrandacodz.xyz
+- 📧 **Email**: connect@ayush-sharma.in
+- 🌐 **Live Demo**: [avchat.xyz](https://avchat.xyz)
 - 🐱 **Cat Photos**: Always welcome
 
 ---
@@ -815,9 +838,12 @@ This project was built during an epic coding marathon with the following highlig
 **🎪 Technical Showoffs:**
 - ⚡ **Sub-100ms response times** for local operations (faster than a cat's reflexes!)
 - 🔄 **99.9% sync reliability** across devices (more reliable than cats coming when called)
+- 📦 **106kB bundle size** with dynamic imports and smart optimization
+- 🎯 **90% reduction in API calls** with intelligent caching system
 - 📱 **Mobile-first responsive design** that actually works on everything
 - 🎨 **WCAG 2.1 AA accessibility compliance** (because good UX is for everyone)
 - 🚀 **Optimistic UI updates** for instant feedback (no waiting around like a cat at a closed door)
+- 🔍 **Universal web search** across all AI models with rich citations
 
 <div align="center">
 
@@ -921,9 +947,11 @@ This project was built during an epic coding marathon with the following highlig
 - 🎨 Beautiful, accessible interface
 - 📱 Works perfectly on all devices
 - 🗣️ Voice input with speech recognition
-- 🖼️ AI image generation
-- 🔍 Web search integration
+- 🖼️ AI image generation with image-to-image support
+- 🔍 Web search and Reddit search integration
 - 📁 File upload and analysis
+- 🔑 BYOK support for enhanced privacy
+- 📊 Interactive changelog and version management
 
 **🎯 The Tech Stack Breakdown:**
 ```mermaid
