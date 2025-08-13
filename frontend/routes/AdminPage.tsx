@@ -141,6 +141,29 @@ export default function AdminPage() {
     }
   };
 
+  // Update any user's tier (for pro users management)
+  const handleUpdateAnyUserTier = async (
+    userId: string,
+    newTier: "free" | "premium" | "admin"
+  ) => {
+    if (!adminKey.trim()) {
+      toast.error("Please enter admin key");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await adminService.updateUserTier(adminKey.trim(), userId, newTier);
+      toast.success(`User tier updated to ${newTier}`);
+      handleLoadStats(); // Refresh stats to update pro users list
+    } catch (error) {
+      devError("Error updating user tier:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update user tier");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Monthly reset - reset all user credits
   const handleMonthlyReset = async () => {
     if (!adminKey.trim()) {
@@ -929,6 +952,214 @@ export default function AdminPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Credits Overview */}
+        {adminStats && (
+          <Card className="border-blue-200 dark:border-blue-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-600">
+                <CreditCard className="h-5 w-5" />
+                Monthly Credits Overview
+              </CardTitle>
+              <CardDescription>
+                Current month credits issued and usage statistics
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                {/* Total Credits Issued */}
+                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
+                  <TrendingUp className="h-6 w-6 mx-auto mb-2 text-green-600" />
+                  <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                    {adminStats.monthlyCredits.totalCreditsIssued.total.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-green-600">Total Credits Issued</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {adminStats.monthlyCredits.usersResetThisMonth} users reset this month
+                  </p>
+                </div>
+
+                {/* Credits Used */}
+                <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg text-center">
+                  <Activity className="h-6 w-6 mx-auto mb-2 text-orange-600" />
+                  <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
+                    {adminStats.monthlyCredits.creditsUsed.total.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-orange-600">Credits Used</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {adminStats.monthlyCredits.utilizationRate}% utilization
+                  </p>
+                </div>
+
+                {/* Free Credits Breakdown */}
+                <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg text-center">
+                  <div className="text-xs text-muted-foreground mb-2">Free Credits</div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span>Issued:</span>
+                      <span className="font-medium">{adminStats.monthlyCredits.totalCreditsIssued.free.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span>Used:</span>
+                      <span className="font-medium">{adminStats.monthlyCredits.creditsUsed.free.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Premium Credits Breakdown */}
+                <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg text-center">
+                  <div className="text-xs text-purple-600 mb-2">Premium Credits</div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span>Issued:</span>
+                      <span className="font-medium">{adminStats.monthlyCredits.totalCreditsIssued.premium.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span>Used:</span>
+                      <span className="font-medium">{adminStats.monthlyCredits.creditsUsed.premium.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Super Premium Credits Breakdown */}
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg text-center">
+                  <div className="text-xs text-indigo-600 mb-2">Super Premium</div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span>Issued:</span>
+                      <span className="font-medium">{adminStats.monthlyCredits.totalCreditsIssued.superPremium.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span>Used:</span>
+                      <span className="font-medium">{adminStats.monthlyCredits.creditsUsed.superPremium.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Utilization Progress Bar */}
+              <div className="mt-4">
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Overall Utilization</span>
+                  <span className="font-medium">{adminStats.monthlyCredits.utilizationRate}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min(adminStats.monthlyCredits.utilizationRate, 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pro Users Management */}
+        {adminStats && adminStats.proUsers.totalCount > 0 && (
+          <Card className="border-purple-200 dark:border-purple-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-purple-600">
+                <Users className="h-5 w-5" />
+                Pro Users Management
+              </CardTitle>
+              <CardDescription>
+                Manage premium tier users ({adminStats.proUsers.totalCount} total, {adminStats.proUsers.activeCount} active, {adminStats.proUsers.verifiedCount} verified)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Pro Users Stats */}
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg text-center">
+                    <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                      {adminStats.proUsers.totalCount}
+                    </p>
+                    <p className="text-xs text-purple-600">Total Pro Users</p>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
+                    <p className="text-lg font-bold text-green-700 dark:text-green-300">
+                      {adminStats.proUsers.activeCount}
+                    </p>
+                    <p className="text-xs text-green-600">Active Users</p>
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-center">
+                    <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                      {adminStats.proUsers.verifiedCount}
+                    </p>
+                    <p className="text-xs text-blue-600">Verified Users</p>
+                  </div>
+                </div>
+
+                {/* Pro Users List */}
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {adminStats.proUsers.users.slice(0, 10).map((user) => (
+                    <div
+                      key={user.$id}
+                      className="border rounded-lg p-4 bg-slate-50 dark:bg-slate-800"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h6 className="font-medium text-sm">{user.email}</h6>
+                            {user.emailVerification && (
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            )}
+                            {!user.status && (
+                              <AlertTriangle className="h-4 w-4 text-orange-500" />
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                            <div>Name: {user.name}</div>
+                            <div>Registered: {new Date(user.registration).toLocaleDateString()}</div>
+                            <div>Free: {user.freeCredits}</div>
+                            <div>Premium: {user.premiumCredits}</div>
+                            <div>Super: {user.superPremiumCredits}</div>
+                            <div>Reset: {user.lastResetDate ? new Date(user.lastResetDate).toLocaleDateString() : 'Never'}</div>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 ml-4">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleUpdateAnyUserTier(user.$id, 'free')}
+                            disabled={isLoading}
+                            className="text-xs px-2 py-1 h-6"
+                          >
+                            Downgrade
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleResetUserCredits(user.$id)}
+                            disabled={isLoading}
+                            className="text-xs px-2 py-1 h-6"
+                          >
+                            Reset
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleClearUserSession(user.$id)}
+                            disabled={isLoading}
+                            className="text-xs px-2 py-1 h-6"
+                          >
+                            Logout
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {adminStats.proUsers.totalCount > 10 && (
+                  <div className="text-center text-sm text-muted-foreground">
+                    Showing first 10 of {adminStats.proUsers.totalCount} pro users
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* System Operations */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

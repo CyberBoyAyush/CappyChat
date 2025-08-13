@@ -15,6 +15,21 @@ export interface AdminUser {
   preferences?: any;
 }
 
+export interface ProUser {
+  $id: string;
+  email: string;
+  name: string;
+  emailVerification: boolean;
+  status: boolean;
+  registration: string;
+  tier: string;
+  freeCredits: number;
+  premiumCredits: number;
+  superPremiumCredits: number;
+  lastResetDate: string | null;
+  preferences: any;
+}
+
 export interface AdminStats {
   users: {
     total: number;
@@ -44,6 +59,28 @@ export interface AdminStats {
       usedSuperPremiumCredits: number;
     };
     totalUsers: number;
+  };
+  monthlyCredits: {
+    totalCreditsIssued: {
+      free: number;
+      premium: number;
+      superPremium: number;
+      total: number;
+    };
+    creditsUsed: {
+      free: number;
+      premium: number;
+      superPremium: number;
+      total: number;
+    };
+    usersResetThisMonth: number;
+    utilizationRate: number;
+  };
+  proUsers: {
+    users: ProUser[];
+    totalCount: number;
+    activeCount: number;
+    verifiedCount: number;
   };
   lastUpdated: string;
 }
@@ -192,6 +229,14 @@ class AdminService {
       action: 'clearUserSession',
       userId,
     });
+  }
+
+  /**
+   * Get all pro users (premium tier users)
+   */
+  async getProUsers(adminKey: string): Promise<ProUser[]> {
+    const stats = await this.getStats(adminKey);
+    return stats.proUsers.users;
   }
 
   // ===== DELETE OPERATIONS =====
