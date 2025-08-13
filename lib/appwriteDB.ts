@@ -56,6 +56,9 @@ export interface AppwriteThread extends Models.Document {
   tags?: string[]; // Optional tags array for thread categorization
   isBranched?: boolean; // Branch status for thread organization
   projectId?: string; // Optional project ID for thread organization
+  isShared?: boolean; // Share status for thread sharing
+  shareId?: string; // Unique share ID for public access
+  sharedAt?: string; // ISO date string when thread was shared
 }
 
 // Define Thread interface for internal use
@@ -69,6 +72,9 @@ export interface Thread {
   tags?: string[]; // Optional tags array for thread categorization
   isBranched?: boolean; // Branch status for thread organization
   projectId?: string; // Optional project ID for thread organization
+  isShared?: boolean; // Share status for thread sharing
+  shareId?: string; // Unique share ID for public access
+  sharedAt?: Date; // Date when thread was shared
 }
 
 // Interface for file attachments
@@ -162,6 +168,24 @@ export class AppwriteDB {
       return user.$id;
     } catch {
       throw new Error('User is not authenticated');
+    }
+  }
+
+  // Check if user is properly authenticated (returns boolean instead of throwing)
+  static async isUserAuthenticated(): Promise<boolean> {
+    try {
+      const user = await getCachedAccount();
+      // Check if user exists, has ID, is active, and email is verified
+      return !!(user && user.$id && user.status && user.emailVerification);
+    } catch (error: any) {
+      // Check if it's a guest user error or other authentication issue
+      if (error.type === 'general_unauthorized_scope' ||
+          error.code === 401 ||
+          error.message?.includes('missing scope') ||
+          error.message?.includes('guests')) {
+        return false; // User is guest or not authenticated
+      }
+      return false; // Any other error means not authenticated
     }
   }
 
@@ -1636,6 +1660,156 @@ export class AppwriteDB {
       }
     } catch (error) {
       devError('Error clearing all memories:', error);
+      throw error;
+    }
+  }
+
+  // -------------- Thread Sharing Operations --------------
+
+  // Update thread sharing status
+  static async updateThreadSharing(threadId: string, sharingData: {
+    isShared: boolean;
+    shareId?: string;
+    sharedAt?: string;
+  }): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const now = new Date();
+
+      // Find the Appwrite document ID by threadId
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('threadId', threadId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (response.documents.length === 0) {
+        throw new Error('Thread not found');
+      }
+
+      const doc = response.documents[0] as unknown as AppwriteThread;
+      await databases.updateDocument(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        doc.$id,
+        {
+          ...sharingData,
+          updatedAt: now.toISOString()
+        }
+      );
+    } catch (error) {
+      devError('Error updating thread sharing:', error);
+      throw error;
+    }
+  }
+
+  // Get shared thread by shareId (server-side only - requires admin privileges)
+  static async getSharedThreadServerSide(shareId: string): Promise<AppwriteThread | null> {
+    try {
+      // This method should only be called from server-side API routes
+      // where we have admin privileges
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('shareId', shareId),
+          Query.equal('isShared', true)
+        ]
+      );
+
+      if (response.documents.length === 0) {
+        return null;
+      }
+
+      return response.documents[0] as unknown as AppwriteThread;
+    } catch (error) {
+      devError('Error getting shared thread (server-side):', error);
+      throw error;
+    }
+  }
+
+  // Get messages for a shared thread (server-side only - requires admin privileges)
+  static async getSharedThreadMessagesServerSide(threadId: string): Promise<DBMessage[]> {
+    try {
+      // This method should only be called from server-side API routes
+      // where we have admin privileges
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        MESSAGES_COLLECTION_ID,
+        [
+          Query.equal('threadId', threadId),
+          Query.orderAsc('$createdAt')
+        ]
+      );
+
+      return response.documents.map((doc) => {
+        const messageDoc = doc as unknown as AppwriteMessage;
+
+        // Parse attachments from JSON string if present
+        let attachments: FileAttachment[] | undefined = undefined;
+        if (messageDoc.attachments) {
+          try {
+            // If it's already an object, use it directly (backward compatibility)
+            if (typeof messageDoc.attachments === 'object') {
+              attachments = messageDoc.attachments as FileAttachment[];
+            } else {
+              // If it's a string, parse it
+              attachments = JSON.parse(messageDoc.attachments as string);
+            }
+
+            // Ensure createdAt is a Date object for each attachment
+            if (attachments && Array.isArray(attachments)) {
+              attachments = attachments.map(att => ({
+                ...att,
+                createdAt: typeof att.createdAt === 'string' ? new Date(att.createdAt) : att.createdAt
+              }));
+            }
+          } catch (error) {
+            devError('Error parsing attachments:', error);
+            attachments = undefined;
+          }
+        }
+
+        return {
+          id: messageDoc.messageId,
+          threadId: messageDoc.threadId,
+          role: messageDoc.role,
+          content: messageDoc.content || "",
+          createdAt: new Date(doc.$createdAt),
+          model: messageDoc.model,
+          attachments: attachments
+        };
+      });
+    } catch (error) {
+      devError('Error getting shared thread messages (server-side):', error);
+      throw error;
+    }
+  }
+
+  // Get thread by threadId (for ownership verification)
+  static async getThread(threadId: string): Promise<AppwriteThread | null> {
+    try {
+      const userId = await this.getCurrentUserId();
+
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('threadId', threadId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (response.documents.length === 0) {
+        return null;
+      }
+
+      return response.documents[0] as unknown as AppwriteThread;
+    } catch (error) {
+      devError('Error getting thread:', error);
       throw error;
     }
   }

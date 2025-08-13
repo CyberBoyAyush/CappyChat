@@ -28,6 +28,7 @@ import { useLocation } from "react-router-dom";
 import ThemeToggleButton from "./ui/ThemeComponents";
 import { Button } from "./ui/button";
 import AuthDialog from "./auth/AuthDialog";
+import ShareButton from "./ShareButton";
 import { useAuthDialog } from "@/frontend/hooks/useAuthDialog";
 import {
   MessageSquareMore,
@@ -1418,6 +1419,11 @@ export default function ChatInterface({
               : "border-none mr-6 rounded-md py-2"
           )}
         >
+          <ShareButton
+            threadId={threadId}
+            variant={isDarkTheme ? "outline" : "secondary"}
+          />
+
           <Button
             onClick={handleToggleNavigator}
             variant={isDarkTheme ? "outline" : "secondary"}

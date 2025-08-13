@@ -390,7 +390,10 @@ export class HybridDB {
       isPinned: false, // New threads are not pinned by default
       tags: [], // New threads have no tags by default
       isBranched: false, // New threads are not branched by default
-      projectId: projectId // Optional project ID
+      projectId: projectId, // Optional project ID
+      isShared: false, // New threads are not shared by default
+      shareId: undefined, // No share ID initially
+      sharedAt: undefined // No shared date initially
     };
 
     // Instant local update
@@ -1062,7 +1065,10 @@ export class HybridDB {
       isPinned: appwriteThread.isPinned || false, // Default to false for existing threads
       tags: appwriteThread.tags || [], // Default to empty array for existing threads
       isBranched: appwriteThread.isBranched || false, // Default to false for existing threads
-      projectId: appwriteThread.projectId // Optional project ID
+      projectId: appwriteThread.projectId, // Optional project ID
+      isShared: appwriteThread.isShared || false, // Default to false for existing threads
+      shareId: appwriteThread.shareId, // Optional share ID
+      sharedAt: appwriteThread.sharedAt ? new Date(appwriteThread.sharedAt) : undefined // Optional shared date
     };
 
     LocalDB.upsertThread(thread);
@@ -1079,7 +1085,10 @@ export class HybridDB {
       isPinned: appwriteThread.isPinned || false, // Default to false for existing threads
       tags: appwriteThread.tags || [], // Default to empty array for existing threads
       isBranched: appwriteThread.isBranched || false, // Default to false for existing threads
-      projectId: appwriteThread.projectId // Optional project ID
+      projectId: appwriteThread.projectId, // Optional project ID
+      isShared: appwriteThread.isShared || false, // Default to false for existing threads
+      shareId: appwriteThread.shareId, // Optional share ID
+      sharedAt: appwriteThread.sharedAt ? new Date(appwriteThread.sharedAt) : undefined // Optional shared date
     };
 
     LocalDB.upsertThread(thread);
@@ -1601,6 +1610,80 @@ export class HybridDB {
       debouncedEmitter.emitImmediate('threads_updated', []);
       debouncedEmitter.emitImmediate('projects_updated', []);
     }
+  }
+
+  // ============ THREAD SHARING OPERATIONS ============
+
+  // Share a thread (instant local + async remote)
+  static async shareThread(threadId: string): Promise<string> {
+    // Skip for guest users
+    if (this.isGuestMode) {
+      throw new Error('Sharing not available for guest users');
+    }
+
+    // Generate unique share ID
+    const shareId = `share_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    const now = new Date();
+
+    // Instant local update
+    LocalDB.updateThread(threadId, {
+      isShared: true,
+      shareId,
+      sharedAt: now,
+      updatedAt: now
+    });
+
+    // Emit immediate updates
+    debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
+
+    // Async remote update
+    this.queueSync(async () => {
+      try {
+        await AppwriteDB.updateThreadSharing(threadId, {
+          isShared: true,
+          shareId,
+          sharedAt: now.toISOString()
+        });
+      } catch (error) {
+        devError('Failed to sync thread sharing:', error);
+      }
+    });
+
+    return shareId;
+  }
+
+  // Unshare a thread (instant local + async remote)
+  static async unshareThread(threadId: string): Promise<void> {
+    // Skip for guest users
+    if (this.isGuestMode) {
+      throw new Error('Unsharing not available for guest users');
+    }
+
+    const now = new Date();
+
+    // Instant local update
+    LocalDB.updateThread(threadId, {
+      isShared: false,
+      shareId: undefined,
+      sharedAt: undefined,
+      updatedAt: now
+    });
+
+    // Emit immediate updates
+    debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
+
+    // Async remote update
+    this.queueSync(async () => {
+      try {
+        await AppwriteDB.updateThreadSharing(threadId, {
+          isShared: false,
+          shareId: undefined,
+          sharedAt: undefined
+        });
+      } catch (error) {
+        devError('Failed to sync thread unsharing:', error);
+      }
+    });
   }
 }
 

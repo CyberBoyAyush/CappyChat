@@ -298,7 +298,7 @@ async function getMonthlyCreditsOverview() {
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    let monthlyStats = {
+    const monthlyStats = {
       totalCreditsIssued: {
         free: 0,
         premium: 0,
