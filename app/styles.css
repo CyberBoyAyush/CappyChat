@@ -61,13 +61,13 @@
 
 .dark {
   /* Dark mode colors - #202020 background, #f76f52 primary */
-  --background: #202020;
+  --background: #131313;
   --foreground: #ffffff;
   --card: #2a2a2a;
   --card-foreground: #ffffff;
   --popover: #2a2a2a;
   --popover-foreground: #ffffff;
-  --primary: #f76f52;
+  --primary: #d4d4d4;
   --primary-foreground: #ffffff;
   --secondary: #2f2f2f;
   --secondary-foreground: #ffffff;

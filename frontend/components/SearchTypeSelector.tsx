@@ -6,7 +6,8 @@
  * Mobile-friendly with icon-only display on small screens.
  */
 
-import { ChevronDown, Check, Globe, MessageSquare, MessageCircle } from "lucide-react";
+import { ChevronDown, Check, Globe, MessageCircle } from "lucide-react";
+import { FaRedditAlien } from "react-icons/fa6";
 import { memo, useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
@@ -15,11 +16,11 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/frontend/components/ui/dropdown-menu";
-import { 
-  useSearchTypeStore, 
-  SearchType, 
+import {
+  useSearchTypeStore,
+  SearchType,
   SEARCH_TYPE_CONFIGS,
-  SearchTypeConfig 
+  SearchTypeConfig,
 } from "@/frontend/stores/SearchTypeStore";
 
 interface SearchTypeSelectorProps {
@@ -29,16 +30,13 @@ interface SearchTypeSelectorProps {
 // Icon mapping for dynamic icon rendering
 const IconMap = {
   Globe,
-  MessageSquare,
   MessageCircle,
+  FaRedditAlien,
 };
 
 function PureSearchTypeSelector({ className }: SearchTypeSelectorProps) {
-  const {
-    selectedSearchType,
-    setSearchType,
-    getSearchConfig
-  } = useSearchTypeStore();
+  const { selectedSearchType, setSearchType, getSearchConfig } =
+    useSearchTypeStore();
   const [isOpen, setIsOpen] = useState(false);
 
   const currentConfig = getSearchConfig();
@@ -58,23 +56,19 @@ function PureSearchTypeSelector({ className }: SearchTypeSelectorProps) {
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           title={`Select mode - Current: ${currentConfig.name}`}
           className={cn(
             "flex items-center gap-1.5 text-xs font-medium transition-all duration-200",
-            "hover:bg-muted border-border/50 h-8",
-            // Mobile: icon only, minimal width
+            "hover:bg-accent/20 h-8",
             "sm:min-w-[100px] sm:justify-between",
-            // Desktop: show text
             "justify-center min-w-[32px]",
             className
           )}
           aria-label={`Current mode: ${currentConfig.name}`}
         >
-          <CurrentIcon
-            className={cn("h-3.5 w-3.5", currentConfig.color)}
-          />
+          <CurrentIcon className={cn("h-3.5 w-3.5")} />
           <span className="hidden sm:inline text-xs truncate">
             {currentConfig.name}
           </span>
@@ -89,10 +83,14 @@ function PureSearchTypeSelector({ className }: SearchTypeSelectorProps) {
 
       <DropdownMenuContent
         align="start"
-        className="w-56 max-h-72 p-1.5"
+        className={cn(
+          "w-56 max-h-72 p-0",
+          "border border-border/50 bg-background/95 backdrop-blur-xl",
+          "shadow-xl rounded-xl"
+        )}
         sideOffset={8}
       >
-        <div className="space-y-0.5">
+        <div className="p-2 space-y-2">
           {searchTypes.map((config) => {
             const ConfigIcon = IconMap[config.icon as keyof typeof IconMap];
             const isSelected = selectedSearchType === config.id;
@@ -102,23 +100,26 @@ function PureSearchTypeSelector({ className }: SearchTypeSelectorProps) {
                 key={config.id}
                 onClick={() => handleSearchTypeSelect(config.id)}
                 className={cn(
-                  "w-full flex items-center gap-2.5 p-2 rounded-md text-left transition-all duration-150",
-                  "hover:bg-muted/80 focus:bg-muted/80 focus:outline-none",
-                  isSelected && "bg-muted"
+                  "w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-all duration-200",
+                  "hover:bg-accent/30",
+                  isSelected && "bg-primary/5"
                 )}
                 aria-label={`Select ${config.name} mode`}
               >
-                <ConfigIcon
-                  className={cn("h-3.5 w-3.5 flex-shrink-0", config.color)}
-                />
+                <ConfigIcon className={cn("h-3.5 w-3.5 flex-shrink-0")} />
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm text-foreground truncate">
+                    <span
+                      className={cn(
+                        "font-medium text-sm truncate",
+                        isSelected ? "text-primary" : "text-foreground"
+                      )}
+                    >
                       {config.name}
                     </span>
                     {isSelected && (
-                      <Check className="h-3 w-3 text-primary flex-shrink-0 ml-2" />
+                      <Check className="h-3 w-3 text-white flex-shrink-0 ml-2" />
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5 leading-tight">
