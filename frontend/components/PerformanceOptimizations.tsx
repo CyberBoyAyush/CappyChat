@@ -7,6 +7,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { devLog } from '@/lib/logger';
 
 export function PerformanceOptimizations() {
   useEffect(() => {
@@ -14,7 +15,7 @@ export function PerformanceOptimizations() {
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
-          console.log('SW registered: ', registration);
+          devLog('SW registered: ', registration);
 
           // Listen for service worker updates
           registration.addEventListener('updatefound', () => {
@@ -23,7 +24,7 @@ export function PerformanceOptimizations() {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                   // New service worker is available, clear caches and reload
-                  console.log('New service worker available, clearing caches...');
+                  devLog('New service worker available, clearing caches...');
                   caches.keys().then((cacheNames) => {
                     return Promise.all(
                       cacheNames.map((cacheName) => {
@@ -34,7 +35,7 @@ export function PerformanceOptimizations() {
                     );
                   }).then(() => {
                     // Optionally show a notification to user about update
-                    console.log('Caches cleared, new version available');
+                    devLog('Caches cleared, new version available');
                     // You can add a toast notification here if desired
                   });
                 }
@@ -43,7 +44,7 @@ export function PerformanceOptimizations() {
           });
         })
         .catch((registrationError) => {
-          console.log('SW registration failed: ', registrationError);
+          devLog('SW registration failed: ', registrationError);
         });
     }
 
@@ -59,7 +60,7 @@ export function PerformanceOptimizations() {
       window.addEventListener('load', () => {
         setTimeout(() => {
           const perfData = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-          console.log('Page Load Performance:', {
+          devLog('Page Load Performance:', {
             domContentLoaded: perfData.domContentLoadedEventEnd - perfData.domContentLoadedEventStart,
             loadComplete: perfData.loadEventEnd - perfData.loadEventStart,
             totalTime: perfData.loadEventEnd - perfData.fetchStart
@@ -71,7 +72,7 @@ export function PerformanceOptimizations() {
     // Monitor memory usage (if available)
     if ('memory' in performance) {
       const memoryInfo = (performance as any).memory;
-      console.log('Memory Usage:', {
+      devLog('Memory Usage:', {
         used: (memoryInfo.usedJSHeapSize / 1048576).toFixed(2) + ' MB',
         total: (memoryInfo.totalJSHeapSize / 1048576).toFixed(2) + ' MB',
         limit: (memoryInfo.jsHeapSizeLimit / 1048576).toFixed(2) + ' MB'

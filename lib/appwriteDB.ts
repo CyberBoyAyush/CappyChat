@@ -8,6 +8,7 @@
 import { Databases, ID, Models, Query } from 'appwrite';
 import { client } from './appwrite';
 import { getCachedAccount } from './accountCache';
+import { devLog, devWarn, devInfo, devError, prodError } from './logger';
 
 // Database and Collection IDs
 export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
@@ -199,7 +200,7 @@ export class AppwriteDB {
       
       return threads;
     } catch (error) {
-      console.error('Error fetching threads from Appwrite:', error);
+      devError('Error fetching threads from Appwrite:', error);
       return [];
     }
   }
@@ -247,7 +248,7 @@ export class AppwriteDB {
         total: response.total
       };
     } catch (error) {
-      console.error('Error fetching paginated threads from Appwrite:', error);
+      devError('Error fetching paginated threads from Appwrite:', error);
       return {
         threads: [],
         hasMore: false,
@@ -335,7 +336,7 @@ export class AppwriteDB {
       
       return uniquePriorityThreads;
     } catch (error) {
-      console.error('Error fetching priority threads from Appwrite:', error);
+      devError('Error fetching priority threads from Appwrite:', error);
       return [];
     }
   }
@@ -390,7 +391,7 @@ export class AppwriteDB {
         total: response.total
       };
     } catch (error) {
-      console.error('Error fetching regular threads from Appwrite:', error);
+      devError('Error fetching regular threads from Appwrite:', error);
       return {
         threads: [],
         hasMore: false,
@@ -448,7 +449,7 @@ export class AppwriteDB {
       
       return threadId;
     } catch (error) {
-      console.error('Error creating thread:', error);
+      devError('Error creating thread:', error);
       throw error;
     }
   }
@@ -487,7 +488,7 @@ export class AppwriteDB {
         throw new Error(`Thread with ID ${threadId} not found`);
       }
     } catch (error) {
-      console.error('Error updating thread:', error);
+      devError('Error updating thread:', error);
       throw error;
     }
   }
@@ -526,7 +527,7 @@ export class AppwriteDB {
         throw new Error(`Thread with ID ${threadId} not found`);
       }
     } catch (error) {
-      console.error('Error updating thread pin status:', error);
+      devError('Error updating thread pin status:', error);
       throw error;
     }
   }
@@ -565,7 +566,7 @@ export class AppwriteDB {
         throw new Error(`Thread with ID ${threadId} not found`);
       }
     } catch (error) {
-      console.error('Error updating thread tags:', error);
+      devError('Error updating thread tags:', error);
       throw error;
     }
   }
@@ -612,7 +613,7 @@ export class AppwriteDB {
         throw new Error(`Thread with ID ${threadId} not found`);
       }
     } catch (error) {
-      console.error('Error updating thread project:', error);
+      devError('Error updating thread project:', error);
       throw error;
     }
   }
@@ -633,7 +634,7 @@ export class AppwriteDB {
       );
       
       if (threadsResponse.documents.length === 0) {
-        console.warn(`Thread ${threadId} not found, may already be deleted`);
+        devWarn(`Thread ${threadId} not found, may already be deleted`);
         return;
       }
       
@@ -681,7 +682,7 @@ export class AppwriteDB {
         threadDoc.$id
       );
     } catch (error) {
-      console.error('Error deleting thread:', error);
+      devError('Error deleting thread:', error);
       throw error;
     }
   }
@@ -705,7 +706,7 @@ export class AppwriteDB {
       
       // No need to clear local DB as we're using Appwrite exclusively now
     } catch (error) {
-      console.error('Error deleting all threads:', error);
+      devError('Error deleting all threads:', error);
       throw error;
     }
   }
@@ -743,7 +744,7 @@ export class AppwriteDB {
 
       return projects;
     } catch (error) {
-      console.error('Error fetching projects from Appwrite:', error);
+      devError('Error fetching projects from Appwrite:', error);
       return [];
     }
   }
@@ -773,7 +774,7 @@ export class AppwriteDB {
 
       return projectId;
     } catch (error) {
-      console.error('Error creating project:', error);
+      devError('Error creating project:', error);
       throw error;
     }
   }
@@ -813,7 +814,7 @@ export class AppwriteDB {
         throw new Error(`Project with ID ${projectId} not found`);
       }
     } catch (error) {
-      console.error('Error updating project:', error);
+      devError('Error updating project:', error);
       throw error;
     }
   }
@@ -851,7 +852,7 @@ export class AppwriteDB {
         throw new Error(`Project with ID ${projectId} not found`);
       }
     } catch (error) {
-      console.error('Error updating project color:', error);
+      devError('Error updating project color:', error);
       throw error;
     }
   }
@@ -872,7 +873,7 @@ export class AppwriteDB {
       );
 
       if (projectsResponse.documents.length === 0) {
-        console.warn(`Project ${projectId} not found, may already be deleted`);
+        devWarn(`Project ${projectId} not found, may already be deleted`);
         return;
       }
 
@@ -915,7 +916,7 @@ export class AppwriteDB {
         projectDoc.$id
       );
     } catch (error) {
-      console.error('Error deleting project:', error);
+      devError('Error deleting project:', error);
       throw error;
     }
   }
@@ -945,16 +946,16 @@ export class AppwriteDB {
         // Parse attachments from JSON string if present
         let attachments: FileAttachment[] | undefined = undefined;
         if (messageDoc.attachments) {
-          console.log('🔍 Raw attachments from Appwrite:', messageDoc.attachments, 'Type:', typeof messageDoc.attachments);
+          devLog('🔍 Raw attachments from Appwrite:', messageDoc.attachments, 'Type:', typeof messageDoc.attachments);
           try {
             // If it's already an object, use it directly (backward compatibility)
             if (typeof messageDoc.attachments === 'object') {
               attachments = messageDoc.attachments as FileAttachment[];
-              console.log('✅ Using attachments as object:', attachments);
+              devLog('✅ Using attachments as object:', attachments);
             } else {
               // If it's a string, parse it
               attachments = JSON.parse(messageDoc.attachments as string);
-              console.log('✅ Parsed attachments from JSON string:', attachments);
+              devLog('✅ Parsed attachments from JSON string:', attachments);
             }
 
             // Ensure createdAt is a Date object for each attachment
@@ -963,10 +964,10 @@ export class AppwriteDB {
                 ...att,
                 createdAt: typeof att.createdAt === 'string' ? new Date(att.createdAt) : att.createdAt
               }));
-              console.log('✅ Final processed attachments:', attachments);
+              devLog('✅ Final processed attachments:', attachments);
             }
           } catch (error) {
-            console.error('❌ Error parsing attachments:', error);
+            devError('❌ Error parsing attachments:', error);
             attachments = undefined;
           }
         }
@@ -996,7 +997,7 @@ export class AppwriteDB {
       
       return messages;
     } catch (error) {
-      console.error('Error fetching messages from Appwrite:', error);
+      devError('Error fetching messages from Appwrite:', error);
       return []; // Return empty array instead of using localDb as fallback
     }
   }
@@ -1018,13 +1019,13 @@ export class AppwriteDB {
       );
 
       if (messagesResponse.documents.length === 0) {
-        console.log('[AppwriteDB] Message not found for update, creating new one:', message.id);
+        devLog('[AppwriteDB] Message not found for update, creating new one:', message.id);
         // If message doesn't exist, create it
         return this.createMessage(threadId, message);
       }
 
       const existingDoc = messagesResponse.documents[0];
-      console.log('[AppwriteDB] Updating existing message:', message.id);
+      devLog('[AppwriteDB] Updating existing message:', message.id);
 
       // Update message data
       const messageData: any = {
@@ -1039,7 +1040,7 @@ export class AppwriteDB {
 
       // Add attachments if present (serialize to JSON string for Appwrite)
       if (message.attachments && message.attachments.length > 0) {
-        console.log('💾 Updating attachments in Appwrite:', message.attachments);
+        devLog('💾 Updating attachments in Appwrite:', message.attachments);
         messageData.attachments = JSON.stringify(message.attachments);
       }
 
@@ -1066,7 +1067,7 @@ export class AppwriteDB {
       const messageCreatedAt = message.createdAt || now;
       await this.updateThreadLastMessage(threadId, messageCreatedAt, now);
     } catch (error) {
-      console.error('Error updating message:', error);
+      devError('Error updating message:', error);
       throw error;
     }
   }
@@ -1095,9 +1096,9 @@ export class AppwriteDB {
 
       // Add attachments if present (serialize to JSON string for Appwrite)
       if (message.attachments && message.attachments.length > 0) {
-        console.log('💾 Storing attachments to Appwrite:', message.attachments);
+        devLog('💾 Storing attachments to Appwrite:', message.attachments);
         messageData.attachments = JSON.stringify(message.attachments);
-        console.log('💾 Serialized attachments:', messageData.attachments);
+        devLog('💾 Serialized attachments:', messageData.attachments);
       }
 
       // Add model if present (for assistant messages)
@@ -1127,7 +1128,7 @@ export class AppwriteDB {
       // Execute both operations in parallel
       await Promise.all([messagePromise, updateThreadPromise]);
     } catch (error) {
-      console.error('Error creating message:', error);
+      devError('Error creating message:', error);
       throw error;
     }
   }
@@ -1160,11 +1161,11 @@ export class AppwriteDB {
       } else {
         // Thread doesn't exist, this is expected during sync operations
         // Don't create a new thread here as HybridDB handles thread creation
-        console.warn('Thread not found during timestamp update, skipping:', threadId);
+        devWarn('Thread not found during timestamp update, skipping:', threadId);
       }
     } catch (error) {
       // Silent fail for thread update - the message creation is more important
-      console.warn('Failed to update thread timestamp:', error);
+      devWarn('Failed to update thread timestamp:', error);
     }
   }
 
@@ -1224,7 +1225,7 @@ export class AppwriteDB {
       
       // No more LocalDB operations - we're using Appwrite exclusively
     } catch (error) {
-      console.error('Error deleting messages:', error);
+      devError('Error deleting messages:', error);
       throw error;
     }
   }
@@ -1259,7 +1260,7 @@ export class AppwriteDB {
       
       return summaryId;
     } catch (error) {
-      console.error('Error creating message summary:', error);
+      devError('Error creating message summary:', error);
       throw error;
     }
   }
@@ -1294,7 +1295,7 @@ export class AppwriteDB {
       
       return summaries;
     } catch (error) {
-      console.error('Error fetching message summaries from Appwrite:', error);
+      devError('Error fetching message summaries from Appwrite:', error);
       return []; // Return empty array instead of using localDb as fallback
     }
   }
@@ -1332,7 +1333,7 @@ export class AppwriteDB {
       
       return summariesWithRole;
     } catch (error) {
-      console.error('Error fetching message summaries with role from Appwrite:', error);
+      devError('Error fetching message summaries with role from Appwrite:', error);
       return []; // Return empty array instead of using localDb as fallback
     }
   }
@@ -1427,7 +1428,7 @@ export class AppwriteDB {
 
       return newThreadId;
     } catch (error) {
-      console.error('Error branching thread:', error);
+      devError('Error branching thread:', error);
       throw error;
     }
   }
@@ -1437,7 +1438,7 @@ export class AppwriteDB {
     try {
       // Nothing to clear - Appwrite is the source of truth
     } catch (error) {
-      console.error('Error in clearLocalDatabase:', error);
+      devError('Error in clearLocalDatabase:', error);
       throw error;
     }
   }
@@ -1456,7 +1457,7 @@ export class AppwriteDB {
       
       // No need to sync with local DB since Appwrite is the source of truth
     } catch (error) {
-      console.error('Error connecting to Appwrite:', error);
+      devError('Error connecting to Appwrite:', error);
       throw error;
     }
   }
@@ -1477,7 +1478,7 @@ export class AppwriteDB {
 
       return true;
     } catch (err) {
-      console.error('Appwrite connection test failed:', err);
+      devError('Appwrite connection test failed:', err);
       return false;
     }
   }
@@ -1527,7 +1528,7 @@ export class AppwriteDB {
         updatedAt: new Date(doc.updatedAt),
       };
     } catch (error) {
-      console.error('Error getting global memory:', error);
+      devError('Error getting global memory:', error);
       throw error;
     }
   }
@@ -1568,7 +1569,7 @@ export class AppwriteDB {
         );
       }
     } catch (error) {
-      console.error('Error updating global memory:', error);
+      devError('Error updating global memory:', error);
       throw error;
     }
   }
@@ -1599,7 +1600,7 @@ export class AppwriteDB {
 
       await this.updateGlobalMemory(currentUserId, memories, enabled);
     } catch (error) {
-      console.error('Error adding memory:', error);
+      devError('Error adding memory:', error);
       throw error;
     }
   }
@@ -1619,7 +1620,7 @@ export class AppwriteDB {
 
       await this.updateGlobalMemory(currentUserId, memories, existing.enabled);
     } catch (error) {
-      console.error('Error deleting memory:', error);
+      devError('Error deleting memory:', error);
       throw error;
     }
   }
@@ -1634,7 +1635,7 @@ export class AppwriteDB {
         await this.updateGlobalMemory(currentUserId, [], existing.enabled);
       }
     } catch (error) {
-      console.error('Error clearing all memories:', error);
+      devError('Error clearing all memories:', error);
       throw error;
     }
   }

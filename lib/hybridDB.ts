@@ -8,6 +8,7 @@
 import { AppwriteDB, Thread, DBMessage, MessageSummary, FileAttachment, Project } from './appwriteDB';
 import { LocalDB } from './localDB';
 import { AppwriteRealtime } from './appwriteRealtime';
+import { devLog, prodError, devError, devWarn } from './logger';
 
 // Event emitter for UI updates
 type EventCallback = (...args: any[]) => void;
@@ -259,7 +260,7 @@ export class HybridDB {
         debouncedEmitter.emitImmediate('projects_updated', localProjects);
       }
 
-      console.log('[HybridDB] Starting immediate sync for real-time experience...');
+      devLog('[HybridDB] Starting immediate sync for real-time experience...');
 
       // OPTIMIZED: Load only essential data first for faster initial load
 
@@ -274,15 +275,15 @@ export class HybridDB {
       Promise.all([
         this.loadProjectsInBackground(),
         this.loadPriorityThreadsInBackground()
-      ]).catch(error => console.warn('Background loading failed:', error));
+      ]).catch(error => devWarn('Background loading failed:', error));
 
-      console.log('[HybridDB] Immediate sync completed successfully');
+      devLog('[HybridDB] Immediate sync completed successfully');
 
       // For messages, only sync when actually needed (lazy loading)
       // This prevents the massive network requests on startup
       this.isOnline = true;
     } catch (error) {
-      console.error('Immediate sync failed:', error);
+      prodError('Immediate sync failed', error, 'HybridDB');
       this.isOnline = false;
 
       // Use local data if remote fails
@@ -299,9 +300,9 @@ export class HybridDB {
       const projects = await AppwriteDB.getProjects();
       LocalDB.replaceAllProjects(projects);
       debouncedEmitter.emitImmediate('projects_updated', projects);
-      console.log('[HybridDB] Projects loaded in background');
+      devLog('[HybridDB] Projects loaded in background');
     } catch (error) {
-      console.warn('[HybridDB] Background projects loading failed:', error);
+      devWarn('[HybridDB] Background projects loading failed:', error);
     }
   }
 
@@ -318,9 +319,9 @@ export class HybridDB {
 
       // Update UI with all loaded threads
       debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
-      console.log('[HybridDB] Priority and additional threads loaded in background');
+      devLog('[HybridDB] Priority and additional threads loaded in background');
     } catch (error) {
-      console.warn('[HybridDB] Background threads loading failed:', error);
+      devWarn('[HybridDB] Background threads loading failed:', error);
     }
   }
 
@@ -347,7 +348,7 @@ export class HybridDB {
 
       return priorityThreads;
     } catch (error) {
-      console.error('Failed to load priority threads from remote:', error);
+      devError('Failed to load priority threads from remote:', error);
       return [];
     }
   }
@@ -372,7 +373,7 @@ export class HybridDB {
 
       return result;
     } catch (error) {
-      console.error('Failed to load regular threads from remote:', error);
+      devError('Failed to load regular threads from remote:', error);
       return { threads: [], hasMore: false, total: 0 };
     }
   }
@@ -406,7 +407,7 @@ export class HybridDB {
       try {
         await AppwriteDB.createThread(threadId, projectId);
       } catch (error) {
-        console.error('Failed to sync thread creation:', error);
+        devError('Failed to sync thread creation:', error);
         // On failure, we keep the local version as it will sync later
       }
     });
@@ -437,7 +438,7 @@ export class HybridDB {
       try {
         await AppwriteDB.updateThread(threadId, title);
       } catch (error) {
-        console.error('Failed to sync thread update:', error);
+        devError('Failed to sync thread update:', error);
       }
     });
   }
@@ -465,7 +466,7 @@ export class HybridDB {
       try {
         await AppwriteDB.updateThreadPinStatus(threadId, isPinned);
       } catch (error) {
-        console.error('Failed to sync thread pin status update:', error);
+        devError('Failed to sync thread pin status update:', error);
       }
     });
   }
@@ -493,7 +494,7 @@ export class HybridDB {
       try {
         await AppwriteDB.updateThreadTags(threadId, tags);
       } catch (error) {
-        console.error('Failed to sync thread tags update:', error);
+        devError('Failed to sync thread tags update:', error);
       }
     });
   }
@@ -519,7 +520,7 @@ export class HybridDB {
       try {
         await AppwriteDB.updateThreadProject(threadId, projectId);
       } catch (error) {
-        console.error('Failed to sync thread project update:', error);
+        devError('Failed to sync thread project update:', error);
       }
     });
   }
@@ -540,7 +541,7 @@ export class HybridDB {
       try {
         await AppwriteDB.deleteThread(threadId);
       } catch (error) {
-        console.error('Failed to sync thread deletion:', error);
+        devError('Failed to sync thread deletion:', error);
       }
     });
   }
@@ -598,7 +599,7 @@ export class HybridDB {
       try {
         await AppwriteDB.branchThread(originalThreadId, newThreadId, newTitle);
       } catch (error) {
-        console.error('Failed to sync thread branching:', error);
+        devError('Failed to sync thread branching:', error);
         // On failure, we keep the local version as it will sync later
       }
     });
@@ -640,7 +641,7 @@ export class HybridDB {
       try {
         await AppwriteDB.createProject(projectId, name, description, prompt);
       } catch (error) {
-        console.error('Failed to sync project creation:', error);
+        devError('Failed to sync project creation:', error);
         // On failure, we keep the local version as it will sync later
       }
     });
@@ -669,7 +670,7 @@ export class HybridDB {
       try {
         await AppwriteDB.updateProject(projectId, name, description, prompt);
       } catch (error) {
-        console.error('Failed to sync project update:', error);
+        devError('Failed to sync project update:', error);
       }
     });
   }
@@ -695,7 +696,7 @@ export class HybridDB {
       try {
         await AppwriteDB.updateProjectColor(projectId, colorIndex);
       } catch (error) {
-        console.error('Failed to sync project color update:', error);
+        devError('Failed to sync project color update:', error);
       }
     });
   }
@@ -738,7 +739,7 @@ export class HybridDB {
       try {
         await AppwriteDB.deleteProject(projectId, reassignThreadsToProjectId);
       } catch (error) {
-        console.error('Failed to sync project deletion:', error);
+        devError('Failed to sync project deletion:', error);
       }
     });
   }
@@ -752,7 +753,7 @@ export class HybridDB {
 
   // Update message (instant local + async remote)
   static async updateMessage(threadId: string, message: any): Promise<void> {
-    console.log('[HybridDB] Updating message:', message.id, 'role:', message.role);
+    devLog('[HybridDB] Updating message:', message.id, 'role:', message.role);
 
     const dbMessage: DBMessage = {
       id: message.id,
@@ -771,7 +772,7 @@ export class HybridDB {
     LocalDB.addMessage(dbMessage);
 
     // Emit messages_updated event for real-time sync
-    console.log('[HybridDB] ✅ Message updated locally, emitting messages_updated:', message.id, 'role:', message.role);
+    devLog('[HybridDB] ✅ Message updated locally, emitting messages_updated:', message.id, 'role:', message.role);
     debouncedEmitter.emitImmediate('messages_updated', threadId, LocalDB.getMessagesByThread(threadId));
     debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads()); // Thread order might change
 
@@ -785,7 +786,7 @@ export class HybridDB {
       try {
         await AppwriteDB.updateMessage(threadId, message); // Use updateMessage for proper updates
       } catch (error) {
-        console.error('Failed to sync message update:', error);
+        devError('Failed to sync message update:', error);
       }
     });
   }
@@ -794,7 +795,7 @@ export class HybridDB {
   static async createMessage(threadId: string, message: any): Promise<void> {
     // Prevent duplicate message creation
     if (this.recentMessageIds.has(message.id)) {
-      console.log('[HybridDB] Duplicate message creation prevented:', message.id);
+      devLog('[HybridDB] Duplicate message creation prevented:', message.id);
       return;
     }
 
@@ -828,7 +829,7 @@ export class HybridDB {
     LocalDB.addMessage(dbMessage);
 
     // Emit messages_updated event for real-time sync
-    console.log('[HybridDB] ✅ Message stored locally, emitting messages_updated:', message.id, 'role:', message.role);
+    devLog('[HybridDB] ✅ Message stored locally, emitting messages_updated:', message.id, 'role:', message.role);
     debouncedEmitter.emitImmediate('messages_updated', threadId, LocalDB.getMessagesByThread(threadId));
     debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads()); // Thread order might change
 
@@ -842,7 +843,7 @@ export class HybridDB {
       try {
         await AppwriteDB.createMessage(threadId, message);
       } catch (error) {
-        console.error('Failed to sync message creation:', error);
+        devError('Failed to sync message creation:', error);
       }
     });
   }
@@ -861,7 +862,7 @@ export class HybridDB {
     if (localMessages.length > 0) {
       // Sync immediately in parallel for real-time updates
       this.syncMessagesInBackground(threadId).catch(error =>
-        console.warn('Parallel message sync failed:', error)
+        devWarn('Parallel message sync failed:', error)
       );
       return localMessages;
     }
@@ -883,7 +884,7 @@ export class HybridDB {
 
       return remoteMessages;
     } catch (error) {
-      console.error('Failed to load messages from remote:', error);
+      prodError('Failed to load messages from remote', error, 'HybridDB');
       // Return local messages as fallback (might be empty)
       return localMessages;
     }
@@ -928,7 +929,7 @@ export class HybridDB {
 
       // Only update if there's a difference to avoid unnecessary events
       if (hasChanges) {
-        console.log('[HybridDB] Background sync detected changes, updating local messages for thread:', threadId, 'Remote count:', remoteMessages.length, 'Local count:', localMessages.length);
+        devLog('[HybridDB] Background sync detected changes, updating local messages for thread:', threadId, 'Remote count:', remoteMessages.length, 'Local count:', localMessages.length);
         LocalDB.clearMessagesByThread(threadId);
         remoteMessages.forEach(message => {
           LocalDB.addMessage(message);
@@ -938,7 +939,7 @@ export class HybridDB {
         debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
       }
     } catch (error) {
-      console.warn('Immediate message sync failed:', error);
+      devWarn('Immediate message sync failed:', error);
     } finally {
       this.pendingMessageSyncs.delete(threadId);
     }
@@ -996,7 +997,7 @@ export class HybridDB {
       try {
         await AppwriteDB.createMessageSummary(threadId, messageId, content);
       } catch (error) {
-        console.error('Failed to sync summary creation:', error);
+        devError('Failed to sync summary creation:', error);
       }
     });
 
@@ -1035,7 +1036,7 @@ export class HybridDB {
       try {
         await AppwriteDB.deleteTrailingMessages(threadId, createdAt, gte);
       } catch (error) {
-        console.error('Failed to sync trailing message deletion:', error);
+        devError('Failed to sync trailing message deletion:', error);
       }
     });
   }
@@ -1093,7 +1094,7 @@ export class HybridDB {
   private static handleRemoteMessageCreated(appwriteMessage: any): void {
     // Check if this message was recently created by us
     if (this.recentMessageIds.has(appwriteMessage.messageId)) {
-      console.log('[HybridDB] Skipping remote message - recently created locally:', appwriteMessage.messageId);
+      devLog('[HybridDB] Skipping remote message - recently created locally:', appwriteMessage.messageId);
       return;
     }
 
@@ -1102,7 +1103,7 @@ export class HybridDB {
     const existsLocally = existingMessages.some(m => m.id === appwriteMessage.messageId);
 
     if (existsLocally) {
-      console.log('[HybridDB] Message already exists locally, skipping remote create:', appwriteMessage.messageId);
+      devLog('[HybridDB] Message already exists locally, skipping remote create:', appwriteMessage.messageId);
       return;
     }
 
@@ -1126,7 +1127,7 @@ export class HybridDB {
           }));
         }
       } catch (error) {
-        console.error('Error parsing attachments in real-time sync:', error);
+        devError('Error parsing attachments in real-time sync:', error);
         attachments = undefined;
       }
     }
@@ -1171,11 +1172,11 @@ export class HybridDB {
       const modelUnchanged = existingMessage.model === appwriteMessage.model;
       
       if (contentUnchanged && imgUrlUnchanged && modelUnchanged) {
-        console.log('[HybridDB] Message content, imgurl, and model unchanged, skipping update:', appwriteMessage.messageId);
+        devLog('[HybridDB] Message content, imgurl, and model unchanged, skipping update:', appwriteMessage.messageId);
         return;
       }
       
-      console.log('[HybridDB] Message update detected:', appwriteMessage.messageId, {
+      devLog('[HybridDB] Message update detected:', appwriteMessage.messageId, {
         contentChanged: !contentUnchanged,
         imgUrlChanged: !imgUrlUnchanged, 
         modelChanged: !modelUnchanged,
@@ -1183,7 +1184,7 @@ export class HybridDB {
         oldImgUrl: existingMessage.imgurl
       });
     } else {
-      console.log('[HybridDB] New message received via update event:', appwriteMessage.messageId);
+      devLog('[HybridDB] New message received via update event:', appwriteMessage.messageId);
     }
 
     // Parse attachments from JSON string if present
@@ -1206,7 +1207,7 @@ export class HybridDB {
           }));
         }
       } catch (error) {
-        console.error('Error parsing attachments in real-time message update:', error);
+        devError('Error parsing attachments in real-time message update:', error);
         attachments = undefined;
       }
     }
@@ -1284,11 +1285,11 @@ export class HybridDB {
 
     if (existsLocally) {
       // Project already exists locally, this is likely from our own sync operation
-      console.log('[HybridDB] Project already exists locally, skipping remote create:', appwriteProject.projectId);
+      devLog('[HybridDB] Project already exists locally, skipping remote create:', appwriteProject.projectId);
       return;
     }
 
-    console.log('[HybridDB] Handling remote project created:', appwriteProject.projectId);
+    devLog('[HybridDB] Handling remote project created:', appwriteProject.projectId);
 
     const project: Project = {
       id: appwriteProject.projectId,
@@ -1305,7 +1306,7 @@ export class HybridDB {
   }
 
   private static handleRemoteProjectUpdated(appwriteProject: any): void {
-    console.log('[HybridDB] Handling remote project updated:', appwriteProject.projectId);
+    devLog('[HybridDB] Handling remote project updated:', appwriteProject.projectId);
 
     const project: Project = {
       id: appwriteProject.projectId,
@@ -1322,7 +1323,7 @@ export class HybridDB {
   }
 
   private static handleRemoteProjectDeleted(appwriteProject: any): void {
-    console.log('[HybridDB] Handling remote project deleted:', appwriteProject.projectId);
+    devLog('[HybridDB] Handling remote project deleted:', appwriteProject.projectId);
 
     LocalDB.deleteProject(appwriteProject.projectId);
 
@@ -1362,7 +1363,7 @@ export class HybridDB {
         await Promise.all(batch.map(operation => operation()));
         this.isOnline = true;
       } catch (error) {
-        console.error('Batch sync operation failed:', error);
+        devError('Batch sync operation failed:', error);
         this.isOnline = false;
         // Re-queue failed operations for later retry
         this.syncQueue.unshift(...batch);
@@ -1394,7 +1395,7 @@ export class HybridDB {
 
   // Force clear all local data and refresh from Appwrite (for signin)
   static async forceRefreshOnSignin(userId: string): Promise<void> {
-    console.log('[HybridDB] Force refreshing all data on signin for user:', userId);
+    devLog('[HybridDB] Force refreshing all data on signin for user:', userId);
 
     try {
       // 1. Clear all local data first
@@ -1427,7 +1428,7 @@ export class HybridDB {
       AppwriteRealtime.subscribeToAll(userId);
 
       // 6. Force fetch fresh data from Appwrite
-      console.log('[HybridDB] Fetching fresh data from Appwrite...');
+      devLog('[HybridDB] Fetching fresh data from Appwrite...');
 
       const [threads, projects] = await Promise.all([
         AppwriteDB.getThreads(),
@@ -1446,13 +1447,13 @@ export class HybridDB {
       this.initialized = true;
       this.isOnline = true;
 
-      console.log('[HybridDB] Force refresh completed successfully:', {
+      devLog('[HybridDB] Force refresh completed successfully:', {
         threadsCount: threads.length,
         projectsCount: projects.length
       });
 
     } catch (error) {
-      console.error('[HybridDB] Force refresh failed:', error);
+      devError('[HybridDB] Force refresh failed:', error);
 
       // On failure, still mark as initialized but offline
       this.initialized = true;
@@ -1475,10 +1476,10 @@ export class HybridDB {
   static async testDataRefresh(): Promise<void> {
     const userId = LocalDB.getUserId();
     if (userId) {
-      console.log('[HybridDB] Manual data refresh triggered for user:', userId);
+      devLog('[HybridDB] Manual data refresh triggered for user:', userId);
       await this.checkAndRefreshIfDataMissing(userId);
     } else {
-      console.log('[HybridDB] No user ID found, cannot refresh data');
+      devLog('[HybridDB] No user ID found, cannot refresh data');
     }
   }
 
@@ -1510,7 +1511,7 @@ export class HybridDB {
       // Emit update event for immediate UI refresh
       debouncedEmitter.emitImmediate('messages_updated', threadId, remoteMessages);
     } catch (error) {
-      console.error('Failed to force sync thread:', error);
+      devError('Failed to force sync thread:', error);
     } finally {
       this.pendingMessageSyncs.delete(`force_${threadId}`);
     }
@@ -1532,7 +1533,7 @@ export class HybridDB {
       const shouldRefresh = localThreads.length === 0 && localProjects.length === 0 || storedUserId !== userId;
 
       if (shouldRefresh) {
-        console.log('[HybridDB] Local data missing or user mismatch, refreshing from Appwrite...', {
+        devLog('[HybridDB] Local data missing or user mismatch, refreshing from Appwrite...', {
           localThreadsCount: localThreads.length,
           localProjectsCount: localProjects.length,
           storedUserId,
@@ -1556,13 +1557,13 @@ export class HybridDB {
         debouncedEmitter.emitImmediate('threads_updated', threads);
         debouncedEmitter.emitImmediate('projects_updated', projects);
 
-        console.log('[HybridDB] Data refresh completed successfully:', {
+        devLog('[HybridDB] Data refresh completed successfully:', {
           threadsCount: threads.length,
           projectsCount: projects.length
         });
       }
     } catch (error) {
-      console.error('[HybridDB] Failed to check and refresh missing data:', error);
+      devError('[HybridDB] Failed to check and refresh missing data:', error);
       // Don't throw error to avoid blocking the app
     }
   }
@@ -1574,7 +1575,7 @@ export class HybridDB {
     }
 
     try {
-      console.log('[HybridDB] Force refreshing all data from remote...');
+      devLog('[HybridDB] Force refreshing all data from remote...');
 
       // Clear all local data first
       LocalDB.clear();
@@ -1593,9 +1594,9 @@ export class HybridDB {
       debouncedEmitter.emitImmediate('threads_updated', threads);
       debouncedEmitter.emitImmediate('projects_updated', projects);
 
-      console.log('[HybridDB] Force refresh completed successfully');
+      devLog('[HybridDB] Force refresh completed successfully');
     } catch (error) {
-      console.error('[HybridDB] Force refresh failed:', error);
+      devError('[HybridDB] Force refresh failed:', error);
       // Emit empty arrays to clear UI if remote fetch fails
       debouncedEmitter.emitImmediate('threads_updated', []);
       debouncedEmitter.emitImmediate('projects_updated', []);

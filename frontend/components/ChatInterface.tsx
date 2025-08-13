@@ -63,6 +63,7 @@ import GlobalSearchDialog from "./GlobalSearchDialog";
 import { extractUrlsFromContent } from "./WebSearchCitations";
 import WebSearchLoader from "./WebSearchLoader";
 import RedditSearchLoader from "./RedditSearchLoader";
+import { devLog, devWarn, devInfo, devError, prodError } from '@/lib/logger';
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -90,7 +91,7 @@ function deduplicateMessages<T extends { id: string; content: string }>(
           index > messages.findIndex((m) => m.id === existing.id))
       ) {
         seen.set(message.id, message);
-        console.warn(
+        devWarn(
           "[ChatInterface] Replaced duplicate message in deduplication:",
           {
             id: message.id,
@@ -105,7 +106,7 @@ function deduplicateMessages<T extends { id: string; content: string }>(
   const deduplicated = Array.from(seen.values());
 
   if (deduplicated.length !== messages.length) {
-    console.warn(
+    devWarn(
       `[ChatInterface] Deduplicated ${
         messages.length - deduplicated.length
       } duplicate messages from ${messages.length} total`
@@ -141,7 +142,7 @@ export default function ChatInterface({
   // Force clear pending auth when user is detected
   useEffect(() => {
     if (user && isPendingAuth) {
-      console.log(
+      devLog(
         "[ChatInterface] 🎉 User detected while pending auth - force clearing pending state"
       );
       setIsPendingAuth(false);
@@ -158,7 +159,7 @@ export default function ChatInterface({
           const age = Date.now() - parsed.timestamp;
           // Check if pending auth is still valid (not older than 15 seconds - reduced from 30)
           const isValid = age < 15000;
-          console.log("[ChatInterface] 🔍 Pending auth check:", {
+          devLog("[ChatInterface] 🔍 Pending auth check:", {
             hasPending: true,
             isValid,
             method: parsed.method,
@@ -167,7 +168,7 @@ export default function ChatInterface({
           setIsPendingAuth(isValid);
 
           if (!isValid) {
-            console.log(
+            devLog(
               "[ChatInterface] 🧹 Clearing expired pending auth state (age:",
               age,
               "ms)"
@@ -176,14 +177,14 @@ export default function ChatInterface({
           }
         } else {
           if (isPendingAuth) {
-            console.log(
+            devLog(
               "[ChatInterface] 🧹 No pending auth found, clearing state"
             );
           }
           setIsPendingAuth(false);
         }
       } catch (error) {
-        console.error("[ChatInterface] ❌ Error checking pending auth:", error);
+        devError("[ChatInterface] ❌ Error checking pending auth:", error);
         setIsPendingAuth(false);
       }
     };
@@ -195,7 +196,7 @@ export default function ChatInterface({
 
     // Listen for auth state changes to clear pending state
     const handleAuthStateChanged = () => {
-      console.log(
+      devLog(
         "[ChatInterface] 🎉 Auth state changed - clearing pending state"
       );
       setIsPendingAuth(false);
@@ -205,7 +206,7 @@ export default function ChatInterface({
     // Emergency timeout to force clear pending state after 8 seconds
     const emergencyTimeout = setTimeout(() => {
       if (isPendingAuth) {
-        console.log(
+        devLog(
           "[ChatInterface] 🚨 EMERGENCY: Force clearing pending auth after 8 seconds"
         );
         setIsPendingAuth(false);
@@ -255,12 +256,12 @@ export default function ChatInterface({
 
   // Function to track when a message is appended
   const trackAppendedMessage = useCallback((messageId: string) => {
-    console.log("[ChatInterface] Tracking appended message:", messageId);
+    devLog("[ChatInterface] Tracking appended message:", messageId);
     recentlyAppendedMessages.current.add(messageId);
     // Remove from tracking after 2 seconds to allow normal sync
     setTimeout(() => {
       recentlyAppendedMessages.current.delete(messageId);
-      console.log(
+      devLog(
         "[ChatInterface] Stopped tracking appended message:",
         messageId
       );
@@ -299,20 +300,20 @@ export default function ChatInterface({
     initialMessages,
     experimental_throttle: 0, // Zero throttle for instant real-time streaming
     onFinish: async (message) => {
-      console.log("🏁 onFinish callback called for message:", message.id);
+      devLog("🏁 onFinish callback called for message:", message.id);
 
       // End streaming synchronization
       streamingSync.endStreaming(threadId, message.id, message.content);
 
       // Stop web search loading if it was active
       if (isWebSearching) {
-        console.log("🔍 Stopping web search loading state");
+        devLog("🔍 Stopping web search loading state");
         setIsWebSearching(false);
       }
 
       // Clear the pending user message ref (user message is now stored immediately in ChatInputField)
       if (pendingUserMessageRef.current) {
-        console.log(
+        devLog(
           "🧹 Clearing pending user message ref:",
           pendingUserMessageRef.current.id
         );
@@ -321,7 +322,7 @@ export default function ChatInterface({
 
       // Skip database operations for guest users
       if (isGuest) {
-        console.log("🚫 Skipping database operations for guest user");
+        devLog("🚫 Skipping database operations for guest user");
         return;
       }
 
@@ -341,19 +342,19 @@ export default function ChatInterface({
       };
 
       // Extract URLs from any assistant message content for citations
-      console.log(
+      devLog(
         "🔍 onFinish: Checking message content for URLs. Content length:",
         message.content.length
       );
       const extractedUrls = extractUrlsFromContent(message.content);
-      console.log(
+      devLog(
         "🔍 onFinish: URLs found:",
         extractedUrls.length,
         extractedUrls
       );
 
       if (extractedUrls.length > 0) {
-        console.log(
+        devLog(
           "✅ Extracted URLs from AI message:",
           message.id,
           extractedUrls
@@ -370,7 +371,7 @@ export default function ChatInterface({
                 })
               : msg
           );
-          console.log("📱 Updated UI messages with extracted URLs");
+          devLog("📱 Updated UI messages with extracted URLs");
           return deduplicateMessages(updatedMessages);
         });
       }
@@ -397,10 +398,10 @@ export default function ChatInterface({
       scrollToBottom();
     },
     onError: (error) => {
-      console.error("❌ Chat error:", error);
+      devError("❌ Chat error:", error);
       // Stop web search loading on error
       if (isWebSearching) {
-        console.log("🔍 Stopping web search loading due to error");
+        devLog("🔍 Stopping web search loading due to error");
         setIsWebSearching(false);
       }
     },
@@ -428,19 +429,19 @@ export default function ChatInterface({
   // Effect to handle search query from URL parameter - only run once
   useEffect(() => {
     if (searchQuery && searchQuery.trim() && messages.length === 0) {
-      console.log("🔍 Search query detected:", searchQuery);
+      devLog("🔍 Search query detected:", searchQuery);
       setInput(searchQuery);
 
       // Auto-submit the search query through ChatInputField's submit function
       const timer = setTimeout(() => {
         if (chatInputSubmitRef.current) {
-          console.log(
+          devLog(
             "🚀 Auto-submitting search query through ChatInputField:",
             searchQuery
           );
           chatInputSubmitRef.current();
         } else {
-          console.log("⚠️ chatInputSubmitRef.current is not available yet");
+          devLog("⚠️ chatInputSubmitRef.current is not available yet");
         }
       }, 500); // Increased timeout to ensure components are fully loaded
 
@@ -548,7 +549,7 @@ export default function ChatInterface({
         if (isNewMessage) {
           // Start streaming sync for new message
           streamingSync.startStreaming(threadId, lastMessage.id);
-          console.log(
+          devLog(
             "[ChatInterface] Started streaming sync for message:",
             lastMessage.id
           );
@@ -581,7 +582,7 @@ export default function ChatInterface({
             lastMessage.id,
             lastMessage.content
           );
-          console.log(
+          devLog(
             "[ChatInterface] Updated streaming content:",
             lastMessage.content.length,
             "chars"
@@ -591,14 +592,14 @@ export default function ChatInterface({
           // Check for URLs in any assistant message, not just when web search is explicitly enabled
           if (lastMessage.content) {
             const extractedUrls = extractUrlsFromContent(lastMessage.content);
-            console.log(
+            devLog(
               "🔍 Checking for URLs in streaming content. Content length:",
               lastMessage.content.length,
               "URLs found:",
               extractedUrls.length
             );
             if (extractedUrls.length > 0) {
-              console.log(
+              devLog(
                 "🔍 Extracted URLs from streaming content:",
                 extractedUrls
               );
@@ -632,7 +633,7 @@ export default function ChatInterface({
       // Streaming ended, clean up
       const lastRef = lastStreamingMessageRef.current;
       streamingSync.endStreaming(threadId, lastRef.id, lastRef.content);
-      console.log(
+      devLog(
         "[ChatInterface] Ended streaming sync for message:",
         lastRef.id
       );
@@ -659,11 +660,11 @@ export default function ChatInterface({
   useEffect(() => {
     // Skip real-time sync for guest users
     if (isGuest) {
-      console.log("[ChatInterface] Skipping real-time sync for guest user");
+      devLog("[ChatInterface] Skipping real-time sync for guest user");
       return;
     }
 
-    console.log(
+    devLog(
       "[ChatInterface] Setting up real-time message sync for thread:",
       threadId
     );
@@ -672,7 +673,7 @@ export default function ChatInterface({
       updatedThreadId: string,
       updatedMessages: any[]
     ) => {
-      console.log(
+      devLog(
         "[ChatInterface] Real-time messages updated for thread:",
         updatedThreadId,
         "Current thread:",
@@ -680,7 +681,7 @@ export default function ChatInterface({
       );
 
       if (updatedThreadId === threadId) {
-        console.log(
+        devLog(
           "[ChatInterface] Updating messages in UI. Count:",
           updatedMessages.length,
           "Current UI messages:",
@@ -744,7 +745,7 @@ export default function ChatInterface({
         });
 
         if (hasNewMessages || hasMissingMessages || hasUpdatedMessages) {
-          console.log("[ChatInterface] Smart merge: Changes detected", {
+          devLog("[ChatInterface] Smart merge: Changes detected", {
             hasNewMessages,
             hasMissingMessages,
             hasUpdatedMessages,
@@ -754,7 +755,7 @@ export default function ChatInterface({
 
           // For image generation updates, we need to replace existing messages with updated DB versions
           if (hasUpdatedMessages) {
-            console.log(
+            devLog(
               "[ChatInterface] Handling image generation message updates"
             );
 
@@ -776,7 +777,7 @@ export default function ChatInterface({
                   !dbMsg.content?.includes("Generating your image");
 
                 if (wasLoading && nowHasImage) {
-                  console.log(
+                  devLog(
                     "[ChatInterface] Updating image generation message:",
                     uiMsg.id
                   );
@@ -853,7 +854,7 @@ export default function ChatInterface({
       messageId: string,
       streamingState: StreamingState
     ) => {
-      console.log(
+      devLog(
         "[ChatInterface] Streaming broadcast received:",
         messageId,
         "chars:",
@@ -867,7 +868,7 @@ export default function ChatInterface({
         broadcastThreadId === threadId &&
         streamingState.sessionId !== streamingSync.getSessionId()
       ) {
-        console.log(
+        devLog(
           "[ChatInterface] Applying streaming update from another session"
         );
 
@@ -909,7 +910,7 @@ export default function ChatInterface({
     dbEvents.on("streaming_broadcast", handleStreamingBroadcast);
 
     return () => {
-      console.log(
+      devLog(
         "[ChatInterface] Cleaning up streaming sync for thread:",
         threadId
       );
@@ -925,7 +926,7 @@ export default function ChatInterface({
   // Effect to stop web search loading when streaming starts
   useEffect(() => {
     if (status === "streaming" && isWebSearching) {
-      console.log("🔍 Stopping web search loading - streaming started");
+      devLog("🔍 Stopping web search loading - streaming started");
       setIsWebSearching(false);
     }
   }, [status, isWebSearching]);
@@ -962,7 +963,7 @@ export default function ChatInterface({
       const loadingMessageId = uuidv4();
 
       try {
-        console.log("🎨 Starting image generation retry with model:", model);
+        devLog("🎨 Starting image generation retry with model:", model);
 
         const loadingMessage: UIMessage = {
           id: loadingMessageId,
@@ -1006,7 +1007,7 @@ export default function ChatInterface({
         }
 
         const result = await response.json();
-        console.log("✅ Image generation retry completed:", result);
+        devLog("✅ Image generation retry completed:", result);
 
         // Update the loading message with the result
         setMessages((prev) => {
@@ -1043,7 +1044,7 @@ export default function ChatInterface({
           HybridDB.createMessage(threadId, finalMessage);
         }
       } catch (error) {
-        console.error("Error in image generation retry:", error);
+        devError("Error in image generation retry:", error);
 
         // Update loading message with error
         setMessages((prev) => {
@@ -1095,7 +1096,7 @@ export default function ChatInterface({
             getModelConfig((message as any).model as AIModel)
               ?.isImageGeneration));
 
-      console.log("🔄 Retry context:", {
+      devLog("🔄 Retry context:", {
         isImageGenerationRetry,
         message: message?.content,
         model: (message as any)?.model,
@@ -1137,7 +1138,7 @@ export default function ChatInterface({
 
       // Handle image generation retry differently
       if (isImageGenerationRetry) {
-        console.log("🎨 Handling image generation retry");
+        devLog("🎨 Handling image generation retry");
 
         // Find the user message that triggered this image generation
         let userPrompt = "";
@@ -1159,13 +1160,13 @@ export default function ChatInterface({
         }
 
         if (!userPrompt) {
-          console.error(
+          devError(
             "Could not find user prompt for image generation retry"
           );
           return;
         }
 
-        console.log("🎨 Retrying image generation with prompt:", userPrompt);
+        devLog("🎨 Retrying image generation with prompt:", userPrompt);
 
         // Call image generation API directly
         handleImageGenerationRetry(
@@ -1268,7 +1269,7 @@ export default function ChatInterface({
         {isHomePage && messages.length === 0 ? (
           (() => {
             const shouldShowLoading = authLoading || isPendingAuth;
-            console.log("[ChatInterface] 🎭 Render decision:", {
+            devLog("[ChatInterface] 🎭 Render decision:", {
               authLoading,
               isPendingAuth,
               isGuest,
@@ -1470,7 +1471,7 @@ const AppPanelTrigger = () => {
 
   // Enhanced toggle function for debugging
   const handleToggle = () => {
-    console.log("Panel trigger clicked, current state:", state);
+    devLog("Panel trigger clicked, current state:", state);
     toggleSidebar();
   };
 
@@ -1715,7 +1716,7 @@ const promptDomains = [
       "Create a React hook for detecting if an element is in the viewport",
       "Write a Python function to analyze sentiment in a text using NLTK",
       "Explain how to implement a JWT authentication system in Node.js",
-      "Debug this code: for(i=0; i<10; i++) { console.log(i); i++; }",
+      "Debug this code: for(i=0; i<10; i++) { devLog(i); i++; }",
     ],
   },
   {

@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Client, Databases, Query } from 'node-appwrite';
 import { CloudinaryService } from '@/lib/cloudinary';
 import { FileAttachment } from '@/lib/appwriteDB';
+import { devLog } from '@/lib/logger';
 
 // Initialize server client
 const client = new Client()
@@ -27,7 +28,7 @@ export const maxDuration = 60;
 // Helper function to handle bulk deletion of images
 async function handleBulkDeleteImages(userId: string) {
   try {
-    console.log(`🗑️ Starting bulk deletion of images for user: ${userId}`);
+    devLog(`🗑️ Starting bulk deletion of images for user: ${userId}`);
 
     // Get all messages for the user that have attachments
     const messages = await databases.listDocuments(
@@ -137,7 +138,7 @@ async function handleBulkDeleteImages(userId: string) {
       }
     }
 
-    console.log(`🎉 Bulk deletion completed: ${deletedCount} images deleted, ${failedCount} failed, ${updatedMessageCount} messages updated`);
+    devLog(`🎉 Bulk deletion completed: ${deletedCount} images deleted, ${failedCount} failed, ${updatedMessageCount} messages updated`);
 
     return NextResponse.json({
       success: true,

@@ -23,6 +23,7 @@ import { HybridDB } from "@/lib/hybridDB";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 import { ModelSelector } from "./ModelSelector";
 import { ConversationStyleSelector } from "./ConversationStyleSelector";
+import { devLog, devError } from "@/lib/logger";
 import {
   AspectRatioSelector,
   ASPECT_RATIOS,
@@ -120,14 +121,14 @@ const extractAndStoreMemories = async (
       if (shouldAddMemory(extractedMemory, existingMemories)) {
         try {
           await AppwriteDB.addMemory(userId, extractedMemory.text);
-          console.log("🧠 Added memory:", extractedMemory.text);
+          devLog("🧠 Added memory:", extractedMemory.text);
         } catch (error) {
-          console.error("Failed to add memory:", error);
+          devError("Failed to add memory:", error);
         }
       }
     }
   } catch (error) {
-    console.error("Error extracting memories:", error);
+    devError("Error extracting memories:", error);
   }
 };
 
@@ -333,7 +334,7 @@ function PureInputField({
           setUploadingFiles([]);
         }, 1500);
       } catch (error) {
-        console.error("Paste upload error:", error);
+        devError("Paste upload error:", error);
 
         // Show error state
         const errorFiles = files.map((file) => ({

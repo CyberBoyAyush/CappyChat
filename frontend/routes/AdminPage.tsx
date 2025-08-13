@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { devError } from '@/lib/logger';
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -70,7 +71,7 @@ export default function AdminPage() {
         const tierInfo = await getUserTierInfo();
         setIsAdmin(tierInfo?.tier === "admin");
       } catch (error) {
-        console.error("Error checking admin status:", error);
+        devError("Error checking admin status:", error);
       }
     };
 
@@ -90,7 +91,7 @@ export default function AdminPage() {
       setAdminStats(stats);
       toast.success("Statistics loaded successfully");
     } catch (error) {
-      console.error("Error loading stats:", error);
+      devError("Error loading stats:", error);
       toast.error(error instanceof Error ? error.message : "Failed to load statistics");
     } finally {
       setLoadingStats(false);
@@ -110,7 +111,7 @@ export default function AdminPage() {
       setSelectedUser(user);
       toast.success("User found successfully");
     } catch (error) {
-      console.error("Error searching user:", error);
+      devError("Error searching user:", error);
       toast.error(error instanceof Error ? error.message : "Failed to search user");
       setSelectedUser(null);
     } finally {
@@ -133,7 +134,7 @@ export default function AdminPage() {
       toast.success(`User tier updated to ${newTier}`);
       handleSearchUser(); // Refresh user data
     } catch (error) {
-      console.error("Error updating user tier:", error);
+      devError("Error updating user tier:", error);
       toast.error(error instanceof Error ? error.message : "Failed to update user tier");
     } finally {
       setIsLoading(false);
@@ -161,7 +162,7 @@ export default function AdminPage() {
         handleLoadStats(); // Refresh stats
       }
     } catch (error) {
-      console.error("Error performing monthly reset:", error);
+      devError("Error performing monthly reset:", error);
       toast.error(error instanceof Error ? error.message : "Failed to perform monthly reset");
     } finally {
       setIsLoading(false);
@@ -217,7 +218,7 @@ export default function AdminPage() {
         handleLoadStats(); // Refresh stats
       }
     } catch (error) {
-      console.error("Error logging out all users:", error);
+      devError("Error logging out all users:", error);
       toast.error(error instanceof Error ? error.message : "Failed to logout all users");
     } finally {
       setIsLoading(false);
@@ -240,7 +241,7 @@ export default function AdminPage() {
       setShowAllUsers(true);
       toast.success(`Loaded ${users.length} users`);
     } catch (error) {
-      console.error("Error loading users:", error);
+      devError("Error loading users:", error);
       toast.error(error instanceof Error ? error.message : "Failed to load users");
     } finally {
       setLoadingUsers(false);
@@ -265,7 +266,7 @@ export default function AdminPage() {
       await adminService.clearUserSession(adminKey.trim(), userId);
       toast.success("User session cleared successfully");
     } catch (error) {
-      console.error("Error clearing user session:", error);
+      devError("Error clearing user session:", error);
       toast.error(error instanceof Error ? error.message : "Failed to clear user session");
     } finally {
       setIsLoading(false);
@@ -293,7 +294,7 @@ export default function AdminPage() {
         handleSearchUser(); // Refresh selected user data
       }
     } catch (error) {
-      console.error("Error resetting user credits:", error);
+      devError("Error resetting user credits:", error);
       toast.error(error instanceof Error ? error.message : "Failed to reset user credits");
     } finally {
       setIsLoading(false);
@@ -320,7 +321,7 @@ export default function AdminPage() {
         handleLoadStats(); // Refresh stats
       }
     } catch (error) {
-      console.error("Error deleting user data:", error);
+      devError("Error deleting user data:", error);
       toast.error(error instanceof Error ? error.message : "Failed to delete user data");
     } finally {
       setIsLoading(false);
@@ -350,7 +351,7 @@ export default function AdminPage() {
         handleLoadStats(); // Refresh stats
       }
     } catch (error) {
-      console.error("Error deleting all data:", error);
+      devError("Error deleting all data:", error);
       toast.error(error instanceof Error ? error.message : "Failed to delete all data");
     } finally {
       setIsLoading(false);

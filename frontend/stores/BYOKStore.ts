@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { devWarn } from '@/lib/logger';
 
 export type BYOKStore = {
   // OpenRouter API Key
@@ -72,7 +73,7 @@ export const useBYOKStore = create<BYOKStore>()(
       setOpenRouterApiKey: (key) => {
         // Validate key before storing
         if (key && !validateOpenRouterKey(key)) {
-          console.warn('Invalid OpenRouter API key format');
+          devWarn('Invalid OpenRouter API key format');
           return;
         }
         set({ openRouterApiKey: key });
@@ -81,7 +82,7 @@ export const useBYOKStore = create<BYOKStore>()(
       setOpenAIApiKey: (key) => {
         // Validate key before storing
         if (key && !validateOpenAIKey(key)) {
-          console.warn('Invalid OpenAI API key format');
+          devWarn('Invalid OpenAI API key format');
           return;
         }
         set({ openAIApiKey: key });
@@ -90,7 +91,7 @@ export const useBYOKStore = create<BYOKStore>()(
       setTavilyApiKey: (key) => {
         // Validate key before storing
         if (key && !validateTavilyKey(key)) {
-          console.warn('Invalid Tavily API key format');
+          devWarn('Invalid Tavily API key format');
           return;
         }
         set({ tavilyApiKey: key });

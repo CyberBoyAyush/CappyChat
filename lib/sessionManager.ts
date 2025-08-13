@@ -11,6 +11,7 @@
 
 import { account } from './appwrite';
 import { AppwriteException } from 'appwrite';
+import { devLog, devWarn, devInfo, devError, prodError } from './logger';
 
 // Session management configuration
 export const SESSION_CONFIG = {
@@ -80,7 +81,7 @@ export class SessionManager {
         currentSession
       };
     } catch (error) {
-      console.error('Failed to get session info:', error);
+      devError('Failed to get session info:', error);
       throw new Error('Unable to retrieve session information');
     }
   }
@@ -112,7 +113,7 @@ export class SessionManager {
             // Small delay to ensure deletion propagates
             await new Promise(resolve => setTimeout(resolve, 100));
           } catch (error) {
-            console.warn(`Failed to delete session ${session.$id}:`, error);
+            devWarn(`Failed to delete session ${session.$id}:`, error);
             // Continue with other sessions even if one fails
           }
         }
@@ -121,7 +122,7 @@ export class SessionManager {
         await new Promise(resolve => setTimeout(resolve, 200));
       }
     } catch (error) {
-      console.error('Failed to enforce session limit:', error);
+      devError('Failed to enforce session limit:', error);
       throw new Error('Unable to enforce session limit');
     }
   }
@@ -152,12 +153,12 @@ export class SessionManager {
         try {
           await account.deleteSession(session.$id);
         } catch (error) {
-          console.warn(`Failed to cleanup session ${session.$id}:`, error);
+          devWarn(`Failed to cleanup session ${session.$id}:`, error);
           // Continue with other sessions even if one fails
         }
       }
     } catch (error) {
-      console.error('Failed to cleanup excess sessions:', error);
+      devError('Failed to cleanup excess sessions:', error);
       // Don't throw error for cleanup failures
     }
   }
@@ -173,7 +174,7 @@ export class SessionManager {
 
       await account.deleteSession(sessionId);
     } catch (error) {
-      console.error(`Failed to delete session ${sessionId}:`, error);
+      devError(`Failed to delete session ${sessionId}:`, error);
       if (error instanceof AppwriteException) {
         if (error.code === 404) {
           throw new Error('Session not found or already expired');
@@ -197,12 +198,12 @@ export class SessionManager {
         try {
           await this.deleteSession(session.$id);
         } catch (error) {
-          console.warn(`Failed to delete session ${session.$id}:`, error);
+          devWarn(`Failed to delete session ${session.$id}:`, error);
           // Continue with other sessions
         }
       }
     } catch (error) {
-      console.error('Failed to delete other sessions:', error);
+      devError('Failed to delete other sessions:', error);
       throw new Error('Unable to delete other sessions');
     }
   }
@@ -214,7 +215,7 @@ export class SessionManager {
     try {
       await account.deleteSessions();
     } catch (error) {
-      console.error('Failed to delete all sessions:', error);
+      devError('Failed to delete all sessions:', error);
       throw new Error('Failed to logout from all devices');
     }
   }

@@ -5,6 +5,7 @@ import { getConversationStyleConfig, ConversationStyle, DEFAULT_CONVERSATION_STY
 import { NextRequest, NextResponse } from 'next/server';
 import { canUserUseModel, consumeCredits } from '@/lib/tierSystem';
 import { tavily } from '@tavily/core';
+import { devLog, devWarn, devError, prodError } from '@/lib/logger';
 
 export const maxDuration = 60;
 
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
     // Use the provided model or default to OpenAI 5 Mini
     const selectedModel = model || 'OpenAI 5 Mini';
 
-    console.log(`🔍 Reddit search request received for user ${userId} using model ${selectedModel}`);
+    devLog(`🔍 Reddit search request received for user ${userId} using model ${selectedModel}`);
 
     if (!messages || messages.length === 0) {
       return new Response(
@@ -91,16 +92,16 @@ export async function POST(req: NextRequest) {
     }
 
     const searchQuery = lastUserMessage.content;
-    console.log(`🔍 Extracted Reddit search query from user message: "${searchQuery}"`);
-    console.log(`🔍 Last user message:`, lastUserMessage);
-    console.log(`🔍 BYOK Status - OpenRouter: ${!!userApiKey}, Tavily: ${!!userTavilyApiKey}`);
+    devLog(`🔍 Extracted Reddit search query from user message: "${searchQuery}"`);
+    devLog(`🔍 Last user message:`, lastUserMessage);
+    devLog(`🔍 BYOK Status - OpenRouter: ${!!userApiKey}, Tavily: ${!!userTavilyApiKey}`);
 
     // Use user's Tavily API key if provided, otherwise fall back to system key
     const tavilyApiKey = userTavilyApiKey || process.env.TAVILY_API_KEY;
     const usingUserTavilyKey = !!userTavilyApiKey;
 
-    console.log(`🔍 Tavily API key source: ${usingUserTavilyKey ? 'User BYOK' : 'System'}`);
-    console.log(`🔍 User Tavily key provided: ${!!userTavilyApiKey}`);
+    devLog(`🔍 Tavily API key source: ${usingUserTavilyKey ? 'User BYOK' : 'System'}`);
+    devLog(`🔍 User Tavily key provided: ${!!userTavilyApiKey}`);
 
     if (!tavilyApiKey) {
       return new Response(
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
     let searchResults;
     try {
       const tvly = tavily({ apiKey: tavilyApiKey });
-      console.log(`🔍 Performing Tavily Reddit search for: "${searchQuery}"`);
+      devLog(`🔍 Performing Tavily Reddit search for: "${searchQuery}"`);
 
       // Add timeout wrapper to prevent hanging on Tavily search
       const searchTimeout = new Promise<never>((_, reject) =>
@@ -136,9 +137,9 @@ export async function POST(req: NextRequest) {
 
       const tavilyResponse = await Promise.race([searchPromise, searchTimeout]);
       searchResults = tavilyResponse.results || [];
-      console.log(`✅ Tavily Reddit search completed. Found ${searchResults.length} results`);
+      devLog(`✅ Tavily Reddit search completed. Found ${searchResults.length} results`);
     } catch (error) {
-      console.error('Tavily Reddit search error:', error);
+      devError('Tavily Reddit search error:', error);
 
       // Provide more specific error messages
       let errorMessage = 'Reddit search failed. Please try again later.';
@@ -182,11 +183,11 @@ export async function POST(req: NextRequest) {
         );
       }
     } catch (error) {
-      console.error('Failed to consume credits:', error);
+      devError('Failed to consume credits:', error);
 
       // If it's a timeout error, continue with the search but log the issue
       if (error instanceof Error && error.message.includes('timeout')) {
-        console.warn('Credit consumption timed out, continuing with search...');
+        devWarn('Credit consumption timed out, continuing with search...');
         // Continue execution - don't block the search for credit consumption issues
       } else {
         return new Response(
@@ -199,7 +200,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log(`🔍 Reddit search credits consumed for user ${userId} using model ${selectedModel}`);
+    devLog(`🔍 Reddit search credits consumed for user ${userId} using model ${selectedModel}`);
 
     // Use user's API key if provided, otherwise fall back to system key
     const apiKey = userApiKey || process.env.OPENROUTER_API_KEY;
@@ -240,23 +241,23 @@ export async function POST(req: NextRequest) {
     const searchUrls = searchResults.map((result: any) => result.url);
 
     // Log search URLs for debugging
-    console.log('🔗 Reddit search URLs to be used for citations:', searchUrls);
+    devLog('🔗 Reddit search URLs to be used for citations:', searchUrls);
 
     const result = streamText({
       model: aiModel,
       messages,
       onError: (error) => {
-        console.log('error', error);
+        devLog('error', error);
       },
       onFinish: (result) => {
-        console.log('🔍 Reddit search response finished. Text length:', result.text.length);
-        console.log('🔍 Checking if search URLs marker is present in response...');
+        devLog('🔍 Reddit search response finished. Text length:', result.text.length);
+        devLog('🔍 Checking if search URLs marker is present in response...');
         const hasMarker = result.text.includes('<!-- SEARCH_URLS:');
-        console.log('🔍 Search URLs marker present:', hasMarker);
+        devLog('🔍 Search URLs marker present:', hasMarker);
         if (hasMarker) {
           const markerMatch = result.text.match(/<!-- SEARCH_URLS: (.*?) -->/);
           if (markerMatch) {
-            console.log('🔍 Extracted URLs from marker:', markerMatch[1].split('|'));
+            devLog('🔍 Extracted URLs from marker:', markerMatch[1].split('|'));
           }
         }
       },
@@ -301,7 +302,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.log('error', error);
+    devLog('error', error);
     return new NextResponse(
       JSON.stringify({ error: 'Internal Server Error' }),
       {

@@ -1,9 +1,11 @@
 /**
  * Real-time Sync Configuration
- * 
+ *
  * Centralized configuration for real-time synchronization across the application.
  * Optimized for instant local-like performance with real-time cloud sync.
  */
+
+import { devLog } from './logger';
 
 export const REALTIME_CONFIG = {
   // Authentication Settings
@@ -173,7 +175,7 @@ export function getRealtimeSyncStatus(): RealtimeSyncStatus {
  */
 export function logRealtimeConfig(): void {
   const status = getRealtimeSyncStatus();
-  console.log('[RealtimeConfig] Current configuration:', {
+  devLog('[RealtimeConfig] Current configuration:', {
     ...status,
     sessionRefreshInterval: `${REALTIME_CONFIG.auth.sessionRefreshInterval / (60 * 60 * 1000)} hours`,
     streamingThrottle: `${REALTIME_CONFIG.streaming.throttle}ms`,

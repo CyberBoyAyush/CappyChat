@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Globe, ExternalLink, Image as ImageIcon, Clock, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { devLog, devError } from '@/lib/logger';
 
 interface CitationData {
   url: string;
@@ -31,7 +32,7 @@ export function WebSearchCitations({
 
   // Convert URLs to citation data with metadata
   useEffect(() => {
-    console.log('🔗 WebSearchCitations received results:', results);
+    devLog('🔗 WebSearchCitations received results:', results);
     if (!results || results.length === 0) return;
 
     const initialCitations: CitationData[] = results.map(url => {
@@ -313,7 +314,7 @@ async function fetchUrlMetadata(url: string): Promise<Partial<CitationData>> {
       description: `Visit ${domain} for more information`
     };
   } catch (error) {
-    console.error('Error fetching metadata for URL:', url, error);
+    devError('Error fetching metadata for URL: ' + url, error);
     return {};
   }
 }
@@ -345,23 +346,23 @@ function generateTitleFromUrl(url: string): string {
 
 // Utility function to extract URLs from text content
 export function extractUrlsFromContent(content: string): string[] {
-  console.log('🔗 extractUrlsFromContent called with content length:', content.length);
-  console.log('🔗 Content preview (first 200 chars):', content.substring(0, 200));
-  console.log('🔗 Content preview (last 200 chars):', content.substring(content.length - 200));
+  devLog('🔗 extractUrlsFromContent called with content length:', content.length);
+  devLog('🔗 Content preview (first 200 chars):', content.substring(0, 200));
+  devLog('🔗 Content preview (last 200 chars):', content.substring(content.length - 200));
 
   // First, check for search URLs marker (for web search results)
   const searchUrlsMarker = /<!-- SEARCH_URLS: (.*?) -->/;
   const markerMatch = content.match(searchUrlsMarker);
 
   if (markerMatch && markerMatch[1]) {
-    console.log('🔗 Found search URLs marker:', markerMatch[1]);
+    devLog('🔗 Found search URLs marker:', markerMatch[1]);
     const searchUrls = markerMatch[1].split('|').filter(url => url.trim());
     if (searchUrls.length > 0) {
-      console.log('🔗 Extracted search URLs from marker:', searchUrls);
+      devLog('🔗 Extracted search URLs from marker:', searchUrls);
       return searchUrls;
     }
   } else {
-    console.log('🔗 No search URLs marker found in content');
+    devLog('🔗 No search URLs marker found in content');
   }
 
   // Fallback: Enhanced URL regex that matches various URL patterns including special characters
