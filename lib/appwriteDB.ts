@@ -24,11 +24,12 @@ const databases = new Databases(client);
 // Interface for Appwrite Project document
 export interface AppwriteProject extends Models.Document {
   projectId: string;
-  userId: string;
+  userId: string; // Project owner/admin
   name: string;
   description?: string;
   prompt?: string;
   colorIndex?: number;
+  members?: string[]; // Array of user IDs who have access to this project
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
 }
@@ -40,6 +41,7 @@ export interface Project {
   description?: string;
   prompt?: string;
   colorIndex?: number;
+  members?: string[]; // Array of user IDs who have access to this project
   createdAt: Date;
   updatedAt: Date;
 }
@@ -191,13 +193,13 @@ export class AppwriteDB {
 
   // -------------- Thread Operations --------------
 
-  // Get all threads for current user
+  // Get all threads for current user (owned + collaborative)
   static async getThreads(): Promise<Thread[]> {
     try {
       const userId = await this.getCurrentUserId();
-      
-      // Get threads from Appwrite
-      const response = await databases.listDocuments(
+
+      // Get user's own threads
+      const ownThreadsResponse = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
         [
@@ -205,9 +207,39 @@ export class AppwriteDB {
           Query.orderDesc('lastMessageAt')
         ]
       );
-      
+
+      // Get projects where user is a member to access collaborative threads
+      const memberProjects = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.contains('members', userId)
+        ]
+      );
+
+      // Get collaborative threads from projects where user is a member
+      let collaborativeThreads: any[] = [];
+      if (memberProjects.documents.length > 0) {
+        const projectIds = memberProjects.documents.map(doc => (doc as unknown as AppwriteProject).projectId);
+
+        // Get threads from collaborative projects (excluding user's own threads)
+        const collaborativeResponse = await databases.listDocuments(
+          DATABASE_ID,
+          THREADS_COLLECTION_ID,
+          [
+            Query.contains('projectId', projectIds),
+            Query.notEqual('userId', userId), // Exclude user's own threads to avoid duplicates
+            Query.orderDesc('lastMessageAt')
+          ]
+        );
+        collaborativeThreads = collaborativeResponse.documents;
+      }
+
+      // Combine and sort all threads
+      const allThreadDocs = [...ownThreadsResponse.documents, ...collaborativeThreads];
+
       // Map Appwrite threads to Thread format
-      const threads = response.documents.map((doc) => {
+      const threads = allThreadDocs.map((doc) => {
         const threadDoc = doc as unknown as AppwriteThread;
         return {
           id: threadDoc.threadId,
@@ -215,13 +247,16 @@ export class AppwriteDB {
           createdAt: new Date(doc.$createdAt),
           updatedAt: new Date(threadDoc.updatedAt),
           lastMessageAt: new Date(threadDoc.lastMessageAt),
-          isPinned: threadDoc.isPinned || false, // Default to false for existing threads
-          tags: threadDoc.tags || [], // Default to empty array for existing threads
-          isBranched: threadDoc.isBranched || false, // Default to false for existing threads
-          projectId: threadDoc.projectId // Optional project ID
+          isPinned: threadDoc.isPinned || false,
+          tags: threadDoc.tags || [],
+          isBranched: threadDoc.isBranched || false,
+          projectId: threadDoc.projectId
         };
       });
-      
+
+      // Sort by lastMessageAt descending
+      threads.sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime());
+
       return threads;
     } catch (error) {
       devError('Error fetching threads from Appwrite:', error);
@@ -429,6 +464,14 @@ export class AppwriteDB {
     try {
       const userId = await this.getCurrentUserId();
       const now = new Date();
+
+      // If projectId is provided, check if user has access to create threads in this project
+      if (projectId) {
+        const canCreateInProject = await this.canUserAccessProject(projectId);
+        if (!canCreateInProject) {
+          throw new Error('You do not have permission to create threads in this project');
+        }
+      }
 
       const threadData: any = {
         threadId: threadId,
@@ -737,23 +780,41 @@ export class AppwriteDB {
 
   // -------------- Project Operations --------------
 
-  // Get all projects for current user
+  // Get all projects for current user (owned + member of)
   static async getProjects(): Promise<Project[]> {
     try {
       const userId = await this.getCurrentUserId();
 
-      // Get projects from Appwrite
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        PROJECTS_COLLECTION_ID,
-        [
-          Query.equal('userId', userId),
-          Query.orderDesc('updatedAt')
-        ]
+      // Get projects where user is owner OR member
+      const [ownedProjects, memberProjects] = await Promise.all([
+        // Projects owned by user
+        databases.listDocuments(
+          DATABASE_ID,
+          PROJECTS_COLLECTION_ID,
+          [
+            Query.equal('userId', userId),
+            Query.orderDesc('updatedAt')
+          ]
+        ),
+        // Projects where user is a member
+        databases.listDocuments(
+          DATABASE_ID,
+          PROJECTS_COLLECTION_ID,
+          [
+            Query.contains('members', userId),
+            Query.orderDesc('updatedAt')
+          ]
+        )
+      ]);
+
+      // Combine and deduplicate projects
+      const allProjectDocs = [...ownedProjects.documents, ...memberProjects.documents];
+      const uniqueProjects = allProjectDocs.filter((doc, index, self) =>
+        index === self.findIndex(d => d.$id === doc.$id)
       );
 
       // Map Appwrite projects to Project format
-      const projects = response.documents.map((doc) => {
+      const projects = uniqueProjects.map((doc) => {
         const projectDoc = doc as unknown as AppwriteProject;
         return {
           id: projectDoc.projectId,
@@ -761,6 +822,7 @@ export class AppwriteDB {
           description: projectDoc.description,
           prompt: projectDoc.prompt,
           colorIndex: projectDoc.colorIndex,
+          members: projectDoc.members || [],
           createdAt: new Date(doc.$createdAt),
           updatedAt: new Date(projectDoc.updatedAt)
         };
@@ -785,6 +847,7 @@ export class AppwriteDB {
         name: name,
         description: description || '',
         prompt: prompt || '',
+        members: [], // Initialize empty members array
         createdAt: now.toISOString(),
         updatedAt: now.toISOString()
       };
@@ -945,20 +1008,268 @@ export class AppwriteDB {
     }
   }
 
+  // -------------- Project Member Operations --------------
+
+  // Add member to project (only project owner can do this)
+  static async addProjectMember(projectId: string, memberUserId: string): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+
+      // Find the project document (only owner can add members)
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.equal('projectId', projectId),
+          Query.equal('userId', userId) // Only owner can add members
+        ]
+      );
+
+      if (response.documents.length === 0) {
+        throw new Error('Project not found or you are not the owner');
+      }
+
+      const projectDoc = response.documents[0] as unknown as AppwriteProject;
+      const currentMembers = projectDoc.members || [];
+
+      // Check if user is already a member
+      if (currentMembers.includes(memberUserId)) {
+        throw new Error('User is already a member of this project');
+      }
+
+      // Add the new member
+      const updatedMembers = [...currentMembers, memberUserId];
+
+      await databases.updateDocument(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        projectDoc.$id,
+        {
+          members: updatedMembers,
+          updatedAt: new Date().toISOString()
+        }
+      );
+    } catch (error) {
+      devError('Error adding project member:', error);
+      throw error;
+    }
+  }
+
+  // Remove member from project (only project owner can do this)
+  static async removeProjectMember(projectId: string, memberUserId: string): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+
+      // Find the project document (only owner can remove members)
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.equal('projectId', projectId),
+          Query.equal('userId', userId) // Only owner can remove members
+        ]
+      );
+
+      if (response.documents.length === 0) {
+        throw new Error('Project not found or you are not the owner');
+      }
+
+      const projectDoc = response.documents[0] as unknown as AppwriteProject;
+      const currentMembers = projectDoc.members || [];
+
+      // Remove the member
+      const updatedMembers = currentMembers.filter(id => id !== memberUserId);
+
+      await databases.updateDocument(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        projectDoc.$id,
+        {
+          members: updatedMembers,
+          updatedAt: new Date().toISOString()
+        }
+      );
+    } catch (error) {
+      devError('Error removing project member:', error);
+      throw error;
+    }
+  }
+
+  // Get project members (owner and members can view)
+  static async getProjectMembers(projectId: string): Promise<string[]> {
+    try {
+      const userId = await this.getCurrentUserId();
+
+      // Find the project document (owner or member can view)
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.equal('projectId', projectId),
+          Query.or([
+            Query.equal('userId', userId), // Owner
+            Query.contains('members', userId) // Member
+          ])
+        ]
+      );
+
+      if (response.documents.length === 0) {
+        throw new Error('Project not found or you do not have access');
+      }
+
+      const projectDoc = response.documents[0] as unknown as AppwriteProject;
+      return projectDoc.members || [];
+    } catch (error) {
+      devError('Error getting project members:', error);
+      throw error;
+    }
+  }
+
+  // Check if user is project owner
+  static async isProjectOwner(projectId: string): Promise<boolean> {
+    try {
+      const userId = await this.getCurrentUserId();
+
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.equal('projectId', projectId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      return response.documents.length > 0;
+    } catch (error) {
+      devError('Error checking project ownership:', error);
+      return false;
+    }
+  }
+
+  // Get project owner ID
+  static async getProjectOwnerId(projectId: string): Promise<string | null> {
+    try {
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.equal('projectId', projectId)
+        ]
+      );
+
+      if (response.documents.length > 0) {
+        const projectDoc = response.documents[0] as unknown as AppwriteProject;
+        return projectDoc.userId;
+      }
+
+      return null;
+    } catch (error) {
+      devError('Error getting project owner ID:', error);
+      return null;
+    }
+  }
+
+  // -------------- Access Control --------------
+
+  // Check if user can access a project (owner or member)
+  static async canUserAccessProject(projectId: string): Promise<boolean> {
+    try {
+      const userId = await this.getCurrentUserId();
+
+      // Check if user owns the project or is a member
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.equal('projectId', projectId),
+          Query.or([
+            Query.equal('userId', userId), // Owner
+            Query.contains('members', userId) // Member
+          ])
+        ]
+      );
+
+      return response.documents.length > 0;
+    } catch (error) {
+      devError('Error checking project access:', error);
+      return false;
+    }
+  }
+
+  // Check if user has access to a thread (owner or project member)
+  static async hasThreadAccess(threadId: string): Promise<boolean> {
+    try {
+      const userId = await this.getCurrentUserId();
+
+      // First check if user owns the thread
+      const ownThreadResponse = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('threadId', threadId),
+          Query.equal('userId', userId)
+        ]
+      );
+
+      if (ownThreadResponse.documents.length > 0) {
+        return true; // User owns the thread
+      }
+
+      // Check if thread belongs to a project where user is a member
+      const threadResponse = await databases.listDocuments(
+        DATABASE_ID,
+        THREADS_COLLECTION_ID,
+        [
+          Query.equal('threadId', threadId)
+        ]
+      );
+
+      if (threadResponse.documents.length === 0) {
+        return false; // Thread doesn't exist
+      }
+
+      const thread = threadResponse.documents[0] as unknown as AppwriteThread;
+      if (!thread.projectId) {
+        return false; // Thread not in a project, and user doesn't own it
+      }
+
+      // Check if user is a member of the project
+      const projectResponse = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [
+          Query.equal('projectId', thread.projectId),
+          Query.contains('members', userId)
+        ]
+      );
+
+      return projectResponse.documents.length > 0;
+    } catch (error) {
+      devError('Error checking thread access:', error);
+      return false;
+    }
+  }
+
   // -------------- Message Operations --------------
 
-  // Get messages by thread ID
+  // Get messages by thread ID (with collaborative access)
   static async getMessagesByThreadId(threadId: string): Promise<DBMessage[]> {
     try {
       const userId = await this.getCurrentUserId();
-      
-      // Get messages from Appwrite
+
+      // Check if user has access to this thread
+      const hasAccess = await this.hasThreadAccess(threadId);
+      if (!hasAccess) {
+        devWarn(`User ${userId} does not have access to thread ${threadId}`);
+        return [];
+      }
+
+      // Get all messages from the thread (not filtered by userId for collaborative access)
       const response = await databases.listDocuments(
         DATABASE_ID,
         MESSAGES_COLLECTION_ID,
         [
           Query.equal('threadId', threadId),
-          Query.equal('userId', userId),
           Query.orderAsc('createdAt')
         ]
       );

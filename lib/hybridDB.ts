@@ -295,7 +295,7 @@ export class HybridDB {
   }
 
   // Load projects in background (non-blocking)
-  private static async loadProjectsInBackground(): Promise<void> {
+  static async loadProjectsInBackground(): Promise<void> {
     try {
       const projects = await AppwriteDB.getProjects();
       LocalDB.replaceAllProjects(projects);
@@ -747,6 +747,135 @@ export class HybridDB {
     });
   }
 
+  // ============ PROJECT MEMBER OPERATIONS ============
+
+  // Add member to project (only for authenticated users)
+  static async addProjectMember(projectId: string, email: string): Promise<void> {
+    // Skip for guest users
+    if (this.isGuestMode) {
+      throw new Error('Project collaboration not available for guest users');
+    }
+
+    try {
+      // First find the user by email using the API
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'findUserByEmail',
+          email
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to find user');
+      }
+
+      const result = await response.json();
+      const userToAdd = result.user;
+
+      // Add member using AppwriteDB directly
+      await AppwriteDB.addProjectMember(projectId, userToAdd.id);
+
+      // Refresh projects to get updated member list
+      await this.loadProjectsInBackground();
+    } catch (error) {
+      devError('Failed to add project member:', error);
+      throw error;
+    }
+  }
+
+  // Remove member from project (only for authenticated users)
+  static async removeProjectMember(projectId: string, userId: string): Promise<void> {
+    // Skip for guest users
+    if (this.isGuestMode) {
+      throw new Error('Project collaboration not available for guest users');
+    }
+
+    try {
+      // Remove member using AppwriteDB directly
+      await AppwriteDB.removeProjectMember(projectId, userId);
+
+      // Refresh projects to get updated member list
+      await this.loadProjectsInBackground();
+    } catch (error) {
+      devError('Failed to remove project member:', error);
+      throw error;
+    }
+  }
+
+  // Get project members (only for authenticated users)
+  static async getProjectMembers(projectId: string): Promise<Array<{id: string, name: string, email: string, isOwner?: boolean}>> {
+    // Skip for guest users
+    if (this.isGuestMode) {
+      throw new Error('Project collaboration not available for guest users');
+    }
+
+    try {
+      // Get member IDs using AppwriteDB directly
+      const memberIds = await AppwriteDB.getProjectMembers(projectId);
+
+      // Get project owner ID
+      const ownerId = await AppwriteDB.getProjectOwnerId(projectId);
+
+      // Combine owner and members (avoid duplicates)
+      const allUserIds = ownerId ? [ownerId, ...memberIds.filter(id => id !== ownerId)] : memberIds;
+
+      if (allUserIds.length === 0) {
+        return [];
+      }
+
+      // Get user details from API
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'getUserDetails',
+          userIds: allUserIds
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get user details');
+      }
+
+      const result = await response.json();
+      const users = result.users || [];
+
+      // Mark the owner
+      return users.map((user: any) => ({
+        ...user,
+        isOwner: user.id === ownerId
+      }));
+    } catch (error) {
+      devError('Failed to get project members:', error);
+      throw error;
+    }
+  }
+
+
+
+  // Check if current user is project owner (only for authenticated users)
+  static async isProjectOwner(projectId: string): Promise<boolean> {
+    // Skip for guest users
+    if (this.isGuestMode) {
+      return false;
+    }
+
+    try {
+      // Check ownership using AppwriteDB directly
+      return await AppwriteDB.isProjectOwner(projectId);
+    } catch (error) {
+      devError('Failed to check project ownership:', error);
+      return false;
+    }
+  }
+
   // ============ MESSAGE OPERATIONS ============
 
   // Get messages for thread (instant from local storage)
@@ -1072,7 +1201,37 @@ export class HybridDB {
     };
 
     LocalDB.upsertThread(thread);
+
+    // For collaborative threads, also trigger a background sync to ensure we have all collaborative data
+    if (appwriteThread.projectId && appwriteThread.userId !== LocalDB.getUserId()) {
+      console.log('[HybridDB] Collaborative thread created, triggering background sync');
+      this.syncCollaborativeThreadsInBackground();
+    }
+
     debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
+  }
+
+  // Background sync for collaborative threads
+  private static async syncCollaborativeThreadsInBackground(): Promise<void> {
+    // Skip for guest users
+    if (this.isGuestMode) {
+      return;
+    }
+
+    try {
+      // Get fresh collaborative threads from Appwrite
+      const remoteThreads = await AppwriteDB.getThreads();
+
+      // Update local storage with fresh data
+      LocalDB.replaceAllThreads(remoteThreads);
+
+      // Emit update to refresh UI
+      debouncedEmitter.emitImmediate('threads_updated', remoteThreads);
+
+      console.log('[HybridDB] Collaborative threads synced successfully');
+    } catch (error) {
+      devError('Failed to sync collaborative threads:', error);
+    }
   }
 
   private static handleRemoteThreadUpdated(appwriteThread: any): void {
@@ -1165,6 +1324,13 @@ export class HybridDB {
 
     LocalDB.addMessage(message);
     const updatedMessages = LocalDB.getMessagesByThread(message.threadId);
+
+    // For collaborative messages, also sync messages in background to ensure we have all data
+    if (appwriteMessage.userId !== LocalDB.getUserId()) {
+      console.log('[HybridDB] Collaborative message created, triggering message sync');
+      this.syncMessagesInBackground(message.threadId);
+    }
+
     debouncedEmitter.emitImmediate('messages_updated', message.threadId, updatedMessages);
     debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
   }
@@ -1328,6 +1494,11 @@ export class HybridDB {
     };
 
     LocalDB.upsertProject(project);
+
+    // When project is updated (e.g., members added/removed), refresh collaborative threads
+    console.log('[HybridDB] Project updated, refreshing collaborative data');
+    this.syncCollaborativeThreadsInBackground();
+
     debouncedEmitter.emitImmediate('projects_updated', LocalDB.getProjects());
   }
 
