@@ -414,15 +414,17 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
           className={cn(
             "w-[360px] sm:w-[560px] lg:w-[650px] max-w-[95vw] p-0",
             "border border-border/50 bg-background/95 backdrop-blur-xl",
-            "max-h-[60vh] overflow-hidden",
+            "max-h-[85vh] overflow-hidden flex flex-col",
             "shadow-2xl shadow-black/10 dark:shadow-black/30",
             "rounded-2xl"
           )}
           align="end"
           sideOffset={8}
+          collisionPadding={16}
+          avoidCollisions={true}
         >
           {/* Search and BYOK */}
-          <div className="p-3 sm:p-5 border-b border-border/50">
+          <div className="p-3 sm:p-5 border-b border-border/50 flex-shrink-0">
             <div className="flex items-center gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -444,7 +446,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
           </div>
 
           {/* Providers Filter */}
-          <div className="p-3 sm:p-5 border-b border-border/50">
+          <div className="p-3 sm:p-5 border-b border-border/50 flex-shrink-0">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-foreground">
                 Providers
@@ -484,7 +486,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
           </div>
 
           {/* Models List */}
-          <div className="max-h-[400px] overflow-y-auto no-scrollbar">
+          <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
             {filteredModels.length > 0 ? (
               <div className="">
                 {filteredModels.map((model) => (
