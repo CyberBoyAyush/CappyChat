@@ -959,9 +959,16 @@ function PureInputField({
     setIsEnhancing(true);
     try {
       // Get last few messages for context (if available)
-      const contextMessages = messages?.slice(-4).map((m) => 
-        `${m.role}: ${m.content}`
-      ).join('\n');
+      // Only include text content, limit to 100 chars per message to avoid token limits
+      const contextMessages = messages?.slice(-6)
+        .filter(m => m.content && m.content.length > 0)
+        .map((m) => {
+          const content = m.content.length > 100 
+            ? m.content.substring(0, 100) + '...' 
+            : m.content;
+          return `${m.role === 'user' ? 'User' : 'Assistant'}: ${content}`;
+        })
+        .join('\n');
 
       const response = await fetch('/api/ai-text-generation', {
         method: 'POST',
@@ -971,7 +978,7 @@ function PureInputField({
         body: JSON.stringify({
           prompt: input,
           isEnhancement: true,
-          context: contextMessages,
+          context: contextMessages || '', // Send empty string if no context
           userApiKey: null, // Will use system key for free enhancement
         }),
       });

@@ -60,23 +60,46 @@ export async function POST(req: Request) {
       // Prompt enhancement using Gemini 2.5 Flash Lite (free model)
       const { text: enhancedPrompt } = await generateText({
         model: openrouter('google/gemini-2.5-flash-lite'),
-        system: `You are an expert prompt engineer. Your task is to enhance user prompts to be more clear, specific, and effective while maintaining their original intent.
+        system: `You are a PROMPT REWRITER. You MUST follow these rules EXACTLY:
 
-Guidelines:
-- Improve clarity and specificity without changing the core request
-- Add relevant context or details that might help get better responses
-- Fix grammar and spelling errors naturally
-- Keep the enhanced prompt concise and focused
-- Maintain the user's tone and style
-- If the prompt is already good, make minimal changes
-- Consider the conversation context if provided
-- Do NOT add unnecessary verbosity or flowery language
-- Output ONLY the enhanced prompt, nothing else
+WHAT YOU MUST DO:
+1. Take the user's input and rewrite it to be clearer
+2. Fix spelling and grammar mistakes
+3. Make vague questions more specific
+4. Add helpful details to make the prompt better
+5. Keep the same intent - if they're asking a question, keep it as a question
+6. If context shows an ongoing conversation, make the prompt fit that context
 
-${context ? `Recent conversation context:\n${context}` : ''}`,
-        prompt: prompt,
-        temperature: 0.7,
-        maxTokens: 500,
+WHAT YOU MUST NEVER DO:
+1. NEVER provide answers or information
+2. NEVER explain things
+3. NEVER say "I am" or "I can" or give any response
+4. NEVER add your own knowledge or facts
+5. NEVER turn a question into a statement
+6. NEVER add content that answers the question
+
+EXAMPLES OF CORRECT ENHANCEMENT:
+Input: "wut is gpt"
+Output: "What is GPT and how does it work?"
+
+Input: "tell me about urself"  
+Output: "Could you tell me about yourself, your capabilities, and what you can help with?"
+
+Input: "how to code"
+Output: "How can I learn to code? What programming language should I start with?"
+
+Input: "hi how are you tell me about you"
+Output: "Hello! How are you today? Could you introduce yourself and explain what you do?"
+
+${context ? `\nCONVERSATION CONTEXT (use this to make the enhanced prompt more relevant):\n${context}\n` : ''}
+
+THE USER'S PROMPT TO ENHANCE (DO NOT ANSWER IT, ONLY REWRITE IT):
+"${prompt}"
+
+OUTPUT THE ENHANCED PROMPT ONLY. NO EXPLANATIONS. NO ANSWERS.`,
+        prompt: '',
+        temperature: 0.2,
+        maxTokens: 200,
       });
 
       return NextResponse.json({ enhancedPrompt, isEnhancement });
