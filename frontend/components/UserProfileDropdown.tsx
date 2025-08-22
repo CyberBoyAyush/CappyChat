@@ -233,24 +233,26 @@ const UserProfileDropdown: React.FC = () => {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="flex items-center gap-2 px-2 py-1.5 h-auto hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 rounded-lg"
+          className="flex items-center justify-around gap-2 px-2 py-1.5 h-auto hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 rounded-lg"
         >
-          {/* User Avatar */}
-          {UserAvatar}
-
           {/* User Info */}
           <div className="flex flex-col items-start min-w-0">
             <div className="flex items-center gap-1.5">
+              {/* User Avatar */}
+              {UserAvatar}
               <span className="text-sm font-medium text-sidebar-foreground truncate max-w-[120px]">
                 {displayName}
               </span>
-              {tierInfo && tierInfo.tier !== "free" && (
-                <TierBadge tier={tierInfo.tier} />
-              )}
             </div>
           </div>
 
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-auto transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          <div className="flex items-center justify-center gap-1.5 ">
+            {/* Tier Badge */}
+            {tierInfo && tierInfo.tier !== "free" && (
+              <TierBadge tier={tierInfo.tier} />
+            )}
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-auto transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          </div>
         </Button>
       </DropdownMenuTrigger>
 
