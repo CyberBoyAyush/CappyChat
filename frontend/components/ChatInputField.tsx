@@ -7,7 +7,7 @@
  * Creates new threads when needed and manages chat state.
  */
 
-import { ArrowUpIcon } from "lucide-react";
+import { ArrowUpIcon, Sparkles } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Textarea } from "@/frontend/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -932,6 +932,8 @@ function PureInputField({
 
   // State for voice input active status
   const [isVoiceInputActive, setIsVoiceInputActive] = useState(false);
+  // State for enhancement loading
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   function handleVoiceInput(text: string) {
     setInput((prev) => prev + (prev ? " " : "") + text);
@@ -949,6 +951,55 @@ function PureInputField({
   function handleListeningChange(isListening: boolean) {
     setIsVoiceInputActive(isListening);
   }
+
+  // Handle prompt enhancement
+  const handleEnhancePrompt = useCallback(async () => {
+    if (!input.trim() || isEnhancing) return;
+
+    setIsEnhancing(true);
+    try {
+      // Get last few messages for context (if available)
+      const contextMessages = messages?.slice(-4).map((m) => 
+        `${m.role}: ${m.content}`
+      ).join('\n');
+
+      const response = await fetch('/api/ai-text-generation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: input,
+          isEnhancement: true,
+          context: contextMessages,
+          userApiKey: null, // Will use system key for free enhancement
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Enhancement failed');
+      }
+
+      if (result.enhancedPrompt) {
+        setInput(result.enhancedPrompt);
+        toast.success("✨ Prompt enhanced!");
+        // Focus the textarea after enhancement
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          const length = result.enhancedPrompt.length;
+          textareaRef.current.setSelectionRange(length, length);
+        }
+        adjustHeight();
+      }
+    } catch (error) {
+      console.error('Failed to enhance prompt:', error);
+      toast.error('Failed to enhance prompt. Please try again.');
+    } finally {
+      setIsEnhancing(false);
+    }
+  }, [input, isEnhancing, messages, setInput, textareaRef, adjustHeight]);
 
   // Handle drag and drop for textarea
   const handleTextareaDragOver = useCallback(
@@ -1172,25 +1223,57 @@ function PureInputField({
               )}
             </div>
 
-            {/* Voice Input Button inside textarea */}
-            <div
-              className={cn(
-                "absolute right-2 top-2 transition-transform duration-200",
-                isVoiceInputActive && "scale-110"
+            {/* Enhance and Voice Input Buttons inside textarea */}
+            <div className="absolute right-2 top-2 flex items-center gap-2">
+              {/* Enhance Button */}
+              {!isImageGenMode && input.trim().length > 0 && !isGuest && (
+                <button
+                  type="button"
+                  onClick={handleEnhancePrompt}
+                  disabled={
+                    isEnhancing ||
+                    status === "streaming" ||
+                    status === "submitted" ||
+                    !input.trim()
+                  }
+                  className={cn(
+                    "p-2 rounded-lg transition-all",
+                    "bg-primary/10 hover:bg-primary/20 text-primary",
+                    "border border-primary/20 hover:border-primary/30",
+                    "disabled:opacity-50 disabled:cursor-not-allowed",
+                    "shadow-sm hover:shadow-md"
+                  )}
+                  aria-label="Enhance prompt"
+                  title="Enhance your prompt with AI"
+                >
+                  {isEnhancing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4" />
+                  )}
+                </button>
               )}
-            >
-              <VoiceInputButton
-                onResult={handleVoiceInput}
-                onError={handleVoiceInputError}
-                onListeningChange={handleListeningChange}
+              
+              {/* Voice Input Button */}
+              <div
                 className={cn(
-                  isVoiceInputActive
-                    ? "text-red-500 hover:text-red-600"
-                    : "text-foreground "
+                  "transition-transform duration-200",
+                  isVoiceInputActive && "scale-110"
                 )}
-                size="md"
-                disabled={status === "streaming" || status === "submitted"}
-              />
+              >
+                <VoiceInputButton
+                  onResult={handleVoiceInput}
+                  onError={handleVoiceInputError}
+                  onListeningChange={handleListeningChange}
+                  className={cn(
+                    isVoiceInputActive
+                      ? "text-red-500 hover:text-red-600"
+                      : "text-foreground"
+                  )}
+                  size="md"
+                  disabled={status === "streaming" || status === "submitted"}
+                />
+              </div>
             </div>
             {/* Character counter for long text warning */}
             {input.length > 800 && (
