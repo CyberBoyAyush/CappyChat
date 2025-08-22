@@ -92,9 +92,9 @@ const PROJECT_COLORS = [
     name: "Purple",
   },
   {
-    bg: "bg-orange-500/20 border-orange-500/30",
-    icon: "text-orange-500",
-    name: "Orange",
+    bg: "bg-zinc-500/20 border-zinc-500/30",
+    icon: "text-zinc-500",
+    name: "Zinc",
   },
   {
     bg: "bg-pink-500/20 border-pink-500/30",

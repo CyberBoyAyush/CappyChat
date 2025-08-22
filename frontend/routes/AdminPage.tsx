@@ -576,12 +576,12 @@ export default function AdminPage() {
                     Tier Distribution
                   </h5>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg text-center">
-                      <User className="h-5 w-5 mx-auto mb-2 text-gray-600" />
-                      <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">
+                    <div className="bg-zinc-50 dark:bg-zinc-800 p-4 rounded-lg text-center">
+                      <User className="h-5 w-5 mx-auto mb-2 text-zinc-600" />
+                      <p className="text-2xl font-bold text-zinc-700 dark:text-zinc-300">
                         {adminStats.tiers?.distribution?.free || "0"}
                       </p>
-                      <p className="text-xs text-gray-600">Free Users</p>
+                      <p className="text-xs text-zinc-600">Free Users</p>
                     </div>
                     <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg text-center">
                       <Shield className="h-5 w-5 mx-auto mb-2 text-purple-600" />
@@ -590,12 +590,12 @@ export default function AdminPage() {
                       </p>
                       <p className="text-xs text-purple-600">Premium Users</p>
                     </div>
-                    <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg text-center">
-                      <Shield className="h-5 w-5 mx-auto mb-2 text-orange-600" />
-                      <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
+                    <div className="bg-black/5 dark:bg-white/10 p-4 rounded-lg text-center">
+                      <Shield className="h-5 w-5 mx-auto mb-2 text-black dark:text-white" />
+                      <p className="text-2xl font-bold text-black dark:text-white">
                         {adminStats.tiers?.distribution?.admin || "0"}
                       </p>
-                      <p className="text-xs text-orange-600">Admin Users</p>
+                      <p className="text-xs text-black/80 dark:text-white/80">Admin Users</p>
                     </div>
                     <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg text-center">
                       <AlertTriangle className="h-5 w-5 mx-auto mb-2 text-red-600" />
@@ -645,22 +645,20 @@ export default function AdminPage() {
                         <p className="text-xs text-purple-500">Used Premium</p>
                       </div>
                     </div>
-                    <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
-                      <div className="text-center">
-                        <p className="text-lg font-bold text-orange-700 dark:text-orange-300">
-                          {adminStats.tiers?.credits
-                            ?.totalSuperPremiumCredits || "0"}
+                    <div className="bg-black/5 dark:bg-white/10 p-4 rounded-lg">
+                      <div>
+                        <p className="text-lg font-bold text-black dark:text-white">
+                          {adminStats.tiers?.credits?.totalSuperPremiumCredits || 0}
                         </p>
-                        <p className="text-xs text-orange-600">
+                        <p className="text-xs text-black/80 dark:text-white/80">
                           Remaining Super
                         </p>
                       </div>
-                      <div className="text-center mt-2">
-                        <p className="text-sm font-semibold text-orange-600">
-                          {adminStats.tiers?.credits?.usedSuperPremiumCredits ||
-                            "0"}
+                      <div>
+                        <p className="text-sm font-semibold text-black/90 dark:text-white/90">
+                          {adminStats.tiers?.credits?.usedSuperPremiumCredits || 0}
                         </p>
-                        <p className="text-xs text-orange-500">Used Super</p>
+                        <p className="text-xs text-black/70 dark:text-white/70">Used Super</p>
                       </div>
                     </div>
                   </div>
@@ -789,7 +787,7 @@ export default function AdminPage() {
                       size="sm"
                       onClick={() => handleUpdateUserTier("admin")}
                       disabled={isLoading}
-                      className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                      className="border-zinc-300 text-zinc-700 hover:bg-zinc-50"
                     >
                       Set Admin
                     </Button>
@@ -980,12 +978,12 @@ export default function AdminPage() {
                 </div>
 
                 {/* Credits Used */}
-                <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg text-center">
-                  <Activity className="h-6 w-6 mx-auto mb-2 text-orange-600" />
-                  <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
-                    {adminStats.monthlyCredits.creditsUsed.total.toLocaleString()}
+                <div className="bg-black/5 dark:bg-white/10 p-4 rounded-lg text-center">
+                  <Activity className="h-6 w-6 mx-auto mb-2 text-black dark:text-white" />
+                  <p className="text-2xl font-bold text-black dark:text-white">
+                    {adminStats.monthlyCredits?.creditsUsed?.total || "0"}
                   </p>
-                  <p className="text-xs text-orange-600">Credits Used</p>
+                  <p className="text-xs text-black/80 dark:text-white/80">Credits Used</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {adminStats.monthlyCredits.utilizationRate}% utilization
                   </p>
@@ -1043,7 +1041,7 @@ export default function AdminPage() {
                   <span>Overall Utilization</span>
                   <span className="font-medium">{adminStats.monthlyCredits.utilizationRate}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-zinc-200 rounded-full h-2">
                   <div
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${Math.min(adminStats.monthlyCredits.utilizationRate, 100)}%` }}
@@ -1105,7 +1103,7 @@ export default function AdminPage() {
                               <CheckCircle2 className="h-4 w-4 text-green-500" />
                             )}
                             {!user.status && (
-                              <AlertTriangle className="h-4 w-4 text-orange-500" />
+                              <AlertTriangle className="h-4 w-4 text-zinc-500" />
                             )}
                           </div>
                           <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
@@ -1163,9 +1161,9 @@ export default function AdminPage() {
 
         {/* System Operations */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="border-orange-200 dark:border-orange-800">
+          <Card className="border-zinc-200 dark:border-zinc-800">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-orange-600">
+              <CardTitle className="flex items-center gap-2 text-black dark:text-white">
                 <RefreshCw className="h-5 w-5" />
                 Monthly Reset
               </CardTitle>
@@ -1177,7 +1175,7 @@ export default function AdminPage() {
               <Button
                 onClick={handleMonthlyReset}
                 disabled={isLoading || !adminKey.trim()}
-                className="w-full bg-orange-500 hover:bg-orange-600"
+                className="w-full bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-black"
               >
                 {isLoading ? "Processing..." : "Run Monthly Reset"}
               </Button>

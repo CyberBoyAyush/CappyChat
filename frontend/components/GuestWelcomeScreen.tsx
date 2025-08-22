@@ -337,11 +337,11 @@ Much cleaner! This approach:
                 <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
               </div>
-              <span className="text-foreground dark:text-gray-400 text-xs ml-2 font-medium">
+              <span className="text-foreground dark:text-zinc-400 text-xs ml-2 font-medium">
                 React Component
               </span>
             </div>
-            <div className="text-foreground p-4 bg-card dark:bg-background dark:text-gray-200 font-mono text-sm">
+            <div className="text-foreground p-4 bg-card dark:bg-background dark:text-zinc-200 font-mono text-sm">
               <pre className="whitespace-pre-wrap">{codeContent}</pre>
             </div>
           </div>
@@ -416,11 +416,11 @@ Much cleaner! This approach:
                 <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
               </div>
-              <span className="text-foreground dark:text-gray-400 text-xs ml-2 font-medium">
+              <span className="text-foreground dark:text-zinc-400 text-xs ml-2 font-medium">
                 React Component
               </span>
             </div>
-            <div className="text-foreground p-4 bg-card dark:bg-background dark:text-gray-200 font-mono text-sm">
+            <div className="text-foreground p-4 bg-card dark:bg-background dark:text-zinc-200 font-mono text-sm">
               <TypingText
                 text={codeContent}
                 isVisible={shouldShowTyping}

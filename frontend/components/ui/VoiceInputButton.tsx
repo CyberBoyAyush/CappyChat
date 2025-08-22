@@ -322,7 +322,7 @@ export default function VoiceInputButton({
         title: "Voice input not supported in this browser",
         className: cn(
           baseSize,
-          "rounded-full flex items-center justify-center transition-all bg-gray-400 cursor-not-allowed",
+          "rounded-full flex items-center justify-center transition-all bg-zinc-400 cursor-not-allowed",
           className
         ),
         icon: <AlertCircle size={iconSize} />,
@@ -335,7 +335,7 @@ export default function VoiceInputButton({
         title: "Microphone access required - click to enable",
         className: cn(
           baseSize,
-          "rounded-full flex items-center justify-center transition-all bg-primary hover:bg-primary/60",
+          "rounded-full flex items-center justify-center transition-all bg-primary  hover:bg-primary/60",
           className
         ),
         icon: <Mic size={iconSize} />,
@@ -377,7 +377,9 @@ export default function VoiceInputButton({
         "rounded-full flex items-center justify-center transition-all bg-primary hover:bg-primary/60 disabled:opacity-50 disabled:cursor-not-allowed",
         className
       ),
-      icon: <AudioLines size={iconSize} className="text-black" />,
+      icon: (
+        <AudioLines size={iconSize} className="text-white dark:text-black" />
+      ),
     };
   };
 

@@ -7,7 +7,7 @@
  * Creates new threads when needed and manages chat state.
  */
 
-import { ArrowUpIcon, Sparkles } from "lucide-react";
+import { ArrowUpIcon } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Textarea } from "@/frontend/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -1196,7 +1196,7 @@ function PureInputField({
             {input.length > 800 && (
               <div className="absolute bottom-2 left-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
                 {input.length > 1000 ? (
-                  <span className="text-orange-500 font-medium">
+                  <span className="text-zinc-600 dark:text-zinc-400 font-medium">
                     {input.length} chars - Will convert to .txt file
                   </span>
                 ) : (
@@ -1380,7 +1380,7 @@ const PureSendButton = ({ onSubmit, disabled }: SendButtonProps) => {
       onClick={handleClick}
       variant="default"
       size="icon"
-      className="h-10 w-10 sm:h-9 sm:w-9 mobile-touch text-black"
+      className="h-10 w-10 sm:h-9 sm:w-9 mobile-touch text-white dark:text-black"
       disabled={disabled}
       aria-label="Send message"
     >

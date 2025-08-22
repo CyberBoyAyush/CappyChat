@@ -188,8 +188,8 @@ export function RedditSearchCitations({
         aria-label={`${isExpanded ? 'Collapse' : 'Expand'} Reddit search results`}
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-orange-500/10 border border-orange-500/20 flex-shrink-0">
-            <MessageSquare className="h-3.5 w-3.5 text-orange-500" />
+          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-black/5 dark:bg-white/10 border border-black/10 dark:border-white/20 flex-shrink-0">
+            <MessageSquare className="h-3.5 w-3.5 text-black dark:text-white" />
           </div>
           
           <div className="flex-1 min-w-0">
@@ -202,8 +202,8 @@ export function RedditSearchCitations({
               </span>
               {isStreaming && (
                 <div className="flex items-center gap-1">
-                  <div className="w-1 h-1 rounded-full bg-orange-500 animate-pulse" />
-                  <span className="text-xs text-orange-600 dark:text-orange-400">Live</span>
+                  <div className="w-1 h-1 rounded-full bg-black dark:bg-white animate-pulse" />
+                  <span className="text-xs text-black dark:text-white">Live</span>
                 </div>
               )}
             </div>
@@ -215,7 +215,7 @@ export function RedditSearchCitations({
 
         <div className="flex items-center gap-2 flex-shrink-0">
           {isLoadingMetadata && (
-            <div className="w-4 h-4 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-black/30 dark:border-white/30 border-t-black dark:border-t-white rounded-full animate-spin" />
           )}
           <div className={cn(
             "w-4 h-4 transition-transform duration-300 ease-in-out text-muted-foreground",
@@ -262,7 +262,7 @@ function RedditCitationCard({ citation }: { citation: CitationData }) {
   const getPostTypeColor = () => {
     switch (citation.postType) {
       case 'post':
-        return 'text-orange-600 dark:text-orange-400';
+        return 'text-black dark:text-white';
       case 'comment':
         return 'text-blue-600 dark:text-blue-400';
       default:
@@ -277,8 +277,8 @@ function RedditCitationCard({ citation }: { citation: CitationData }) {
       rel="noopener noreferrer"
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-xl border border-border/50 bg-card/80",
-        "hover:border-orange-500/50 hover:bg-card hover:shadow-lg transition-all duration-300 ease-in-out",
-        "focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/60",
+        "hover:border-black/50 dark:hover:border-white/50 hover:bg-card hover:shadow-lg transition-all duration-300 ease-in-out",
+        "focus:outline-none focus:ring-2 focus:ring-black/40 dark:focus:ring-white/40 focus:border-black/60 dark:focus:border-white/60",
         "backdrop-blur-sm min-h-[120px] mobile-touch"
       )}
     >
@@ -291,12 +291,12 @@ function RedditCitationCard({ citation }: { citation: CitationData }) {
           </span>
         </div>
         {citation.subreddit && (
-          <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
+          <div className="flex items-center gap-1 text-black dark:text-white">
             <span className="text-xs font-medium">r/{citation.subreddit}</span>
           </div>
         )}
         <div className="ml-auto">
-          <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-orange-500 transition-colors" />
+          <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-black dark:group-hover:text-white transition-colors" />
         </div>
       </div>
 
@@ -310,7 +310,7 @@ function RedditCitationCard({ citation }: { citation: CitationData }) {
             </div>
           ) : (
             <>
-              <h4 className="text-sm font-medium text-foreground line-clamp-2 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+              <h4 className="text-sm font-medium text-foreground line-clamp-2 group-hover:text-black dark:group-hover:text-white transition-colors">
                 {citation.title || 'Reddit Discussion'}
               </h4>
               <p className="text-xs text-muted-foreground line-clamp-2">

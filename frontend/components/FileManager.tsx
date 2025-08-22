@@ -45,7 +45,7 @@ const getFileIcon = (fileType: string) => {
     case 'document':
       return { icon: File, color: 'text-purple-500' };
     default:
-      return { icon: File, color: 'text-gray-500' };
+      return { icon: File, color: 'text-zinc-500' };
   }
 };
 

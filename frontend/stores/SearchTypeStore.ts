@@ -39,7 +39,7 @@ export const SEARCH_TYPE_CONFIGS: Record<SearchType, SearchTypeConfig> = {
     name: "Reddit Search",
     description: "Search Reddit communities and discussions",
     icon: "FaRedditAlien",
-    color: "text-orange-500",
+    color: "text-black dark:text-white",
   },
 };
 
