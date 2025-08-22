@@ -18,6 +18,7 @@ import { AIModel } from "@/lib/models";
 import WebSearchLoader from "./WebSearchLoader";
 import RedditSearchLoader from "./RedditSearchLoader";
 import { useSearchTypeStore, SearchType } from "@/frontend/stores/SearchTypeStore";
+import { devWarn } from "@/lib/logger";
 
 function PureMessageDisplay({
   threadId,
@@ -70,13 +71,13 @@ function PureMessageDisplay({
             index > messages.findIndex((m) => m.id === existing.id))
         ) {
           acc[existingIndex] = current;
-          console.warn("[ChatMessageDisplay] Replaced duplicate message:", {
+          devWarn("[ChatMessageDisplay] Replaced duplicate message:", {
             id: message.id,
             existingContent: existing.content.substring(0, 50),
             newContent: current.content.substring(0, 50),
           });
         } else {
-          console.warn("[ChatMessageDisplay] Skipped duplicate message:", {
+          devWarn("[ChatMessageDisplay] Skipped duplicate message:", {
             id: message.id,
             content: current.content.substring(0, 50),
           });
@@ -90,7 +91,7 @@ function PureMessageDisplay({
 
   // Log if we found duplicates
   if (deduplicatedMessages.length !== messages.length) {
-    console.warn(
+    devWarn(
       `[ChatMessageDisplay] Removed ${
         messages.length - deduplicatedMessages.length
       } duplicate messages from ${messages.length} total`

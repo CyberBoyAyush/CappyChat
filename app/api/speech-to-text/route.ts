@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devError, prodError } from '@/lib/logger';
 
 export const maxDuration = 60;
 
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI Whisper API error:', errorText);
+      prodError('OpenAI Whisper API error', errorText, 'SpeechToTextAPI');
 
       if (response.status === 401) {
         return NextResponse.json(
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Speech-to-text API error:', error);
+    prodError('Speech-to-text API error', error, 'SpeechToTextAPI');
     return NextResponse.json(
       { error: 'Internal server error. Please try again.' },
       { status: 500 }

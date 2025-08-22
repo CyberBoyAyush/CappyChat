@@ -129,7 +129,7 @@ const techStack: TechStackItem[] = [
       { name: "Turbopack", description: "Fast Rust-based bundler" },
       { name: "Vercel", description: "Edge deployment platform" },
     ],
-    color: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+    color: "bg-black/5 text-black dark:bg-white/10 dark:text-white",
   },
   {
     category: "UI & Design System",

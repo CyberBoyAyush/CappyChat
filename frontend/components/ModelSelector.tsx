@@ -47,121 +47,85 @@ const ModelCard: React.FC<ModelCardProps> = ({
   return (
     <div
       onClick={() => !isDisabled && onSelect(model)}
-      title={isDisabled ? tierValidation?.message : modelConfig.description}
       className={cn(
-        "relative group p-2 sm:p-3 rounded-lg border-2 transition-all duration-200",
-        "flex flex-col gap-1.5 sm:gap-3 ",
+        "relative group p-1.5 sm:p-2 transition-all duration-300 cursor-pointer",
+        "min-h-[60px] flex items-center justify-between",
+        "hover:bg-accent/20",
         isDisabled
-          ? "cursor-not-allowed opacity-50 border-muted bg-muted/20"
-          : "cursor-pointer hover:shadow-md hover:border-primary/50 hover:bg-accent/50",
-        isSelected && !isDisabled
-          ? "border-primary bg-primary/5 shadow-sm"
-          : !isDisabled
-          ? "border-border bg-card hover:bg-accent/30"
-          : "border-muted"
+          ? "cursor-not-allowed opacity-40"
+          : isSelected
+          ? "bg-primary/5"
+          : "hover:bg-accent/30"
       )}
-      // title={isDisabled ? tierValidation?.message : undefined}
+      title={isDisabled ? tierValidation?.message : modelConfig.description}
     >
-      {/* Selection indicator */}
-      {isSelected && (
-        <div className="absolute top-1 sm:top-2 right-1 sm:right-2">
-          <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-primary flex items-center justify-center">
-            <Check className="w-1.5 h-1.5 sm:w-2 sm:h-2 text-primary-foreground" />
-          </div>
+      <div className="flex items-center gap-2 flex-1">
+        {/* Provider Icon */}
+        <div
+          className={cn(
+            "flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full",
+            "transition-all duration-300"
+          )}
+        >
+          {getModelIcon(modelConfig.iconType, 16)}
         </div>
-      )}
 
-      {/* Header with icon and name */}
-      <div className="flex justify-between">
-        <div className="flex items-center gap-1.5 sm:gap-3">
-          <div className="flex-shrink-0">
-            {getModelIcon(modelConfig.iconType, 16)}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h3
-                className={cn(
-                  "font-semibold text-xs sm:text-sm truncate",
-                  isSelected && !isDisabled
-                    ? "text-primary"
-                    : isDisabled
-                    ? "text-muted-foreground"
-                    : "text-foreground"
-                )}
-              >
-                {modelConfig.displayName}
-              </h3>
-              {showKeyIcon && !isDisabled && (
-                <div className="flex-shrink-0" title="Using your API key">
-                  <Key className="w-3 h-3 text-primary" />
-                </div>
-              )}
-            </div>
-            {/* <p
+        {/* Model Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h3
               className={cn(
-                "text-xs mt-0.5 sm:mt-1 font-medium hidden sm:block",
-                isDisabled
-                  ? "text-muted-foreground/70"
-                  : "text-muted-foreground"
+                "font-semibold text-[13px] md:text-sm truncate",
+                isSelected ? "text-primary" : "text-foreground"
               )}
             >
-              {modelConfig.company}
-            </p> */}
-            {isDisabled && tierValidation?.message && (
-              <p className="text-xs text-red-500 mt-1 font-medium">
-                Credits exhausted
-              </p>
+              {modelConfig.displayName}
+            </h3>
+            {showKeyIcon && !isDisabled && (
+              <Key className="w-3 h-3 text-primary flex-shrink-0" />
             )}
           </div>
-        </div>
-
-        {/* Badges */}
-        <div className="flex items-start  flex-wrap">
-          {modelConfig.isSuperPremium && (
-            <div title="Super Premium Model" className="cursor-default">
-              <ModelBadge type="super-premium" size={16} />
-            </div>
-          )}
-          {modelConfig.isPremium && !modelConfig.isSuperPremium && (
-            <div title="Premium Model" className="cursor-default">
-              <ModelBadge type="premium" size={16} />
-            </div>
-          )}
-          {modelConfig.hasReasoning && (
-            <div
-              title="Reasoning Model - Advanced problem-solving capabilities"
-              className="cursor-default"
-            >
-              <ModelBadge type="reasoning" size={16} />
-            </div>
-          )}
-          {modelConfig.isFast && (
-            <div
-              title="Fast Model - Optimized for speed and quick responses"
-              className="cursor-default"
-            >
-              <ModelBadge type="fast" size={16} />
-            </div>
-          )}
-          {modelConfig.isFileSupported && (
-            <div
-              title="File Support - Can analyze images, documents, and other file types"
-              className="cursor-default"
-            >
-              <ModelBadge type="file-support" size={16} />
-            </div>
+          {isDisabled && tierValidation?.message && (
+            <p className="text-xs text-red-500 mt-0.5 font-medium">
+              Credits exhausted
+            </p>
           )}
         </div>
       </div>
 
-      {/* Hover effect overlay */}
-      <div
-        className={cn(
-          "absolute inset-0 rounded-lg transition-opacity duration-200",
-          "bg-gradient-to-br from-primary/5 to-transparent opacity-0",
-          "group-hover:opacity-100 pointer-events-none"
-        )}
-      />
+      {/* Right side - Badges and Selection */}
+      <div className="flex items-center gap-1 md:gap-1.5">
+        {/* Model Badges */}
+        <div className="flex items-center gap-0.5">
+          {modelConfig.isSuperPremium && (
+            <ModelBadge type="super-premium" size={12} />
+          )}
+          {modelConfig.isPremium && !modelConfig.isSuperPremium && (
+            <ModelBadge type="premium" size={12} />
+          )}
+          {modelConfig.hasReasoning && (
+            <ModelBadge type="reasoning" size={12} />
+          )}
+          {modelConfig.isFast && <ModelBadge type="fast" size={12} />}
+          {modelConfig.isFileSupported && (
+            <ModelBadge type="file-support" size={12} />
+          )}
+        </div>
+
+        {/* Selection Indicator */}
+        <div
+          className={cn(
+            "w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300",
+            isSelected
+              ? "border-primary bg-primary"
+              : "border-border/50 group-hover:border-primary/50"
+          )}
+        >
+          {isSelected && (
+            <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black" />
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -181,10 +145,10 @@ const BYOKIndicator = () => {
       size="sm"
       onClick={handleClick}
       className={cn(
-        "h-7 px-2 text-xs font-medium bg-primary/15 transition-all duration-200",
+        "h-8 px-3 text-xs font-medium rounded-md transition-all duration-200",
         hasByok
-          ? "text-green-600 bg-green-200 dark:bg-green-400  hover:text-green-700 hover:bg-green-300 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-600"
-          : "text-muted-foreground hover:text-foreground hover:bg-primary/35"
+          ? "bg-green-500/10 text-green-600 border border-green-500/20 hover:bg-green-500/20"
+          : "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20"
       )}
       title={
         hasByok
@@ -192,10 +156,8 @@ const BYOKIndicator = () => {
           : "Configure your own API key for unlimited access"
       }
     >
-      <Key className="w-3 h-3 mr-1 text-primary" />
-      <span className="hidden sm:inline text-foreground">
-        {hasByok ? "BYOK ON" : "BYOK"}
-      </span>
+      <Key className="w-3 h-3 mr-1.5" />
+      <span>{hasByok ? "BYOK ON" : "BYOK"}</span>
     </Button>
   );
 };
@@ -206,6 +168,7 @@ interface ModelSelectorProps {
 
 const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
   const { selectedModel, setModel } = useModelStore();
+  const [isOpen, setIsOpen] = useState(false);
   const { hasOpenRouterKey } = useBYOKStore();
   const { isGuest } = useAuth();
   const selectedModelConfig = getModelConfig(selectedModel);
@@ -214,9 +177,51 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
     Record<AIModel, TierValidationResult>
   >({} as Record<AIModel, TierValidationResult>);
 
+  // Provider filter state
+  type ProviderId =
+    | "all"
+    | "openai"
+    | "google"
+    | "anthropic"
+    | "x-ai"
+    | "deepseek"
+    | "qwen"
+    | "runware";
+  const [selectedProvider, setSelectedProvider] = useState<ProviderId>("all");
+
+  // Definitions for provider UI chips - filtered based on mode
+  const PROVIDER_OPTIONS: Array<{ id: ProviderId; label: string }> =
+    useMemo(() => {
+      const baseProviders = [
+        { id: "anthropic" as ProviderId, label: "Anthropic" },
+        { id: "google" as ProviderId, label: "Google" },
+        { id: "x-ai" as ProviderId, label: "Grok" },
+        { id: "openai" as ProviderId, label: "OpenAI" },
+        { id: "deepseek" as ProviderId, label: "DeepSeek" },
+        { id: "qwen" as ProviderId, label: "Qwen" },
+        { id: "runware" as ProviderId, label: "Runware" },
+      ];
+
+      // Filter providers based on current mode
+      return baseProviders.filter((provider) => {
+        // Check if this provider has any models for the current mode
+        const hasRelevantModels = AI_MODELS.some((model) => {
+          const config = getModelConfig(model);
+          const matchesProvider =
+            (config.iconType as string).toLowerCase() === provider.id;
+
+          if (isImageGenMode) {
+            return matchesProvider && config.isImageGeneration;
+          } else {
+            return matchesProvider && !config.isImageGeneration;
+          }
+        });
+
+        return hasRelevantModels;
+      });
+    }, [isImageGenMode]);
+
   // For guest users, lock to OpenAI 5 Mini
-  // For image generation mode, allow selection but only among image generation models
-  // Web search mode allows selection between search models
   const isLocked = isGuest;
   const usingBYOK = hasOpenRouterKey();
 
@@ -231,7 +236,6 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
   }, [isGuest, selectedModel, setModel]);
 
   // Force image generation mode to use image generation models
-  // Also prevent image generation models from being used outside image generation mode
   useEffect(() => {
     if (isImageGenMode) {
       const currentConfig = getModelConfig(selectedModel);
@@ -242,7 +246,6 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
         setModel("FLUX.1 [schnell]");
       }
     } else {
-      // Not in image generation mode - switch away from image generation models
       const currentConfig = getModelConfig(selectedModel);
       if (currentConfig.isImageGeneration) {
         console.log(
@@ -252,6 +255,30 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
       }
     }
   }, [isImageGenMode, selectedModel, setModel]);
+
+  // Reset provider filter when switching modes if current provider has no models in new mode
+  useEffect(() => {
+    if (selectedProvider !== "all") {
+      const hasModelsInCurrentMode = AI_MODELS.some((model) => {
+        const config = getModelConfig(model);
+        const matchesProvider =
+          (config.iconType as string).toLowerCase() === selectedProvider;
+
+        if (isImageGenMode) {
+          return matchesProvider && config.isImageGeneration;
+        } else {
+          return matchesProvider && !config.isImageGeneration;
+        }
+      });
+
+      if (!hasModelsInCurrentMode) {
+        console.log(
+          "[ModelSelector] Resetting provider filter - no models in current mode"
+        );
+        setSelectedProvider("all");
+      }
+    }
+  }, [isImageGenMode, selectedProvider]);
 
   // Load tier validations for all models
   useEffect(() => {
@@ -287,131 +314,75 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
       }
       if (isImageGenMode) {
         const config = getModelConfig(model);
-        return config.isImageGeneration === true;
+        if (!config.isImageGeneration) return false;
       }
-      // With Tavily integration, all models support web search
-      // No need to restrict models based on web search state
+      // Provider filter check
+      if (selectedProvider !== "all") {
+        const cfg = getModelConfig(model);
+        if ((cfg.iconType as string).toLowerCase() !== selectedProvider) {
+          return false;
+        }
+      }
       return true;
     },
-    [isGuest, isImageGenMode]
+    [isGuest, isImageGenMode, selectedProvider]
   );
 
   const handleModelSelect = useCallback(
     (model: AIModel) => {
       if (isModelEnabled(model)) {
         setModel(model);
-        setSearchQuery(""); // Clear search when model is selected
+        setSearchQuery("");
+        setIsOpen(false);
       }
     },
-    [isModelEnabled, setModel]
+    [isModelEnabled, setModel, setIsOpen]
   );
 
-  // Define recommended models
-  const recommendedModels: AIModel[] = [
-    "OpenAI 5 Mini",
-    "OpenAI o4-mini",
-    "DeepSeek R1 Fast",
-    "Grok 3 Mini",
-  ];
-
-  // Categorize models
-  const categorizeModels = useMemo(() => {
-    const freeModels: AIModel[] = [];
-    const premiumModels: AIModel[] = [];
-    const superPremiumModels: AIModel[] = [];
-    const imageGenModels: AIModel[] = [];
-
-    AI_MODELS.forEach((model) => {
+  // Get filtered models based on provider and search
+  const filteredModels = useMemo(() => {
+    let models = AI_MODELS.filter((model) => {
       const config = getModelConfig(model);
 
-      // If in image generation mode, only include image generation models
-      if (isImageGenMode) {
-        if (config.isImageGeneration) {
-          imageGenModels.push(model);
+      // Provider filter
+      if (selectedProvider !== "all") {
+        if ((config.iconType as string).toLowerCase() !== selectedProvider) {
+          return false;
         }
-        return;
       }
 
-      // For normal mode, exclude image generation models
-      if (config.isImageGeneration) {
-        return;
-      }
+      // Image generation mode filter
+      if (isImageGenMode && !config.isImageGeneration) return false;
+      if (!isImageGenMode && config.isImageGeneration) return false;
 
-      if (config.isSuperPremium) {
-        superPremiumModels.push(model);
-      } else if (config.isPremium) {
-        premiumModels.push(model);
-      } else {
-        freeModels.push(model);
-      }
-    });
+      // Guest user filter
+      if (isGuest && model !== "OpenAI 5 Mini") return false;
 
-    return { freeModels, premiumModels, superPremiumModels, imageGenModels };
-  }, [isImageGenMode]);
-
-  // Filter models based on search query and availability
-  const filteredModels = useMemo(() => {
-    const filterByAvailability = (models: AIModel[]) =>
-      models.filter((model) => isModelEnabled(model));
-
-    if (!searchQuery.trim()) {
-      return {
-        recommended: isImageGenMode
-          ? []
-          : filterByAvailability(recommendedModels),
-        freeModels: filterByAvailability(categorizeModels.freeModels),
-        premiumModels: filterByAvailability(categorizeModels.premiumModels),
-        superPremiumModels: filterByAvailability(
-          categorizeModels.superPremiumModels
-        ),
-        imageGenModels: filterByAvailability(categorizeModels.imageGenModels),
-      };
-    }
-
-    const query = searchQuery.toLowerCase();
-    const filterModels = (models: AIModel[]) =>
-      models.filter((model) => {
-        // First check if model is enabled
-        if (!isModelEnabled(model)) return false;
-
-        const config = getModelConfig(model);
+      // Search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
         return (
           config.displayName.toLowerCase().includes(query) ||
           config.company.toLowerCase().includes(query) ||
-          config.description.toLowerCase().includes(query) ||
-          (config.isPremium && "premium".includes(query)) ||
-          (config.isSuperPremium && "super premium".includes(query)) ||
-          (config.hasReasoning && "reasoning".includes(query)) ||
-          (config.isFileSupported && "file".includes(query)) ||
-          (config.isImageGeneration && "image".includes(query))
+          config.description.toLowerCase().includes(query)
         );
-      });
+      }
 
-    return {
-      recommended: isImageGenMode ? [] : filterModels(recommendedModels),
-      freeModels: filterModels(categorizeModels.freeModels),
-      premiumModels: filterModels(categorizeModels.premiumModels),
-      superPremiumModels: filterModels(categorizeModels.superPremiumModels),
-      imageGenModels: filterModels(categorizeModels.imageGenModels),
-    };
-  }, [
-    searchQuery,
-    recommendedModels,
-    categorizeModels,
-    isImageGenMode,
-    isModelEnabled,
-  ]);
+      return true;
+    });
+
+    return models;
+  }, [selectedProvider, isImageGenMode, isGuest, searchQuery]);
 
   return (
-    <div className="flex items-center gap-2 ">
-      <DropdownMenu>
+    <div className="flex items-center gap-2">
+      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild disabled={isLocked}>
           <Button
             variant="ghost"
             className={cn(
               "flex items-center gap-1 sm:gap-2 h-10 sm:h-9 md:h-8 pl-2 pr-1.5 sm:pr-2 text-xs rounded-md min-w-0",
               "text-foreground hover:bg-accent hover:text-accent-foreground",
-
               "transition-all duration-200 mobile-touch",
               isLocked && "opacity-75 cursor-not-allowed hover:bg-transparent"
             )}
@@ -429,203 +400,116 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
                 {selectedModelConfig.displayName}
               </span>
               {!isLocked && (
-                <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-50 transition-transform duration-200 group-data-[state=open]:rotate-180 flex-shrink-0" />
+                <ChevronDown
+                  className={cn(
+                    "h-3 w-3 transition-transform duration-200 hidden sm:block",
+                    isOpen && "rotate-180"
+                  )}
+                />
               )}
             </div>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           className={cn(
-            "w-[320px] sm:w-[480px] max-w-[95vw] p-3 sm:p-4 ",
-            "border-border dark:bg-zinc-900/50 backdrop-blur-3xl",
-            "max-h-[70vh] overflow-y-auto no-scrollbar",
-            "shadow-lg"
+            "w-[320px] sm:w-[420px] lg:w-[480px] max-w-[90vw] p-0",
+            "border border-border/50 bg-background/95 backdrop-blur-xl",
+            "max-h-[60vh] overflow-hidden flex flex-col",
+            "shadow-2xl shadow-black/10 dark:shadow-black/30",
+            "rounded-2xl"
           )}
           align="end"
           sideOffset={8}
+          collisionPadding={16}
+          avoidCollisions={true}
         >
-          {/* Header */}
-          <div className="mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-border flex gap-3.5 justify-between">
-            <div className="">
-              <h2 className="text-md font-semibold text-foreground">
-                Select AI Model
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
-                Choose the AI model that best fits your needs
-              </p>
+          {/* Search and BYOK */}
+          <div className="p-3 sm:p-5 border-b border-border/50 flex-shrink-0">
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search models..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={cn(
+                    "pl-10 pr-4 py-3 text-sm rounded-xl",
+                    "border-0 bg-background/50",
+
+                    "placeholder:text-muted-foreground/70"
+                  )}
+                />
+              </div>
+              <BYOKIndicator />
             </div>
-            <BYOKIndicator />
           </div>
 
-          {/* Search Input */}
-          <div className="mb-3 sm:mb-4 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search models..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-3 py-4 text-sm border-border rounded-md ring-1 ring-border transition-all duration-200 bg-background focus:ring-primary focus:border-primary/70"
-            />
-          </div>
-
-          {/* Models organized by sections */}
-          <div className="space-y-4">
-            {/* Recommended Models */}
-            {filteredModels.recommended.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                  Recommended
-                </h3>
-                <span className="text-xs text-muted-foreground block mb-2">
-                  Best Overall Performance
-                </span>
-                <div className="grid grid-cols-1 gap-2 sm:gap-3">
-                  {filteredModels.recommended.map((model) => (
-                    <ModelCard
-                      key={model}
-                      model={model}
-                      isSelected={selectedModel === model}
-                      onSelect={handleModelSelect}
-                      showKeyIcon={hasOpenRouterKey()}
-                      tierValidation={tierValidations[model]}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Free Models */}
-            {filteredModels.freeModels.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                  Budget Models
-                </h3>
-                <span className="text-xs text-muted-foreground block mb-2">
-                  Cost Effective Models For Most Of The Tasks
-                </span>
-                <div className="grid grid-cols-1 gap-2 sm:gap-3">
-                  {filteredModels.freeModels.map((model) => (
-                    <ModelCard
-                      key={model}
-                      model={model}
-                      isSelected={selectedModel === model}
-                      onSelect={handleModelSelect}
-                      showKeyIcon={hasOpenRouterKey()}
-                      tierValidation={tierValidations[model]}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Premium Models */}
-            {filteredModels.premiumModels.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                  Premium
-                </h3>
-                <span className="text-xs text-muted-foreground block mb-2">
-                  Finest Models For Most of The Tasks
-                </span>
-                <div className="grid grid-cols-1 gap-2 sm:gap-3">
-                  {filteredModels.premiumModels.map((model) => (
-                    <ModelCard
-                      key={model}
-                      model={model}
-                      isSelected={selectedModel === model}
-                      onSelect={handleModelSelect}
-                      showKeyIcon={hasOpenRouterKey()}
-                      tierValidation={tierValidations[model]}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Super Premium Models */}
-            {filteredModels.superPremiumModels.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                  Super Premium
-                </h3>
-                <span className="text-xs text-muted-foreground block mb-2">
-                  Super Advanced Models For Advanced Tasks
-                </span>
-                <div className="grid grid-cols-1 gap-2 sm:gap-3">
-                  {filteredModels.superPremiumModels.map((model) => (
-                    <ModelCard
-                      key={model}
-                      model={model}
-                      isSelected={selectedModel === model}
-                      onSelect={handleModelSelect}
-                      showKeyIcon={hasOpenRouterKey()}
-                      tierValidation={tierValidations[model]}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Image Generation Models */}
-            {filteredModels.imageGenModels &&
-              filteredModels.imageGenModels.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                    Image Generation
-                  </h3>
-                  <span className="text-xs text-muted-foreground block mb-2">
-                    AI Models For Creating Images From Text Prompts
+          {/* Providers Filter */}
+          <div className="p-3 sm:p-5 border-b border-border/50 flex-shrink-0">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-foreground">
+                Providers
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-3 text-xs text-muted-foreground hover:text-foreground rounded-lg"
+                onClick={() => setSelectedProvider("all")}
+              >
+                Show all
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {PROVIDER_OPTIONS.map((provider) => (
+                <button
+                  key={provider.id}
+                  type="button"
+                  onClick={() => setSelectedProvider(provider.id)}
+                  className={cn(
+                    "flex items-center gap-1 md:gap-2.5 px-1 py-1.5 md:px-3 md:py-2 rounded-full transition-all duration-200",
+                    "border border-border/50 bg-background/50 backdrop-blur-sm",
+                    "text-xs md:text-sm font-medium",
+                    selectedProvider === provider.id
+                      ? "border-primary bg-primary/10 text-primary shadow-sm"
+                      : "hover:border-primary/30 hover:bg-accent/50 text-foreground/80 hover:text-foreground"
+                  )}
+                  title={`Filter by ${provider.label}`}
+                >
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-background/80 border border-border/30">
+                    {getModelIcon(provider.id, 12)}
                   </span>
-                  <div className="grid grid-cols-1 gap-2 sm:gap-3">
-                    {filteredModels.imageGenModels.map((model) => (
-                      <ModelCard
-                        key={model}
-                        model={model}
-                        isSelected={selectedModel === model}
-                        onSelect={handleModelSelect}
-                        showKeyIcon={hasOpenRouterKey()}
-                        tierValidation={tierValidations[model]}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-            {/* No results */}
-            {filteredModels.recommended.length === 0 &&
-              filteredModels.freeModels.length === 0 &&
-              filteredModels.premiumModels.length === 0 &&
-              filteredModels.superPremiumModels.length === 0 &&
-              (!filteredModels.imageGenModels ||
-                filteredModels.imageGenModels.length === 0) && (
-                <div className="text-center py-8">
-                  <Search className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    No models found
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Try adjusting your search terms
-                  </p>
-                </div>
-              )}
+                  <span>{provider.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Footer */}
-          <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-border">
-            <p className="text-xs text-muted-foreground text-center hidden sm:block">
-              Model capabilities and pricing may vary
-            </p>
-            {searchQuery && (
-              <p className="text-xs text-muted-foreground text-center mt-1">
-                Showing{" "}
-                {filteredModels.recommended.length +
-                  filteredModels.freeModels.length +
-                  filteredModels.premiumModels.length +
-                  filteredModels.superPremiumModels.length +
-                  (filteredModels.imageGenModels?.length || 0)}{" "}
-                of {AI_MODELS.length} models
-              </p>
+          {/* Models List */}
+          <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+            {filteredModels.length > 0 ? (
+              <div className="">
+                {filteredModels.map((model) => (
+                  <ModelCard
+                    key={model}
+                    model={model}
+                    isSelected={selectedModel === model}
+                    onSelect={handleModelSelect}
+                    showKeyIcon={hasOpenRouterKey()}
+                    tierValidation={tierValidations[model]}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Search className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground mb-2">
+                  No models found
+                </p>
+                <p className="text-xs text-muted-foreground/70">
+                  Try adjusting your provider or search terms
+                </p>
+              </div>
             )}
           </div>
         </DropdownMenuContent>

@@ -15,6 +15,7 @@ export interface ProjectData {
   name: string;
   description?: string;
   prompt?: string;
+  members?: string[]; // Array of user IDs who have access to this project
   createdAt: Date;
   updatedAt: Date;
 }

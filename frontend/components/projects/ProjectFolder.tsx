@@ -16,6 +16,7 @@ import {
   Palette,
   Edit,
   MessageSquare,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProjectData } from "@/frontend/hooks/useProjectManager";
@@ -41,6 +42,7 @@ import { v4 as uuidv4 } from "uuid";
 import { HybridDB } from "@/lib/hybridDB";
 import ProjectRenameDialog from "./ProjectRenameDialog";
 import ProjectPromptDialog from "./ProjectPromptDialog";
+import ProjectMembersDialog from "./ProjectMembersDialog";
 import {
   Dialog,
   DialogContent,
@@ -90,9 +92,9 @@ const PROJECT_COLORS = [
     name: "Purple",
   },
   {
-    bg: "bg-orange-500/20 border-orange-500/30",
-    icon: "text-orange-500",
-    name: "Orange",
+    bg: "bg-zinc-500/20 border-zinc-500/30",
+    icon: "text-zinc-500",
+    name: "Zinc",
   },
   {
     bg: "bg-pink-500/20 border-pink-500/30",
@@ -158,6 +160,8 @@ export const ProjectFolder: React.FC<ProjectFolderProps> = ({
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPromptDialogOpen, setIsPromptDialogOpen] = useState(false);
+  const [isMembersDialogOpen, setIsMembersDialogOpen] = useState(false);
+  const [isProjectOwner, setIsProjectOwner] = useState(false);
 
   const handleProjectRename = () => {
     setIsRenameDialogOpen(true);
@@ -169,6 +173,20 @@ export const ProjectFolder: React.FC<ProjectFolderProps> = ({
 
   const handleProjectPrompt = () => {
     setIsPromptDialogOpen(true);
+  };
+
+  const handleManageMembers = async () => {
+    // Check if user is project owner
+    try {
+      const isOwner = await HybridDB.isProjectOwner(project.id);
+      setIsProjectOwner(isOwner);
+      setIsMembersDialogOpen(true);
+    } catch (error) {
+      console.error("Error checking project ownership:", error);
+      // Still open dialog, but user won't be able to manage members
+      setIsProjectOwner(false);
+      setIsMembersDialogOpen(true);
+    }
   };
 
   const handleRenameConfirm = async (
@@ -285,6 +303,11 @@ export const ProjectFolder: React.FC<ProjectFolderProps> = ({
                   Edit Prompt
                 </DropdownMenuItem>
 
+                <DropdownMenuItem onClick={handleManageMembers}>
+                  <Users className="dark:text-white h-4 w-4" />
+                  Manage Members
+                </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
 
                 <DropdownMenuSub>
@@ -374,6 +397,15 @@ export const ProjectFolder: React.FC<ProjectFolderProps> = ({
         onOpenChange={setIsPromptDialogOpen}
         project={project}
         onUpdateProject={onProjectUpdate}
+      />
+
+      {/* Members Dialog */}
+      <ProjectMembersDialog
+        isOpen={isMembersDialogOpen}
+        onOpenChange={setIsMembersDialogOpen}
+        projectId={project.id}
+        projectName={project.name}
+        isOwner={isProjectOwner}
       />
 
       {/* Delete Dialog */}

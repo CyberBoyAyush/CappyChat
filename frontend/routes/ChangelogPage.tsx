@@ -75,32 +75,32 @@ const colorMap = {
   blue: "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400",
   red: "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400",
   orange:
-    "bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800 text-orange-600 dark:text-orange-400",
+    "bg-black/5 dark:bg-white/10 border-black/10 dark:border-white/20 text-black dark:text-white",
   yellow:
     "bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800 text-yellow-600 dark:text-yellow-400",
   green:
     "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 text-green-600 dark:text-green-400",
-  gray: "bg-gray-50 dark:bg-gray-950/20 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400",
+  gray: "bg-zinc-50 dark:bg-zinc-950/20 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400",
 };
 
 const textColorMap = {
   purple: "text-purple-800 dark:text-purple-200",
   blue: "text-blue-800 dark:text-blue-200",
   red: "text-red-800 dark:text-red-200",
-  orange: "text-orange-800 dark:text-orange-200",
+  orange: "text-black/90 dark:text-white/90",
   yellow: "text-yellow-800 dark:text-yellow-200",
   green: "text-green-800 dark:text-green-200",
-  gray: "text-gray-800 dark:text-gray-200",
+  gray: "text-zinc-800 dark:text-zinc-200",
 };
 
 const descriptionColorMap = {
   purple: "text-purple-700 dark:text-purple-300",
   blue: "text-blue-700 dark:text-blue-300",
   red: "text-red-700 dark:text-red-300",
-  orange: "text-orange-700 dark:text-orange-300",
+  orange: "text-black dark:text-white",
   yellow: "text-yellow-700 dark:text-yellow-300",
   green: "text-green-700 dark:text-green-300",
-  gray: "text-gray-700 dark:text-gray-300",
+  gray: "text-zinc-700 dark:text-zinc-300",
 };
 
 export default function ChangelogPage() {

@@ -227,7 +227,7 @@ const SessionManager: React.FC = () => {
           <div
             className={`h-3 rounded-full transition-all duration-300 ${
               sessionInfo.sessionCount >= 3
-                ? "bg-gradient-to-r from-amber-500 to-orange-500"
+                ? "bg-gradient-to-r from-zinc-700 to-black dark:from-zinc-300 dark:to-white"
                 : sessionInfo.sessionCount >= 2
                 ? "bg-gradient-to-r from-blue-500 to-indigo-500"
                 : "bg-gradient-to-r from-green-500 to-emerald-500"
@@ -267,7 +267,7 @@ const SessionManager: React.FC = () => {
                   session,
                   sessionInfo.currentSession
                 )
-                  ? "ring-2 ring-amber-200 dark:ring-amber-800 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20"
+                  ? "ring-2 ring-amber-200 dark:ring-amber-800 bg-gradient-to-r from-amber-50 to-black/5 dark:from-amber-950/20 dark:to-white/10"
                   : ""
               }`}
             >

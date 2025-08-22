@@ -8,6 +8,7 @@
 import { AppwriteException } from 'appwrite';
 import { HybridDB } from './hybridDB';
 import { AppwriteRealtime } from './appwriteRealtime';
+import { devLog, prodError, devError } from './logger';
 
 // Auth cache keys (matching AuthContext)
 const AUTH_CACHE_KEY = 'avchat_auth_cache';
@@ -44,8 +45,8 @@ class GlobalErrorHandler {
   // Perform clean logout without API calls
   private async performCleanLogout(): Promise<void> {
     try {
-      console.log('[GlobalErrorHandler] Performing clean logout due to auth error...');
-      
+      devLog('[GlobalErrorHandler] Performing clean logout due to auth error...');
+
       // Unsubscribe from all Appwrite Realtime channels
       AppwriteRealtime.unsubscribeFromAll();
 
@@ -64,21 +65,21 @@ class GlobalErrorHandler {
         this.authCleanupCallback();
       }
 
-      console.log('[GlobalErrorHandler] Clean logout completed');
+      devLog('[GlobalErrorHandler] Clean logout completed');
     } catch (error) {
-      console.error('[GlobalErrorHandler] Error during clean logout:', error);
+      prodError('Error during clean logout', error, 'GlobalErrorHandler');
     }
   }
 
   // Handle any error globally
   async handleError(error: any, context?: string): Promise<void> {
-    console.error(`[GlobalErrorHandler] Error in ${context || 'unknown context'}:`, error);
+    prodError(`Error in ${context || 'unknown context'}`, error, 'GlobalErrorHandler');
 
     // If it's an authentication error, perform automatic logout
     if (this.isAuthError(error)) {
-      console.log('[GlobalErrorHandler] Authentication error detected, performing automatic logout');
+      devLog('[GlobalErrorHandler] Authentication error detected, performing automatic logout');
       await this.performCleanLogout();
-      
+
       // Optionally redirect to home page
       if (typeof window !== 'undefined' && window.location.pathname !== '/') {
         window.location.href = '/?error=session_expired';
@@ -88,34 +89,34 @@ class GlobalErrorHandler {
 
   // Handle Appwrite API errors specifically
   async handleAppwriteError(error: AppwriteException, context?: string): Promise<void> {
-    console.error(`[GlobalErrorHandler] Appwrite error in ${context || 'unknown context'}:`, {
+    prodError(`Appwrite error in ${context || 'unknown context'}`, {
       code: error.code,
       message: error.message,
       type: error.type
-    });
+    }, 'GlobalErrorHandler');
 
     // Handle different types of Appwrite errors
     switch (error.code) {
       case 401: // Unauthorized
       case 403: // Forbidden
-        console.log('[GlobalErrorHandler] Session expired or unauthorized, performing logout');
+        devLog('[GlobalErrorHandler] Session expired or unauthorized, performing logout');
         await this.performCleanLogout();
         break;
-      
+
       case 429: // Rate limit
-        console.warn('[GlobalErrorHandler] Rate limit exceeded');
+        devLog('[GlobalErrorHandler] Rate limit exceeded');
         // Could implement retry logic here
         break;
-      
+
       case 500: // Server error
       case 502: // Bad gateway
       case 503: // Service unavailable
-        console.warn('[GlobalErrorHandler] Server error, may be temporary');
+        devLog('[GlobalErrorHandler] Server error, may be temporary');
         // Could implement retry logic or show user-friendly message
         break;
-      
+
       default:
-        console.warn('[GlobalErrorHandler] Unhandled Appwrite error:', error);
+        devLog('[GlobalErrorHandler] Unhandled Appwrite error:', error);
     }
   }
 

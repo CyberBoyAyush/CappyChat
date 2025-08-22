@@ -42,17 +42,25 @@ async function getAdminStats() {
   try {
     // Get user statistics
     const userStats = await getUserStats();
-    
+
     // Get database statistics
     const dbStats = await getDatabaseStats();
-    
+
     // Get tier distribution
     const tierStats = await getTierStats();
-    
+
+    // Get monthly credits overview
+    const monthlyCredits = await getMonthlyCreditsOverview();
+
+    // Get pro users
+    const proUsers = await getProUsers();
+
     return {
       users: userStats,
       database: dbStats,
       tiers: tierStats,
+      monthlyCredits,
+      proUsers,
       lastUpdated: new Date().toISOString()
     };
   } catch (error) {
@@ -254,6 +262,183 @@ async function getTierStats() {
         usedSuperPremiumCredits: 0
       },
       totalUsers: 0
+    };
+  }
+}
+
+async function getMonthlyCreditsOverview() {
+  try {
+    let allUsers: Models.User<Models.Preferences>[] = [];
+    let offset = 0;
+    const limit = 100;
+
+    // Get all users with pagination
+    while (true) {
+      const usersList = await users.list([Query.limit(limit), Query.offset(offset)]);
+
+      if (usersList.users.length === 0) {
+        break;
+      }
+
+      allUsers = allUsers.concat(usersList.users);
+      offset += limit;
+
+      if (usersList.users.length < limit) {
+        break;
+      }
+    }
+
+    const TIER_LIMITS = {
+      free: { freeCredits: 80, premiumCredits: 10, superPremiumCredits: 2 },
+      premium: { freeCredits: 800, premiumCredits: 400, superPremiumCredits: 20 },
+      admin: { freeCredits: -1, premiumCredits: -1, superPremiumCredits: -1 }
+    };
+
+    // Get current month start
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const monthlyStats = {
+      totalCreditsIssued: {
+        free: 0,
+        premium: 0,
+        superPremium: 0,
+        total: 0
+      },
+      creditsUsed: {
+        free: 0,
+        premium: 0,
+        superPremium: 0,
+        total: 0
+      },
+      usersResetThisMonth: 0,
+      utilizationRate: 0
+    };
+
+    for (const user of allUsers) {
+      const prefs = user.prefs as Record<string, unknown>;
+      const tier = (prefs.tier as string) || 'free';
+      const lastResetDate = prefs.lastResetDate as string;
+
+      // Check if user was reset this month
+      if (lastResetDate) {
+        const resetDate = new Date(lastResetDate);
+        if (resetDate >= currentMonthStart) {
+          monthlyStats.usersResetThisMonth++;
+
+          // Get tier limits for this user
+          const limits = TIER_LIMITS[tier as keyof typeof TIER_LIMITS] || TIER_LIMITS.free;
+
+          // Skip admin users (unlimited credits)
+          if (tier !== 'admin') {
+            // Add issued credits (tier limits)
+            monthlyStats.totalCreditsIssued.free += limits.freeCredits;
+            monthlyStats.totalCreditsIssued.premium += limits.premiumCredits;
+            monthlyStats.totalCreditsIssued.superPremium += limits.superPremiumCredits;
+
+            // Calculate used credits (tier limit - remaining credits)
+            const remainingFree = (prefs.freeCredits as number) || 0;
+            const remainingPremium = (prefs.premiumCredits as number) || 0;
+            const remainingSuperPremium = (prefs.superPremiumCredits as number) || 0;
+
+            monthlyStats.creditsUsed.free += Math.max(0, limits.freeCredits - remainingFree);
+            monthlyStats.creditsUsed.premium += Math.max(0, limits.premiumCredits - remainingPremium);
+            monthlyStats.creditsUsed.superPremium += Math.max(0, limits.superPremiumCredits - remainingSuperPremium);
+          }
+        }
+      }
+    }
+
+    // Calculate totals
+    monthlyStats.totalCreditsIssued.total =
+      monthlyStats.totalCreditsIssued.free +
+      monthlyStats.totalCreditsIssued.premium +
+      monthlyStats.totalCreditsIssued.superPremium;
+
+    monthlyStats.creditsUsed.total =
+      monthlyStats.creditsUsed.free +
+      monthlyStats.creditsUsed.premium +
+      monthlyStats.creditsUsed.superPremium;
+
+    // Calculate utilization rate
+    if (monthlyStats.totalCreditsIssued.total > 0) {
+      monthlyStats.utilizationRate = Math.round(
+        (monthlyStats.creditsUsed.total / monthlyStats.totalCreditsIssued.total) * 100
+      );
+    }
+
+    return monthlyStats;
+  } catch (error) {
+    console.error('Error getting monthly credits overview:', error);
+    return {
+      totalCreditsIssued: { free: 0, premium: 0, superPremium: 0, total: 0 },
+      creditsUsed: { free: 0, premium: 0, superPremium: 0, total: 0 },
+      usersResetThisMonth: 0,
+      utilizationRate: 0
+    };
+  }
+}
+
+async function getProUsers() {
+  try {
+    let allUsers: Models.User<Models.Preferences>[] = [];
+    let offset = 0;
+    const limit = 100;
+
+    // Get all users with pagination
+    while (true) {
+      const usersList = await users.list([Query.limit(limit), Query.offset(offset)]);
+
+      if (usersList.users.length === 0) {
+        break;
+      }
+
+      allUsers = allUsers.concat(usersList.users);
+      offset += limit;
+
+      if (usersList.users.length < limit) {
+        break;
+      }
+    }
+
+    // Filter pro users (premium tier)
+    const proUsers = allUsers
+      .filter(user => {
+        const prefs = user.prefs as Record<string, unknown>;
+        return prefs.tier === 'premium';
+      })
+      .map(user => {
+        const prefs = user.prefs as Record<string, unknown>;
+        return {
+          $id: user.$id,
+          email: user.email,
+          name: user.name || 'N/A',
+          emailVerification: user.emailVerification,
+          status: user.status,
+          registration: user.registration,
+          tier: prefs.tier,
+          freeCredits: prefs.freeCredits || 0,
+          premiumCredits: prefs.premiumCredits || 0,
+          superPremiumCredits: prefs.superPremiumCredits || 0,
+          lastResetDate: prefs.lastResetDate || null,
+          preferences: prefs
+        };
+      })
+      .sort((a, b) => new Date(b.registration).getTime() - new Date(a.registration).getTime()); // Sort by registration date, newest first
+
+    return {
+      users: proUsers,
+      totalCount: proUsers.length,
+      activeCount: proUsers.filter(user => user.status).length,
+      verifiedCount: proUsers.filter(user => user.emailVerification).length
+    };
+  } catch (error) {
+    console.error('Error getting pro users:', error);
+    return {
+      users: [],
+      totalCount: 0,
+      activeCount: 0,
+      verifiedCount: 0
     };
   }
 }

@@ -435,7 +435,7 @@ export default function GlobalSearchDialog({
         case "assistant":
           return <Bot className="h-4 w-4 text-green-500" />;
         case "system":
-          return <MessageSquare className="h-4 w-4 text-orange-500" />;
+          return <MessageSquare className="h-4 w-4 text-black dark:text-white" />;
         default:
           return <MessageSquare className="h-4 w-4 text-muted-foreground" />;
       }
@@ -569,7 +569,7 @@ export default function GlobalSearchDialog({
                               : result.score >= 60
                               ? "bg-yellow-500"
                               : result.score >= 40
-                              ? "bg-orange-500"
+                              ? "bg-black dark:bg-white"
                               : "bg-red-500"
                           )}
                         />

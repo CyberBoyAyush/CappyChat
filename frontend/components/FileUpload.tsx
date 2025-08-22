@@ -11,6 +11,7 @@ import { Button } from "./ui/button";
 import { Paperclip, Upload, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { devError } from "@/lib/logger";
 
 interface FileUploadProps {
   onFilesUploaded: (attachments: FileAttachment[]) => void;
@@ -149,7 +150,7 @@ export default function FileUpload({
         onUploadStatusChange?.([]);
       }, 1500);
     } catch (error) {
-      console.error("Upload error:", error);
+      devError("Upload error:", error);
 
       // Show error state
       const errorFiles = validFiles.map((file) => ({

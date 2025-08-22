@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { devError } from '@/lib/logger';
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -70,7 +71,7 @@ export default function AdminPage() {
         const tierInfo = await getUserTierInfo();
         setIsAdmin(tierInfo?.tier === "admin");
       } catch (error) {
-        console.error("Error checking admin status:", error);
+        devError("Error checking admin status:", error);
       }
     };
 
@@ -90,7 +91,7 @@ export default function AdminPage() {
       setAdminStats(stats);
       toast.success("Statistics loaded successfully");
     } catch (error) {
-      console.error("Error loading stats:", error);
+      devError("Error loading stats:", error);
       toast.error(error instanceof Error ? error.message : "Failed to load statistics");
     } finally {
       setLoadingStats(false);
@@ -110,7 +111,7 @@ export default function AdminPage() {
       setSelectedUser(user);
       toast.success("User found successfully");
     } catch (error) {
-      console.error("Error searching user:", error);
+      devError("Error searching user:", error);
       toast.error(error instanceof Error ? error.message : "Failed to search user");
       setSelectedUser(null);
     } finally {
@@ -133,7 +134,30 @@ export default function AdminPage() {
       toast.success(`User tier updated to ${newTier}`);
       handleSearchUser(); // Refresh user data
     } catch (error) {
-      console.error("Error updating user tier:", error);
+      devError("Error updating user tier:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update user tier");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Update any user's tier (for pro users management)
+  const handleUpdateAnyUserTier = async (
+    userId: string,
+    newTier: "free" | "premium" | "admin"
+  ) => {
+    if (!adminKey.trim()) {
+      toast.error("Please enter admin key");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await adminService.updateUserTier(adminKey.trim(), userId, newTier);
+      toast.success(`User tier updated to ${newTier}`);
+      handleLoadStats(); // Refresh stats to update pro users list
+    } catch (error) {
+      devError("Error updating user tier:", error);
       toast.error(error instanceof Error ? error.message : "Failed to update user tier");
     } finally {
       setIsLoading(false);
@@ -161,7 +185,7 @@ export default function AdminPage() {
         handleLoadStats(); // Refresh stats
       }
     } catch (error) {
-      console.error("Error performing monthly reset:", error);
+      devError("Error performing monthly reset:", error);
       toast.error(error instanceof Error ? error.message : "Failed to perform monthly reset");
     } finally {
       setIsLoading(false);
@@ -217,7 +241,7 @@ export default function AdminPage() {
         handleLoadStats(); // Refresh stats
       }
     } catch (error) {
-      console.error("Error logging out all users:", error);
+      devError("Error logging out all users:", error);
       toast.error(error instanceof Error ? error.message : "Failed to logout all users");
     } finally {
       setIsLoading(false);
@@ -240,7 +264,7 @@ export default function AdminPage() {
       setShowAllUsers(true);
       toast.success(`Loaded ${users.length} users`);
     } catch (error) {
-      console.error("Error loading users:", error);
+      devError("Error loading users:", error);
       toast.error(error instanceof Error ? error.message : "Failed to load users");
     } finally {
       setLoadingUsers(false);
@@ -265,7 +289,7 @@ export default function AdminPage() {
       await adminService.clearUserSession(adminKey.trim(), userId);
       toast.success("User session cleared successfully");
     } catch (error) {
-      console.error("Error clearing user session:", error);
+      devError("Error clearing user session:", error);
       toast.error(error instanceof Error ? error.message : "Failed to clear user session");
     } finally {
       setIsLoading(false);
@@ -293,7 +317,7 @@ export default function AdminPage() {
         handleSearchUser(); // Refresh selected user data
       }
     } catch (error) {
-      console.error("Error resetting user credits:", error);
+      devError("Error resetting user credits:", error);
       toast.error(error instanceof Error ? error.message : "Failed to reset user credits");
     } finally {
       setIsLoading(false);
@@ -320,7 +344,7 @@ export default function AdminPage() {
         handleLoadStats(); // Refresh stats
       }
     } catch (error) {
-      console.error("Error deleting user data:", error);
+      devError("Error deleting user data:", error);
       toast.error(error instanceof Error ? error.message : "Failed to delete user data");
     } finally {
       setIsLoading(false);
@@ -350,7 +374,7 @@ export default function AdminPage() {
         handleLoadStats(); // Refresh stats
       }
     } catch (error) {
-      console.error("Error deleting all data:", error);
+      devError("Error deleting all data:", error);
       toast.error(error instanceof Error ? error.message : "Failed to delete all data");
     } finally {
       setIsLoading(false);
@@ -552,12 +576,12 @@ export default function AdminPage() {
                     Tier Distribution
                   </h5>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg text-center">
-                      <User className="h-5 w-5 mx-auto mb-2 text-gray-600" />
-                      <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">
+                    <div className="bg-zinc-50 dark:bg-zinc-800 p-4 rounded-lg text-center">
+                      <User className="h-5 w-5 mx-auto mb-2 text-zinc-600" />
+                      <p className="text-2xl font-bold text-zinc-700 dark:text-zinc-300">
                         {adminStats.tiers?.distribution?.free || "0"}
                       </p>
-                      <p className="text-xs text-gray-600">Free Users</p>
+                      <p className="text-xs text-zinc-600">Free Users</p>
                     </div>
                     <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg text-center">
                       <Shield className="h-5 w-5 mx-auto mb-2 text-purple-600" />
@@ -566,12 +590,12 @@ export default function AdminPage() {
                       </p>
                       <p className="text-xs text-purple-600">Premium Users</p>
                     </div>
-                    <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg text-center">
-                      <Shield className="h-5 w-5 mx-auto mb-2 text-orange-600" />
-                      <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
+                    <div className="bg-black/5 dark:bg-white/10 p-4 rounded-lg text-center">
+                      <Shield className="h-5 w-5 mx-auto mb-2 text-black dark:text-white" />
+                      <p className="text-2xl font-bold text-black dark:text-white">
                         {adminStats.tiers?.distribution?.admin || "0"}
                       </p>
-                      <p className="text-xs text-orange-600">Admin Users</p>
+                      <p className="text-xs text-black/80 dark:text-white/80">Admin Users</p>
                     </div>
                     <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg text-center">
                       <AlertTriangle className="h-5 w-5 mx-auto mb-2 text-red-600" />
@@ -621,22 +645,20 @@ export default function AdminPage() {
                         <p className="text-xs text-purple-500">Used Premium</p>
                       </div>
                     </div>
-                    <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
-                      <div className="text-center">
-                        <p className="text-lg font-bold text-orange-700 dark:text-orange-300">
-                          {adminStats.tiers?.credits
-                            ?.totalSuperPremiumCredits || "0"}
+                    <div className="bg-black/5 dark:bg-white/10 p-4 rounded-lg">
+                      <div>
+                        <p className="text-lg font-bold text-black dark:text-white">
+                          {adminStats.tiers?.credits?.totalSuperPremiumCredits || 0}
                         </p>
-                        <p className="text-xs text-orange-600">
+                        <p className="text-xs text-black/80 dark:text-white/80">
                           Remaining Super
                         </p>
                       </div>
-                      <div className="text-center mt-2">
-                        <p className="text-sm font-semibold text-orange-600">
-                          {adminStats.tiers?.credits?.usedSuperPremiumCredits ||
-                            "0"}
+                      <div>
+                        <p className="text-sm font-semibold text-black/90 dark:text-white/90">
+                          {adminStats.tiers?.credits?.usedSuperPremiumCredits || 0}
                         </p>
-                        <p className="text-xs text-orange-500">Used Super</p>
+                        <p className="text-xs text-black/70 dark:text-white/70">Used Super</p>
                       </div>
                     </div>
                   </div>
@@ -765,7 +787,7 @@ export default function AdminPage() {
                       size="sm"
                       onClick={() => handleUpdateUserTier("admin")}
                       disabled={isLoading}
-                      className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                      className="border-zinc-300 text-zinc-700 hover:bg-zinc-50"
                     >
                       Set Admin
                     </Button>
@@ -929,11 +951,219 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
+        {/* Credits Overview */}
+        {adminStats && (
+          <Card className="border-blue-200 dark:border-blue-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-600">
+                <CreditCard className="h-5 w-5" />
+                Monthly Credits Overview
+              </CardTitle>
+              <CardDescription>
+                Current month credits issued and usage statistics
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                {/* Total Credits Issued */}
+                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
+                  <TrendingUp className="h-6 w-6 mx-auto mb-2 text-green-600" />
+                  <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                    {adminStats.monthlyCredits.totalCreditsIssued.total.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-green-600">Total Credits Issued</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {adminStats.monthlyCredits.usersResetThisMonth} users reset this month
+                  </p>
+                </div>
+
+                {/* Credits Used */}
+                <div className="bg-black/5 dark:bg-white/10 p-4 rounded-lg text-center">
+                  <Activity className="h-6 w-6 mx-auto mb-2 text-black dark:text-white" />
+                  <p className="text-2xl font-bold text-black dark:text-white">
+                    {adminStats.monthlyCredits?.creditsUsed?.total || "0"}
+                  </p>
+                  <p className="text-xs text-black/80 dark:text-white/80">Credits Used</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {adminStats.monthlyCredits.utilizationRate}% utilization
+                  </p>
+                </div>
+
+                {/* Free Credits Breakdown */}
+                <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg text-center">
+                  <div className="text-xs text-muted-foreground mb-2">Free Credits</div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span>Issued:</span>
+                      <span className="font-medium">{adminStats.monthlyCredits.totalCreditsIssued.free.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span>Used:</span>
+                      <span className="font-medium">{adminStats.monthlyCredits.creditsUsed.free.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Premium Credits Breakdown */}
+                <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg text-center">
+                  <div className="text-xs text-purple-600 mb-2">Premium Credits</div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span>Issued:</span>
+                      <span className="font-medium">{adminStats.monthlyCredits.totalCreditsIssued.premium.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span>Used:</span>
+                      <span className="font-medium">{adminStats.monthlyCredits.creditsUsed.premium.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Super Premium Credits Breakdown */}
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg text-center">
+                  <div className="text-xs text-indigo-600 mb-2">Super Premium</div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span>Issued:</span>
+                      <span className="font-medium">{adminStats.monthlyCredits.totalCreditsIssued.superPremium.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span>Used:</span>
+                      <span className="font-medium">{adminStats.monthlyCredits.creditsUsed.superPremium.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Utilization Progress Bar */}
+              <div className="mt-4">
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Overall Utilization</span>
+                  <span className="font-medium">{adminStats.monthlyCredits.utilizationRate}%</span>
+                </div>
+                <div className="w-full bg-zinc-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min(adminStats.monthlyCredits.utilizationRate, 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pro Users Management */}
+        {adminStats && adminStats.proUsers.totalCount > 0 && (
+          <Card className="border-purple-200 dark:border-purple-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-purple-600">
+                <Users className="h-5 w-5" />
+                Pro Users Management
+              </CardTitle>
+              <CardDescription>
+                Manage premium tier users ({adminStats.proUsers.totalCount} total, {adminStats.proUsers.activeCount} active, {adminStats.proUsers.verifiedCount} verified)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Pro Users Stats */}
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg text-center">
+                    <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                      {adminStats.proUsers.totalCount}
+                    </p>
+                    <p className="text-xs text-purple-600">Total Pro Users</p>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
+                    <p className="text-lg font-bold text-green-700 dark:text-green-300">
+                      {adminStats.proUsers.activeCount}
+                    </p>
+                    <p className="text-xs text-green-600">Active Users</p>
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-center">
+                    <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                      {adminStats.proUsers.verifiedCount}
+                    </p>
+                    <p className="text-xs text-blue-600">Verified Users</p>
+                  </div>
+                </div>
+
+                {/* Pro Users List */}
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {adminStats.proUsers.users.slice(0, 10).map((user) => (
+                    <div
+                      key={user.$id}
+                      className="border rounded-lg p-4 bg-slate-50 dark:bg-slate-800"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h6 className="font-medium text-sm">{user.email}</h6>
+                            {user.emailVerification && (
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            )}
+                            {!user.status && (
+                              <AlertTriangle className="h-4 w-4 text-zinc-500" />
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                            <div>Name: {user.name}</div>
+                            <div>Registered: {new Date(user.registration).toLocaleDateString()}</div>
+                            <div>Free: {user.freeCredits}</div>
+                            <div>Premium: {user.premiumCredits}</div>
+                            <div>Super: {user.superPremiumCredits}</div>
+                            <div>Reset: {user.lastResetDate ? new Date(user.lastResetDate).toLocaleDateString() : 'Never'}</div>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 ml-4">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleUpdateAnyUserTier(user.$id, 'free')}
+                            disabled={isLoading}
+                            className="text-xs px-2 py-1 h-6"
+                          >
+                            Downgrade
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleResetUserCredits(user.$id)}
+                            disabled={isLoading}
+                            className="text-xs px-2 py-1 h-6"
+                          >
+                            Reset
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleClearUserSession(user.$id)}
+                            disabled={isLoading}
+                            className="text-xs px-2 py-1 h-6"
+                          >
+                            Logout
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {adminStats.proUsers.totalCount > 10 && (
+                  <div className="text-center text-sm text-muted-foreground">
+                    Showing first 10 of {adminStats.proUsers.totalCount} pro users
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* System Operations */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="border-orange-200 dark:border-orange-800">
+          <Card className="border-zinc-200 dark:border-zinc-800">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-orange-600">
+              <CardTitle className="flex items-center gap-2 text-black dark:text-white">
                 <RefreshCw className="h-5 w-5" />
                 Monthly Reset
               </CardTitle>
@@ -945,7 +1175,7 @@ export default function AdminPage() {
               <Button
                 onClick={handleMonthlyReset}
                 disabled={isLoading || !adminKey.trim()}
-                className="w-full bg-orange-500 hover:bg-orange-600"
+                className="w-full bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-black"
               >
                 {isLoading ? "Processing..." : "Run Monthly Reset"}
               </Button>

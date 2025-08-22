@@ -60,7 +60,7 @@ export class AppwriteRealtime {
     this.subscriptions.clear();
   }
   
-  // Subscribe to thread collection changes
+  // Subscribe to thread collection changes (including collaborative threads)
   static subscribeToThreads(userId: string): void {
     if (this.subscriptions.has('threads')) {
       console.log('[AppwriteRealtime] Already subscribed to threads');
@@ -69,30 +69,80 @@ export class AppwriteRealtime {
 
     const unsubscribe = client.subscribe(
       `databases.${DATABASE_ID}.collections.${THREADS_COLLECTION_ID}.documents`,
-      (response: RealtimeResponseEvent<AppwriteThread>) => {
-        // Process only events for the current user
-        if (response.payload?.userId !== userId) {
-          return;
+      async (response: RealtimeResponseEvent<AppwriteThread>) => {
+        const payload = response.payload;
+        if (!payload) return;
+
+        // Always process events for the current user's threads
+        const isOwnThread = payload.userId === userId;
+
+        // For threads from other users, check if it's in a collaborative project
+        let isCollaborativeThread = false;
+        if (!isOwnThread && payload.projectId) {
+          isCollaborativeThread = await this.isUserMemberOfProject(userId, payload.projectId);
         }
 
-        // Handle different event types - check if event contains the action
-        const eventType = response.events[0];
+        // Process the event if it's the user's own thread OR a collaborative thread
+        if (isOwnThread || isCollaborativeThread) {
+          const eventType = response.events[0];
 
-        if (eventType.includes('.create')) {
-          this.handleThreadCreated(response.payload);
-        } else if (eventType.includes('.update')) {
-          this.handleThreadUpdated(response.payload);
-        } else if (eventType.includes('.delete')) {
-          this.handleThreadDeleted(response.payload);
+          if (eventType.includes('.create')) {
+            this.handleThreadCreated(payload);
+          } else if (eventType.includes('.update')) {
+            this.handleThreadUpdated(payload);
+          } else if (eventType.includes('.delete')) {
+            this.handleThreadDeleted(payload);
+          }
         }
       }
     );
 
     this.subscriptions.set('threads', unsubscribe);
-    console.log('[AppwriteRealtime] Successfully subscribed to threads');
+    console.log('[AppwriteRealtime] Successfully subscribed to threads (including collaborative)');
+  }
+
+  // Helper method to check if user is a member of a project
+  private static async isUserMemberOfProject(userId: string, projectId: string): Promise<boolean> {
+    try {
+      // Import AppwriteDB here to avoid circular dependency
+      const { AppwriteDB } = await import('./appwriteDB');
+
+      // Check if user is project owner
+      const isOwner = await AppwriteDB.isProjectOwner(projectId);
+      if (isOwner) return true;
+
+      // Check if user is in project members
+      const members = await AppwriteDB.getProjectMembers(projectId);
+      return members.includes(userId);
+    } catch (error) {
+      console.error('[AppwriteRealtime] Error checking project membership:', error);
+      return false;
+    }
+  }
+
+  // Helper method to check if user is a member of a thread (via project membership)
+  private static async isUserMemberOfThread(userId: string, threadId: string): Promise<boolean> {
+    try {
+      // Import AppwriteDB here to avoid circular dependency
+      const { AppwriteDB } = await import('./appwriteDB');
+
+      // Get the thread to find its project ID
+      const threads = await AppwriteDB.getThreads();
+      const thread = threads.find(t => t.id === threadId);
+
+      if (!thread || !thread.projectId) {
+        return false; // Not a collaborative thread
+      }
+
+      // Check if user is a member of the thread's project
+      return await this.isUserMemberOfProject(userId, thread.projectId);
+    } catch (error) {
+      console.error('[AppwriteRealtime] Error checking thread membership:', error);
+      return false;
+    }
   }
   
-  // Subscribe to message collection changes
+  // Subscribe to message collection changes (including collaborative messages)
   static subscribeToMessages(userId: string): void {
     if (this.subscriptions.has('messages')) {
       console.log('[AppwriteRealtime] Already subscribed to messages');
@@ -101,21 +151,30 @@ export class AppwriteRealtime {
 
     const unsubscribe = client.subscribe(
       `databases.${DATABASE_ID}.collections.${MESSAGES_COLLECTION_ID}.documents`,
-      (response: RealtimeResponseEvent<AppwriteMessage>) => {
-        // Process only events for the current user
-        if (response.payload?.userId !== userId) {
-          return;
+      async (response: RealtimeResponseEvent<AppwriteMessage>) => {
+        const payload = response.payload;
+        if (!payload) return;
+
+        // Always process events for the current user's messages
+        const isOwnMessage = payload.userId === userId;
+
+        // For messages from other users, check if it's in a collaborative thread
+        let isCollaborativeMessage = false;
+        if (!isOwnMessage && payload.threadId) {
+          isCollaborativeMessage = await this.isUserMemberOfThread(userId, payload.threadId);
         }
 
-        // Handle different event types - check if event contains the action
-        const eventType = response.events[0];
+        // Process the event if it's the user's own message OR a collaborative message
+        if (isOwnMessage || isCollaborativeMessage) {
+          const eventType = response.events[0];
 
-        if (eventType.includes('.create')) {
-          this.handleMessageCreated(response.payload);
-        } else if (eventType.includes('.update')) {
-          this.handleMessageUpdated(response.payload);
-        } else if (eventType.includes('.delete')) {
-          this.handleMessageDeleted(response.payload);
+          if (eventType.includes('.create')) {
+            this.handleMessageCreated(payload);
+          } else if (eventType.includes('.update')) {
+            this.handleMessageUpdated(payload);
+          } else if (eventType.includes('.delete')) {
+            this.handleMessageDeleted(payload);
+          }
         }
       }
     );
