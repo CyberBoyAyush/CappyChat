@@ -28,6 +28,7 @@ import { useLocation } from "react-router-dom";
 import ThemeToggleButton from "./ui/ThemeComponents";
 import { Button } from "./ui/button";
 import AuthDialog from "./auth/AuthDialog";
+import ShareButton from "./ShareButton";
 import { useAuthDialog } from "@/frontend/hooks/useAuthDialog";
 import {
   MessageSquareMore,
@@ -63,6 +64,7 @@ import GlobalSearchDialog from "./GlobalSearchDialog";
 import { extractUrlsFromContent } from "./WebSearchCitations";
 import WebSearchLoader from "./WebSearchLoader";
 import RedditSearchLoader from "./RedditSearchLoader";
+import { devLog, devWarn, devInfo, devError, prodError } from '@/lib/logger';
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -71,7 +73,9 @@ interface ChatInterfaceProps {
 }
 
 // Utility function to deduplicate messages at the React level
-function deduplicateMessages<T extends { id: string; content: string }>(messages: T[]): T[] {
+function deduplicateMessages<T extends { id: string; content: string }>(
+  messages: T[]
+): T[] {
   const seen = new Map<string, T>();
 
   messages.forEach((message, index) => {
@@ -82,14 +86,20 @@ function deduplicateMessages<T extends { id: string; content: string }>(messages
       seen.set(message.id, message);
     } else {
       // Duplicate found - keep the one with more content or later in array
-      if (message.content.length > existing.content.length ||
-          (message.content.length === existing.content.length && index > messages.findIndex(m => m.id === existing.id))) {
+      if (
+        message.content.length > existing.content.length ||
+        (message.content.length === existing.content.length &&
+          index > messages.findIndex((m) => m.id === existing.id))
+      ) {
         seen.set(message.id, message);
-        console.warn('[ChatInterface] Replaced duplicate message in deduplication:', {
-          id: message.id,
-          existingContent: existing.content.substring(0, 50),
-          newContent: message.content.substring(0, 50)
-        });
+        devWarn(
+          "[ChatInterface] Replaced duplicate message in deduplication:",
+          {
+            id: message.id,
+            existingContent: existing.content.substring(0, 50),
+            newContent: message.content.substring(0, 50),
+          }
+        );
       }
     }
   });
@@ -97,7 +107,11 @@ function deduplicateMessages<T extends { id: string; content: string }>(messages
   const deduplicated = Array.from(seen.values());
 
   if (deduplicated.length !== messages.length) {
-    console.warn(`[ChatInterface] Deduplicated ${messages.length - deduplicated.length} duplicate messages from ${messages.length} total`);
+    devWarn(
+      `[ChatInterface] Deduplicated ${
+        messages.length - deduplicated.length
+      } duplicate messages from ${messages.length} total`
+    );
   }
 
   return deduplicated;
@@ -129,7 +143,7 @@ export default function ChatInterface({
   // Force clear pending auth when user is detected
   useEffect(() => {
     if (user && isPendingAuth) {
-      console.log(
+      devLog(
         "[ChatInterface] 🎉 User detected while pending auth - force clearing pending state"
       );
       setIsPendingAuth(false);
@@ -146,7 +160,7 @@ export default function ChatInterface({
           const age = Date.now() - parsed.timestamp;
           // Check if pending auth is still valid (not older than 15 seconds - reduced from 30)
           const isValid = age < 15000;
-          console.log("[ChatInterface] 🔍 Pending auth check:", {
+          devLog("[ChatInterface] 🔍 Pending auth check:", {
             hasPending: true,
             isValid,
             method: parsed.method,
@@ -155,7 +169,7 @@ export default function ChatInterface({
           setIsPendingAuth(isValid);
 
           if (!isValid) {
-            console.log(
+            devLog(
               "[ChatInterface] 🧹 Clearing expired pending auth state (age:",
               age,
               "ms)"
@@ -164,14 +178,14 @@ export default function ChatInterface({
           }
         } else {
           if (isPendingAuth) {
-            console.log(
+            devLog(
               "[ChatInterface] 🧹 No pending auth found, clearing state"
             );
           }
           setIsPendingAuth(false);
         }
       } catch (error) {
-        console.error("[ChatInterface] ❌ Error checking pending auth:", error);
+        devError("[ChatInterface] ❌ Error checking pending auth:", error);
         setIsPendingAuth(false);
       }
     };
@@ -183,7 +197,7 @@ export default function ChatInterface({
 
     // Listen for auth state changes to clear pending state
     const handleAuthStateChanged = () => {
-      console.log(
+      devLog(
         "[ChatInterface] 🎉 Auth state changed - clearing pending state"
       );
       setIsPendingAuth(false);
@@ -193,7 +207,7 @@ export default function ChatInterface({
     // Emergency timeout to force clear pending state after 8 seconds
     const emergencyTimeout = setTimeout(() => {
       if (isPendingAuth) {
-        console.log(
+        devLog(
           "[ChatInterface] 🚨 EMERGENCY: Force clearing pending auth after 8 seconds"
         );
         setIsPendingAuth(false);
@@ -243,12 +257,15 @@ export default function ChatInterface({
 
   // Function to track when a message is appended
   const trackAppendedMessage = useCallback((messageId: string) => {
-    console.log("[ChatInterface] Tracking appended message:", messageId);
+    devLog("[ChatInterface] Tracking appended message:", messageId);
     recentlyAppendedMessages.current.add(messageId);
     // Remove from tracking after 2 seconds to allow normal sync
     setTimeout(() => {
       recentlyAppendedMessages.current.delete(messageId);
-      console.log("[ChatInterface] Stopped tracking appended message:", messageId);
+      devLog(
+        "[ChatInterface] Stopped tracking appended message:",
+        messageId
+      );
     }, 2000);
   }, []);
 
@@ -274,27 +291,30 @@ export default function ChatInterface({
     reload,
     error,
   } = useChat({
-    api: (!isGuest && selectedSearchType !== 'chat')
-      ? (selectedSearchType === 'reddit' ? "/api/reddit-search" : "/api/web-search")
-      : "/api/chat-messaging",
+    api:
+      !isGuest && selectedSearchType !== "chat"
+        ? selectedSearchType === "reddit"
+          ? "/api/reddit-search"
+          : "/api/web-search"
+        : "/api/chat-messaging",
     id: threadId,
     initialMessages,
     experimental_throttle: 0, // Zero throttle for instant real-time streaming
     onFinish: async (message) => {
-      console.log("🏁 onFinish callback called for message:", message.id);
+      devLog("🏁 onFinish callback called for message:", message.id);
 
       // End streaming synchronization
       streamingSync.endStreaming(threadId, message.id, message.content);
 
       // Stop web search loading if it was active
       if (isWebSearching) {
-        console.log("🔍 Stopping web search loading state");
+        devLog("🔍 Stopping web search loading state");
         setIsWebSearching(false);
       }
 
       // Clear the pending user message ref (user message is now stored immediately in ChatInputField)
       if (pendingUserMessageRef.current) {
-        console.log(
+        devLog(
           "🧹 Clearing pending user message ref:",
           pendingUserMessageRef.current.id
         );
@@ -303,14 +323,17 @@ export default function ChatInterface({
 
       // Skip database operations for guest users
       if (isGuest) {
-        console.log("🚫 Skipping database operations for guest user");
+        devLog("🚫 Skipping database operations for guest user");
         return;
       }
 
       // Save the AI message (useChat already handles adding it to the messages array)
       // We just need to persist it to the database using the actual message ID from useChat
       const modelUsed = retryModel || selectedModel;
-      const aiMessage: UIMessage & { webSearchResults?: string[]; model?: string } = {
+      const aiMessage: UIMessage & {
+        webSearchResults?: string[];
+        model?: string;
+      } = {
         id: message.id,
         parts: message.parts as UIMessage["parts"],
         role: "assistant",
@@ -320,12 +343,19 @@ export default function ChatInterface({
       };
 
       // Extract URLs from any assistant message content for citations
-      console.log("🔍 onFinish: Checking message content for URLs. Content length:", message.content.length);
+      devLog(
+        "🔍 onFinish: Checking message content for URLs. Content length:",
+        message.content.length
+      );
       const extractedUrls = extractUrlsFromContent(message.content);
-      console.log("🔍 onFinish: URLs found:", extractedUrls.length, extractedUrls);
+      devLog(
+        "🔍 onFinish: URLs found:",
+        extractedUrls.length,
+        extractedUrls
+      );
 
       if (extractedUrls.length > 0) {
-        console.log(
+        devLog(
           "✅ Extracted URLs from AI message:",
           message.id,
           extractedUrls
@@ -342,7 +372,7 @@ export default function ChatInterface({
                 })
               : msg
           );
-          console.log("📱 Updated UI messages with extracted URLs");
+          devLog("📱 Updated UI messages with extracted URLs");
           return deduplicateMessages(updatedMessages);
         });
       }
@@ -369,10 +399,10 @@ export default function ChatInterface({
       scrollToBottom();
     },
     onError: (error) => {
-      console.error("❌ Chat error:", error);
+      devError("❌ Chat error:", error);
       // Stop web search loading on error
       if (isWebSearching) {
-        console.log("🔍 Stopping web search loading due to error");
+        devLog("🔍 Stopping web search loading due to error");
         setIsWebSearching(false);
       }
     },
@@ -397,24 +427,22 @@ export default function ChatInterface({
     }
   }, [selectedPrompt, setInput]);
 
-
-
   // Effect to handle search query from URL parameter - only run once
   useEffect(() => {
     if (searchQuery && searchQuery.trim() && messages.length === 0) {
-      console.log("🔍 Search query detected:", searchQuery);
+      devLog("🔍 Search query detected:", searchQuery);
       setInput(searchQuery);
 
       // Auto-submit the search query through ChatInputField's submit function
       const timer = setTimeout(() => {
         if (chatInputSubmitRef.current) {
-          console.log(
+          devLog(
             "🚀 Auto-submitting search query through ChatInputField:",
             searchQuery
           );
           chatInputSubmitRef.current();
         } else {
-          console.log("⚠️ chatInputSubmitRef.current is not available yet");
+          devLog("⚠️ chatInputSubmitRef.current is not available yet");
         }
       }, 500); // Increased timeout to ensure components are fully loaded
 
@@ -522,7 +550,7 @@ export default function ChatInterface({
         if (isNewMessage) {
           // Start streaming sync for new message
           streamingSync.startStreaming(threadId, lastMessage.id);
-          console.log(
+          devLog(
             "[ChatInterface] Started streaming sync for message:",
             lastMessage.id
           );
@@ -555,7 +583,7 @@ export default function ChatInterface({
             lastMessage.id,
             lastMessage.content
           );
-          console.log(
+          devLog(
             "[ChatInterface] Updated streaming content:",
             lastMessage.content.length,
             "chars"
@@ -565,15 +593,26 @@ export default function ChatInterface({
           // Check for URLs in any assistant message, not just when web search is explicitly enabled
           if (lastMessage.content) {
             const extractedUrls = extractUrlsFromContent(lastMessage.content);
-            console.log("🔍 Checking for URLs in streaming content. Content length:", lastMessage.content.length, "URLs found:", extractedUrls.length);
+            devLog(
+              "🔍 Checking for URLs in streaming content. Content length:",
+              lastMessage.content.length,
+              "URLs found:",
+              extractedUrls.length
+            );
             if (extractedUrls.length > 0) {
-              console.log("🔍 Extracted URLs from streaming content:", extractedUrls);
+              devLog(
+                "🔍 Extracted URLs from streaming content:",
+                extractedUrls
+              );
 
               // Update the message with extracted URLs in real-time
               setMessages((prevMessages) => {
                 const updatedMessages = prevMessages.map((msg) =>
                   msg.id === lastMessage.id
-                    ? ({ ...msg, webSearchResults: extractedUrls } as UIMessage & {
+                    ? ({
+                        ...msg,
+                        webSearchResults: extractedUrls,
+                      } as UIMessage & {
                         webSearchResults?: string[];
                       })
                     : msg
@@ -595,7 +634,7 @@ export default function ChatInterface({
       // Streaming ended, clean up
       const lastRef = lastStreamingMessageRef.current;
       streamingSync.endStreaming(threadId, lastRef.id, lastRef.content);
-      console.log(
+      devLog(
         "[ChatInterface] Ended streaming sync for message:",
         lastRef.id
       );
@@ -622,11 +661,11 @@ export default function ChatInterface({
   useEffect(() => {
     // Skip real-time sync for guest users
     if (isGuest) {
-      console.log("[ChatInterface] Skipping real-time sync for guest user");
+      devLog("[ChatInterface] Skipping real-time sync for guest user");
       return;
     }
 
-    console.log(
+    devLog(
       "[ChatInterface] Setting up real-time message sync for thread:",
       threadId
     );
@@ -635,7 +674,7 @@ export default function ChatInterface({
       updatedThreadId: string,
       updatedMessages: any[]
     ) => {
-      console.log(
+      devLog(
         "[ChatInterface] Real-time messages updated for thread:",
         updatedThreadId,
         "Current thread:",
@@ -643,7 +682,7 @@ export default function ChatInterface({
       );
 
       if (updatedThreadId === threadId) {
-        console.log(
+        devLog(
           "[ChatInterface] Updating messages in UI. Count:",
           updatedMessages.length,
           "Current UI messages:",
@@ -668,79 +707,98 @@ export default function ChatInterface({
 
         // Smart merge: Preserve messages that were recently added by append()
         // and only add new messages from the database
-        const currentMessageIds = new Set(messages.map(msg => msg.id));
-        const dbMessageIds = new Set(uiMessages.map(msg => msg.id));
+        const currentMessageIds = new Set(messages.map((msg) => msg.id));
+        const dbMessageIds = new Set(uiMessages.map((msg) => msg.id));
 
         // Check if there are new messages in the database that aren't in the UI
-        const hasNewMessages = uiMessages.some(dbMsg =>
-          !currentMessageIds.has(dbMsg.id) &&
-          !recentlyAppendedMessages.current.has(dbMsg.id)
+        const hasNewMessages = uiMessages.some(
+          (dbMsg) =>
+            !currentMessageIds.has(dbMsg.id) &&
+            !recentlyAppendedMessages.current.has(dbMsg.id)
         );
 
         // Check if there are messages in UI that aren't in database (shouldn't happen but safety check)
-        const hasMissingMessages = messages.some(uiMsg =>
-          !dbMessageIds.has(uiMsg.id) &&
-          !recentlyAppendedMessages.current.has(uiMsg.id)
+        const hasMissingMessages = messages.some(
+          (uiMsg) =>
+            !dbMessageIds.has(uiMsg.id) &&
+            !recentlyAppendedMessages.current.has(uiMsg.id)
         );
 
         // Check if there are existing messages that need updates (e.g., image generation completed)
-        const hasUpdatedMessages = uiMessages.some(dbMsg => {
-          const currentMsg = messages.find(msg => msg.id === dbMsg.id);
+        const hasUpdatedMessages = uiMessages.some((dbMsg) => {
+          const currentMsg = messages.find((msg) => msg.id === dbMsg.id);
           if (!currentMsg) return false;
-          
+
           // Check for image generation updates (loading -> completed)
-          const wasLoading = currentMsg.content?.includes("Generating your image") || 
-                           (currentMsg as any).isImageGenerationLoading;
-          const nowHasImage = (dbMsg as any).imgurl && !dbMsg.content?.includes("Generating your image");
-          
+          const wasLoading =
+            currentMsg.content?.includes("Generating your image") ||
+            (currentMsg as any).isImageGenerationLoading;
+          const nowHasImage =
+            (dbMsg as any).imgurl &&
+            !dbMsg.content?.includes("Generating your image");
+
           // Check for any content or imgurl differences
           const contentChanged = currentMsg.content !== dbMsg.content;
-          const imgUrlChanged = (currentMsg as any).imgurl !== (dbMsg as any).imgurl;
-          
-          return wasLoading && nowHasImage || contentChanged || imgUrlChanged;
+          const imgUrlChanged =
+            (currentMsg as any).imgurl !== (dbMsg as any).imgurl;
+
+          return (wasLoading && nowHasImage) || contentChanged || imgUrlChanged;
         });
 
         if (hasNewMessages || hasMissingMessages || hasUpdatedMessages) {
-          console.log("[ChatInterface] Smart merge: Changes detected", {
+          devLog("[ChatInterface] Smart merge: Changes detected", {
             hasNewMessages,
-            hasMissingMessages, 
+            hasMissingMessages,
             hasUpdatedMessages,
             currentCount: messages.length,
-            dbCount: uiMessages.length
+            dbCount: uiMessages.length,
           });
 
           // For image generation updates, we need to replace existing messages with updated DB versions
           if (hasUpdatedMessages) {
-            console.log("[ChatInterface] Handling image generation message updates");
-            
+            devLog(
+              "[ChatInterface] Handling image generation message updates"
+            );
+
             // Build a map of DB messages by ID for quick lookup
-            const dbMessageMap = new Map(uiMessages.map(msg => [msg.id, msg]));
-            
+            const dbMessageMap = new Map(
+              uiMessages.map((msg) => [msg.id, msg])
+            );
+
             // Update existing messages with DB versions, keeping UI messages that aren't in DB
-            const updatedMessages = messages.map(uiMsg => {
+            const updatedMessages = messages.map((uiMsg) => {
               const dbMsg = dbMessageMap.get(uiMsg.id);
               if (dbMsg) {
                 // Check if this was an image generation update
-                const wasLoading = uiMsg.content?.includes("Generating your image") || 
-                                 (uiMsg as any).isImageGenerationLoading;
-                                 const nowHasImage = (dbMsg as any).imgurl && !dbMsg.content?.includes("Generating your image");
-                
+                const wasLoading =
+                  uiMsg.content?.includes("Generating your image") ||
+                  (uiMsg as any).isImageGenerationLoading;
+                const nowHasImage =
+                  (dbMsg as any).imgurl &&
+                  !dbMsg.content?.includes("Generating your image");
+
                 if (wasLoading && nowHasImage) {
-                  console.log("[ChatInterface] Updating image generation message:", uiMsg.id);
+                  devLog(
+                    "[ChatInterface] Updating image generation message:",
+                    uiMsg.id
+                  );
                 }
-                
+
                 return dbMsg; // Use the updated DB version
               }
               return uiMsg; // Keep the UI version if no DB match
             });
-            
+
             // Add any new messages from DB that aren't in UI
-            uiMessages.forEach(dbMsg => {
-              if (!currentMessageIds.has(dbMsg.id) && !recentlyAppendedMessages.current.has(dbMsg.id)) {
+            uiMessages.forEach((dbMsg) => {
+              if (
+                !currentMessageIds.has(dbMsg.id) &&
+                !recentlyAppendedMessages.current.has(dbMsg.id)
+              ) {
                 updatedMessages.push(dbMsg);
               }
             });
-            
+
             // Sort by creation date to maintain order
             updatedMessages.sort((a, b) => {
               const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -754,8 +812,11 @@ export default function ChatInterface({
             const mergedMessages = [...messages];
 
             // Add new messages from database that aren't already in UI
-            uiMessages.forEach(dbMsg => {
-              if (!currentMessageIds.has(dbMsg.id) && !recentlyAppendedMessages.current.has(dbMsg.id)) {
+            uiMessages.forEach((dbMsg) => {
+              if (
+                !currentMessageIds.has(dbMsg.id) &&
+                !recentlyAppendedMessages.current.has(dbMsg.id)
+              ) {
                 mergedMessages.push(dbMsg);
               }
             });
@@ -788,14 +849,13 @@ export default function ChatInterface({
 
   // Real-time streaming synchronization
   useEffect(() => {
-
     // Listen for streaming broadcasts from other sessions
     const handleStreamingBroadcast = (
       broadcastThreadId: string,
       messageId: string,
       streamingState: StreamingState
     ) => {
-      console.log(
+      devLog(
         "[ChatInterface] Streaming broadcast received:",
         messageId,
         "chars:",
@@ -809,7 +869,7 @@ export default function ChatInterface({
         broadcastThreadId === threadId &&
         streamingState.sessionId !== streamingSync.getSessionId()
       ) {
-        console.log(
+        devLog(
           "[ChatInterface] Applying streaming update from another session"
         );
 
@@ -851,7 +911,7 @@ export default function ChatInterface({
     dbEvents.on("streaming_broadcast", handleStreamingBroadcast);
 
     return () => {
-      console.log(
+      devLog(
         "[ChatInterface] Cleaning up streaming sync for thread:",
         threadId
       );
@@ -867,46 +927,61 @@ export default function ChatInterface({
   // Effect to stop web search loading when streaming starts
   useEffect(() => {
     if (status === "streaming" && isWebSearching) {
-      console.log("🔍 Stopping web search loading - streaming started");
+      devLog("🔍 Stopping web search loading - streaming started");
       setIsWebSearching(false);
     }
   }, [status, isWebSearching]);
 
   // Callback to track when a message is sent with search enabled
-  const handleWebSearchMessage = useCallback((messageId: string, searchQuery?: string) => {
-    nextResponseNeedsWebSearch.current = true;
-    if (selectedSearchType !== 'chat') {
-      setIsWebSearching(true);
-      // Use the provided search query or fallback to getting from messages
-      if (searchQuery) {
-        setWebSearchQuery(searchQuery);
-      } else {
-        const lastUserMessage = messages.filter(msg => msg.role === 'user').pop();
-        setWebSearchQuery(lastUserMessage?.content || "search query");
+  const handleWebSearchMessage = useCallback(
+    (messageId: string, searchQuery?: string) => {
+      nextResponseNeedsWebSearch.current = true;
+      if (selectedSearchType !== "chat") {
+        setIsWebSearching(true);
+        // Use the provided search query or fallback to getting from messages
+        if (searchQuery) {
+          setWebSearchQuery(searchQuery);
+        } else {
+          const lastUserMessage = messages
+            .filter((msg) => msg.role === "user")
+            .pop();
+          setWebSearchQuery(lastUserMessage?.content || "search query");
+        }
       }
-    }
-  }, [selectedSearchType, messages]);
+    },
+    [selectedSearchType, messages]
+  );
 
   // Handle image generation retry
   const handleImageGenerationRetry = useCallback(
-    async (prompt: string, model: AIModel, attachments: any[], originalMessage?: UIMessage) => {
+    async (
+      prompt: string,
+      model: AIModel,
+      attachments: any[],
+      originalMessage?: UIMessage
+    ) => {
       // Create a loading message
       const loadingMessageId = uuidv4();
 
       try {
-        console.log("🎨 Starting image generation retry with model:", model);
+        devLog("🎨 Starting image generation retry with model:", model);
 
         const loadingMessage: UIMessage = {
           id: loadingMessageId,
           role: "assistant",
           content: `🎨 Generating your image [aspectRatio:1:1]`,
-          parts: [{ type: "text", text: `🎨 Generating your image [aspectRatio:1:1]` }],
+          parts: [
+            {
+              type: "text",
+              text: `🎨 Generating your image [aspectRatio:1:1]`,
+            },
+          ],
           createdAt: new Date(),
         };
 
         // Add loading message to UI
         setMessages((prev) => {
-          const filtered = prev.filter(m => m.id !== originalMessage?.id);
+          const filtered = prev.filter((m) => m.id !== originalMessage?.id);
           return [...filtered, loadingMessage];
         });
 
@@ -929,15 +1004,15 @@ export default function ChatInterface({
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to generate image');
+          throw new Error(errorData.error || "Failed to generate image");
         }
 
         const result = await response.json();
-        console.log("✅ Image generation retry completed:", result);
+        devLog("✅ Image generation retry completed:", result);
 
         // Update the loading message with the result
         setMessages((prev) => {
-          return prev.map(m => {
+          return prev.map((m) => {
             if (m.id === loadingMessageId) {
               return {
                 ...m,
@@ -956,30 +1031,39 @@ export default function ChatInterface({
 
         // Save to database if not guest
         if (!isGuest) {
-          const finalMessage: UIMessage & { imgurl?: string; model?: string } = {
-            id: loadingMessageId,
-            role: "assistant",
-            content: `[aspectRatio:1:1]`,
-            parts: [{ type: "text", text: `[aspectRatio:1:1]` }],
-            createdAt: new Date(),
-            imgurl: result.imageUrl,
-            model: result.model,
-          };
+          const finalMessage: UIMessage & { imgurl?: string; model?: string } =
+            {
+              id: loadingMessageId,
+              role: "assistant",
+              content: `[aspectRatio:1:1]`,
+              parts: [{ type: "text", text: `[aspectRatio:1:1]` }],
+              createdAt: new Date(),
+              imgurl: result.imageUrl,
+              model: result.model,
+            };
 
           HybridDB.createMessage(threadId, finalMessage);
         }
-
       } catch (error) {
-        console.error("Error in image generation retry:", error);
+        devError("Error in image generation retry:", error);
 
         // Update loading message with error
         setMessages((prev) => {
-          return prev.map(m => {
+          return prev.map((m) => {
             if (m.id === loadingMessageId) {
               return {
                 ...m,
-                content: `❌ Failed to generate image: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                parts: [{ type: "text", text: `❌ Failed to generate image: ${error instanceof Error ? error.message : 'Unknown error'}` }],
+                content: `❌ Failed to generate image: ${
+                  error instanceof Error ? error.message : "Unknown error"
+                }`,
+                parts: [
+                  {
+                    type: "text",
+                    text: `❌ Failed to generate image: ${
+                      error instanceof Error ? error.message : "Unknown error"
+                    }`,
+                  },
+                ],
                 isImageGenerationLoading: false,
               } as UIMessage;
             }
@@ -1001,18 +1085,23 @@ export default function ChatInterface({
       setRetryModel(model || null);
 
       // Determine if this is an image generation retry
-      const isImageGenerationRetry = message && (
-        (message as any).isImageGeneration ||
-        (message as any).isImageGenerationLoading ||
-        !!(message as any).imgurl ||
-        (message.content && (
-          message.content.includes("🎨 Generating your image") ||
-          message.content.includes("Generating your image")
-        )) ||
-        (message as any).model && getModelConfig((message as any).model as AIModel)?.isImageGeneration
-      );
+      const isImageGenerationRetry =
+        message &&
+        ((message as any).isImageGeneration ||
+          (message as any).isImageGenerationLoading ||
+          !!(message as any).imgurl ||
+          (message.content &&
+            (message.content.includes("🎨 Generating your image") ||
+              message.content.includes("Generating your image"))) ||
+          ((message as any).model &&
+            getModelConfig((message as any).model as AIModel)
+              ?.isImageGeneration));
 
-      console.log("🔄 Retry context:", { isImageGenerationRetry, message: message?.content, model: (message as any)?.model });
+      devLog("🔄 Retry context:", {
+        isImageGenerationRetry,
+        message: message?.content,
+        model: (message as any)?.model,
+      });
 
       // If we have message information, handle proper deletion
       if (message) {
@@ -1050,7 +1139,7 @@ export default function ChatInterface({
 
       // Handle image generation retry differently
       if (isImageGenerationRetry) {
-        console.log("🎨 Handling image generation retry");
+        devLog("🎨 Handling image generation retry");
 
         // Find the user message that triggered this image generation
         let userPrompt = "";
@@ -1058,7 +1147,7 @@ export default function ChatInterface({
 
         if (message?.role === "assistant") {
           // Find the preceding user message
-          const messageIndex = messages.findIndex(m => m.id === message.id);
+          const messageIndex = messages.findIndex((m) => m.id === message.id);
           if (messageIndex > 0) {
             const userMessage = messages[messageIndex - 1];
             if (userMessage.role === "user") {
@@ -1072,14 +1161,21 @@ export default function ChatInterface({
         }
 
         if (!userPrompt) {
-          console.error("Could not find user prompt for image generation retry");
+          devError(
+            "Could not find user prompt for image generation retry"
+          );
           return;
         }
 
-        console.log("🎨 Retrying image generation with prompt:", userPrompt);
+        devLog("🎨 Retrying image generation with prompt:", userPrompt);
 
         // Call image generation API directly
-        handleImageGenerationRetry(userPrompt, model || selectedModel, userAttachments, message);
+        handleImageGenerationRetry(
+          userPrompt,
+          model || selectedModel,
+          userAttachments,
+          message
+        );
         return;
       }
 
@@ -1174,7 +1270,7 @@ export default function ChatInterface({
         {isHomePage && messages.length === 0 ? (
           (() => {
             const shouldShowLoading = authLoading || isPendingAuth;
-            console.log("[ChatInterface] 🎭 Render decision:", {
+            devLog("[ChatInterface] 🎭 Render decision:", {
               authLoading,
               isPendingAuth,
               isGuest,
@@ -1234,7 +1330,7 @@ export default function ChatInterface({
       </main>
 
       {/* Fixed Input Container with Dynamic Width */}
-      <div className="fixed bottom-0 left-0 right-0 z-20">
+      <div className="fixed bottom-5 left-0 right-0 z-20">
         {/* Scroll to bottom button */}
         <div
           className={cn(
@@ -1323,6 +1419,11 @@ export default function ChatInterface({
               : "border-none mr-6 rounded-md py-2"
           )}
         >
+          <ShareButton
+            threadId={threadId}
+            variant={isDarkTheme ? "outline" : "secondary"}
+          />
+
           <Button
             onClick={handleToggleNavigator}
             variant={isDarkTheme ? "outline" : "secondary"}
@@ -1376,7 +1477,7 @@ const AppPanelTrigger = () => {
 
   // Enhanced toggle function for debugging
   const handleToggle = () => {
-    console.log("Panel trigger clicked, current state:", state);
+    devLog("Panel trigger clicked, current state:", state);
     toggleSidebar();
   };
 
@@ -1621,7 +1722,7 @@ const promptDomains = [
       "Create a React hook for detecting if an element is in the viewport",
       "Write a Python function to analyze sentiment in a text using NLTK",
       "Explain how to implement a JWT authentication system in Node.js",
-      "Debug this code: for(i=0; i<10; i++) { console.log(i); i++; }",
+      "Debug this code: for(i=0; i<10; i++) { devLog(i); i++; }",
     ],
   },
   {

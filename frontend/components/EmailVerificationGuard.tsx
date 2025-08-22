@@ -58,7 +58,7 @@ const EmailVerificationGuard: React.FC<EmailVerificationGuardProps> = ({ childre
           {/* Icon */}
           <div className="mb-6">
             <div className="relative">
-              <Mail className="h-16 w-16 text-orange-500 mx-auto" />
+              <Mail className="h-16 w-16 text-black dark:text-white mx-auto" />
               <AlertCircle className="h-6 w-6 text-red-500 absolute -top-1 -right-1" />
             </div>
           </div>

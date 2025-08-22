@@ -6,6 +6,7 @@
  */
 
 import { Thread, DBMessage, MessageSummary, Project } from './appwriteDB';
+import { devLog, devWarn, devInfo, devError, prodError } from './logger';
 
 // Local storage keys
 const STORAGE_KEYS = {
@@ -68,7 +69,7 @@ export class LocalDB {
         return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
       });
     } catch (error) {
-      console.error('Error reading threads from local storage:', error);
+      devError('Error reading threads from local storage:', error);
       return [];
     }
   }
@@ -99,7 +100,7 @@ export class LocalDB {
       
       // No cache to update - real-time sync only
     } catch (error) {
-      console.error('Error saving thread to local storage:', error);
+      devError('Error saving thread to local storage:', error);
     }
   }
 
@@ -115,22 +116,22 @@ export class LocalDB {
       this.deleteMessagesByThread(threadId);
       this.deleteSummariesByThread(threadId);
     } catch (error) {
-      console.error('Error deleting thread from local storage:', error);
+      devError('Error deleting thread from local storage:', error);
     }
   }
 
   // Update thread title and timestamp
   static updateThread(threadId: string, updates: Partial<Thread>): void {
     try {
-      console.log('[LocalDB] Updating thread:', { threadId, updates });
+      devLog('[LocalDB] Updating thread:', { threadId, updates });
       const threads = this.getThreads();
-      console.log('[LocalDB] Current threads:', threads.map(t => ({ id: t.id, title: t.title })));
+      devLog('[LocalDB] Current threads:', threads.map(t => ({ id: t.id, title: t.title })));
       const index = threads.findIndex(t => t.id === threadId);
       
       if (index >= 0) {
         const oldThread = threads[index];
         threads[index] = { ...threads[index], ...updates };
-        console.log('[LocalDB] Thread updated:', { 
+        devLog('[LocalDB] Thread updated:', { 
           old: { id: oldThread.id, title: oldThread.title }, 
           new: { id: threads[index].id, title: threads[index].title }
         });
@@ -150,12 +151,12 @@ export class LocalDB {
         localStorage.setItem(STORAGE_KEYS.THREADS, JSON.stringify(threads));
         
         // No cache to update - real-time sync only
-        console.log('[LocalDB] Thread updated with', threads.length, 'threads');
+        devLog('[LocalDB] Thread updated with', threads.length, 'threads');
       } else {
-        console.warn('[LocalDB] Thread not found:', threadId, 'Available threads:', threads.map(t => t.id));
+        devWarn('[LocalDB] Thread not found:', threadId, 'Available threads:', threads.map(t => t.id));
       }
     } catch (error) {
-      console.error('Error updating thread in local storage:', error);
+      devError('Error updating thread in local storage:', error);
     }
   }
 
@@ -178,7 +179,7 @@ export class LocalDB {
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
     } catch (error) {
-      console.error('Error reading messages from local storage:', error);
+      devError('Error reading messages from local storage:', error);
       return [];
     }
   }
@@ -200,7 +201,7 @@ export class LocalDB {
             m.content === message.content &&
             m.imgurl === message.imgurl &&
             Math.abs(new Date(m.createdAt).getTime() - new Date(message.createdAt).getTime()) < 1000) {
-          console.warn('[LocalDB] Potential duplicate message detected:', {
+          devWarn('[LocalDB] Potential duplicate message detected:', {
             existing: { id: m.id, content: m.content.substring(0, 50), imgurl: m.imgurl },
             new: { id: message.id, content: message.content.substring(0, 50), imgurl: message.imgurl }
           });
@@ -213,11 +214,11 @@ export class LocalDB {
       if (existingIndex >= 0) {
         // Update existing message
         messages[existingIndex] = message;
-        console.log('[LocalDB] Updated existing message:', message.id);
+        devLog('[LocalDB] Updated existing message:', message.id);
       } else {
         // Add new message
         messages.push(message);
-        console.log('[LocalDB] Added new message:', message.id);
+        devLog('[LocalDB] Added new message:', message.id);
       }
 
       localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messages));
@@ -228,7 +229,7 @@ export class LocalDB {
         updatedAt: new Date()
       });
     } catch (error) {
-      console.error('Error saving message to local storage:', error);
+      devError('Error saving message to local storage:', error);
     }
   }
 
@@ -242,7 +243,7 @@ export class LocalDB {
       const filteredMessages = messages.filter((msg: any) => msg.threadId !== threadId);
       localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(filteredMessages));
     } catch (error) {
-      console.error('Error deleting messages from local storage:', error);
+      devError('Error deleting messages from local storage:', error);
     }
   }
 
@@ -270,7 +271,7 @@ export class LocalDB {
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
     } catch (error) {
-      console.error('Error reading summaries from local storage:', error);
+      devError('Error reading summaries from local storage:', error);
       return [];
     }
   }
@@ -291,7 +292,7 @@ export class LocalDB {
       
       localStorage.setItem(STORAGE_KEYS.SUMMARIES, JSON.stringify(summaries));
     } catch (error) {
-      console.error('Error saving summary to local storage:', error);
+      devError('Error saving summary to local storage:', error);
     }
   }
 
@@ -305,7 +306,7 @@ export class LocalDB {
       const filteredSummaries = summaries.filter((summary: any) => summary.threadId !== threadId);
       localStorage.setItem(STORAGE_KEYS.SUMMARIES, JSON.stringify(filteredSummaries));
     } catch (error) {
-      console.error('Error deleting summaries from local storage:', error);
+      devError('Error deleting summaries from local storage:', error);
     }
   }
 
@@ -324,7 +325,7 @@ export class LocalDB {
         updatedAt: new Date(project.updatedAt)
       }));
     } catch (error) {
-      console.error('Error loading projects from local storage:', error);
+      devError('Error loading projects from local storage:', error);
       return [];
     }
   }
@@ -348,7 +349,7 @@ export class LocalDB {
 
       localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
     } catch (error) {
-      console.error('Error saving project to local storage:', error);
+      devError('Error saving project to local storage:', error);
     }
   }
 
@@ -370,7 +371,7 @@ export class LocalDB {
         localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
       }
     } catch (error) {
-      console.error('Error updating project in local storage:', error);
+      devError('Error updating project in local storage:', error);
     }
   }
 
@@ -385,7 +386,7 @@ export class LocalDB {
 
       localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(filteredProjects));
     } catch (error) {
-      console.error('Error deleting project from local storage:', error);
+      devError('Error deleting project from local storage:', error);
     }
   }
 
@@ -408,7 +409,7 @@ export class LocalDB {
       
       // No cache to update - real-time sync only
     } catch (error) {
-      console.error('Error replacing threads in local storage:', error);
+      devError('Error replacing threads in local storage:', error);
     }
   }
 
@@ -424,7 +425,7 @@ export class LocalDB {
 
       // No cache to update - real-time sync only
     } catch (error) {
-      console.error('Error replacing projects in local storage:', error);
+      devError('Error replacing projects in local storage:', error);
     }
   }
 
@@ -442,7 +443,7 @@ export class LocalDB {
       
       localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(updatedMessages));
     } catch (error) {
-      console.error('Error replacing messages in local storage:', error);
+      devError('Error replacing messages in local storage:', error);
     }
   }
 
@@ -460,7 +461,7 @@ export class LocalDB {
       
       localStorage.setItem(STORAGE_KEYS.SUMMARIES, JSON.stringify(updatedSummaries));
     } catch (error) {
-      console.error('Error replacing summaries in local storage:', error);
+      devError('Error replacing summaries in local storage:', error);
     }
   }
 }

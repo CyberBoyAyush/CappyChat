@@ -1,13 +1,13 @@
 export const AI_MODELS = [
   'Gemini 2.5 Flash',
   'Gemini 2.5 Flash Lite',
-  'Gemini 2.5 Flash Thinking',
   'OpenAI 5 Mini',
   "OpenAI 5",
   'OpenAI o4-mini',
   'Open AI OSS 120B',
   'Claude Sonnet 3.5',
   'DeepSeek R1 Fast',
+  'DeepSeek V3.1',
   'Qwen3 235B A22B',
   'Claude Sonnet 4',
   'Gemini 2.5 Pro',
@@ -40,7 +40,7 @@ export type ModelConfig = {
 
 export const MODEL_CONFIGS = {
   'Gemini 2.5 Flash': {
-    modelId: 'google/gemini-2.5-flash-preview-05-20',
+    modelId: 'google/gemini-2.5-flash',
     provider: 'openrouter',
     displayName: 'Gemini 2.5 Flash',
     iconType: 'google',
@@ -50,19 +50,6 @@ export const MODEL_CONFIGS = {
     hasReasoning: false,
     isFileSupported: true,
     isFast: true,
-    description: 'Fast and efficient model from Google',
-  },
-  'Gemini 2.5 Flash Thinking': {
-    modelId: 'google/gemini-2.5-flash-preview-05-20:thinking',
-    provider: 'openrouter',
-    displayName: 'Gemini 2.5 Flash Thinking',
-    iconType: 'google',
-    company: 'Google',
-    isPremium: true,
-    isSuperPremium: false,
-    hasReasoning: true,
-    isFileSupported: true,
-    isFast: false,
     description: 'Fast and efficient model from Google',
   },
   'Gemini 2.5 Flash Lite': {
@@ -157,6 +144,19 @@ export const MODEL_CONFIGS = {
     isFast: true,
     description: 'Deepseek Best in the class latest advanced reasoning model',
   },
+  'DeepSeek V3.1': {
+    modelId: 'deepseek/deepseek-chat-v3.1',
+    provider: 'openrouter',
+    displayName: 'DeepSeek V3.1',
+    iconType: 'deepseek',
+    company: 'DeepSeek',
+    isPremium: false,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: false,
+    isFast: true,
+    description: 'Deepseek Best Model For Coding',
+  },
   'Qwen3 235B A22B': {
     modelId: 'qwen/qwen3-235b-a22b:free',
     provider: 'openrouter',
@@ -184,7 +184,7 @@ export const MODEL_CONFIGS = {
     description: 'Best in the class OpenAI model with advanced reasoning',
   },
   'Gemini 2.5 Pro': {
-    modelId: 'google/gemini-2.5-pro-preview-05-06',
+    modelId: 'google/gemini-2.5-pro',
     provider: 'openrouter',
     displayName: 'Gemini 2.5 Pro',
     iconType: 'google',

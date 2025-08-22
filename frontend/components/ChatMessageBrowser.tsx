@@ -14,6 +14,7 @@ import { X, MessageCircle, Bot, User, Search, Clock } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/frontend/contexts/AuthContext';
+import { devLog, devWarn, devInfo, devError, prodError } from '@/lib/logger';
 
 interface MessageBrowserProps {
   threadId: string;
@@ -57,12 +58,12 @@ function PureMessageBrowser({
           setMessageSummaries(remoteSummaries || []);
         } catch (remoteError) {
           // Fallback to local if remote fails
-          console.warn('Failed to load remote summaries, using local:', remoteError);
+          devWarn('Failed to load remote summaries, using local:', remoteError);
           const localSummaries = await HybridDB.getMessageSummariesWithRole(threadId);
           setMessageSummaries(localSummaries || []);
         }
       } catch (error) {
-        console.error('Error loading updated summaries:', error);
+        devError('Error loading updated summaries:', error);
       }
     }
   }, [threadId, isGuest]);
@@ -102,11 +103,11 @@ function PureMessageBrowser({
             dbEvents.emit('summaries_updated', threadId);
           }
         } catch (remoteError) {
-          console.warn('Failed to sync summaries from remote, using local:', remoteError);
+          devWarn('Failed to sync summaries from remote, using local:', remoteError);
           // Keep using local summaries if remote fails
         }
       } catch (error) {
-        console.error('Error loading message summaries:', error);
+        devError('Error loading message summaries:', error);
         if (isMounted) {
           setMessageSummaries([]);
         }

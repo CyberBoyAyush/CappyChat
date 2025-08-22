@@ -23,7 +23,13 @@ import { HybridDB } from "@/lib/hybridDB";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 import { ModelSelector } from "./ModelSelector";
 import { ConversationStyleSelector } from "./ConversationStyleSelector";
-import { AspectRatioSelector, ASPECT_RATIOS, AspectRatio, getDimensionsForModel } from "./AspectRatioSelector";
+import { devLog, devError } from "@/lib/logger";
+import {
+  AspectRatioSelector,
+  ASPECT_RATIOS,
+  AspectRatio,
+  getDimensionsForModel,
+} from "./AspectRatioSelector";
 import { SearchTypeSelector } from "./SearchTypeSelector";
 import { useSearchTypeStore } from "@/frontend/stores/SearchTypeStore";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
@@ -38,8 +44,8 @@ import {
   Loader2,
   CheckCircle,
   XCircle,
-  ImageIcon,
 } from "lucide-react";
+import { RiImageAiFill } from "react-icons/ri";
 import { toast } from "sonner";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import { useAuthDialog } from "@/frontend/hooks/useAuthDialog";
@@ -90,7 +96,10 @@ const createUserMessage = (
 });
 
 // Extract and store memories from user message
-const extractAndStoreMemories = async (messageContent: string, userId?: string) => {
+const extractAndStoreMemories = async (
+  messageContent: string,
+  userId?: string
+) => {
   if (!userId || !messageContent.trim()) return;
 
   try {
@@ -112,14 +121,14 @@ const extractAndStoreMemories = async (messageContent: string, userId?: string) 
       if (shouldAddMemory(extractedMemory, existingMemories)) {
         try {
           await AppwriteDB.addMemory(userId, extractedMemory.text);
-          console.log('🧠 Added memory:', extractedMemory.text);
+          devLog("🧠 Added memory:", extractedMemory.text);
         } catch (error) {
-          console.error('Failed to add memory:', error);
+          devError("Failed to add memory:", error);
         }
       }
     }
   } catch (error) {
-    console.error('Error extracting memories:', error);
+    devError("Error extracting memories:", error);
   }
 };
 
@@ -181,7 +190,9 @@ function PureInputField({
   const { selectedModel, setModel } = useModelStore();
 
   // Aspect ratio state for image generation
-  const [selectedAspectRatio, setSelectedAspectRatio] = useState<AspectRatio>(ASPECT_RATIOS[0]); // Default to 1:1
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState<AspectRatio>(
+    ASPECT_RATIOS[0]
+  ); // Default to 1:1
 
   // Track if input change was from user typing vs external source (like prompt selection)
   const lastInputRef = useRef("");
@@ -323,7 +334,7 @@ function PureInputField({
           setUploadingFiles([]);
         }, 1500);
       } catch (error) {
-        console.error("Paste upload error:", error);
+        devError("Paste upload error:", error);
 
         // Show error state
         const errorFiles = files.map((file) => ({
@@ -531,17 +542,19 @@ function PureInputField({
             body: { threadId, messageId, isTitle: true },
           });
         } catch (error) {
-          console.error('[ChatInputField] Title generation failed:', error);
+          console.error("[ChatInputField] Title generation failed:", error);
           // Fallback: Use a simplified title based on user input
-          const fallbackTitle = finalInput.length > 50 
-            ? finalInput.substring(0, 47) + "..." 
-            : finalInput;
-          
+          const fallbackTitle =
+            finalInput.length > 50
+              ? finalInput.substring(0, 47) + "..."
+              : finalInput;
+
           // Update thread title with fallback if title generation fails
           if (!isGuest && fallbackTitle.trim()) {
             setTimeout(() => {
-              HybridDB.updateThread(threadId, fallbackTitle.trim())
-                .catch(err => console.error('Fallback title update failed:', err));
+              HybridDB.updateThread(threadId, fallbackTitle.trim()).catch(
+                (err) => console.error("Fallback title update failed:", err)
+              );
             }, 1000); // Small delay to ensure thread exists
           }
         }
@@ -555,10 +568,12 @@ function PureInputField({
       pendingUserMessageRef.current = userMessage;
 
       // Track if this message was sent with search enabled (web or reddit)
-      if ((selectedSearchType === 'web' || selectedSearchType === 'reddit') && onWebSearchMessage) {
+      if (
+        (selectedSearchType === "web" || selectedSearchType === "reddit") &&
+        onWebSearchMessage
+      ) {
         onWebSearchMessage(messageId, finalInput);
       }
-
     } else {
       // For image generation mode, we need to handle thread creation manually
       // since we're not using the chat completion flow
@@ -593,16 +608,22 @@ function PureInputField({
               body: { threadId, messageId, isTitle: true },
             });
           } catch (error) {
-            console.error('[ChatInputField] Image title generation failed:', error);
+            console.error(
+              "[ChatInputField] Image title generation failed:",
+              error
+            );
             // Fallback: Use a simplified title based on image prompt
-            const fallbackTitle = finalInput.length > 40 
-              ? "Image: " + finalInput.substring(0, 37) + "..." 
-              : "Image: " + finalInput;
-            
+            const fallbackTitle =
+              finalInput.length > 40
+                ? "Image: " + finalInput.substring(0, 37) + "..."
+                : "Image: " + finalInput;
+
             // Update thread title with fallback if title generation fails
             setTimeout(() => {
-              HybridDB.updateThread(threadId, fallbackTitle.trim())
-                .catch(err => console.error('Image fallback title update failed:', err));
+              HybridDB.updateThread(threadId, fallbackTitle.trim()).catch(
+                (err) =>
+                  console.error("Image fallback title update failed:", err)
+              );
             }, 1000); // Small delay to ensure thread exists
           }
         }
@@ -642,7 +663,12 @@ function PureInputField({
         id: uuidv4(),
         role: "assistant" as const,
         content: `🎨 Generating your image [aspectRatio:${selectedAspectRatio.id}]`,
-        parts: [{ type: "text" as const, text: `🎨 Generating your image [aspectRatio:${selectedAspectRatio.id}]` }],
+        parts: [
+          {
+            type: "text" as const,
+            text: `🎨 Generating your image [aspectRatio:${selectedAspectRatio.id}]`,
+          },
+        ],
         createdAt: new Date(),
         isImageGenerationLoading: true, // Flag to identify loading state
         aspectRatio: selectedAspectRatio.id, // Store aspect ratio for loading component
@@ -661,9 +687,14 @@ function PureInputField({
 
       // Get appropriate dimensions for the selected model and aspect ratio
       const modelConfig = getModelConfig(selectedModel);
-      const dimensions = getDimensionsForModel(selectedAspectRatio, modelConfig.modelId);
+      const dimensions = getDimensionsForModel(
+        selectedAspectRatio,
+        modelConfig.modelId
+      );
 
-      console.log(`🎯 Using dimensions for ${selectedModel}: ${dimensions.width}x${dimensions.height}`);
+      console.log(
+        `🎯 Using dimensions for ${selectedModel}: ${dimensions.width}x${dimensions.height}`
+      );
 
       // Call image generation API
       try {
@@ -693,15 +724,15 @@ function PureInputField({
 
         // Update the existing loading message with the generated image
         let updatedMessage: any = null;
-        
+
         setMessages((prevMessages: any) => {
           const updatedMessages = [...prevMessages];
           // Find and update the loading message (last assistant message with loading flag)
           for (let i = updatedMessages.length - 1; i >= 0; i--) {
             if (
               updatedMessages[i].role === "assistant" &&
-              (updatedMessages[i].isImageGenerationLoading || 
-               updatedMessages[i].content.includes("Generating your image"))
+              (updatedMessages[i].isImageGenerationLoading ||
+                updatedMessages[i].content.includes("Generating your image"))
             ) {
               // Update the same message object to include image and remove loading state
               updatedMessages[i] = {
@@ -719,7 +750,7 @@ function PureInputField({
                 isImageGeneration: true, // Flag to identify this as image generation result
                 aspectRatio: selectedAspectRatio.id, // Preserve aspect ratio for display
               };
-              
+
               // Keep reference for database storage
               updatedMessage = updatedMessages[i];
               break;
@@ -747,8 +778,8 @@ function PureInputField({
           for (let i = updatedMessages.length - 1; i >= 0; i--) {
             if (
               updatedMessages[i].role === "assistant" &&
-              (updatedMessages[i].isImageGenerationLoading || 
-               updatedMessages[i].content.includes("Generating your image"))
+              (updatedMessages[i].isImageGenerationLoading ||
+                updatedMessages[i].content.includes("Generating your image"))
             ) {
               // Update the same message object with error content
               updatedMessages[i] = {
@@ -760,7 +791,9 @@ function PureInputField({
                   {
                     type: "text" as const,
                     text: `Sorry, I couldn't generate an image. ${
-                      error instanceof Error ? error.message : "Please try again."
+                      error instanceof Error
+                        ? error.message
+                        : "Please try again."
                     }`,
                   },
                 ],
@@ -899,6 +932,8 @@ function PureInputField({
 
   // State for voice input active status
   const [isVoiceInputActive, setIsVoiceInputActive] = useState(false);
+  // State for enhancement loading
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   function handleVoiceInput(text: string) {
     setInput((prev) => prev + (prev ? " " : "") + text);
@@ -916,6 +951,62 @@ function PureInputField({
   function handleListeningChange(isListening: boolean) {
     setIsVoiceInputActive(isListening);
   }
+
+  // Handle prompt enhancement
+  const handleEnhancePrompt = useCallback(async () => {
+    if (!input.trim() || isEnhancing) return;
+
+    setIsEnhancing(true);
+    try {
+      // Get last few messages for context (if available)
+      // Only include text content, limit to 100 chars per message to avoid token limits
+      const contextMessages = messages?.slice(-6)
+        .filter(m => m.content && m.content.length > 0)
+        .map((m) => {
+          const content = m.content.length > 100 
+            ? m.content.substring(0, 100) + '...' 
+            : m.content;
+          return `${m.role === 'user' ? 'User' : 'Assistant'}: ${content}`;
+        })
+        .join('\n');
+
+      const response = await fetch('/api/ai-text-generation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: input,
+          isEnhancement: true,
+          context: contextMessages || '', // Send empty string if no context
+          userApiKey: null, // Will use system key for free enhancement
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Enhancement failed');
+      }
+
+      if (result.enhancedPrompt) {
+        setInput(result.enhancedPrompt);
+        toast.success("✨ Prompt enhanced!");
+        // Focus the textarea after enhancement
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          const length = result.enhancedPrompt.length;
+          textareaRef.current.setSelectionRange(length, length);
+        }
+        adjustHeight();
+      }
+    } catch (error) {
+      console.error('Failed to enhance prompt:', error);
+      toast.error('Failed to enhance prompt. Please try again.');
+    } finally {
+      setIsEnhancing(false);
+    }
+  }, [input, isEnhancing, messages, setInput, textareaRef, adjustHeight]);
 
   // Handle drag and drop for textarea
   const handleTextareaDragOver = useCallback(
@@ -958,7 +1049,7 @@ function PureInputField({
 
   return (
     <div className="w-full max-w-full">
-      <div className="border-t-[1px] border-x-[1px] border-primary/30 rounded-t-2xl shadow-lg w-full backdrop-blur-md overflow-hidden">
+      <div className="border-[1px] border-primary/30 rounded-2xl shadow-lg w-full backdrop-blur-md overflow-hidden">
         <div className="flex flex-col bg-background/55 border-t-2 sm:border-t-4 md:border-t-8 rounded-t-2xl border-x-2 sm:border-x-4 md:border-x-8 border-primary/10 dark:border-zinc-900/50 overflow-hidden">
           {/* Upload Status - Enhanced responsive design */}
           {uploadingFiles.length > 0 && (
@@ -1095,7 +1186,7 @@ function PureInputField({
                       : "Ask me anything..."
                     : isVoiceInputActive
                     ? "Listening... speak now"
-                    : "What can I do for you?"
+                    : "Ask AVChat anything..."
                 }
                 className={cn(
                   "w-full px-3 sm:px-4 py-3 sm:py-2 md:pt-4 pr-10 sm:pr-12 border-none shadow-none scrollbar-none",
@@ -1139,31 +1230,63 @@ function PureInputField({
               )}
             </div>
 
-            {/* Voice Input Button inside textarea */}
-            <div
-              className={cn(
-                "absolute right-2 top-2 transition-transform duration-200",
-                isVoiceInputActive && "scale-110"
+            {/* Enhance and Voice Input Buttons inside textarea */}
+            <div className="absolute right-2 top-2 flex items-center gap-2">
+              {/* Enhance Button */}
+              {!isImageGenMode && input.trim().length > 0 && !isGuest && (
+                <button
+                  type="button"
+                  onClick={handleEnhancePrompt}
+                  disabled={
+                    isEnhancing ||
+                    status === "streaming" ||
+                    status === "submitted" ||
+                    !input.trim()
+                  }
+                  className={cn(
+                    "p-2 rounded-lg transition-all",
+                    "bg-primary/10 hover:bg-primary/20 text-primary",
+                    "border border-primary/20 hover:border-primary/30",
+                    "disabled:opacity-50 disabled:cursor-not-allowed",
+                    "shadow-sm hover:shadow-md"
+                  )}
+                  aria-label="Enhance prompt"
+                  title="Enhance your prompt with AI"
+                >
+                  {isEnhancing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4" />
+                  )}
+                </button>
               )}
-            >
-              <VoiceInputButton
-                onResult={handleVoiceInput}
-                onError={handleVoiceInputError}
-                onListeningChange={handleListeningChange}
+              
+              {/* Voice Input Button */}
+              <div
                 className={cn(
-                  isVoiceInputActive
-                    ? "text-red-500 hover:text-red-600"
-                    : "text-foreground "
+                  "transition-transform duration-200",
+                  isVoiceInputActive && "scale-110"
                 )}
-                size="md"
-                disabled={status === "streaming" || status === "submitted"}
-              />
+              >
+                <VoiceInputButton
+                  onResult={handleVoiceInput}
+                  onError={handleVoiceInputError}
+                  onListeningChange={handleListeningChange}
+                  className={cn(
+                    isVoiceInputActive
+                      ? "text-red-500 hover:text-red-600"
+                      : "text-foreground"
+                  )}
+                  size="md"
+                  disabled={status === "streaming" || status === "submitted"}
+                />
+              </div>
             </div>
             {/* Character counter for long text warning */}
             {input.length > 800 && (
               <div className="absolute bottom-2 left-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
                 {input.length > 1000 ? (
-                  <span className="text-orange-500 font-medium">
+                  <span className="text-zinc-600 dark:text-zinc-400 font-medium">
                     {input.length} chars - Will convert to .txt file
                   </span>
                 ) : (
@@ -1267,13 +1390,13 @@ function PureInputField({
                           : "Generate images with AI"
                       }
                     >
-                      <Sparkles
-                        size={14}
-                        className={`absolute top-1 right-1  ${
-                          isImageGenMode ? "text-foreground" : "text-primary"
-                        }}`}
+                      <RiImageAiFill
+                        size={20}
+                        className={cn(
+                          "text-foreground",
+                          isImageGenMode && "text-black"
+                        )}
                       />
-                      <ImageIcon size={20} />
                     </Button>
                     <FileUpload
                       onFilesUploaded={handleFilesUploaded}
@@ -1281,10 +1404,12 @@ function PureInputField({
                       disabled={
                         status === "streaming" ||
                         status === "submitted" ||
-                        (isImageGenMode && !getModelConfig(selectedModel).image2imageGen)
+                        (isImageGenMode &&
+                          !getModelConfig(selectedModel).image2imageGen)
                       }
                       acceptedFileTypes={
-                        isImageGenMode && getModelConfig(selectedModel).image2imageGen
+                        isImageGenMode &&
+                        getModelConfig(selectedModel).image2imageGen
                           ? "image/png,image/jpeg,image/jpg"
                           : "image/*,.pdf,.txt,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                       }
@@ -1345,7 +1470,7 @@ const PureSendButton = ({ onSubmit, disabled }: SendButtonProps) => {
       onClick={handleClick}
       variant="default"
       size="icon"
-      className="h-10 w-10 sm:h-9 sm:w-9 mobile-touch"
+      className="h-10 w-10 sm:h-9 sm:w-9 mobile-touch text-white dark:text-black"
       disabled={disabled}
       aria-label="Send message"
     >

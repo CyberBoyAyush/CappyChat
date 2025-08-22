@@ -170,6 +170,7 @@ function PureMessage({
             <div
               key={key}
               className="flex gap-2 w-full max-w-full pr-4"
+              ref={(el) => registerRef?.(message.id, el)}
             >
               {/* Assistant Avatar with Model Icon */}
               <div className="flex-shrink-0 mt-1">

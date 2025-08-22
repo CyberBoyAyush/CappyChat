@@ -6,7 +6,14 @@
  * Replaces ConversationStyleSelector and WebSearchToggle when in image generation mode.
  */
 
-import { ChevronDown, Check, Square, RectangleHorizontal, Monitor, Smartphone } from "lucide-react";
+import {
+  ChevronDown,
+  Check,
+  Square,
+  RectangleHorizontal,
+  Monitor,
+  Smartphone,
+} from "lucide-react";
 import { memo, useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
@@ -79,9 +86,12 @@ export const ASPECT_RATIOS: AspectRatio[] = [
 /**
  * Get appropriate dimensions for a given aspect ratio and model
  */
-export const getDimensionsForModel = (aspectRatio: AspectRatio, modelId: string): { width: number; height: number } => {
+export const getDimensionsForModel = (
+  aspectRatio: AspectRatio,
+  modelId: string
+): { width: number; height: number } => {
   // FLUX.1 Kontext [dev] has specific dimension requirements
-  if (modelId === 'runware:106@1' && aspectRatio.fluxKontextDimensions) {
+  if (modelId === "runware:106@1" && aspectRatio.fluxKontextDimensions) {
     return aspectRatio.fluxKontextDimensions;
   }
 
@@ -121,21 +131,19 @@ function PureAspectRatioSelector({
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           title="Select aspect ratio"
           className={cn(
             "flex items-center gap-1.5 text-xs font-medium transition-all duration-200",
-            "hover:bg-muted border-border/50 h-8",
-            // Mobile: icon only, minimal width
+            "hover:bg-accent/20 h-8",
             "sm:min-w-[90px] sm:justify-between",
-            // Desktop: show text
             "justify-center min-w-[32px]",
             className
           )}
           aria-label={`Current aspect ratio: ${selectedRatio.name}`}
         >
-          <CurrentIcon className="h-3.5 w-3.5 text-primary" />
+          <CurrentIcon className="h-3.5 w-3.5 flex-shrink-0" />
           <span className="hidden sm:inline text-xs truncate">
             {selectedRatio.ratio}
           </span>
@@ -150,10 +158,14 @@ function PureAspectRatioSelector({
 
       <DropdownMenuContent
         align="start"
-        className="w-56 max-h-72 p-1.5"
+        className={cn(
+          "w-56 max-h-72 no-scrollbar p-0",
+          "border border-border/50 bg-background/95 backdrop-blur-xl",
+          "shadow-xl rounded-xl"
+        )}
         sideOffset={8}
       >
-        <div className="space-y-0.5">
+        <div className="p-2 space-y-2">
           {ASPECT_RATIOS.map((ratio) => {
             const RatioIcon = ratio.icon;
             const isSelected = selectedRatio.id === ratio.id;
@@ -163,21 +175,26 @@ function PureAspectRatioSelector({
                 key={ratio.id}
                 onClick={() => handleRatioSelect(ratio)}
                 className={cn(
-                  "w-full flex items-center gap-2.5 p-2 rounded-md text-left transition-all duration-150",
-                  "hover:bg-muted/80 focus:bg-muted/80 focus:outline-none",
-                  isSelected && "bg-muted"
+                  "w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-all duration-200",
+                  "hover:bg-accent/30",
+                  isSelected && "bg-primary/5"
                 )}
                 aria-label={`Select ${ratio.name} aspect ratio`}
               >
-                <RatioIcon className="h-3.5 w-3.5 flex-shrink-0 text-primary" />
+                <RatioIcon className="h-3.5 w-3.5 flex-shrink-0" />
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm text-foreground truncate">
+                    <span
+                      className={cn(
+                        "font-medium text-sm truncate",
+                        isSelected ? "text-primary" : "text-foreground"
+                      )}
+                    >
                       {ratio.name} ({ratio.ratio})
                     </span>
                     {isSelected && (
-                      <Check className="h-3 w-3 text-primary flex-shrink-0 ml-2" />
+                      <Check className="h-3 w-3 text-white flex-shrink-0 ml-2" />
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5 leading-tight">

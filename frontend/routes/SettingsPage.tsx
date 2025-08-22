@@ -717,7 +717,7 @@ export default function SettingsPage() {
                                   </span>
                                 )}
                                 {tierInfo.tier === "admin" && (
-                                  <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full">
+                                  <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-zinc-700 to-zinc-900 dark:from-zinc-300 dark:to-zinc-100 text-white dark:text-black rounded-full">
                                     ADMIN
                                   </span>
                                 )}
@@ -955,9 +955,9 @@ export default function SettingsPage() {
                       {tierInfo?.tier === "admin" && (
                         <div className="mt-6 pt-4 border-t border-border">
                           <div className="text-center py-4">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-lg">
-                              <Shield className="w-4 h-4 text-orange-500" />
-                              <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-black/5 to-black/10 dark:from-white/10 dark:to-white/20 border border-black/10 dark:border-white/20 rounded-lg">
+                              <Shield className="w-4 h-4 text-black dark:text-white" />
+                              <span className="text-sm font-medium text-black dark:text-white">
                                 Administrator - Unlimited Access
                               </span>
                             </div>
@@ -1194,7 +1194,7 @@ export default function SettingsPage() {
                                       ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
                                       : font.category === "artistic"
                                       ? "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300"
-                                      : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300"
+                                      : "bg-zinc-100 text-zinc-700 dark:bg-zinc-900/30 dark:text-zinc-300"
                                   }`}
                                 >
                                   {font.category}

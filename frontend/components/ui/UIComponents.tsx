@@ -155,7 +155,7 @@ export function TierLimitError({
       className={cn(
         "relative overflow-hidden rounded-xl border border-primary/30",
         "bg-gradient-to-br from-primary/10 via-primary/20 to-primary/30",
-        "dark:from-orange-950/20 dark:via-primary/10 dark:to-primary/5",
+        "dark:from-white/10 dark:via-primary/10 dark:to-primary/5",
         "shadow-lg backdrop-blur-sm max-w-full",
         className
       )}
@@ -163,7 +163,7 @@ export function TierLimitError({
       aria-live="assertive"
     >
       {/* Animated background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-primary/15 to-primary/5 animate-pulse" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/5 via-primary/15 to-primary/5 dark:from-white/5 animate-pulse" />
 
       {/* Content */}
       <div className="relative p-4 sm:p-6">
@@ -234,7 +234,7 @@ export function TierLimitError({
       {/* Decorative elements - smaller on mobile */}
       <div className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-primary rounded-full animate-pulse" />
       <div
-        className="absolute bottom-1.5 sm:bottom-2 left-1.5 sm:left-2 w-1 h-1 bg-orange-500 rounded-full animate-pulse"
+        className="absolute bottom-1.5 sm:bottom-2 left-1.5 sm:left-2 w-1 h-1 bg-black dark:bg-white rounded-full animate-pulse"
         style={{ animationDelay: "0.5s" }}
       />
     </div>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { canUserUseModel, consumeCredits } from '@/lib/tierSystem';
+import { prodError } from '@/lib/logger';
 import { Runware } from '@runware/sdk-js';
 import { getModelConfig } from '@/lib/models';
 
@@ -164,7 +165,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Image generation error:', error);
+    prodError('Image generation error', error, 'ImageGenerationAPI');
     
     // Handle specific Runware errors
     if (error instanceof Error) {

@@ -6,10 +6,10 @@
  * Integrates with Tavily API for both general web search and Reddit-specific searches.
  */
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-export type SearchType = 'chat' | 'web' | 'reddit';
+export type SearchType = "chat" | "web" | "reddit";
 
 export interface SearchTypeConfig {
   id: SearchType;
@@ -21,25 +21,25 @@ export interface SearchTypeConfig {
 
 export const SEARCH_TYPE_CONFIGS: Record<SearchType, SearchTypeConfig> = {
   chat: {
-    id: 'chat',
-    name: 'Chat',
-    description: 'Direct conversation with AI (default mode)',
-    icon: 'MessageCircle',
-    color: 'text-green-500',
+    id: "chat",
+    name: "Chat",
+    description: "Direct conversation with AI (default mode)",
+    icon: "MessageCircle",
+    color: "text-green-500",
   },
   web: {
-    id: 'web',
-    name: 'Web Search',
-    description: 'Search across the entire web using Tavily',
-    icon: 'Globe',
-    color: 'text-blue-500',
+    id: "web",
+    name: "Web Search",
+    description: "Search across the entire web using Tavily",
+    icon: "Globe",
+    color: "text-blue-500",
   },
   reddit: {
-    id: 'reddit',
-    name: 'Reddit Search',
-    description: 'Search Reddit communities and discussions',
-    icon: 'MessageSquare',
-    color: 'text-orange-500',
+    id: "reddit",
+    name: "Reddit Search",
+    description: "Search Reddit communities and discussions",
+    icon: "FaRedditAlien",
+    color: "text-black dark:text-white",
   },
 };
 
@@ -53,7 +53,7 @@ type SearchTypeStore = {
 export const useSearchTypeStore = create<SearchTypeStore>()(
   persist(
     (set, get) => ({
-      selectedSearchType: 'chat', // Default to chat mode
+      selectedSearchType: "chat", // Default to chat mode
 
       setSearchType: (type) => {
         set({ selectedSearchType: type });
@@ -66,11 +66,11 @@ export const useSearchTypeStore = create<SearchTypeStore>()(
 
       resetForGuest: () => {
         // Reset to chat mode for guest users
-        set({ selectedSearchType: 'chat' });
+        set({ selectedSearchType: "chat" });
       },
     }),
     {
-      name: 'search-type-store',
+      name: "search-type-store",
       partialize: (state) => ({
         selectedSearchType: state.selectedSearchType,
       }),

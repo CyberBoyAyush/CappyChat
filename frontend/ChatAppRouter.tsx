@@ -17,6 +17,7 @@ import SettingsPage from "./routes/SettingsPage";
 import AdminPage from "./routes/AdminPage";
 import AboutPage from "./routes/AboutPage";
 import ChangelogPage from "./routes/ChangelogPage";
+import SharedChatPage from "./routes/SharedChatPage";
 import AuthCallbackPage from "./routes/auth/AuthCallbackPage";
 import AuthErrorPage from "./routes/auth/AuthErrorPage";
 import LoginPage from "./routes/auth/LoginPage";
@@ -62,6 +63,9 @@ export default function ChatAppRouter() {
 
           {/* Changelog route (always accessible) */}
           <Route path="/changelog" element={<ChangelogPage />} />
+
+          {/* Shared chat route (always accessible) */}
+          <Route path="/share/:shareId" element={<SharedChatPage />} />
 
           {/* Auth routes (always accessible) */}
           <Route path="/login" element={<LoginPage />} />

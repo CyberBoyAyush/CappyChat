@@ -1,7 +1,14 @@
 // frontend/components/ui/VoiceInputButton.tsx
 
 import { useRef, useState, useEffect } from "react";
-import { Mic, MicOff, AlertCircle, Loader2 } from "lucide-react";
+import {
+  Mic,
+  MicOff,
+  AlertCircle,
+  Loader2,
+  AudioLines,
+  Ban,
+} from "lucide-react";
 import {
   AudioRecorder,
   blobToFile,
@@ -315,7 +322,7 @@ export default function VoiceInputButton({
         title: "Voice input not supported in this browser",
         className: cn(
           baseSize,
-          "rounded-full flex items-center justify-center transition-all bg-gray-400 cursor-not-allowed",
+          "rounded-full flex items-center text-white justify-center transition-all bg-zinc-400 cursor-not-allowed",
           className
         ),
         icon: <AlertCircle size={iconSize} />,
@@ -328,10 +335,10 @@ export default function VoiceInputButton({
         title: "Microphone access required - click to enable",
         className: cn(
           baseSize,
-          "rounded-full flex items-center justify-center transition-all bg-primary hover:bg-primary/60",
+          "rounded-full flex items-center justify-center transition-all text-white dark:text-black bg-primary  hover:bg-primary/60",
           className
         ),
-        icon: <Mic size={iconSize} />,
+        icon: <Mic size={iconSize} className="text-white dark:text-black" />,
       };
     }
 
@@ -357,7 +364,7 @@ export default function VoiceInputButton({
           "rounded-full flex items-center justify-center transition-all bg-primary/60",
           className
         ),
-        icon: <MicOff size={iconSize} className="text-white" />,
+        icon: <Ban size={iconSize} className="text-white" />,
         style: pulseStyle,
       };
     }
@@ -370,7 +377,9 @@ export default function VoiceInputButton({
         "rounded-full flex items-center justify-center transition-all bg-primary hover:bg-primary/60 disabled:opacity-50 disabled:cursor-not-allowed",
         className
       ),
-      icon: <Mic size={iconSize} className="text-white" />,
+      icon: (
+        <AudioLines size={iconSize} className="text-white dark:text-black" />
+      ),
     };
   };
 

@@ -9,119 +9,276 @@
 import { SidebarProvider } from "@/frontend/components/ui/sidebar";
 import ChatSidebarPanel from "@/frontend/components/ChatSidebarPanel";
 import { Outlet } from "react-router";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
 import { useIsMobile } from "@/hooks/useMobileDetection";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import EmailVerificationGuard from "@/frontend/components/EmailVerificationGuard";
 
+// Memoized sidebar panel to prevent unnecessary re-renders
+const MemoizedChatSidebarPanel = memo(ChatSidebarPanel);
+
+// Constants
+const MIN_WIDTH = 260;
+const MAX_WIDTH = 1000;
+const DEFAULT_WIDTH = 300;
+
 export default function ChatLayoutWrapper() {
-  const [sidebarWidth, setSidebarWidth] = useState(300); // Default width
+  // Initialize sidebar width from localStorage if available
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("sidebarWidth");
+      return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
+    }
+    return DEFAULT_WIDTH;
+  });
+
   const [isDragging, setIsDragging] = useState(false);
   const isMobile = useIsMobile();
   const { isAuthenticated, isEmailVerified } = useAuth();
 
-  // Default sidebar open state - only close by default on mobile
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  // Refs for performance optimization
+  const dragStateRef = useRef({ startX: 0, startWidth: 0 });
+  const lastSaveRef = useRef<number>(0);
 
-  // Define minimum and maximum sidebar width
-  const minWidth = 260;
-  const maxWidth = 1000;
+  // Initialize sidebar open state from localStorage or default based on device
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("sidebarOpen");
+      if (saved !== null) return saved === "true";
+    }
+    return !isMobile;
+  });
 
-  // Handle mouse down event to start dragging
-  const handleMouseDown = () => {
-    if (isMobile) return;
-    setIsDragging(true);
-    document.body.style.userSelect = "none"; // Prevent text selection while dragging
-  };
+  // Debounced localStorage save for width
+  const saveWidthToStorage = useCallback((width: number) => {
+    const now = Date.now();
+    if (now - lastSaveRef.current > 100) {
+      // Debounce 100ms
+      lastSaveRef.current = now;
+      try {
+        localStorage.setItem("sidebarWidth", String(width));
+      } catch (e) {
+        console.warn("Failed to save sidebar width:", e);
+      }
+    }
+  }, []);
+
+  // Optimized mouse down handler
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (isMobile) return;
+
+      e.preventDefault(); // Prevent default drag behavior
+      dragStateRef.current = {
+        startX: e.clientX,
+        startWidth: sidebarWidth,
+      };
+      setIsDragging(true);
+
+      // Add class instead of inline style for better performance
+      document.body.classList.add("select-none");
+    },
+    [isMobile, sidebarWidth]
+  );
 
   // Update sidebar state when mobile status changes
   useEffect(() => {
     if (isMobile) {
       setSidebarOpen(false);
-      localStorage.setItem("sidebarOpen", "false");
+      try {
+        localStorage.setItem("sidebarOpen", "false");
+      } catch (e) {
+        console.warn("Failed to save sidebar state:", e);
+      }
     } else {
-      // For non-mobile devices, initialize from localStorage or default to true
-      const savedState = localStorage.getItem("sidebarOpen");
-      if (savedState !== null) {
-        setSidebarOpen(savedState === "true");
+      // For non-mobile devices, check localStorage
+      try {
+        const savedState = localStorage.getItem("sidebarOpen");
+        if (savedState !== null) {
+          setSidebarOpen(savedState === "true");
+        }
+      } catch (e) {
+        console.warn("Failed to load sidebar state:", e);
       }
     }
   }, [isMobile]);
 
-  // Prevent body scroll when mobile sidebar is open
+  // Optimized body scroll prevention
   useEffect(() => {
     if (isMobile && sidebarOpen) {
       document.body.classList.add("sidebar-open");
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.classList.remove("sidebar-open");
-      document.body.style.overflow = "";
+      const scrollY = window.scrollY;
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+
+      return () => {
+        document.body.classList.remove("sidebar-open");
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.width = "";
+        window.scrollTo(0, scrollY);
+      };
     }
 
-    // Cleanup on unmount
     return () => {
       document.body.classList.remove("sidebar-open");
-      document.body.style.overflow = "";
     };
   }, [isMobile, sidebarOpen]);
 
-  // Enhanced toggle function that also updates localStorage
-  const toggleSidebar = () => {
+  // Optimized toggle function with error handling
+  const toggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => {
       const newState = !prev;
-      localStorage.setItem("sidebarOpen", String(newState));
+      try {
+        localStorage.setItem("sidebarOpen", String(newState));
+      } catch (e) {
+        console.warn("Failed to save sidebar state:", e);
+      }
       return newState;
     });
-  };
-
-  // Memoized onOpenChange handler to prevent unnecessary re-renders
-  const handleOpenChange = useCallback((open: boolean) => {
-    setSidebarOpen(open);
-    localStorage.setItem("sidebarOpen", String(open));
   }, []);
 
-  // Handle mouse move event for dragging
+  // Memoized onOpenChange handler
+  const handleOpenChange = useCallback((open: boolean) => {
+    setSidebarOpen(open);
+    try {
+      localStorage.setItem("sidebarOpen", String(open));
+    } catch (e) {
+      console.warn("Failed to save sidebar state:", e);
+    }
+  }, []);
+
+  // Optimized drag handling with RAF and error boundaries
   useEffect(() => {
     if (!isDragging) return;
 
+    let animationFrameId: number | null = null;
+
     const handleMouseMove = (e: MouseEvent) => {
-      // Check if user is trying to resize below minimum width
-      if (e.clientX < minWidth) {
-        // Automatically close the sidebar
-        setSidebarOpen(false);
-        localStorage.setItem("sidebarOpen", "false");
-        setIsDragging(false);
-        document.body.style.userSelect = ""; // Restore text selection
-        return;
+      // Cancel previous animation frame if exists
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
       }
 
-      // Calculate new width based on mouse position
-      const newWidth = Math.max(minWidth, Math.min(maxWidth, e.clientX));
-      setSidebarWidth(newWidth);
+      // Use RAF for smooth updates
+      animationFrameId = requestAnimationFrame(() => {
+        try {
+          const deltaX = e.clientX - dragStateRef.current.startX;
+          const newWidth = dragStateRef.current.startWidth + deltaX;
+
+          // Check if user is trying to resize below minimum width
+          if (newWidth < MIN_WIDTH - 50) {
+            // Auto-close with some tolerance
+            setSidebarOpen(false);
+            try {
+              localStorage.setItem("sidebarOpen", "false");
+            } catch (err) {
+              console.warn("Failed to save sidebar state:", err);
+            }
+            setIsDragging(false);
+            document.body.classList.remove("select-none");
+            return;
+          }
+
+          // Clamp width between min and max
+          const clampedWidth = Math.max(
+            MIN_WIDTH,
+            Math.min(MAX_WIDTH, newWidth)
+          );
+          setSidebarWidth(clampedWidth);
+          saveWidthToStorage(clampedWidth);
+        } catch (error) {
+          console.error("Error during sidebar resize:", error);
+          setIsDragging(false);
+          document.body.classList.remove("select-none");
+        }
+      });
     };
 
-    // Handle mouse up event to stop dragging
     const handleMouseUp = () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
       setIsDragging(false);
-      document.body.style.userSelect = ""; // Restore text selection
+      document.body.classList.remove("select-none");
+
+      // Final save to localStorage
+      try {
+        localStorage.setItem("sidebarWidth", String(sidebarWidth));
+      } catch (e) {
+        console.warn("Failed to save sidebar width:", e);
+      }
     };
 
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+    // Add event listeners with error handling
+    try {
+      document.addEventListener("mousemove", handleMouseMove, {
+        passive: false,
+      });
+      document.addEventListener("mouseup", handleMouseUp, { passive: true });
+      document.addEventListener("mouseleave", handleMouseUp, { passive: true }); // Handle mouse leaving window
+    } catch (error) {
+      console.error("Failed to add drag event listeners:", error);
+      setIsDragging(false);
+      document.body.classList.remove("select-none");
+    }
 
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      try {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+        document.removeEventListener("mouseleave", handleMouseUp);
+      } catch (error) {
+        console.error("Failed to remove drag event listeners:", error);
+      }
     };
-  }, [isDragging, minWidth, maxWidth]);
+  }, [isDragging, sidebarWidth, saveWidthToStorage]);
+
+  // Memoized outlet context to prevent unnecessary re-renders
+  const outletContext = useMemo(
+    () => ({
+      sidebarWidth,
+      toggleSidebar,
+      state: sidebarOpen ? "open" : "collapsed",
+      isMobile,
+    }),
+    [sidebarWidth, toggleSidebar, sidebarOpen, isMobile]
+  );
+
+  // Memoized sidebar styles for performance
+  const sidebarStyles = useMemo(
+    () => ({
+      width: isMobile ? "80%" : `${sidebarWidth}px`,
+      flexShrink: isMobile ? undefined : 0,
+      transition: isDragging ? "none" : "width 0.2s ease-out",
+    }),
+    [isMobile, sidebarWidth, isDragging]
+  );
+
+  // Memoized sidebar classes
+  const sidebarClasses = useMemo(
+    () =>
+      cn(
+        "h-screen bg-gradient-to-t dark:from-zinc-950 dark:to-50%",
+        isMobile
+          ? `fixed top-0 left-0 z-50 bg-background transition-transform duration-200 ease-out ${
+              sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`
+          : `relative z-50 ${sidebarOpen ? "block" : "hidden"}`
+      ),
+    [isMobile, sidebarOpen]
+  );
 
   // If user is authenticated but email is not verified, show verification guard
   if (isAuthenticated && !isEmailVerified) {
     return (
       <EmailVerificationGuard>
-        <div></div>{" "}
-        {/* This will never render because EmailVerificationGuard blocks unverified users */}
+        <div></div>
       </EmailVerificationGuard>
     );
   }
@@ -137,48 +294,44 @@ export default function ChatLayoutWrapper() {
         {isMobile && sidebarOpen && (
           <div
             className="fixed inset-0 bg-black/50 z-40 md:hidden sidebar-mobile-overlay"
-            onClick={() => setSidebarOpen(false)}
+            onClick={toggleSidebar}
+            role="button"
+            aria-label="Close sidebar"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                toggleSidebar();
+              }
+            }}
           />
         )}
 
         {/* Sidebar section with dynamic width */}
-        <div
-          className={cn(
-            "h-screen bg-gradient-to-t dark:from-zinc-950 dark:to-50% sidebar-transition",
-            isMobile
-              ? // Mobile: Fixed position overlay
-                `fixed top-0 left-0 z-50 bg-background ${
-                  sidebarOpen ? "translate-x-0" : "-translate-x-full"
-                }`
-              : // Desktop: Relative position in flex layout
-                `relative z-50 ${sidebarOpen ? "block" : "hidden"}`
-          )}
-          style={{
-            width: isMobile ? "80%" : `${sidebarWidth}px`,
-            flexShrink: isMobile ? undefined : 0,
-          }}
-        >
-          <ChatSidebarPanel />
+        <div className={sidebarClasses} style={sidebarStyles}>
+          <MemoizedChatSidebarPanel />
 
           {/* Draggable resizer */}
-          {!isMobile && (
+          {!isMobile && sidebarOpen && (
             <div
-              className="absolute top-0 flex justify-end right-0 w-5 h-full  cursor-col-resize z-50"
+              className="absolute top-0 right-0 w-2 h-full cursor-col-resize z-50 transition-colors"
               onMouseDown={handleMouseDown}
-            ></div>
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize sidebar"
+              aria-valuenow={sidebarWidth}
+              aria-valuemin={MIN_WIDTH}
+              aria-valuemax={MAX_WIDTH}
+              style={{
+                touchAction: "none", // Prevent touch scroll interference
+              }}
+            />
           )}
         </div>
 
         {/* Main content area that flexes with sidebar width */}
         <div className="flex-1 relative min-h-screen bg-gradient-to-t from-background dark:from-zinc-950 dark:to-50% overflow-hidden">
-          <Outlet
-            context={{
-              sidebarWidth,
-              toggleSidebar,
-              state: sidebarOpen ? "open" : "collapsed",
-              isMobile,
-            }}
-          />
+          <Outlet context={outletContext} />
         </div>
       </div>
     </SidebarProvider>

@@ -22,6 +22,7 @@ import ProjectCreateDialog from "./projects/ProjectCreateDialog";
 import { Button } from "./ui/button";
 import { HybridDB } from "@/lib/hybridDB";
 import { useAuth } from "@/frontend/contexts/AuthContext";
+import { devWarn, devError } from '@/lib/logger';
 
 // Helper functions to categorize dates
 const isToday = (date: Date) => {
@@ -80,7 +81,7 @@ export default function ChatSidebarPanel() {
     try {
       await HybridDB.updateProjectColor(projectId, colorIndex);
     } catch (error) {
-      console.error("Error updating project color:", error);
+      devError("Error updating project color:", error);
     }
   };
 
@@ -102,7 +103,7 @@ export default function ChatSidebarPanel() {
   // Log warning if duplicates were found at the source
   if (rawThreadsToDisplay.length !== threadsToDisplay.length) {
     const duplicateCount = rawThreadsToDisplay.length - threadsToDisplay.length;
-    console.warn(
+    devWarn(
       `[ChatSidebarPanel] Removed ${duplicateCount} duplicate threads from source data`
     );
 
@@ -111,7 +112,7 @@ export default function ChatSidebarPanel() {
     const duplicateIds = threadIds.filter(
       (id, index) => threadIds.indexOf(id) !== index
     );
-    console.warn("Duplicate thread IDs:", [...new Set(duplicateIds)]);
+    devWarn("Duplicate thread IDs:", [...new Set(duplicateIds)]);
   }
 
   // Handle search filter changes
@@ -208,7 +209,7 @@ export default function ChatSidebarPanel() {
 
     // Log warning if duplicates were found
     if (uniqueThreads.length !== threads.length) {
-      console.warn(
+      devWarn(
         `[${title}] Removed ${
           threads.length - uniqueThreads.length
         } duplicate threads`
