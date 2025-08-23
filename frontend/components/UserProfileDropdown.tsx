@@ -29,7 +29,7 @@ import {
   LogIn,
   UserPlus,
   Sparkles,
-  GithubIcon,
+  Github,
   Info,
   Calendar,
   Activity,
@@ -102,10 +102,13 @@ const UserProfileDropdown: React.FC = () => {
   const [isLoadingTier, setIsLoadingTier] = useState(false);
   const authDialog = useAuthDialog();
 
+  // Don't render on authentication pages
+  const isAuthPage = location.pathname.startsWith("/auth/");
+
   // Load tier information immediately when user is available
   useEffect(() => {
     const loadTierInfo = async () => {
-      if (!user || isLoadingTier) return;
+      if (!user || isLoadingTier || isAuthPage) return;
 
       setIsLoadingTier(true);
       try {
@@ -126,12 +129,12 @@ const UserProfileDropdown: React.FC = () => {
     };
 
     // Load immediately when user changes
-    if (user) {
+    if (user && !isAuthPage) {
       loadTierInfo();
     } else {
       setTierInfo(null);
     }
-  }, [user]);
+  }, [user, isAuthPage]);
 
   // Memoized logout handler
   const handleLogout = useCallback(async () => {
@@ -151,8 +154,30 @@ const UserProfileDropdown: React.FC = () => {
     navigate("/settings");
   }, [navigate]);
 
-  // Don't render on authentication pages
-  const isAuthPage = location.pathname.startsWith("/auth/");
+  // Memoized user initials calculation - moved before conditional returns
+  const userInitials = useMemo(() => {
+    if (!user?.name) return "U";
+    return user.name
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  }, [user?.name]);
+
+  const displayName = user?.name || "User";
+  const displayEmail = user?.email || "";
+
+  // Memoized avatar component - moved before conditional returns
+  const UserAvatar = useMemo(
+    () => (
+      <div className="w-8 h-8 shrink-0 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium shadow-md transition-transform hover:scale-105">
+        {userInitials}
+      </div>
+    ),
+    [userInitials]
+  );
+
   if (isAuthPage) return null;
 
   // Show guest user interface if not authenticated
@@ -203,30 +228,6 @@ const UserProfileDropdown: React.FC = () => {
 
   // Don't render if no user and not guest
   if (!user) return null;
-
-  // Memoized user initials calculation
-  const userInitials = useMemo(() => {
-    if (!user?.name) return "U";
-    return user.name
-      .split(" ")
-      .map((word) => word.charAt(0))
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  }, [user?.name]);
-
-  const displayName = user?.name || "User";
-  const displayEmail = user?.email || "";
-
-  // Memoized avatar component
-  const UserAvatar = useMemo(
-    () => (
-      <div className="w-8 h-8 shrink-0 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium shadow-md transition-transform hover:scale-105">
-        {userInitials}
-      </div>
-    ),
-    [userInitials]
-  );
 
   return (
     <DropdownMenu>
@@ -360,7 +361,7 @@ const UserProfileDropdown: React.FC = () => {
             }
             className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-md text-foreground hover:bg-muted/50 transition-colors"
           >
-            <GithubIcon className="h-4 w-4 text-muted-foreground" />
+            <Github className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm">Github</span>
           </DropdownMenuItem>
           <DropdownMenuItem
