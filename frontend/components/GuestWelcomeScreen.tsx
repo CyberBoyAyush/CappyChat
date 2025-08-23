@@ -535,7 +535,7 @@ Much cleaner! This approach:
                   className={cn(
                     "text-xs mt-3 opacity-70 flex items-center gap-2",
                     message.type === "user"
-                      ? "dark:text-primary-foreground/70 text-muted-foreground"
+                      ? "dark:text-zinc-300 text-muted-foreground"
                       : "dark:text-muted-foreground text-muted-foreground"
                   )}
                 >
