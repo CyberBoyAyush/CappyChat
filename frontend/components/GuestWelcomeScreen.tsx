@@ -943,7 +943,7 @@ export default function GuestWelcomeScreen({
                   <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                     <Check className="h-3 w-3 text-primary" />
                   </div>
-                  <span className="text-sm">80 free model prompts</span>
+                  <span className="text-sm">80 budget model prompts</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
@@ -1002,7 +1002,7 @@ export default function GuestWelcomeScreen({
               </div>
 
               <div className="mb-6">
-                <span className="text-4xl font-bold">$8</span>
+                <span className="text-4xl font-bold">$12</span>
                 <span className="text-muted-foreground text-lg">/month</span>
               </div>
 
@@ -1011,21 +1011,21 @@ export default function GuestWelcomeScreen({
                   <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                     <Check className="h-3 w-3 text-primary" />
                   </div>
-                  <span className="text-sm">800 free model prompts</span>
+                  <span className="text-sm">1200 budget model prompts</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                     <Check className="h-3 w-3 text-primary" />
                   </div>
                   <span className="text-sm">
-                    400 premium credits (Chat + Image Gen)
+                    600 premium credits (Chat + Image Gen)
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                     <Check className="h-3 w-3 text-primary" />
                   </div>
-                  <span className="text-sm">20 super premium credits</span>
+                  <span className="text-sm">50 super premium credits</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">

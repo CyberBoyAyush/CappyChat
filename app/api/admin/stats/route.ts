@@ -195,7 +195,7 @@ async function getTierStats() {
 
     const TIER_LIMITS = {
       free: { freeCredits: 80, premiumCredits: 10, superPremiumCredits: 2 },
-      premium: { freeCredits: 800, premiumCredits: 400, superPremiumCredits: 20 },
+      premium: { freeCredits: 1200, premiumCredits: 600, superPremiumCredits: 50 },
       admin: { freeCredits: -1, premiumCredits: -1, superPremiumCredits: -1 }
     };
 
@@ -290,7 +290,7 @@ async function getMonthlyCreditsOverview() {
 
     const TIER_LIMITS = {
       free: { freeCredits: 80, premiumCredits: 10, superPremiumCredits: 2 },
-      premium: { freeCredits: 800, premiumCredits: 400, superPremiumCredits: 20 },
+      premium: { freeCredits: 1200, premiumCredits: 600, superPremiumCredits: 50 },
       admin: { freeCredits: -1, premiumCredits: -1, superPremiumCredits: -1 }
     };
 

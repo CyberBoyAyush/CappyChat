@@ -47,7 +47,7 @@ export const useAuthDialog = () => {
   const showGuestLimitDialog = useCallback(() => {
     showSignupDialog(
       '🚀 Ready for unlimited AI magic?',
-      'Join free: 200 basic + 20 premium + 2 super premium prompts monthly!'
+      'Join free: 80 basic + 10 premium + 2 super premium prompts monthly!'
     );
   }, [showSignupDialog]);
 
