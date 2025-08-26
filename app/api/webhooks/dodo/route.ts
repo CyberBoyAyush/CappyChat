@@ -75,8 +75,7 @@ const extractUserId = (payload: any): string | null => {
 
 
 
-// Also export the handler for the dodopayments route
-export const webhookHandler = Webhooks({
+export const POST = Webhooks({
   webhookKey: DODO_CONFIG.webhookSecret,
   
   // Handle all webhook events for logging
@@ -296,6 +295,3 @@ export const webhookHandler = Webhooks({
     }
   },
 });
-
-// Export for both routes
-export const POST = webhookHandler;
