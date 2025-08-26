@@ -63,9 +63,9 @@ export const TIER_LIMITS = {
     superPremiumCredits: 2,
   },
   premium: {
-    freeCredits: 800,
-    premiumCredits: 400,
-    superPremiumCredits: 20,
+    freeCredits: 1200,
+    premiumCredits: 600,
+    superPremiumCredits: 50,
   },
   admin: {
     freeCredits: -1, // Unlimited

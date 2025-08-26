@@ -810,9 +810,9 @@ export default function SettingsPage() {
                                 Pro Plan Benefits
                               </h5>
                               <ul className="text-xs text-purple-600 dark:text-purple-400 space-y-1">
-                                <li>• 1,500 Free Model Credits</li>
+                                <li>• 1,200 Free Model Credits</li>
                                 <li>• 600 Premium Credits</li>
-                                <li>• 20 Super Premium Credits</li>
+                                <li>• 50 Super Premium Credits</li>
                                 <li>• Priority Support</li>
                               </ul>
                             </div>
