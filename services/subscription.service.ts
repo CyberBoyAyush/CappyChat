@@ -17,16 +17,6 @@ export const SUBSCRIPTION_PRICING = {
 export type Currency = keyof typeof SUBSCRIPTION_PRICING;
 
 /**
- * Get the correct DODO API base URL based on environment
- */
-const getDodoApiBaseUrl = (): string => {
-  const environment = process.env.DODO_PAYMENTS_ENVIRONMENT || 'test';
-  return environment === 'test'
-    ? 'https://test.dodopayments.com'
-    : 'https://live.dodopayments.com';
-};
-
-/**
  * Detect user's preferred currency based on timezone and locale
  */
 export const detectUserCurrency = (): Currency => {
@@ -113,60 +103,38 @@ export const createSubscriptionCheckout = async (
       productId
     });
 
-    // Get the correct API endpoint based on environment
-    const baseUrl = getDodoApiBaseUrl();
-    console.log('Using DODO API endpoint:', `${baseUrl}/v1/subscriptions`);
+    console.log('Creating subscription with DODO SDK...');
 
-    // Use direct HTTP API call for better error handling
-    const apiResponse = await fetch(`${baseUrl}/v1/subscriptions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.DODO_PAYMENTS_API_KEY}`,
-        'Content-Type': 'application/json',
+    // Use the DODO SDK for subscription creation
+    const response = await dodoClient.subscriptions.create({
+      product_id: productId,
+      customer: {
+        email: userEmail,
+        name: userEmail.split('@')[0], // Use email prefix as name
       },
-      body: JSON.stringify({
-        product_id: productId,
-        customer: {
-          email: userEmail,
-          name: userEmail.split('@')[0], // Use email prefix as name
-        },
-        quantity: 1,
-        billing: {
-          city: 'Unknown',
-          country: detectedCurrency === 'INR' ? 'IN' : 'US',
-          state: 'Unknown',
-          street: 'Unknown',
-          zipcode: '000000',
-        },
-        billing_currency: detectedCurrency,
-        payment_link: true,
-        metadata: {
-          userId,
-          appwriteUserId: userId,
-          source: 'avchat',
-          // Store return URLs in metadata for potential future use
-          success_url: process.env.NODE_ENV === 'production'
-            ? 'https://avchat.xyz/payment/success'
-            : 'https://test.avchat.xyz/payment/success',
-          cancel_url: process.env.NODE_ENV === 'production'
-            ? 'https://avchat.xyz/payment/cancelled'
-            : 'https://test.avchat.xyz/payment/cancelled',
-        },
-      }),
+      quantity: 1,
+      billing: {
+        city: 'Unknown',
+        country: detectedCurrency === 'INR' ? 'IN' : 'US',
+        state: 'Unknown',
+        street: 'Unknown',
+        zipcode: '000000',
+      },
+      billing_currency: detectedCurrency,
+      payment_link: true,
+      metadata: {
+        userId,
+        appwriteUserId: userId,
+        source: 'avchat',
+        // Store return URLs in metadata for potential future use
+        success_url: process.env.NODE_ENV === 'production'
+          ? 'https://avchat.xyz/payment/success'
+          : 'https://test.avchat.xyz/payment/success',
+        cancel_url: process.env.NODE_ENV === 'production'
+          ? 'https://avchat.xyz/payment/cancelled'
+          : 'https://test.avchat.xyz/payment/cancelled',
+      },
     });
-
-    if (!apiResponse.ok) {
-      const errorText = await apiResponse.text();
-      console.error('DODO API Error:', {
-        status: apiResponse.status,
-        statusText: apiResponse.statusText,
-        body: errorText,
-        headers: Object.fromEntries(apiResponse.headers.entries()),
-      });
-      throw new Error(`DODO API Error: ${apiResponse.status} - ${errorText || apiResponse.statusText}`);
-    }
-
-    const response = await apiResponse.json();
 
     if (!response.payment_link) {
       throw new Error('No payment link returned from DODO Payments');
@@ -193,29 +161,18 @@ export const createCustomerPortalSession = async (
     throw new Error('createCustomerPortalSession can only be called server-side');
   }
 
+  if (!dodoClient) {
+    throw new Error('DODO client not initialized - missing API key');
+  }
+
   try {
-    // Get the correct API endpoint based on environment
-    const baseUrl = getDodoApiBaseUrl();
+    console.log('Creating customer portal session with DODO SDK...');
 
-    // Use direct HTTP call for customer portal session
-    const response = await fetch(`${baseUrl}/v1/customer-portal-sessions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.DODO_PAYMENTS_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        customer_id: customerId,
-      }),
-    });
+    // Use the DODO SDK for customer portal session creation
+    const response = await dodoClient.customers.customerPortal.create(customerId, {});
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
     return {
-      portalUrl: data.url,
+      portalUrl: (response as any).portal_url || (response as any).url || '',
     };
   } catch (error) {
     console.error('Error creating customer portal session:', error);
@@ -354,22 +311,17 @@ export const cancelSubscription = async (subscriptionId: string): Promise<void> 
     throw new Error('cancelSubscription can only be called server-side');
   }
 
+  if (!dodoClient) {
+    throw new Error('DODO client not initialized - missing API key');
+  }
+
   try {
-    // Get the correct API endpoint based on environment
-    const baseUrl = getDodoApiBaseUrl();
+    console.log('Cancelling subscription with DODO SDK...');
 
-    // Use direct HTTP call for subscription cancellation
-    const response = await fetch(`${baseUrl}/v1/subscriptions/${subscriptionId}/cancel`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.DODO_PAYMENTS_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+    // Use the DODO SDK to update subscription to cancel at period end
+    await dodoClient.subscriptions.update(subscriptionId, {
+      cancel_at_next_billing_date: true,
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
 
     await updateUserSubscription({
       status: 'cancelled',

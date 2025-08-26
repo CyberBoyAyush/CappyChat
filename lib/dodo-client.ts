@@ -22,10 +22,16 @@ export const DODO_CONFIG = {
   liveProductId: isServer ? process.env.DODO_PAYMENTS_LIVE_PRODUCT_ID! : '',
 } as const;
 
+// Map our environment values to SDK values
+const getSDKEnvironment = (): 'test_mode' | 'live_mode' => {
+  return DODO_CONFIG.environment === 'live' ? 'live_mode' : 'test_mode';
+};
+
 // Initialize DODO Payments client (server-side only)
 export const dodoClient = isServer && DODO_CONFIG.apiKey
   ? new DodoPayments({
       bearerToken: DODO_CONFIG.apiKey,
+      environment: getSDKEnvironment(),
     })
   : null;
 
