@@ -50,9 +50,27 @@ export interface UserCustomProfile {
   aboutUser?: string;
 }
 
+// Subscription Interface
+export interface UserSubscription {
+  tier: 'FREE' | 'PREMIUM';
+  status: 'active' | 'cancelled' | 'expired' | 'on_hold' | 'failed';
+  customerId?: string;
+  subscriptionId?: string;
+  currentPeriodEnd?: string; // ISO8601 timestamp
+  cancelAtPeriodEnd?: boolean;
+  currency?: 'INR' | 'USD';
+  amount?: number;
+  adminOverride?: boolean;
+  lastPaymentId?: string;
+  retryCount?: number;
+  createdAt?: string; // ISO8601 timestamp
+  updatedAt?: string; // ISO8601 timestamp
+}
+
 // Combined User Preferences Interface
 export interface UserPreferences extends UserTierPreferences {
   customProfile?: UserCustomProfile;
+  subscription?: UserSubscription;
 }
 
 // Default tier limits
@@ -204,6 +222,70 @@ export const initializeUserTier = async (tier: 'free' | 'premium' | 'admin' = 'f
     });
   } catch (error) {
     console.error('Failed to initialize user tier:', error);
+    throw error;
+  }
+};
+
+// Subscription Management Functions
+export const getUserSubscription = async (): Promise<UserSubscription | null> => {
+  try {
+    const user = await getCachedAccount();
+    if (!user) return null;
+
+    const prefs = user.prefs as Record<string, unknown>;
+
+    if (prefs && prefs.subscription) {
+      return prefs.subscription as UserSubscription;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Failed to get user subscription:', error);
+    return null;
+  }
+};
+
+export const updateUserSubscription = async (subscription: Partial<UserSubscription>): Promise<void> => {
+  try {
+    const currentUser = await getCachedAccount();
+    if (!currentUser) throw new Error('User not found');
+
+    const currentPrefs = currentUser.prefs as Record<string, unknown>;
+    const currentSubscription = (currentPrefs.subscription as UserSubscription) || {};
+
+    const updatedSubscription = {
+      ...currentSubscription,
+      ...subscription,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updatedPrefs = {
+      ...currentPrefs,
+      subscription: updatedSubscription,
+    };
+
+    await account.updatePrefs(updatedPrefs);
+
+    // Invalidate cache after update
+    invalidateAccountCache();
+  } catch (error) {
+    console.error('Failed to update user subscription:', error);
+    throw error;
+  }
+};
+
+export const initializeUserSubscription = async (): Promise<void> => {
+  try {
+    const now = new Date().toISOString();
+
+    await updateUserSubscription({
+      tier: 'FREE',
+      status: 'expired',
+      createdAt: now,
+      updatedAt: now,
+    });
+  } catch (error) {
+    console.error('Failed to initialize user subscription:', error);
     throw error;
   }
 };

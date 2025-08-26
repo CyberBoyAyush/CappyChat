@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminGetUserByEmail, adminUpdateUserTier, adminResetUserCredits, getUserPreferencesServer } from '@/lib/tierSystem';
 import { Client, Users } from 'node-appwrite';
+import { UserSubscription } from '@/lib/appwrite';
 
 // Initialize server client
 const client = new Client()
@@ -12,7 +13,7 @@ const users = new Users(client);
 
 export async function POST(req: NextRequest) {
   try {
-    const { adminKey, action, email, userId, tier } = await req.json();
+    const { adminKey, action, email, userId, tier, subscriptionOverride } = await req.json();
     
     // Verify admin access
     if (!adminKey || adminKey !== process.env.ADMIN_SECRET_KEY) {
@@ -114,6 +115,47 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           success: true,
           message: `Credits reset for user ${userId}`
+        });
+
+      case 'setSubscriptionOverride':
+        if (!userId) {
+          return NextResponse.json(
+            { error: 'User ID is required' },
+            { status: 400 }
+          );
+        }
+
+        if (typeof subscriptionOverride !== 'boolean') {
+          return NextResponse.json(
+            { error: 'subscriptionOverride must be a boolean' },
+            { status: 400 }
+          );
+        }
+
+        // Get current user preferences
+        const targetUser = await users.get(userId);
+        const currentPrefs = targetUser.prefs as Record<string, unknown>;
+        const currentSubscription = (currentPrefs.subscription as UserSubscription) || {};
+
+        // Update subscription with admin override
+        const updatedSubscription: UserSubscription = {
+          ...currentSubscription,
+          adminOverride: subscriptionOverride,
+          tier: subscriptionOverride ? 'PREMIUM' : 'FREE',
+          status: subscriptionOverride ? 'active' : 'expired',
+          updatedAt: new Date().toISOString(),
+        };
+
+        const updatedPrefs = {
+          ...currentPrefs,
+          subscription: updatedSubscription,
+        };
+
+        await users.updatePrefs(userId, updatedPrefs);
+
+        return NextResponse.json({
+          success: true,
+          message: `Subscription override ${subscriptionOverride ? 'enabled' : 'disabled'} for user`
         });
 
       default:

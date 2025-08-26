@@ -59,6 +59,7 @@ import { GitHubIcon, GoogleIcon, XIcon } from "../components/ui/icons";
 import SessionManager from "../components/SessionManager";
 import MemorySettings from "../components/MemorySettings";
 import FileManager from "../components/FileManager";
+import SubscriptionSettings from "../components/settings/SubscriptionSettings";
 
 // Notification type
 type NotificationType = {
@@ -618,6 +619,11 @@ export default function SettingsPage() {
                 {[
                   { id: "profile", label: "Profile", icon: User },
                   {
+                    id: "subscription",
+                    label: "Subscription",
+                    icon: Calendar,
+                  },
+                  {
                     id: "customization",
                     label: "Customization",
                     icon: Sparkles,
@@ -989,6 +995,13 @@ export default function SettingsPage() {
 
                     {/* Global Memory Settings */}
                     <MemorySettings />
+                  </div>
+                )}
+
+                {/* Subscription Section */}
+                {activeSection === "subscription" && (
+                  <div className="space-y-6">
+                    <SubscriptionSettings />
                   </div>
                 )}
 

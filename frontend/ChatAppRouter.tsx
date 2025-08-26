@@ -21,6 +21,9 @@ import SharedChatPage from "./routes/SharedChatPage";
 import AuthCallbackPage from "./routes/auth/AuthCallbackPage";
 import AuthErrorPage from "./routes/auth/AuthErrorPage";
 import LoginPage from "./routes/auth/LoginPage";
+import PaymentSuccessPage from "./routes/payment/PaymentSuccessPage";
+import PaymentFailurePage from "./routes/payment/PaymentFailurePage";
+import PaymentCancelledPage from "./routes/payment/PaymentCancelledPage";
 import SignupPage from "./routes/auth/SignupPage";
 import EmailVerificationPage from "./routes/auth/EmailVerificationPage";
 import ResetPasswordPage from "./routes/auth/ResetPasswordPage";
@@ -74,6 +77,11 @@ export default function ChatAppRouter() {
           <Route path="/auth/error" element={<AuthErrorPage />} />
           <Route path="/auth/verify" element={<EmailVerificationPage />} />
           <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+
+          {/* Payment routes (always accessible) */}
+          <Route path="/payment/success" element={<PaymentSuccessPage />} />
+          <Route path="/payment/failure" element={<PaymentFailurePage />} />
+          <Route path="/payment/cancelled" element={<PaymentCancelledPage />} />
 
           {/* Settings route (require authentication) */}
           <Route

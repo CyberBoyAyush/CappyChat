@@ -6,7 +6,7 @@
  */
 
 import { AIModel, getModelConfig } from './models';
-import { getUserPreferences, updateUserPreferences, initializeUserTier, TIER_LIMITS, UserTierPreferences, UserCustomProfile } from './appwrite';
+import { getUserPreferences, updateUserPreferences, initializeUserTier, TIER_LIMITS, UserTierPreferences, UserCustomProfile, getUserSubscription, UserSubscription } from './appwrite';
 import { Client, Users, Query, Databases } from 'node-appwrite';
 
 export type TierType = 'free' | 'premium' | 'admin';
@@ -182,6 +182,73 @@ export const getModelType = (model: AIModel): ModelType => {
 };
 
 /**
+ * Check if user has premium access via subscription
+ */
+export const hasSubscriptionPremium = async (userId?: string): Promise<boolean> => {
+  try {
+    // Use server-side client if userId is provided
+    if (userId) {
+      const client = new Client()
+        .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+        .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
+        .setKey(process.env.APPWRITE_API_KEY!);
+
+      const users = new Users(client);
+      const user = await users.get(userId);
+      const prefs = user.prefs as Record<string, unknown>;
+
+      if (prefs && prefs.subscription) {
+        const subscription = prefs.subscription as UserSubscription;
+
+        // Check admin override first
+        if (subscription.adminOverride) {
+          return true;
+        }
+
+        // Check subscription status and expiry
+        if (subscription.status === 'active' && subscription.tier === 'PREMIUM') {
+          // Check if subscription is still valid
+          if (subscription.currentPeriodEnd) {
+            const expiryDate = new Date(subscription.currentPeriodEnd);
+            const now = new Date();
+            return expiryDate > now;
+          }
+          return true;
+        }
+      }
+    } else {
+      // Client-side check
+      const subscription = await getUserSubscription();
+
+      if (!subscription) {
+        return false;
+      }
+
+      // Check admin override first
+      if (subscription.adminOverride) {
+        return true;
+      }
+
+      // Check subscription status and expiry
+      if (subscription.status === 'active' && subscription.tier === 'PREMIUM') {
+        // Check if subscription is still valid
+        if (subscription.currentPeriodEnd) {
+          const expiryDate = new Date(subscription.currentPeriodEnd);
+          const now = new Date();
+          return expiryDate > now;
+        }
+        return true;
+      }
+    }
+
+    return false;
+  } catch (error) {
+    console.error('Error checking subscription premium:', error);
+    return false;
+  }
+};
+
+/**
  * Check if user can use a specific model
  */
 export const canUserUseModel = async (model: AIModel, usingBYOK: boolean = false, userId?: string, isGuest: boolean = false): Promise<TierValidationResult> => {
@@ -229,22 +296,34 @@ export const canUserUseModel = async (model: AIModel, usingBYOK: boolean = false
       };
     }
 
+    // Check subscription premium access
+    const hasSubscriptionAccess = await hasSubscriptionPremium(userId);
+    console.log('[TierSystem] Subscription premium access:', hasSubscriptionAccess);
+
     const modelType = getModelType(model);
     let remainingCredits = 0;
     let canUse = false;
 
+    // Determine effective tier (consider both tier system and subscription)
+    const effectiveTier = preferences.tier === 'admin' ? 'admin' :
+                         (preferences.tier === 'premium' || hasSubscriptionAccess) ? 'premium' : 'free';
+
+    console.log('[TierSystem] Effective tier:', effectiveTier, 'Original tier:', preferences.tier);
+
     switch (modelType) {
       case 'free':
         remainingCredits = preferences.freeCredits;
-        canUse = preferences.tier === 'admin' || remainingCredits > 0;
+        canUse = effectiveTier === 'admin' || remainingCredits > 0;
         break;
       case 'premium':
         remainingCredits = preferences.premiumCredits;
-        canUse = preferences.tier === 'admin' || remainingCredits > 0;
+        // Premium models: admin, premium tier, or subscription premium
+        canUse = effectiveTier === 'admin' || effectiveTier === 'premium' || remainingCredits > 0;
         break;
       case 'superPremium':
         remainingCredits = preferences.superPremiumCredits;
-        canUse = preferences.tier === 'admin' || remainingCredits > 0;
+        // Super premium models: admin, premium tier, or subscription premium
+        canUse = effectiveTier === 'admin' || effectiveTier === 'premium' || remainingCredits > 0;
         break;
     }
 
