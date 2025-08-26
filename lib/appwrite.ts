@@ -234,8 +234,22 @@ export const getUserSubscription = async (): Promise<UserSubscription | null> =>
 
     const prefs = user.prefs as Record<string, unknown>;
 
-    if (prefs && prefs.subscription) {
-      return prefs.subscription as UserSubscription;
+    // Check if user has subscription data in flattened fields
+    if (prefs && (prefs.subscriptionTier || prefs.tier === 'premium')) {
+      return {
+        tier: (prefs.subscriptionTier as 'FREE' | 'PREMIUM') || (prefs.tier === 'premium' ? 'PREMIUM' : 'FREE'),
+        status: (prefs.subscriptionStatus as any) || (prefs.tier === 'premium' ? 'active' : 'expired'),
+        customerId: prefs.subscriptionCustomerId as string,
+        subscriptionId: prefs.subscriptionId as string,
+        currentPeriodEnd: prefs.subscriptionPeriodEnd as string,
+        cancelAtPeriodEnd: prefs.subscriptionCancelAtEnd as boolean,
+        currency: prefs.subscriptionCurrency as 'INR' | 'USD',
+        amount: prefs.subscriptionAmount as number,
+        lastPaymentId: prefs.subscriptionLastPayment as string,
+        retryCount: (prefs.subscriptionRetryCount as number) || 0,
+        createdAt: user.$createdAt,
+        updatedAt: prefs.subscriptionUpdatedAt as string,
+      };
     }
 
     return null;
@@ -251,17 +265,21 @@ export const updateUserSubscription = async (subscription: Partial<UserSubscript
     if (!currentUser) throw new Error('User not found');
 
     const currentPrefs = currentUser.prefs as Record<string, unknown>;
-    const currentSubscription = (currentPrefs.subscription as UserSubscription) || {};
 
-    const updatedSubscription = {
-      ...currentSubscription,
-      ...subscription,
-      updatedAt: new Date().toISOString(),
-    };
-
+    // Update flattened subscription fields
     const updatedPrefs = {
       ...currentPrefs,
-      subscription: updatedSubscription,
+      subscriptionTier: subscription.tier || currentPrefs.subscriptionTier,
+      subscriptionStatus: subscription.status || currentPrefs.subscriptionStatus,
+      subscriptionCustomerId: subscription.customerId || currentPrefs.subscriptionCustomerId,
+      subscriptionId: subscription.subscriptionId || currentPrefs.subscriptionId,
+      subscriptionPeriodEnd: subscription.currentPeriodEnd || currentPrefs.subscriptionPeriodEnd,
+      subscriptionCancelAtEnd: subscription.cancelAtPeriodEnd || currentPrefs.subscriptionCancelAtEnd,
+      subscriptionCurrency: subscription.currency || currentPrefs.subscriptionCurrency,
+      subscriptionAmount: subscription.amount || currentPrefs.subscriptionAmount,
+      subscriptionLastPayment: subscription.lastPaymentId || currentPrefs.subscriptionLastPayment,
+      subscriptionRetryCount: subscription.retryCount !== undefined ? subscription.retryCount : currentPrefs.subscriptionRetryCount,
+      subscriptionUpdatedAt: new Date().toISOString(),
     };
 
     await account.updatePrefs(updatedPrefs);

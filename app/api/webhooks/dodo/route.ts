@@ -18,7 +18,7 @@ const updateUserSubscriptionServer = async (
   try {
     // Get current user preferences
     const { Client, Users } = await import('node-appwrite');
-    
+
     const client = new Client()
       .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
       .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
@@ -26,26 +26,36 @@ const updateUserSubscriptionServer = async (
 
     const users = new Users(client);
     const user = await users.get(userId);
-    
+
     const currentPrefs = user.prefs as Record<string, unknown>;
-    const currentSubscription = (currentPrefs.subscription as UserSubscription) || {};
 
-    const updatedSubscription = {
-      ...currentSubscription,
-      ...subscriptionData,
-      updatedAt: new Date().toISOString(),
-    };
-
+    // Flatten subscription data into separate fields for better visibility
     const updatedPrefs = {
       ...currentPrefs,
-      subscription: updatedSubscription,
+      // Subscription fields as separate preferences
+      subscriptionTier: subscriptionData.tier || currentPrefs.subscriptionTier,
+      subscriptionStatus: subscriptionData.status || currentPrefs.subscriptionStatus,
+      subscriptionCustomerId: subscriptionData.customerId || currentPrefs.subscriptionCustomerId,
+      subscriptionId: subscriptionData.subscriptionId || currentPrefs.subscriptionId,
+      subscriptionPeriodEnd: subscriptionData.currentPeriodEnd || currentPrefs.subscriptionPeriodEnd,
+      subscriptionCancelAtEnd: subscriptionData.cancelAtPeriodEnd || currentPrefs.subscriptionCancelAtEnd,
+      subscriptionCurrency: subscriptionData.currency || currentPrefs.subscriptionCurrency,
+      subscriptionAmount: subscriptionData.amount || currentPrefs.subscriptionAmount,
+      subscriptionLastPayment: subscriptionData.lastPaymentId || currentPrefs.subscriptionLastPayment,
+      subscriptionRetryCount: subscriptionData.retryCount !== undefined ? subscriptionData.retryCount : currentPrefs.subscriptionRetryCount,
+      subscriptionUpdatedAt: new Date().toISOString(),
     };
 
     await users.updatePrefs(userId, updatedPrefs);
-    
+
     console.log('Server-side subscription update successful:', {
       userId,
-      subscription: updatedSubscription
+      subscriptionData: {
+        tier: updatedPrefs.subscriptionTier,
+        status: updatedPrefs.subscriptionStatus,
+        customerId: updatedPrefs.subscriptionCustomerId,
+        subscriptionId: updatedPrefs.subscriptionId,
+      }
     });
   } catch (error) {
     console.error('Error updating user subscription server-side:', error);
@@ -122,10 +132,14 @@ export const POST = Webhooks({
       console.log('📝 Updating subscription with:', subscriptionUpdate);
       await updateUserSubscriptionServer(userId, subscriptionUpdate);
 
-      // Also update tier system to premium
-      console.log('🔄 Updating tier system to premium...');
+      // Also update tier system to premium with correct credit limits
+      console.log('🔄 Updating tier system to premium with credit limits...');
       await updateUserPreferencesServer(userId, {
         tier: 'premium',
+        freeCredits: 1200,      // Premium tier free model credits
+        premiumCredits: 600,    // Premium tier premium model credits
+        superPremiumCredits: 50, // Premium tier super premium model credits
+        lastResetDate: new Date().toISOString(),
       });
 
       console.log('🎊 User successfully upgraded to premium:', userId);

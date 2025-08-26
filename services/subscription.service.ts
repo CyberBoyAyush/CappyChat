@@ -170,17 +170,35 @@ export const createCustomerPortalSession = async (
   }
 
   try {
-    console.log('Creating customer portal session with DODO SDK...');
+    console.log('Creating customer portal session with DODO SDK for customer:', customerId);
 
     // Use the DODO SDK for customer portal session creation
+    // Based on DODO docs: POST /customers/{customer_id}/portal-sessions
     const response = await dodoClient.customers.customerPortal.create(customerId, {});
 
+    console.log('Customer portal response:', response);
+
+    // Extract the portal URL from the response
+    const portalUrl = (response as any).link ||
+                     (response as any).portal_url ||
+                     (response as any).url ||
+                     '';
+
+    if (!portalUrl) {
+      console.error('No portal URL found in response:', response);
+      throw new Error('No portal URL returned from DODO Payments');
+    }
+
+    console.log('Portal URL created:', portalUrl);
+
     return {
-      portalUrl: (response as any).portal_url || (response as any).url || '',
+      portalUrl,
     };
   } catch (error) {
     console.error('Error creating customer portal session:', error);
-    throw new Error('Failed to create customer portal session');
+    console.error('Customer ID:', customerId);
+    console.error('Error details:', error);
+    throw new Error(`Failed to create customer portal session: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 
