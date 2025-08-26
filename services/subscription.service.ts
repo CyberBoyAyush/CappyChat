@@ -17,6 +17,16 @@ export const SUBSCRIPTION_PRICING = {
 export type Currency = keyof typeof SUBSCRIPTION_PRICING;
 
 /**
+ * Get the correct DODO API base URL based on environment
+ */
+const getDodoApiBaseUrl = (): string => {
+  const environment = process.env.DODO_PAYMENTS_ENVIRONMENT || 'test';
+  return environment === 'test'
+    ? 'https://test.dodopayments.com'
+    : 'https://live.dodopayments.com';
+};
+
+/**
  * Detect user's preferred currency based on timezone and locale
  */
 export const detectUserCurrency = (): Currency => {
@@ -82,6 +92,19 @@ export const createSubscriptionCheckout = async (
     const amount = SUBSCRIPTION_PRICING[detectedCurrency];
     const productId = getProductId();
 
+    // Debug API key (only log first/last few characters for security)
+    const apiKey = process.env.DODO_PAYMENTS_API_KEY;
+    console.log('DODO API Key check:', {
+      hasApiKey: !!apiKey,
+      keyLength: apiKey?.length || 0,
+      keyPrefix: apiKey?.substring(0, 8) || 'none',
+      keySuffix: apiKey?.substring(apiKey.length - 4) || 'none',
+    });
+
+    if (!apiKey) {
+      throw new Error('DODO_PAYMENTS_API_KEY environment variable is not set');
+    }
+
     console.log('Creating subscription checkout:', {
       userEmail,
       userId,
@@ -90,35 +113,60 @@ export const createSubscriptionCheckout = async (
       productId
     });
 
-    const response = await dodoClient.subscriptions.create({
-      product_id: productId,
-      customer: {
-        email: userEmail,
-        name: userEmail.split('@')[0], // Use email prefix as name
+    // Get the correct API endpoint based on environment
+    const baseUrl = getDodoApiBaseUrl();
+    console.log('Using DODO API endpoint:', `${baseUrl}/v1/subscriptions`);
+
+    // Use direct HTTP API call for better error handling
+    const apiResponse = await fetch(`${baseUrl}/v1/subscriptions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.DODO_PAYMENTS_API_KEY}`,
+        'Content-Type': 'application/json',
       },
-      quantity: 1,
-      billing: {
-        city: 'Unknown',
-        country: detectedCurrency === 'INR' ? 'IN' : 'US',
-        state: 'Unknown',
-        street: 'Unknown',
-        zipcode: '000000',
-      },
-      billing_currency: detectedCurrency,
-      payment_link: true,
-      metadata: {
-        userId,
-        appwriteUserId: userId,
-        source: 'avchat',
-        // Store return URLs in metadata for potential future use
-        success_url: process.env.NODE_ENV === 'production'
-          ? 'https://avchat.xyz/payment/success'
-          : 'https://test.avchat.xyz/payment/success',
-        cancel_url: process.env.NODE_ENV === 'production'
-          ? 'https://avchat.xyz/payment/cancelled'
-          : 'https://test.avchat.xyz/payment/cancelled',
-      },
+      body: JSON.stringify({
+        product_id: productId,
+        customer: {
+          email: userEmail,
+          name: userEmail.split('@')[0], // Use email prefix as name
+        },
+        quantity: 1,
+        billing: {
+          city: 'Unknown',
+          country: detectedCurrency === 'INR' ? 'IN' : 'US',
+          state: 'Unknown',
+          street: 'Unknown',
+          zipcode: '000000',
+        },
+        billing_currency: detectedCurrency,
+        payment_link: true,
+        metadata: {
+          userId,
+          appwriteUserId: userId,
+          source: 'avchat',
+          // Store return URLs in metadata for potential future use
+          success_url: process.env.NODE_ENV === 'production'
+            ? 'https://avchat.xyz/payment/success'
+            : 'https://test.avchat.xyz/payment/success',
+          cancel_url: process.env.NODE_ENV === 'production'
+            ? 'https://avchat.xyz/payment/cancelled'
+            : 'https://test.avchat.xyz/payment/cancelled',
+        },
+      }),
     });
+
+    if (!apiResponse.ok) {
+      const errorText = await apiResponse.text();
+      console.error('DODO API Error:', {
+        status: apiResponse.status,
+        statusText: apiResponse.statusText,
+        body: errorText,
+        headers: Object.fromEntries(apiResponse.headers.entries()),
+      });
+      throw new Error(`DODO API Error: ${apiResponse.status} - ${errorText || apiResponse.statusText}`);
+    }
+
+    const response = await apiResponse.json();
 
     if (!response.payment_link) {
       throw new Error('No payment link returned from DODO Payments');
@@ -146,8 +194,11 @@ export const createCustomerPortalSession = async (
   }
 
   try {
+    // Get the correct API endpoint based on environment
+    const baseUrl = getDodoApiBaseUrl();
+
     // Use direct HTTP call for customer portal session
-    const response = await fetch('https://api.dodopayments.com/v1/customer-portal-sessions', {
+    const response = await fetch(`${baseUrl}/v1/customer-portal-sessions`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.DODO_PAYMENTS_API_KEY}`,
@@ -304,8 +355,11 @@ export const cancelSubscription = async (subscriptionId: string): Promise<void> 
   }
 
   try {
+    // Get the correct API endpoint based on environment
+    const baseUrl = getDodoApiBaseUrl();
+
     // Use direct HTTP call for subscription cancellation
-    const response = await fetch(`https://api.dodopayments.com/v1/subscriptions/${subscriptionId}/cancel`, {
+    const response = await fetch(`${baseUrl}/v1/subscriptions/${subscriptionId}/cancel`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.DODO_PAYMENTS_API_KEY}`,
