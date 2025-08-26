@@ -61,13 +61,22 @@ export const detectUserCurrency = (): Currency => {
 };
 
 /**
- * Create a subscription checkout session
+ * Create a subscription checkout session (server-side only)
  */
 export const createSubscriptionCheckout = async (
   userEmail: string,
   userId: string,
   currency?: Currency
 ): Promise<{ paymentUrl: string; customerId: string }> => {
+  // Ensure this function is only called server-side
+  if (typeof window !== 'undefined') {
+    throw new Error('createSubscriptionCheckout can only be called server-side');
+  }
+
+  if (!dodoClient) {
+    throw new Error('DODO client not initialized - missing API key');
+  }
+
   try {
     const detectedCurrency = currency || detectUserCurrency();
     const amount = SUBSCRIPTION_PRICING[detectedCurrency];
@@ -126,11 +135,16 @@ export const createSubscriptionCheckout = async (
 };
 
 /**
- * Create customer portal session for subscription management
+ * Create customer portal session for subscription management (server-side only)
  */
 export const createCustomerPortalSession = async (
   customerId: string
 ): Promise<{ portalUrl: string }> => {
+  // Ensure this function is only called server-side
+  if (typeof window !== 'undefined') {
+    throw new Error('createCustomerPortalSession can only be called server-side');
+  }
+
   try {
     // Use direct HTTP call for customer portal session
     const response = await fetch('https://api.dodopayments.com/v1/customer-portal-sessions', {
@@ -281,9 +295,14 @@ const mapDodoStatusToInternal = (dodoStatus: string): UserSubscription['status']
 };
 
 /**
- * Cancel subscription
+ * Cancel subscription (server-side only)
  */
 export const cancelSubscription = async (subscriptionId: string): Promise<void> => {
+  // Ensure this function is only called server-side
+  if (typeof window !== 'undefined') {
+    throw new Error('cancelSubscription can only be called server-side');
+  }
+
   try {
     // Use direct HTTP call for subscription cancellation
     const response = await fetch(`https://api.dodopayments.com/v1/subscriptions/${subscriptionId}/cancel`, {

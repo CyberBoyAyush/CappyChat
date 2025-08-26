@@ -1,25 +1,33 @@
 /**
  * DODO Payments Client Configuration
- * 
+ *
  * Provides centralized configuration and utility functions for DODO Payments integration.
  * Handles environment-specific settings and product ID management.
+ *
+ * NOTE: This file should only be used on the server side (API routes).
+ * Client-side components should make API calls to server routes instead.
  */
 
 import { DodoPayments } from 'dodopayments';
 
-// Environment configuration
+// Server-side environment check
+const isServer = typeof window === 'undefined';
+
+// Environment configuration (server-side only)
 export const DODO_CONFIG = {
-  apiKey: process.env.DODO_PAYMENTS_API_KEY!,
-  webhookSecret: process.env.DODO_PAYMENTS_WEBHOOK_SECRET!,
-  environment: process.env.DODO_PAYMENTS_ENVIRONMENT as 'test' | 'live',
-  testProductId: process.env.DODO_PAYMENTS_TEST_PRODUCT_ID!,
-  liveProductId: process.env.DODO_PAYMENTS_LIVE_PRODUCT_ID!,
+  apiKey: isServer ? process.env.DODO_PAYMENTS_API_KEY! : '',
+  webhookSecret: isServer ? process.env.DODO_PAYMENTS_WEBHOOK_SECRET! : '',
+  environment: (isServer ? process.env.DODO_PAYMENTS_ENVIRONMENT : 'test') as 'test' | 'live',
+  testProductId: isServer ? process.env.DODO_PAYMENTS_TEST_PRODUCT_ID! : '',
+  liveProductId: isServer ? process.env.DODO_PAYMENTS_LIVE_PRODUCT_ID! : '',
 } as const;
 
-// Initialize DODO Payments client
-export const dodoClient = new DodoPayments({
-  bearerToken: DODO_CONFIG.apiKey,
-});
+// Initialize DODO Payments client (server-side only)
+export const dodoClient = isServer && DODO_CONFIG.apiKey
+  ? new DodoPayments({
+      bearerToken: DODO_CONFIG.apiKey,
+    })
+  : null;
 
 /**
  * Get the appropriate product ID based on current environment
