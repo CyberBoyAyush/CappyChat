@@ -55,17 +55,25 @@ export async function POST(req: NextRequest) {
       selectedCurrency = 'USD'; // Default for server-side
     }
 
+    // Get the origin from the request to construct return URL
+    const origin = req.headers.get('origin') ||
+                   req.headers.get('referer')?.split('/').slice(0, 3).join('/') ||
+                   req.headers.get('host') ? `https://${req.headers.get('host')}` :
+                   'http://localhost:3000';
+
     console.log('Creating checkout for user:', {
       userId,
       userEmail,
-      currency: selectedCurrency
+      currency: selectedCurrency,
+      origin
     });
 
-    // Create subscription checkout
+    // Create subscription checkout with dynamic return URL
     const { paymentUrl, customerId } = await createSubscriptionCheckout(
       userEmail,
       userId,
-      selectedCurrency
+      selectedCurrency,
+      origin
     );
 
     return NextResponse.json({

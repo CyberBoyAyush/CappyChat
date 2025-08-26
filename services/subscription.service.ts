@@ -66,7 +66,8 @@ export const detectUserCurrency = (): Currency => {
 export const createSubscriptionCheckout = async (
   userEmail: string,
   userId: string,
-  currency?: Currency
+  currency?: Currency,
+  origin?: string
 ): Promise<{ paymentUrl: string; customerId: string }> => {
   // Ensure this function is only called server-side
   if (typeof window !== 'undefined') {
@@ -103,7 +104,14 @@ export const createSubscriptionCheckout = async (
       productId
     });
 
+    // Construct return URL based on the origin where subscription was created
+    const baseUrl = origin || (process.env.NODE_ENV === 'production'
+      ? 'https://avchat.xyz'
+      : 'http://localhost:3000');
+    const returnUrl = `${baseUrl}/payment/success`;
+
     console.log('Creating subscription with DODO SDK...');
+    console.log('Return URL:', returnUrl);
 
     // Use the DODO SDK for subscription creation
     const response = await dodoClient.subscriptions.create({
@@ -122,14 +130,13 @@ export const createSubscriptionCheckout = async (
       },
       billing_currency: detectedCurrency,
       payment_link: true,
-      return_url: process.env.NODE_ENV === 'production'
-        ? 'https://avchat.xyz/payment/success'
-        : 'https://test.avchat.xyz/payment/success',
+      return_url: returnUrl,
       metadata: {
         userId,
         appwriteUserId: userId,
         source: 'avchat',
         environment: process.env.NODE_ENV || 'development',
+        origin: baseUrl,
       },
     });
 
