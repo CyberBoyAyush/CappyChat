@@ -122,17 +122,14 @@ export const createSubscriptionCheckout = async (
       },
       billing_currency: detectedCurrency,
       payment_link: true,
+      return_url: process.env.NODE_ENV === 'production'
+        ? 'https://avchat.xyz/payment/success'
+        : 'https://test.avchat.xyz/payment/success',
       metadata: {
         userId,
         appwriteUserId: userId,
         source: 'avchat',
-        // Store return URLs in metadata for potential future use
-        success_url: process.env.NODE_ENV === 'production'
-          ? 'https://avchat.xyz/payment/success'
-          : 'https://test.avchat.xyz/payment/success',
-        cancel_url: process.env.NODE_ENV === 'production'
-          ? 'https://avchat.xyz/payment/cancelled'
-          : 'https://test.avchat.xyz/payment/cancelled',
+        environment: process.env.NODE_ENV || 'development',
       },
     });
 

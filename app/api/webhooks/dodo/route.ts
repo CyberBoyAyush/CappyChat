@@ -55,11 +55,22 @@ const updateUserSubscriptionServer = async (
 
 // Extract user ID from webhook payload
 const extractUserId = (payload: any): string | null => {
-  return payload.data?.metadata?.userId ||
-         payload.data?.metadata?.appwriteUserId ||
-         payload.data?.customer?.metadata?.userId ||
-         payload.data?.customer?.metadata?.appwriteUserId ||
-         null;
+  console.log('Extracting user ID from payload:', {
+    metadata: payload.data?.metadata,
+    customer: payload.data?.customer,
+    subscription: payload.data?.subscription,
+  });
+
+  const userId = payload.data?.metadata?.userId ||
+                 payload.data?.metadata?.appwriteUserId ||
+                 payload.data?.customer?.metadata?.userId ||
+                 payload.data?.customer?.metadata?.appwriteUserId ||
+                 payload.data?.subscription?.metadata?.userId ||
+                 payload.data?.subscription?.metadata?.appwriteUserId ||
+                 null;
+
+  console.log('Extracted user ID:', userId);
+  return userId;
 };
 
 
@@ -71,41 +82,55 @@ export const POST = Webhooks({
   onPayload: async (payload) => {
     console.log('DODO Webhook received:', {
       type: payload.type,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      data: JSON.stringify(payload.data, null, 2)
     });
   },
 
   // Subscription became active (new subscription or reactivation)
   onSubscriptionActive: async (payload) => {
-    console.log('Subscription activated:', payload);
-    
+    console.log('🎉 Subscription activated webhook received!');
+    console.log('Full payload:', JSON.stringify(payload, null, 2));
+
     const userId = extractUserId(payload);
     if (!userId) {
-      console.error('No user ID found in subscription active webhook');
+      console.error('❌ No user ID found in subscription active webhook');
+      console.error('Available data paths:', {
+        'payload.data': Object.keys(payload.data || {}),
+        'payload.data.metadata': payload.data?.metadata,
+        'payload.data.customer': payload.data?.customer,
+      });
       return;
     }
 
+    console.log('✅ Found user ID:', userId);
+
     try {
       const subscriptionData = payload.data as any;
-      await updateUserSubscriptionServer(userId, {
-        tier: 'PREMIUM',
-        status: 'active',
-        customerId: subscriptionData.customer?.id || subscriptionData.customer_id,
-        subscriptionId: subscriptionData.id,
+
+      const subscriptionUpdate = {
+        tier: 'PREMIUM' as const,
+        status: 'active' as const,
+        customerId: subscriptionData.customer?.customer_id || subscriptionData.customer_id,
+        subscriptionId: subscriptionData.subscription_id || subscriptionData.id,
         currentPeriodEnd: subscriptionData.current_period_end,
         cancelAtPeriodEnd: false,
         currency: subscriptionData.billing_currency as 'INR' | 'USD',
-        amount: subscriptionData.amount,
-      });
+        amount: subscriptionData.recurring_pre_tax_amount || subscriptionData.amount,
+      };
+
+      console.log('📝 Updating subscription with:', subscriptionUpdate);
+      await updateUserSubscriptionServer(userId, subscriptionUpdate);
 
       // Also update tier system to premium
+      console.log('🔄 Updating tier system to premium...');
       await updateUserPreferencesServer(userId, {
         tier: 'premium',
       });
 
-      console.log('User upgraded to premium:', userId);
+      console.log('🎊 User successfully upgraded to premium:', userId);
     } catch (error) {
-      console.error('Error handling subscription active:', error);
+      console.error('💥 Error handling subscription active:', error);
     }
   },
 
@@ -137,23 +162,26 @@ export const POST = Webhooks({
 
   // Subscription cancelled (stays premium until period end)
   onSubscriptionCancelled: async (payload) => {
-    console.log('Subscription cancelled:', payload);
-    
+    console.log('❌ Subscription cancelled webhook received!');
+    console.log('Cancellation payload:', JSON.stringify(payload, null, 2));
+
     const userId = extractUserId(payload);
     if (!userId) {
-      console.error('No user ID found in subscription cancelled webhook');
+      console.error('❌ No user ID found in subscription cancelled webhook');
       return;
     }
 
     try {
+      console.log('📝 Processing subscription cancellation for user:', userId);
+
       await updateUserSubscriptionServer(userId, {
         status: 'cancelled',
         cancelAtPeriodEnd: true,
       });
 
-      console.log('Subscription cancelled for user:', userId);
+      console.log('✅ Subscription cancelled for user:', userId);
     } catch (error) {
-      console.error('Error handling subscription cancellation:', error);
+      console.error('💥 Error handling subscription cancellation:', error);
     }
   },
 
@@ -225,19 +253,26 @@ export const POST = Webhooks({
 
   // Payment succeeded
   onPaymentSucceeded: async (payload) => {
-    console.log('Payment succeeded:', payload);
-    
+    console.log('💰 Payment succeeded webhook received!');
+    console.log('Payment payload:', JSON.stringify(payload, null, 2));
+
     const userId = extractUserId(payload);
     if (userId) {
       try {
         const paymentData = payload.data as any;
+        console.log('✅ Processing payment success for user:', userId);
+
         await updateUserSubscriptionServer(userId, {
-          lastPaymentId: paymentData.id,
+          lastPaymentId: paymentData.payment_id || paymentData.id,
           retryCount: 0, // Reset retry count on successful payment
         });
+
+        console.log('🎊 Payment success processed for user:', userId);
       } catch (error) {
-        console.error('Error handling payment success:', error);
+        console.error('💥 Error handling payment success:', error);
       }
+    } else {
+      console.error('❌ No user ID found in payment success webhook');
     }
   },
 
