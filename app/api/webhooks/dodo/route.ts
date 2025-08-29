@@ -7,13 +7,14 @@
 
 import { Webhooks } from '@dodopayments/nextjs';
 import { DODO_CONFIG } from '@/lib/dodo-client';
-import { UserSubscription } from '@/lib/appwrite';
-import { updateUserPreferencesServer } from '@/lib/tierSystem';
+import { UserSubscription, TIER_LIMITS } from '@/lib/appwrite';
+import { createSafeWebhookHandler, extractUserIdSafely } from '@/lib/webhookSafety';
 
-// Server-side function to update user subscription
-const updateUserSubscriptionServer = async (
+// Server-side function to update user subscription and tier atomically
+const updateUserSubscriptionAndTierServer = async (
   userId: string,
-  subscriptionData: Partial<UserSubscription>
+  subscriptionData: Partial<UserSubscription>,
+  tierData?: Partial<{ tier: 'free' | 'premium' | 'admin'; freeCredits: number; premiumCredits: number; superPremiumCredits: number; lastResetDate: string }>
 ): Promise<void> => {
   try {
     // Get current user preferences
@@ -29,7 +30,7 @@ const updateUserSubscriptionServer = async (
 
     const currentPrefs = user.prefs as Record<string, unknown>;
 
-    // Flatten subscription data into separate fields for better visibility
+    // Combine subscription and tier updates atomically
     const updatedPrefs = {
       ...currentPrefs,
       // Subscription fields as separate preferences
@@ -44,42 +45,49 @@ const updateUserSubscriptionServer = async (
       subscriptionLastPayment: subscriptionData.lastPaymentId || currentPrefs.subscriptionLastPayment,
       subscriptionRetryCount: subscriptionData.retryCount !== undefined ? subscriptionData.retryCount : currentPrefs.subscriptionRetryCount,
       subscriptionUpdatedAt: new Date().toISOString(),
+      // Tier system fields (if provided)
+      ...(tierData && {
+        tier: tierData.tier,
+        freeCredits: tierData.freeCredits,
+        premiumCredits: tierData.premiumCredits,
+        superPremiumCredits: tierData.superPremiumCredits,
+        lastResetDate: tierData.lastResetDate,
+      }),
     };
 
+    // Single atomic update
     await users.updatePrefs(userId, updatedPrefs);
 
-    console.log('Server-side subscription update successful:', {
+    console.log('Server-side subscription and tier update successful:', {
       userId,
-      subscriptionData: {
+      subscription: {
         tier: updatedPrefs.subscriptionTier,
         status: updatedPrefs.subscriptionStatus,
         customerId: updatedPrefs.subscriptionCustomerId,
         subscriptionId: updatedPrefs.subscriptionId,
-      }
+      },
+      tierSystem: tierData ? {
+        tier: updatedPrefs.tier,
+        credits: `${updatedPrefs.freeCredits}/${updatedPrefs.premiumCredits}/${updatedPrefs.superPremiumCredits}`,
+      } : 'unchanged'
     });
   } catch (error) {
-    console.error('Error updating user subscription server-side:', error);
+    console.error('Error updating user subscription and tier server-side:', error);
     throw error;
   }
 };
 
-// Extract user ID from webhook payload
+// Legacy function for backward compatibility
+const updateUserSubscriptionServer = async (
+  userId: string,
+  subscriptionData: Partial<UserSubscription>
+): Promise<void> => {
+  return updateUserSubscriptionAndTierServer(userId, subscriptionData);
+};
+
+// Extract user ID from webhook payload (legacy - use extractUserIdSafely for new code)
 const extractUserId = (payload: any): string | null => {
-  console.log('Extracting user ID from payload:', {
-    metadata: payload.data?.metadata,
-    customer: payload.data?.customer,
-    subscription: payload.data?.subscription,
-  });
-
-  const userId = payload.data?.metadata?.userId ||
-                 payload.data?.metadata?.appwriteUserId ||
-                 payload.data?.customer?.metadata?.userId ||
-                 payload.data?.customer?.metadata?.appwriteUserId ||
-                 payload.data?.subscription?.metadata?.userId ||
-                 payload.data?.subscription?.metadata?.appwriteUserId ||
-                 null;
-
-  console.log('Extracted user ID:', userId);
+  const { userId } = extractUserIdSafely(payload);
   return userId;
 };
 
@@ -98,214 +106,177 @@ export const POST = Webhooks({
   },
 
   // Subscription became active (new subscription or reactivation)
-  onSubscriptionActive: async (payload) => {
+  onSubscriptionActive: createSafeWebhookHandler('SubscriptionActive', async (payload) => {
     console.log('🎉 Subscription activated webhook received!');
-    console.log('Full payload:', JSON.stringify(payload, null, 2));
 
     const userId = extractUserId(payload);
-    if (!userId) {
-      console.error('❌ No user ID found in subscription active webhook');
-      console.error('Available data paths:', {
-        'payload.data': Object.keys(payload.data || {}),
-        'payload.data.metadata': payload.data?.metadata,
-        'payload.data.customer': payload.data?.customer,
-      });
-      return;
-    }
+    const subscriptionData = payload.data as any;
 
-    console.log('✅ Found user ID:', userId);
+    const subscriptionUpdate = {
+      tier: 'PREMIUM' as const,
+      status: 'active' as const,
+      customerId: subscriptionData.customer?.customer_id || subscriptionData.customer_id,
+      subscriptionId: subscriptionData.subscription_id || subscriptionData.id,
+      currentPeriodEnd: subscriptionData.current_period_end,
+      cancelAtPeriodEnd: false,
+      currency: subscriptionData.billing_currency as 'INR' | 'USD',
+      amount: subscriptionData.recurring_pre_tax_amount || subscriptionData.amount,
+    };
 
-    try {
-      const subscriptionData = payload.data as any;
+    const tierUpdate = {
+      tier: 'premium' as const,
+      freeCredits: 1200,      // Premium tier free model credits
+      premiumCredits: 600,    // Premium tier premium model credits
+      superPremiumCredits: 50, // Premium tier super premium model credits
+      lastResetDate: new Date().toISOString(),
+    };
 
-      const subscriptionUpdate = {
-        tier: 'PREMIUM' as const,
-        status: 'active' as const,
-        customerId: subscriptionData.customer?.customer_id || subscriptionData.customer_id,
-        subscriptionId: subscriptionData.subscription_id || subscriptionData.id,
-        currentPeriodEnd: subscriptionData.current_period_end,
-        cancelAtPeriodEnd: false,
-        currency: subscriptionData.billing_currency as 'INR' | 'USD',
-        amount: subscriptionData.recurring_pre_tax_amount || subscriptionData.amount,
-      };
+    console.log('📝 Atomically updating subscription and tier system...');
+    await updateUserSubscriptionAndTierServer(userId!, subscriptionUpdate, tierUpdate);
 
-      console.log('📝 Updating subscription with:', subscriptionUpdate);
-      await updateUserSubscriptionServer(userId, subscriptionUpdate);
-
-      // Also update tier system to premium with correct credit limits
-      console.log('🔄 Updating tier system to premium with credit limits...');
-      await updateUserPreferencesServer(userId, {
-        tier: 'premium',
-        freeCredits: 1200,      // Premium tier free model credits
-        premiumCredits: 600,    // Premium tier premium model credits
-        superPremiumCredits: 50, // Premium tier super premium model credits
-        lastResetDate: new Date().toISOString(),
-      });
-
-      console.log('🎊 User successfully upgraded to premium:', userId);
-    } catch (error) {
-      console.error('💥 Error handling subscription active:', error);
-    }
-  },
+    console.log('🎊 User successfully upgraded to premium:', userId);
+  }),
 
   // Subscription renewed (successful recurring payment)
-  onSubscriptionRenewed: async (payload) => {
-    console.log('Subscription renewed:', payload);
-    
+  onSubscriptionRenewed: createSafeWebhookHandler('SubscriptionRenewed', async (payload) => {
+    console.log('🔄 Subscription renewed webhook received');
+
     const userId = extractUserId(payload);
-    if (!userId) {
-      console.error('No user ID found in subscription renewed webhook');
-      return;
-    }
+    const subscriptionData = payload.data as any;
 
-    try {
-      const subscriptionData = payload.data as any;
-      await updateUserSubscriptionServer(userId, {
-        tier: 'PREMIUM',
-        status: 'active',
-        currentPeriodEnd: subscriptionData.current_period_end,
-        lastPaymentId: subscriptionData.payment_id,
-        retryCount: 0, // Reset retry count on successful payment
-      });
+    const subscriptionUpdate = {
+      tier: 'PREMIUM' as const,
+      status: 'active' as const,
+      currentPeriodEnd: subscriptionData.current_period_end,
+      lastPaymentId: subscriptionData.payment_id,
+      retryCount: 0, // Reset retry count on successful payment
+    };
 
-      console.log('Subscription renewed for user:', userId);
-    } catch (error) {
-      console.error('Error handling subscription renewal:', error);
-    }
-  },
+    const tierUpdate = {
+      tier: 'premium' as const,
+      freeCredits: 1200,      // Reset credits for new billing period
+      premiumCredits: 600,
+      superPremiumCredits: 50,
+      lastResetDate: new Date().toISOString(),
+    };
+
+    console.log('📝 Atomically updating subscription renewal and resetting credits...');
+    await updateUserSubscriptionAndTierServer(userId!, subscriptionUpdate, tierUpdate);
+
+    console.log('✅ Subscription renewed and credits reset for user:', userId);
+  }),
 
   // Subscription cancelled (stays premium until period end)
-  onSubscriptionCancelled: async (payload) => {
-    console.log('❌ Subscription cancelled webhook received!');
-    console.log('Cancellation payload:', JSON.stringify(payload, null, 2));
+  onSubscriptionCancelled: createSafeWebhookHandler('SubscriptionCancelled', async (payload) => {
+    console.log('❌ Subscription cancelled webhook received');
 
     const userId = extractUserId(payload);
-    if (!userId) {
-      console.error('❌ No user ID found in subscription cancelled webhook');
-      return;
-    }
+    console.log('📝 Processing subscription cancellation for user:', userId);
 
-    try {
-      console.log('📝 Processing subscription cancellation for user:', userId);
+    await updateUserSubscriptionServer(userId!, {
+      status: 'cancelled',
+      cancelAtPeriodEnd: true,
+    });
 
-      await updateUserSubscriptionServer(userId, {
-        status: 'cancelled',
-        cancelAtPeriodEnd: true,
-      });
-
-      console.log('✅ Subscription cancelled for user:', userId);
-    } catch (error) {
-      console.error('💥 Error handling subscription cancellation:', error);
-    }
-  },
+    console.log('✅ Subscription cancelled for user:', userId);
+  }),
 
   // Subscription expired (downgrade to free)
-  onSubscriptionExpired: async (payload) => {
-    console.log('Subscription expired:', payload);
-    
+  onSubscriptionExpired: createSafeWebhookHandler('SubscriptionExpired', async (payload) => {
+    console.log('⏰ Subscription expired webhook received');
+
     const userId = extractUserId(payload);
-    if (!userId) {
-      console.error('No user ID found in subscription expired webhook');
-      return;
-    }
 
-    try {
-      await updateUserSubscriptionServer(userId, {
-        tier: 'FREE',
-        status: 'expired',
-      });
+    const subscriptionUpdate = {
+      tier: 'FREE' as const,
+      status: 'expired' as const,
+    };
 
-      // Downgrade tier system to free
-      await updateUserPreferencesServer(userId, {
-        tier: 'free',
-      });
+    const tierUpdate = {
+      tier: 'free' as const,
+      freeCredits: TIER_LIMITS.free.freeCredits,        // Consistent with TIER_LIMITS (80)
+      premiumCredits: TIER_LIMITS.free.premiumCredits,  // Consistent with TIER_LIMITS (10)
+      superPremiumCredits: TIER_LIMITS.free.superPremiumCredits, // Consistent with TIER_LIMITS (2)
+      lastResetDate: new Date().toISOString(),
+    };
 
-      console.log('User downgraded to free:', userId);
-    } catch (error) {
-      console.error('Error handling subscription expiration:', error);
-    }
-  },
+    console.log('📝 Atomically downgrading subscription and resetting to free tier credits...');
+    await updateUserSubscriptionAndTierServer(userId!, subscriptionUpdate, tierUpdate);
+
+    console.log('⬇️ User downgraded to free with proper credit limits:', userId);
+  }),
 
   // Subscription failed (payment failure)
-  onSubscriptionFailed: async (payload) => {
-    console.log('Subscription failed:', payload);
-    
+  onSubscriptionFailed: createSafeWebhookHandler('SubscriptionFailed', async (payload) => {
+    console.log('💳 Subscription failed webhook received');
+
     const userId = extractUserId(payload);
-    if (!userId) {
-      console.error('No user ID found in subscription failed webhook');
-      return;
-    }
+    const subscriptionData = payload.data as any;
+    const currentRetryCount = subscriptionData.retry_count || 0;
+    const newRetryCount = currentRetryCount + 1;
 
-    try {
-      const subscriptionData = payload.data as any;
-      const currentRetryCount = subscriptionData.retry_count || 0;
+    // If too many retries, expire the subscription
+    if (newRetryCount >= 3) {
+      const subscriptionUpdate = {
+        tier: 'FREE' as const,
+        status: 'expired' as const,
+        retryCount: newRetryCount,
+      };
 
-      await updateUserSubscriptionServer(userId, {
+      const tierUpdate = {
+        tier: 'free' as const,
+        freeCredits: TIER_LIMITS.free.freeCredits,        // Consistent with TIER_LIMITS (80)
+        premiumCredits: TIER_LIMITS.free.premiumCredits,  // Consistent with TIER_LIMITS (10)
+        superPremiumCredits: TIER_LIMITS.free.superPremiumCredits, // Consistent with TIER_LIMITS (2)
+        lastResetDate: new Date().toISOString(),
+      };
+
+      console.log('📝 Expiring subscription due to failed payments (3+ retries)...');
+      await updateUserSubscriptionAndTierServer(userId!, subscriptionUpdate, tierUpdate);
+
+      console.log('⬇️ Subscription expired due to failed payments:', userId);
+    } else {
+      // Just update retry count, keep premium status
+      await updateUserSubscriptionServer(userId!, {
         status: 'failed',
-        retryCount: currentRetryCount + 1,
+        retryCount: newRetryCount,
       });
 
-      // If too many retries, expire the subscription
-      if (currentRetryCount >= 3) {
-        await updateUserSubscriptionServer(userId, {
-          tier: 'FREE',
-          status: 'expired',
-        });
-
-        await updateUserPreferencesServer(userId, {
-          tier: 'free',
-        });
-
-        console.log('Subscription expired due to failed payments:', userId);
-      } else {
-        console.log('Subscription payment failed, retry count:', currentRetryCount + 1);
-      }
-    } catch (error) {
-      console.error('Error handling subscription failure:', error);
+      console.log('🔄 Subscription payment failed, retry count:', newRetryCount);
     }
-  },
+  }),
 
   // Payment succeeded
-  onPaymentSucceeded: async (payload) => {
-    console.log('💰 Payment succeeded webhook received!');
-    console.log('Payment payload:', JSON.stringify(payload, null, 2));
+  onPaymentSucceeded: createSafeWebhookHandler('PaymentSucceeded', async (payload) => {
+    console.log('💰 Payment succeeded webhook received');
 
     const userId = extractUserId(payload);
-    if (userId) {
-      try {
-        const paymentData = payload.data as any;
-        console.log('✅ Processing payment success for user:', userId);
+    const paymentData = payload.data as any;
 
-        await updateUserSubscriptionServer(userId, {
-          lastPaymentId: paymentData.payment_id || paymentData.id,
-          retryCount: 0, // Reset retry count on successful payment
-        });
+    console.log('✅ Processing payment success for user:', userId);
 
-        console.log('🎊 Payment success processed for user:', userId);
-      } catch (error) {
-        console.error('💥 Error handling payment success:', error);
-      }
-    } else {
-      console.error('❌ No user ID found in payment success webhook');
-    }
-  },
+    // Update payment info and reset retry count
+    await updateUserSubscriptionServer(userId!, {
+      lastPaymentId: paymentData.payment_id || paymentData.id,
+      retryCount: 0, // Reset retry count on successful payment
+    });
+
+    console.log('🎊 Payment success processed for user:', userId);
+  }),
 
   // Payment failed
-  onPaymentFailed: async (payload) => {
-    console.log('Payment failed:', payload);
-    
-    const userId = extractUserId(payload);
-    if (userId) {
-      try {
-        const paymentData = payload.data as any;
-        const currentRetryCount = paymentData.retry_count || 0;
+  onPaymentFailed: createSafeWebhookHandler('PaymentFailed', async (payload) => {
+    console.log('💳 Payment failed webhook received');
 
-        await updateUserSubscriptionServer(userId, {
-          retryCount: currentRetryCount + 1,
-        });
-      } catch (error) {
-        console.error('Error handling payment failure:', error);
-      }
-    }
-  },
+    const userId = extractUserId(payload);
+    const paymentData = payload.data as any;
+    const currentRetryCount = paymentData.retry_count || 0;
+    const newRetryCount = currentRetryCount + 1;
+
+    await updateUserSubscriptionServer(userId!, {
+      retryCount: newRetryCount,
+    });
+
+    console.log('🔄 Payment failed, retry count updated:', newRetryCount);
+  }),
 });
