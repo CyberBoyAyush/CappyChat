@@ -6,7 +6,7 @@
  */
 
 import { AIModel, getModelConfig } from './models';
-import { getUserPreferences, updateUserPreferences, initializeUserTier, TIER_LIMITS, UserTierPreferences, UserCustomProfile, getUserSubscription, UserSubscription } from './appwrite';
+import { getUserPreferences, updateUserPreferences, initializeUserTier, TIER_LIMITS, UserTierPreferences, UserCustomProfile, getUserSubscription } from './appwrite';
 import { Client, Users, Query, Databases } from 'node-appwrite';
 
 export type TierType = 'free' | 'premium' | 'admin';
@@ -197,19 +197,22 @@ export const hasSubscriptionPremium = async (userId?: string): Promise<boolean> 
       const user = await users.get(userId);
       const prefs = user.prefs as Record<string, unknown>;
 
-      if (prefs && prefs.subscription) {
-        const subscription = prefs.subscription as UserSubscription;
-
+      // Check if user has subscription data in flattened fields
+      if (prefs && (prefs.subscriptionTier || prefs.tier === 'premium')) {
         // Check admin override first
-        if (subscription.adminOverride) {
+        if (prefs.adminOverride) {
           return true;
         }
 
+        const subscriptionTier = prefs.subscriptionTier as 'FREE' | 'PREMIUM' || (prefs.tier === 'premium' ? 'PREMIUM' : 'FREE');
+        const subscriptionStatus = prefs.subscriptionStatus as string || (prefs.tier === 'premium' ? 'active' : 'expired');
+        const currentPeriodEnd = prefs.subscriptionPeriodEnd as string;
+
         // Check subscription status and expiry
-        if (subscription.status === 'active' && subscription.tier === 'PREMIUM') {
+        if (subscriptionStatus === 'active' && subscriptionTier === 'PREMIUM') {
           // Check if subscription is still valid
-          if (subscription.currentPeriodEnd) {
-            const expiryDate = new Date(subscription.currentPeriodEnd);
+          if (currentPeriodEnd) {
+            const expiryDate = new Date(currentPeriodEnd);
             const now = new Date();
             return expiryDate > now;
           }

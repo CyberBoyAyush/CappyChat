@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminGetUserByEmail, adminUpdateUserTier, adminResetUserCredits, getUserPreferencesServer } from '@/lib/tierSystem';
 import { Client, Users } from 'node-appwrite';
-import { UserSubscription } from '@/lib/appwrite';
+
 
 // Initialize server client
 const client = new Client()
@@ -135,20 +135,14 @@ export async function POST(req: NextRequest) {
         // Get current user preferences
         const targetUser = await users.get(userId);
         const currentPrefs = targetUser.prefs as Record<string, unknown>;
-        const currentSubscription = (currentPrefs.subscription as UserSubscription) || {};
 
-        // Update subscription with admin override
-        const updatedSubscription: UserSubscription = {
-          ...currentSubscription,
-          adminOverride: subscriptionOverride,
-          tier: subscriptionOverride ? 'PREMIUM' : 'FREE',
-          status: subscriptionOverride ? 'active' : 'expired',
-          updatedAt: new Date().toISOString(),
-        };
-
+        // Update subscription with admin override using flattened fields
         const updatedPrefs = {
           ...currentPrefs,
-          subscription: updatedSubscription,
+          adminOverride: subscriptionOverride,
+          subscriptionTier: subscriptionOverride ? 'PREMIUM' : 'FREE',
+          subscriptionStatus: subscriptionOverride ? 'active' : 'expired',
+          subscriptionUpdatedAt: new Date().toISOString(),
         };
 
         await users.updatePrefs(userId, updatedPrefs);

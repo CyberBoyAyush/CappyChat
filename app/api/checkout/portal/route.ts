@@ -18,14 +18,29 @@ const client = new Client()
 
 const users = new Users(client);
 
-// Server-side function to get user subscription
+// Server-side function to get user subscription (using flattened fields)
 const getUserSubscriptionServer = async (userId: string): Promise<UserSubscription | null> => {
   try {
     const user = await users.get(userId);
     const prefs = user.prefs as Record<string, unknown>;
 
-    if (prefs && prefs.subscription) {
-      return prefs.subscription as UserSubscription;
+    // Check if user has subscription data in flattened fields
+    if (prefs && (prefs.subscriptionTier || prefs.tier === 'premium')) {
+      return {
+        tier: (prefs.subscriptionTier as 'FREE' | 'PREMIUM') || (prefs.tier === 'premium' ? 'PREMIUM' : 'FREE'),
+        status: (prefs.subscriptionStatus as any) || (prefs.tier === 'premium' ? 'active' : 'expired'),
+        customerId: prefs.subscriptionCustomerId as string,
+        subscriptionId: prefs.subscriptionId as string,
+        currentPeriodEnd: prefs.subscriptionPeriodEnd as string,
+        cancelAtPeriodEnd: prefs.subscriptionCancelAtEnd as boolean,
+        currency: prefs.subscriptionCurrency as 'INR' | 'USD',
+        amount: prefs.subscriptionAmount as number,
+        adminOverride: prefs.adminOverride as boolean,
+        lastPaymentId: prefs.subscriptionLastPayment as string,
+        retryCount: (prefs.subscriptionRetryCount as number) || 0,
+        createdAt: user.$createdAt,
+        updatedAt: prefs.subscriptionUpdatedAt as string,
+      };
     }
 
     return null;
