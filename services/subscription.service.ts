@@ -128,12 +128,10 @@ export const createSubscriptionCheckout = async (
         email: userEmail,
         name: userEmail.split('@')[0], // Use email prefix as name
       },
+      // Omit billing_address to let user fill it on checkout page
+      // Only set the country for tax calculation purposes
       billing_address: {
-        street: '', // User will fill this on checkout page
-        city: '',
-        state: '',
         country: detectedCurrency === 'INR' ? 'IN' : 'US',
-        zipcode: '',
       },
       billing_currency: detectedCurrency,
       feature_flags: {
