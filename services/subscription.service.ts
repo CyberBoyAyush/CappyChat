@@ -107,8 +107,8 @@ export const createSubscriptionCheckout = async (
     // Construct return URL based on the origin where subscription was created
     const baseUrl = origin || (process.env.NODE_ENV === 'production'
       ? 'https://avchat.xyz'
-      : 'http://localhost:3000');
-    const returnUrl = `${baseUrl}/payment/success`;
+      : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+    const returnUrl = `${baseUrl}/payment/result`;
 
     console.log('Creating subscription with DODO SDK...');
     console.log('Return URL:', returnUrl);
