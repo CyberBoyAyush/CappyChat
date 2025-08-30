@@ -270,7 +270,7 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
         {!isPremium ? (
           <UpgradeButton />
         ) : (
-          subscription?.customerId && !subscription.adminOverride && (
+          subscription?.customerId && !subscription?.adminOverride && (
             <Button
               onClick={handleManageSubscription}
               disabled={portalLoading}

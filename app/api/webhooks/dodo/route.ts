@@ -149,6 +149,7 @@ export const POST = Webhooks({
     const subscriptionUpdate = {
       tier: 'PREMIUM' as const,
       status: 'active' as const,
+      customerId: subscriptionData.customer?.customer_id || subscriptionData.customer_id,
       currentPeriodEnd: subscriptionData.current_period_end,
       next_billing_date: subscriptionData.next_billing_date || subscriptionData.current_period_end, // Set next billing date
       lastPaymentId: subscriptionData.payment_id,
