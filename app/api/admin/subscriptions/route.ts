@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
             subscriptionId: prefs.subscriptionId,
             currentPeriodEnd: prefs.subscriptionPeriodEnd,
             cancelAtPeriodEnd: prefs.subscriptionCancelAtEnd,
-            finalDate: prefs.subscriptionFinalDate,
+            next_billing_date: prefs.subscriptionNextBillingDate,
             currency: prefs.subscriptionCurrency,
             amount: prefs.subscriptionAmount,
             lastPaymentId: prefs.subscriptionLastPayment,

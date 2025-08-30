@@ -10,15 +10,14 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { 
-  Crown, 
-  Calendar, 
-  CreditCard, 
-  Settings, 
+import {
+  Crown,
+  Settings,
   AlertTriangle,
   CheckCircle2,
   ExternalLink,
-  Shield
+  Shield,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getSubscriptionStatus } from '@/services/subscription.service';
@@ -34,7 +33,6 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
   const { user } = useAuth();
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [isPremium, setIsPremium] = useState(false);
-  const [daysUntilExpiry, setDaysUntilExpiry] = useState<number | undefined>();
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +52,6 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
       const status = await getSubscriptionStatus();
       setSubscription(status.subscription);
       setIsPremium(status.isPremium);
-      setDaysUntilExpiry(status.daysUntilExpiry);
     } catch (err) {
       console.error('Error loading subscription status:', err);
       setError('Failed to load subscription status');
@@ -117,6 +114,14 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
 
     switch (subscription.status) {
       case 'active':
+        if (subscription.cancelAtPeriodEnd) {
+          return (
+            <Badge variant="outline" className="flex items-center gap-1 border-yellow-500 text-yellow-600">
+              <Clock className="w-3 h-3" />
+              Cancelling
+            </Badge>
+          );
+        }
         return (
           <Badge variant="default" className="flex items-center gap-1 bg-green-600">
             <CheckCircle2 className="w-3 h-3" />
@@ -185,8 +190,9 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
   }
 
   return (
-    <div className={`p-6 border rounded-xl bg-card shadow-sm space-y-4 ${className}`}>
-      <div className="flex items-center justify-between">
+    <div className={`border border-border rounded-xl bg-card shadow-sm overflow-hidden ${className}`}>
+      {/* Header Section */}
+      <div className="flex items-center justify-between p-4 bg-muted/30 border-b border-border">
         <div className="flex items-center gap-2">
           <Crown className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-medium">Subscription</h3>
@@ -195,89 +201,88 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
       </div>
 
       {error && (
-        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        <div className="p-3 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         </div>
       )}
 
-      <div className="space-y-3">
-        {/* Current Plan */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Current Plan</span>
-          <span className="font-medium">
-            {isPremium ? 'Premium' : 'Free'}
-          </span>
-        </div>
+      {/* Current Plan Section */}
+      <div className="flex items-center justify-between p-4 border-b border-border">
+        <span className="text-sm font-medium">Current Plan</span>
+        <span className="font-semibold text-lg">
+          {loading ? 'Loading...' : isPremium ? 'Premium' : 'Free'}
+        </span>
+      </div>
 
-        {/* Subscription Details */}
-        {subscription && (
-          <>
-            {subscription.currency && subscription.amount && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Price</span>
-                <span className="font-medium">
-                  {subscription.currency === 'INR' ? '₹' : '$'}{subscription.amount}
-                  {subscription.status === 'active' ? '/month' : ''}
-                </span>
-              </div>
-            )}
+      {/* Subscription Details Section */}
+      {subscription && (
+        <div className="p-4 border-b border-border">
+          <h4 className="text-sm font-medium mb-3">Subscription Details</h4>
+          <div className="space-y-3">
+            {/* Current Status */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Current Status</span>
+              <span className="font-medium">
+                {subscription.cancelAtPeriodEnd && subscription.status === 'active'
+                  ? 'Cancelling'
+                  : subscription.status === 'active'
+                  ? 'Active'
+                  : subscription.status === 'cancelled'
+                  ? 'Cancelled'
+                  : 'Expired'}
+              </span>
+            </div>
 
-            {subscription.currentPeriodEnd && (
+            {/* Renewal/Cancel Date */}
+            {subscription.next_billing_date && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">
-                  {subscription.status === 'cancelled' ? 'Expires On' : 'Next Billing'}
+                  {subscription.cancelAtPeriodEnd
+                    ? 'Cancel At'
+                    : 'Renewal At'}
                 </span>
-                <div className="text-right">
-                  <span className="font-medium">
-                    {formatExpiryDate(subscription.currentPeriodEnd)}
-                  </span>
-                  {daysUntilExpiry !== undefined && (
-                    <p className="text-xs text-muted-foreground">
-                      {daysUntilExpiry > 0 
-                        ? `${daysUntilExpiry} days remaining`
-                        : 'Expired'
-                      }
-                    </p>
-                  )}
-                </div>
+                <span className="font-medium">
+                  {formatExpiryDate(subscription.next_billing_date)}
+                </span>
               </div>
             )}
-
-            {subscription.adminOverride && (
-              <div className="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-purple-600" />
-                  <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">
-                    Admin Override Active
-                  </span>
-                </div>
-                <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                  Your premium access has been granted by an administrator.
-                </p>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex gap-2 pt-2">
-          {!isPremium ? (
-            <UpgradeButton />
-          ) : (
-            subscription?.customerId && !subscription.adminOverride && (
-              <Button
-                onClick={handleManageSubscription}
-                disabled={portalLoading}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                {portalLoading ? 'Loading...' : 'Manage Subscription'}
-                <ExternalLink className="w-3 h-3" />
-              </Button>
-            )
-          )}
+          </div>
         </div>
+      )}
+
+      {/* Admin Override Notice */}
+      {subscription?.adminOverride && (
+        <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-200 dark:border-purple-800">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-purple-600" />
+            <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">
+              Admin Override Active
+            </span>
+          </div>
+          <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+            Your premium access has been granted by an administrator.
+          </p>
+        </div>
+      )}
+
+      {/* Action Buttons Section */}
+      <div className="p-4 flex items-center justify-center">
+        {!isPremium ? (
+          <UpgradeButton />
+        ) : (
+          subscription?.customerId && !subscription.adminOverride && (
+            <Button
+              onClick={handleManageSubscription}
+              disabled={portalLoading}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Settings className="w-4 h-4" />
+              {portalLoading ? 'Loading...' : 'Manage Subscription'}
+              <ExternalLink className="w-3 h-3" />
+            </Button>
+          )
+        )}
       </div>
     </div>
   );
