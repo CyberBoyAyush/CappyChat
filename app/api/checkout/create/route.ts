@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       paymentUrl,
-      customerId,
+      customerId: customerId || null, // Will be populated after checkout completion via webhook
       currency: selectedCurrency,
     });
 

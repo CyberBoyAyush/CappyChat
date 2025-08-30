@@ -68,7 +68,7 @@ export const createSubscriptionCheckout = async (
   userId: string,
   currency?: Currency,
   origin?: string
-): Promise<{ paymentUrl: string; customerId: string }> => {
+): Promise<{ paymentUrl: string; customerId?: string }> => {
   // Ensure this function is only called server-side
   if (typeof window !== 'undefined') {
     throw new Error('createSubscriptionCheckout can only be called server-side');
@@ -110,26 +110,36 @@ export const createSubscriptionCheckout = async (
       : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
     const returnUrl = `${baseUrl}/payment/result`;
 
-    console.log('Creating subscription with DODO SDK...');
+    console.log('Creating subscription checkout session with DODO SDK...');
     console.log('Return URL:', returnUrl);
 
-    // Use the DODO SDK for subscription creation
-    const response = await dodoClient.subscriptions.create({
-      product_id: productId,
+    // Use the DODO SDK for checkout session creation (enables billing forms and discount codes)
+    const response = await dodoClient.checkoutSessions.create({
+      product_cart: [
+        {
+          product_id: productId,
+          quantity: 1
+        }
+      ],
+      subscription_data: {
+        // Can add trial_period_days here if needed in the future
+      },
       customer: {
         email: userEmail,
         name: userEmail.split('@')[0], // Use email prefix as name
       },
-      quantity: 1,
-      billing: {
-        city: 'Unknown',
+      billing_address: {
+        street: '', // User will fill this on checkout page
+        city: '',
+        state: '',
         country: detectedCurrency === 'INR' ? 'IN' : 'US',
-        state: 'Unknown',
-        street: 'Unknown',
-        zipcode: '000000',
+        zipcode: '',
       },
       billing_currency: detectedCurrency,
-      payment_link: true,
+      feature_flags: {
+        allow_discount_code: true, // Enable discount code support
+      },
+      show_saved_payment_methods: true,
       return_url: returnUrl,
       metadata: {
         userId,
@@ -140,13 +150,13 @@ export const createSubscriptionCheckout = async (
       },
     });
 
-    if (!response.payment_link) {
-      throw new Error('No payment link returned from DODO Payments');
+    if (!response.checkout_url) {
+      throw new Error('No checkout URL returned from DODO Payments');
     }
 
     return {
-      paymentUrl: response.payment_link,
-      customerId: response.customer.customer_id,
+      paymentUrl: response.checkout_url,
+      customerId: undefined, // Customer ID will be available after checkout completion via webhook
     };
   } catch (error) {
     console.error('Error creating subscription checkout:', error);

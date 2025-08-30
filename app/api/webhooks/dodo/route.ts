@@ -255,11 +255,19 @@ export const POST = Webhooks({
 
     console.log('✅ Processing payment success for user:', userId);
 
-    // Update payment info and reset retry count
-    await updateUserSubscriptionServer(userId!, {
+    // Update payment info, customer ID, and reset retry count
+    const updateData: any = {
       lastPaymentId: paymentData.payment_id || paymentData.id,
       retryCount: 0, // Reset retry count on successful payment
-    });
+    };
+
+    // Capture customer ID if available
+    if (paymentData.customer?.customer_id || paymentData.customer_id) {
+      updateData.customerId = paymentData.customer?.customer_id || paymentData.customer_id;
+      console.log('📝 Captured customer ID from payment:', updateData.customerId);
+    }
+
+    await updateUserSubscriptionServer(userId!, updateData);
 
     console.log('🎊 Payment success processed for user:', userId);
   }),

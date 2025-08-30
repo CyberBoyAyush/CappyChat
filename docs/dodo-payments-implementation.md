@@ -15,9 +15,10 @@ This document outlines the complete implementation of DODO Payments subscription
 
 2. **Subscription Service** (`services/subscription.service.ts`)
    - Currency detection based on user timezone/locale
-   - Subscription creation and management
+   - **Checkout session creation** (uses `checkoutSessions.create()` for full checkout experience)
    - Customer portal session management
    - Premium status validation
+   - **Billing forms and discount code support** enabled via feature flags
 
 3. **Webhook Handler** (`app/api/webhooks/dodo/route.ts`)
    - Secure webhook signature verification using DODO Next.js adapter
@@ -224,6 +225,26 @@ The system includes comprehensive logging for:
 - **Webhook Events**: Monitor webhook delivery in DODO dashboard
 - **Error Tracking**: Check application logs for subscription-related errors
 - **User Support**: Customer portal provides self-service subscription management
+
+## Recent Updates
+
+### December 2024 - Fixed Checkout Experience for Billing Info and Discount Codes
+
+**Problem**: The subscription checkout was using `dodoClient.subscriptions.create()` which created a direct subscription payment link that bypassed the full checkout experience, preventing users from entering billing information and discount codes.
+
+**Solution**: Switched to `dodoClient.checkoutSessions.create()` which provides the proper checkout experience with:
+- Full billing address forms
+- Discount code input field
+- Better user experience with all checkout features
+
+**Key Changes**:
+- Updated `createSubscriptionCheckout()` in `services/subscription.service.ts`
+- Changed from `subscriptions.create()` to `checkoutSessions.create()`
+- Added `feature_flags: { allow_discount_code: true }` to enable discount codes
+- Used `product_cart` array instead of direct `product_id`
+- Added `subscription_data` object for subscription-specific settings
+- Updated response handling from `payment_link` to `checkout_url`
+- Made `customerId` optional since it's only available after checkout completion
 
 ## Future Enhancements
 
