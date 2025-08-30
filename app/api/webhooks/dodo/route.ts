@@ -40,6 +40,7 @@ const updateUserSubscriptionAndTierServer = async (
       subscriptionId: subscriptionData.subscriptionId || currentPrefs.subscriptionId,
       subscriptionPeriodEnd: subscriptionData.currentPeriodEnd || currentPrefs.subscriptionPeriodEnd,
       subscriptionCancelAtEnd: subscriptionData.cancelAtPeriodEnd !== undefined ? subscriptionData.cancelAtPeriodEnd : currentPrefs.subscriptionCancelAtEnd,
+      subscriptionFinalDate: subscriptionData.finalDate || subscriptionData.currentPeriodEnd || currentPrefs.subscriptionFinalDate,
       subscriptionCurrency: subscriptionData.currency || currentPrefs.subscriptionCurrency,
       subscriptionAmount: subscriptionData.amount || currentPrefs.subscriptionAmount,
       subscriptionLastPayment: subscriptionData.lastPaymentId || currentPrefs.subscriptionLastPayment,
@@ -118,6 +119,7 @@ export const POST = Webhooks({
       customerId: subscriptionData.customer?.customer_id || subscriptionData.customer_id,
       subscriptionId: subscriptionData.subscription_id || subscriptionData.id,
       currentPeriodEnd: subscriptionData.current_period_end,
+      finalDate: subscriptionData.current_period_end, // Set final date to next billing date
       cancelAtPeriodEnd: false,
       currency: subscriptionData.billing_currency as 'INR' | 'USD',
       amount: subscriptionData.recurring_pre_tax_amount || subscriptionData.amount,
@@ -148,6 +150,7 @@ export const POST = Webhooks({
       tier: 'PREMIUM' as const,
       status: 'active' as const,
       currentPeriodEnd: subscriptionData.current_period_end,
+      finalDate: subscriptionData.current_period_end, // Set final date to next billing date
       lastPaymentId: subscriptionData.payment_id,
       retryCount: 0, // Reset retry count on successful payment
       cancelAtPeriodEnd: false, // Reset cancellation flag on renewal

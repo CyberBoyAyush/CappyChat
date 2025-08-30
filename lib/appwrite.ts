@@ -58,6 +58,7 @@ export interface UserSubscription {
   subscriptionId?: string;
   currentPeriodEnd?: string; // ISO8601 timestamp
   cancelAtPeriodEnd?: boolean;
+  finalDate?: string; // ISO8601 timestamp - next billing date or cancellation date
   currency?: 'INR' | 'USD';
   amount?: number;
   adminOverride?: boolean;
@@ -243,6 +244,7 @@ export const getUserSubscription = async (): Promise<UserSubscription | null> =>
         subscriptionId: prefs.subscriptionId as string,
         currentPeriodEnd: prefs.subscriptionPeriodEnd as string,
         cancelAtPeriodEnd: prefs.subscriptionCancelAtEnd as boolean,
+        finalDate: prefs.subscriptionFinalDate as string,
         currency: prefs.subscriptionCurrency as 'INR' | 'USD',
         amount: prefs.subscriptionAmount as number,
         lastPaymentId: prefs.subscriptionLastPayment as string,
