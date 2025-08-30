@@ -39,7 +39,7 @@ const updateUserSubscriptionAndTierServer = async (
       subscriptionCustomerId: subscriptionData.customerId || currentPrefs.subscriptionCustomerId,
       subscriptionId: subscriptionData.subscriptionId || currentPrefs.subscriptionId,
       subscriptionPeriodEnd: subscriptionData.currentPeriodEnd || currentPrefs.subscriptionPeriodEnd,
-      subscriptionCancelAtEnd: subscriptionData.cancelAtPeriodEnd || currentPrefs.subscriptionCancelAtEnd,
+      subscriptionCancelAtEnd: subscriptionData.cancelAtPeriodEnd !== undefined ? subscriptionData.cancelAtPeriodEnd : currentPrefs.subscriptionCancelAtEnd,
       subscriptionCurrency: subscriptionData.currency || currentPrefs.subscriptionCurrency,
       subscriptionAmount: subscriptionData.amount || currentPrefs.subscriptionAmount,
       subscriptionLastPayment: subscriptionData.lastPaymentId || currentPrefs.subscriptionLastPayment,
@@ -150,6 +150,7 @@ export const POST = Webhooks({
       currentPeriodEnd: subscriptionData.current_period_end,
       lastPaymentId: subscriptionData.payment_id,
       retryCount: 0, // Reset retry count on successful payment
+      cancelAtPeriodEnd: false, // Reset cancellation flag on renewal
     };
 
     const tierUpdate = {
