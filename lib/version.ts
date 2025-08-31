@@ -5,7 +5,7 @@
  * This file contains the current version and detailed changelog entries.
  */
 
-export const CURRENT_VERSION = '3.0.0';
+export const CURRENT_VERSION = '3.3.0';
 
 export interface ChangelogEntry {
   version: string;
@@ -22,9 +22,119 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '3.3.0',
+    date: '2025-08-31',
+    isLatest: true,
+    features: [
+      {
+        type: 'new',
+        title: 'Gemini 2.5 Flash Lite Default Model',
+        description: 'Updated default model from OpenAI 5 Mini to Gemini 2.5 Flash Lite across the entire application for improved performance and cost efficiency.',
+        icon: 'Sparkles',
+        color: 'blue'
+      },
+      {
+        type: 'improvement',
+        title: 'Domain Migration to avchat.xyz',
+        description: 'Migrated all URLs and references from avchat.ayush-sharma.in to the new avchat.xyz domain for better branding and accessibility.',
+        icon: 'Globe',
+        color: 'green'
+      },
+      {
+        type: 'improvement',
+        title: 'Subscription Management Enhancement',
+        description: 'Refactored subscription handling with next_billing_date consistency and improved cancellation status display.',
+        icon: 'CreditCard',
+        color: 'purple'
+      },
+      {
+        type: 'fix',
+        title: 'Guest User Model Restrictions',
+        description: 'Updated guest user restrictions to use Gemini 2.5 Flash Lite as the default model with proper validation and error messaging.',
+        icon: 'UserCheck',
+        color: 'orange'
+      }
+    ]
+  },
+  {
+    version: '3.2.0',
+    date: '2025-08-13',
+    features: [
+      {
+        type: 'new',
+        title: 'Reddit Search Integration',
+        description: 'Added comprehensive Reddit search functionality with dedicated UI components, citations, and search type selection between Web, Reddit, and Chat modes.',
+        icon: 'MessageSquare',
+        color: 'orange'
+      },
+      {
+        type: 'new',
+        title: 'Enhanced Search Type Selector',
+        description: 'Implemented SearchTypeSelector with Reddit icon support and improved UI for switching between different search modes.',
+        icon: 'Search',
+        color: 'blue'
+      },
+      {
+        type: 'improvement',
+        title: 'UI Component Enhancements',
+        description: 'Enhanced ModelSelector, ConversationStyleSelector, and other UI components with ghost buttons and improved dropdown styling.',
+        icon: 'Palette',
+        color: 'purple'
+      },
+      {
+        type: 'improvement',
+        title: 'Voice Input Button Updates',
+        description: 'Updated VoiceInputButton icons for better clarity, replacing MicOff with Ban and Mic with AudioLines for improved user experience.',
+        icon: 'Mic',
+        color: 'green'
+      }
+    ]
+  },
+  {
+    version: '3.1.0',
+    date: '2025-07-04',
+    features: [
+      {
+        type: 'new',
+        title: 'Tavily API Integration',
+        description: 'Integrated Tavily API for enhanced web search capabilities, allowing any selected model to perform comprehensive web searches with improved accuracy.',
+        icon: 'Search',
+        color: 'blue'
+      },
+      {
+        type: 'new',
+        title: 'BYOK Tavily Support',
+        description: 'Added Bring Your Own Key (BYOK) support for Tavily API keys with validation, persistence, and user-friendly management interface.',
+        icon: 'Key',
+        color: 'yellow'
+      },
+      {
+        type: 'new',
+        title: 'Automated Version Management',
+        description: 'Implemented automated version management system with changelog generation scripts and semantic versioning support.',
+        icon: 'GitBranch',
+        color: 'green'
+      },
+      {
+        type: 'improvement',
+        title: 'Web Search Citations',
+        description: 'Enhanced web search citations with improved UI components, better loading states, and comprehensive source attribution.',
+        icon: 'Link',
+        color: 'purple'
+      },
+      {
+        type: 'improvement',
+        title: 'Model Availability Enhancement',
+        description: 'Removed model restrictions for web search, allowing users to perform searches with any available AI model for better flexibility.',
+        icon: 'Unlock',
+        color: 'orange'
+      }
+    ]
+  },
+  {
     version: '3.0.0',
     date: '2025-07-01',
-    isLatest: true,
+    isLatest: false,
     features: [
       {
         type: 'new',
@@ -241,7 +351,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         type: 'fix',
         title: 'Guest User Restrictions',
-        description: 'Updated guest user model restrictions to OpenAI 5 Mini for better resource management.',
+        description: 'Updated guest user model restrictions to Gemini 2.5 Flash Lite for better resource management.',
         icon: 'UserX',
         color: 'yellow'
       }

@@ -25,9 +25,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Use the provided model or default to OpenAI 5 Mini
+    // Use the provided model or default to Gemini 2.5 Flash Lite
     // Allow any model for web search with Tavily integration
-    const selectedModel = model || 'OpenAI 5 Mini';
+    const selectedModel = model || 'Gemini 2.5 Flash Lite';
     const modelConfig = getModelConfig(selectedModel);
 
     if (!modelConfig) {

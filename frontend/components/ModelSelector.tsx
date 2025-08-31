@@ -221,17 +221,17 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
       });
     }, [isImageGenMode]);
 
-  // For guest users, lock to OpenAI 5 Mini
+  // For guest users, lock to Gemini 2.5 Flash Lite
   const isLocked = isGuest;
   const usingBYOK = hasOpenRouterKey();
 
-  // Force guest users to use OpenAI 5 Mini
+  // Force guest users to use Gemini 2.5 Flash Lite
   useEffect(() => {
-    if (isGuest && selectedModel !== "OpenAI 5 Mini") {
+    if (isGuest && selectedModel !== "Gemini 2.5 Flash Lite") {
       console.log(
-        "[ModelSelector] Guest user detected, forcing model to OpenAI 5 Mini"
+        "[ModelSelector] Guest user detected, forcing model to Gemini 2.5 Flash Lite"
       );
-      setModel("OpenAI 5 Mini");
+      setModel("Gemini 2.5 Flash Lite");
     }
   }, [isGuest, selectedModel, setModel]);
 
@@ -249,9 +249,9 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
       const currentConfig = getModelConfig(selectedModel);
       if (currentConfig.isImageGeneration) {
         console.log(
-          "[ModelSelector] Not in image generation mode, switching to OpenAI 5 Mini"
+          "[ModelSelector] Not in image generation mode, switching to Gemini 2.5 Flash Lite"
         );
-        setModel("OpenAI 5 Mini");
+        setModel("Gemini 2.5 Flash Lite");
       }
     }
   }, [isImageGenMode, selectedModel, setModel]);
@@ -310,7 +310,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
   const isModelEnabled = useCallback(
     (model: AIModel) => {
       if (isGuest) {
-        return model === "OpenAI 5 Mini";
+        return model === "Gemini 2.5 Flash Lite";
       }
       if (isImageGenMode) {
         const config = getModelConfig(model);
@@ -356,7 +356,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
       if (!isImageGenMode && config.isImageGeneration) return false;
 
       // Guest user filter
-      if (isGuest && model !== "OpenAI 5 Mini") return false;
+      if (isGuest && model !== "Gemini 2.5 Flash Lite") return false;
 
       // Search filter
       if (searchQuery.trim()) {

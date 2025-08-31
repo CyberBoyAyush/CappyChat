@@ -1327,7 +1327,7 @@ function PureInputField({
                 )}
                 {isGuest && (
                   <div className="text-xs text-muted-foreground">
-                    Using OpenAI 5 Mini • Sign up for more models
+                    Using Gemini 2.5 Flash Lite • Sign up for more models
                   </div>
                 )}
               </div>
@@ -1370,9 +1370,9 @@ function PureInputField({
                           const currentConfig = getModelConfig(selectedModel);
                           if (currentConfig.isImageGeneration) {
                             console.log(
-                              "💬 Switching back to default model: Gemini 2.5 Flash"
+                              "💬 Switching back to default model: Gemini 2.5 Flash Lite"
                             );
-                            setModel("OpenAI 5 Mini");
+                            setModel("Gemini 2.5 Flash Lite");
                           }
                         }
                       }}

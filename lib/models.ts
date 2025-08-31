@@ -9,10 +9,12 @@ export const AI_MODELS = [
   'DeepSeek R1 Fast',
   'DeepSeek V3.1',
   'Qwen3 235B A22B',
+  'Qwen3 30B A3B Thinking 2507',
   'Claude Sonnet 4',
   'Gemini 2.5 Pro',
   'OpenAI 5 Nano',
   'Grok 3 Mini',
+  'Grok Code Fast 1',
   'FLUX.1 [schnell]',
   'FLUX.1 Dev',
   'FLUX.1 Kontext [dev]',
@@ -170,6 +172,19 @@ export const MODEL_CONFIGS = {
     isFast: true,
     description: 'Qwen3 235B A22B is a powerful model with advanced reasoning capabilities',
   },
+  'Qwen3 30B A3B Thinking 2507': {
+    modelId: 'qwen/qwen3-30b-a3b-thinking-2507',
+    provider: 'openrouter',
+    displayName: 'Qwen3 30B A3B Thinking 2507',
+    iconType: 'qwen',
+    company: 'Alibaba',
+    isPremium: false,
+    isSuperPremium: false,
+    hasReasoning: true,
+    isFileSupported: false,
+    isFast: true,
+    description: 'Qwen3 30B A3B Thinking 2507 is a powerful model with advanced reasoning capabilities',
+  },
   'Claude Sonnet 4': {
     modelId: 'anthropic/claude-sonnet-4',
     provider: 'openrouter',
@@ -213,6 +228,19 @@ export const MODEL_CONFIGS = {
     modelId: 'x-ai/grok-3-mini-beta',
     provider: 'openrouter',
     displayName: 'Grok 3 Mini',
+    iconType: 'x-ai',
+    company: 'XAI',
+    isPremium: false,
+    isSuperPremium: false,
+    hasReasoning: true,
+    isFileSupported: true,
+    isFast: true,
+    description: 'Fastest model from XAI with awesome coding capabilities.',
+  },
+  'Grok Code Fast 1': {
+    modelId: 'x-ai/grok-code-fast-1',
+    provider: 'openrouter',
+    displayName: 'Grok Code Fast 1',
     iconType: 'x-ai',
     company: 'XAI',
     isPremium: false,
@@ -300,7 +328,7 @@ export const getModelConfig = (modelName: AIModel): ModelConfig => {
   if (!config) {
     console.error(`Model config not found for: ${modelName}. Available models:`, Object.keys(MODEL_CONFIGS));
     // Return a fallback config for the first available model
-    return MODEL_CONFIGS['OpenAI 5 Mini'];
+    return MODEL_CONFIGS['Gemini 2.5 Flash Lite'];
   }
   return config;
 };

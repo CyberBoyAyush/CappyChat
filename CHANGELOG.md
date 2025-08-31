@@ -10,7 +10,32 @@ AVChat uses semantic versioning (SemVer) for version management:
 - **Minor version (X.Y.0)**: New features, backwards compatible
 - **Patch version (X.Y.Z)**: Bug fixes, small improvements
 
-## Current Version: 3.0.0
+## Current Version: 3.3.0
+
+### Version 3.3.0 - August 31, 2025
+
+**Major Updates:**
+- 🌟 **Gemini 2.5 Flash Lite Default**: Updated default model across the entire application for improved performance
+- 🌐 **Domain Migration**: Migrated to avchat.xyz for better branding and accessibility
+- 💳 **Subscription Enhancement**: Improved subscription management with better billing date handling
+- 👤 **Guest User Updates**: Enhanced guest user restrictions with new default model
+
+### Version 3.2.0 - August 13, 2025
+
+**New Features:**
+- 🔍 **Reddit Search Integration**: Comprehensive Reddit search with dedicated UI and citations
+- 🎛️ **Enhanced Search Selector**: Improved search type selection between Web, Reddit, and Chat modes
+- 🎨 **UI Component Enhancements**: Enhanced ModelSelector and other components with improved styling
+- 🎤 **Voice Input Updates**: Updated voice input icons for better user clarity
+
+### Version 3.1.0 - July 4, 2025
+
+**New Features:**
+- 🔍 **Tavily API Integration**: Enhanced web search capabilities with Tavily API
+- 🔑 **BYOK Tavily Support**: Bring Your Own Key support for Tavily API
+- 🏷️ **Automated Versioning**: Implemented automated version management and changelog generation
+- 📚 **Enhanced Citations**: Improved web search citations with better UI components
+- 🔓 **Model Flexibility**: Removed model restrictions for web search functionality
 
 ### Version 3.0.0 - July 1, 2025
 
