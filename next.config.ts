@@ -19,8 +19,10 @@ const nextConfig: NextConfig = {
       'sonner',
       'date-fns',
     ],
-
   },
+
+  // VPS compatibility settings
+  output: 'standalone',
 
   // Compiler optimizations
   compiler: {

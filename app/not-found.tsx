@@ -1,10 +1,13 @@
 /**
  * Next.js 404 Not Found Page
- * 
- * This is the official Next.js 404 page that gets prerendered during build.
+ *
+ * This is the official Next.js 404 page that gets dynamically rendered.
  * It's separate from the React Router 404 handling in ChatAppRouter.tsx.
- * This fixes the build error: "<Html> should not be imported outside of pages/_document"
+ * Force dynamic rendering to prevent VPS build issues.
  */
+
+// Force dynamic rendering to prevent build issues on VPS
+export const dynamic = 'force-dynamic';
 
 export default function NotFound() {
   return (
