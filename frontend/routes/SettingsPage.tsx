@@ -826,8 +826,8 @@ export default function SettingsPage() {
                                 Current Free Plan
                               </h5>
                               <ul className="text-xs text-muted-foreground space-y-1">
-                                <li>• 200 Free Model Credits</li>
-                                <li>• 20 Premium Credits</li>
+                                <li>• 80 Free Model Credits</li>
+                                <li>• 10 Premium Credits</li>
                                 <li>• 2 Super Premium Credits</li>
                                 <li>• Community Support</li>
                               </ul>
