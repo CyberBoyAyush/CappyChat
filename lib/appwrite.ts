@@ -50,9 +50,28 @@ export interface UserCustomProfile {
   aboutUser?: string;
 }
 
+// Subscription Interface
+export interface UserSubscription {
+  tier: 'FREE' | 'PREMIUM';
+  status: 'active' | 'cancelled' | 'expired' | 'on_hold' | 'failed';
+  customerId?: string;
+  subscriptionId?: string;
+  currentPeriodEnd?: string; // ISO8601 timestamp
+  cancelAtPeriodEnd?: boolean;
+  next_billing_date?: string; // ISO8601 timestamp - next billing date from webhook
+  currency?: 'INR' | 'USD';
+  amount?: number;
+  adminOverride?: boolean;
+  lastPaymentId?: string;
+  retryCount?: number;
+  createdAt?: string; // ISO8601 timestamp
+  updatedAt?: string; // ISO8601 timestamp
+}
+
 // Combined User Preferences Interface
 export interface UserPreferences extends UserTierPreferences {
   customProfile?: UserCustomProfile;
+  subscription?: UserSubscription;
 }
 
 // Default tier limits
@@ -204,6 +223,89 @@ export const initializeUserTier = async (tier: 'free' | 'premium' | 'admin' = 'f
     });
   } catch (error) {
     console.error('Failed to initialize user tier:', error);
+    throw error;
+  }
+};
+
+// Subscription Management Functions
+export const getUserSubscription = async (): Promise<UserSubscription | null> => {
+  try {
+    const user = await getCachedAccount();
+    if (!user) return null;
+
+    const prefs = user.prefs as Record<string, unknown>;
+
+    // Check if user has subscription data in flattened fields
+    if (prefs && (prefs.subscriptionTier || prefs.tier === 'premium')) {
+      return {
+        tier: (prefs.subscriptionTier as 'FREE' | 'PREMIUM') || (prefs.tier === 'premium' ? 'PREMIUM' : 'FREE'),
+        status: (prefs.subscriptionStatus as any) || (prefs.tier === 'premium' ? 'active' : 'expired'),
+        customerId: prefs.subscriptionCustomerId as string,
+        subscriptionId: prefs.subscriptionId as string,
+        currentPeriodEnd: prefs.subscriptionPeriodEnd as string,
+        cancelAtPeriodEnd: prefs.subscriptionCancelAtEnd as boolean,
+        next_billing_date: prefs.subscriptionNextBillingDate as string,
+        currency: prefs.subscriptionCurrency as 'INR' | 'USD',
+        amount: prefs.subscriptionAmount as number,
+        lastPaymentId: prefs.subscriptionLastPayment as string,
+        retryCount: (prefs.subscriptionRetryCount as number) || 0,
+        createdAt: user.$createdAt,
+        updatedAt: prefs.subscriptionUpdatedAt as string,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Failed to get user subscription:', error);
+    return null;
+  }
+};
+
+export const updateUserSubscription = async (subscription: Partial<UserSubscription>): Promise<void> => {
+  try {
+    const currentUser = await getCachedAccount();
+    if (!currentUser) throw new Error('User not found');
+
+    const currentPrefs = currentUser.prefs as Record<string, unknown>;
+
+    // Update flattened subscription fields
+    const updatedPrefs = {
+      ...currentPrefs,
+      subscriptionTier: subscription.tier || currentPrefs.subscriptionTier,
+      subscriptionStatus: subscription.status || currentPrefs.subscriptionStatus,
+      subscriptionCustomerId: subscription.customerId || currentPrefs.subscriptionCustomerId,
+      subscriptionId: subscription.subscriptionId || currentPrefs.subscriptionId,
+      subscriptionPeriodEnd: subscription.currentPeriodEnd || currentPrefs.subscriptionPeriodEnd,
+      subscriptionCancelAtEnd: subscription.cancelAtPeriodEnd || currentPrefs.subscriptionCancelAtEnd,
+      subscriptionCurrency: subscription.currency || currentPrefs.subscriptionCurrency,
+      subscriptionAmount: subscription.amount || currentPrefs.subscriptionAmount,
+      subscriptionLastPayment: subscription.lastPaymentId || currentPrefs.subscriptionLastPayment,
+      subscriptionRetryCount: subscription.retryCount !== undefined ? subscription.retryCount : currentPrefs.subscriptionRetryCount,
+      subscriptionUpdatedAt: new Date().toISOString(),
+    };
+
+    await account.updatePrefs(updatedPrefs);
+
+    // Invalidate cache after update
+    invalidateAccountCache();
+  } catch (error) {
+    console.error('Failed to update user subscription:', error);
+    throw error;
+  }
+};
+
+export const initializeUserSubscription = async (): Promise<void> => {
+  try {
+    const now = new Date().toISOString();
+
+    await updateUserSubscription({
+      tier: 'FREE',
+      status: 'expired',
+      createdAt: now,
+      updatedAt: now,
+    });
+  } catch (error) {
+    console.error('Failed to initialize user subscription:', error);
     throw error;
   }
 };

@@ -6,7 +6,7 @@
  * Provides access to all user preferences and configuration options.
  */
 
-import { Link, useSearchParams, useLocation } from "react-router-dom";
+import { Link, useSearchParams, useLocation, useNavigate } from "react-router-dom";
 
 import {
   Settings as SettingsIcon,
@@ -37,6 +37,7 @@ import {
   Sparkles,
   Info,
   Calendar,
+  Crown,
 } from "lucide-react";
 import ThemeToggleButton from "../components/ui/ThemeComponents";
 import { useTheme } from "next-themes";
@@ -59,6 +60,7 @@ import { GitHubIcon, GoogleIcon, XIcon } from "../components/ui/icons";
 import SessionManager from "../components/SessionManager";
 import MemorySettings from "../components/MemorySettings";
 import FileManager from "../components/FileManager";
+import SubscriptionSettings from "../components/settings/SubscriptionSettings";
 
 // Notification type
 type NotificationType = {
@@ -69,6 +71,7 @@ type NotificationType = {
 export default function SettingsPage() {
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const chatId = searchParams.get("from");
   const { setTheme, theme } = useTheme();
   const { user, updateProfile, logout, getDetailedSessionInfo } = useAuth();
@@ -618,6 +621,11 @@ export default function SettingsPage() {
                 {[
                   { id: "profile", label: "Profile", icon: User },
                   {
+                    id: "subscription",
+                    label: "Subscription",
+                    icon: Calendar,
+                  },
+                  {
                     id: "customization",
                     label: "Customization",
                     icon: Sparkles,
@@ -786,7 +794,7 @@ export default function SettingsPage() {
                         <div className="mt-6 pt-4 border-t border-border">
                           <div className="flex items-center justify-between mb-4">
                             <div>
-                              <h4 className="text-sm font-medium text-muted-foreground">
+                              <h4 className="text-sm font-medium text-foreground">
                                 Upgrade Your Plan
                               </h4>
                               <p className="text-xs text-muted-foreground mt-1">
@@ -795,36 +803,60 @@ export default function SettingsPage() {
                             </div>
                             <Button
                               onClick={() => {
-                                window.location.href =
-                                  "mailto:hi@aysh.me?subject=Upgrade%20to%20Pro%20in%20AVChat";
+                                navigate("/pricing");
                               }}
-                              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
+                              className="bg-primary hover:bg-primary/90 text-primary-foreground border-0 shadow-sm hover:shadow-md transition-all duration-200"
                             >
                               <Sparkles className="w-4 h-4 mr-2" />
                               Upgrade to Pro
                             </Button>
                           </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border border-purple-200/50 dark:border-purple-800/50">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg bg-muted/30 border border-border">
                             <div className="space-y-2">
-                              <h5 className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                              <h5 className="text-sm font-medium text-foreground flex items-center gap-2">
+                                <Crown className="w-4 h-4 text-primary" />
                                 Pro Plan Benefits
                               </h5>
-                              <ul className="text-xs text-purple-600 dark:text-purple-400 space-y-1">
-                                <li>• 1,200 Free Model Credits</li>
-                                <li>• 600 Premium Credits</li>
-                                <li>• 50 Super Premium Credits</li>
-                                <li>• Priority Support</li>
+                              <ul className="text-xs text-foreground space-y-1">
+                                <li className="flex items-center gap-2">
+                                  <Check className="w-3 h-3 text-primary" />
+                                  1,200 Free Model Credits
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <Check className="w-3 h-3 text-primary" />
+                                  600 Premium Credits
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <Check className="w-3 h-3 text-primary" />
+                                  50 Super Premium Credits
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <Check className="w-3 h-3 text-primary" />
+                                  Priority Support
+                                </li>
                               </ul>
                             </div>
                             <div className="space-y-2">
-                              <h5 className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                              <h5 className="text-sm font-medium text-muted-foreground">
                                 Current Free Plan
                               </h5>
                               <ul className="text-xs text-muted-foreground space-y-1">
-                                <li>• 200 Free Model Credits</li>
-                                <li>• 20 Premium Credits</li>
-                                <li>• 2 Super Premium Credits</li>
-                                <li>• Community Support</li>
+                                <li className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-full bg-muted-foreground/20" />
+                                  80 Free Model Credits
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-full bg-muted-foreground/20" />
+                                  10 Premium Credits
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-full bg-muted-foreground/20" />
+                                  2 Super Premium Credits
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-full bg-muted-foreground/20" />
+                                  Community Support
+                                </li>
                               </ul>
                             </div>
                           </div>
@@ -989,6 +1021,13 @@ export default function SettingsPage() {
 
                     {/* Global Memory Settings */}
                     <MemorySettings />
+                  </div>
+                )}
+
+                {/* Subscription Section */}
+                {activeSection === "subscription" && (
+                  <div className="space-y-6">
+                    <SubscriptionSettings />
                   </div>
                 )}
 

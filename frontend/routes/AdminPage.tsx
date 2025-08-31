@@ -41,6 +41,7 @@ import {
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { devError } from '@/lib/logger';
+import SubscriptionManagement from '@/frontend/components/admin/SubscriptionManagement';
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -1204,6 +1205,22 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Subscription Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Subscription Management
+            </CardTitle>
+            <CardDescription>
+              Manage all premium subscriptions and user preferences
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SubscriptionManagement />
+          </CardContent>
+        </Card>
 
         {/* Dangerous Operations */}
         <Card className="border-red-500 dark:border-red-500 bg-red-50/50 dark:bg-red-900/10">

@@ -210,6 +210,18 @@ class AdminService {
   }
 
   /**
+   * Set subscription override for a user
+   */
+  async setSubscriptionOverride(adminKey: string, userId: string, override: boolean): Promise<void> {
+    await this.makeRequest('/api/admin/manage-user', {
+      adminKey,
+      action: 'setSubscriptionOverride',
+      userId,
+      subscriptionOverride: override,
+    });
+  }
+
+  /**
    * Reset credits for a specific user
    */
   async resetUserCredits(adminKey: string, userId: string): Promise<void> {
