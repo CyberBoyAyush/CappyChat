@@ -21,8 +21,8 @@ export async function POST(req: NextRequest) {
       isGuest,
     } = await req.json();
 
-    // Use the provided model or default to OpenAI 5 Mini
-    const selectedModel = model || 'OpenAI 5 Mini';
+    // Use the provided model or default to Gemini 2.5 Flash Lite
+    const selectedModel = model || 'Gemini 2.5 Flash Lite';
 
     devLog(`🔍 Reddit search request received for user ${userId} using model ${selectedModel}`);
 

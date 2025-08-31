@@ -241,7 +241,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         type: 'fix',
         title: 'Guest User Restrictions',
-        description: 'Updated guest user model restrictions to OpenAI 5 Mini for better resource management.',
+        description: 'Updated guest user model restrictions to Gemini 2.5 Flash Lite for better resource management.',
         icon: 'UserX',
         color: 'yellow'
       }
