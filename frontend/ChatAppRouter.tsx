@@ -28,6 +28,7 @@ import PaymentResultPage from "./routes/payment/PaymentResultPage";
 import SignupPage from "./routes/auth/SignupPage";
 import EmailVerificationPage from "./routes/auth/EmailVerificationPage";
 import ResetPasswordPage from "./routes/auth/ResetPasswordPage";
+import PricingPage from "./routes/PricingPage";
 import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { Suspense } from "react";
@@ -67,6 +68,9 @@ export default function ChatAppRouter() {
 
           {/* Changelog route (always accessible) */}
           <Route path="/changelog" element={<ChangelogPage />} />
+
+          {/* Pricing route (always accessible) */}
+          <Route path="/pricing" element={<PricingPage />} />
 
           {/* Shared chat route (always accessible) */}
           <Route path="/share/:shareId" element={<SharedChatPage />} />

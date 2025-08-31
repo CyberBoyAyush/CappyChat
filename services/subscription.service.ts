@@ -11,7 +11,7 @@ import { getUserSubscription, updateUserSubscription, UserSubscription } from '@
 // Pricing configuration
 export const SUBSCRIPTION_PRICING = {
   INR: 999,
-  USD: 12,
+  USD: 11.25,
 } as const;
 
 export type Currency = keyof typeof SUBSCRIPTION_PRICING;
@@ -128,11 +128,7 @@ export const createSubscriptionCheckout = async (
         email: userEmail,
         name: userEmail.split('@')[0], // Use email prefix as name
       },
-      // Omit billing_address to let user fill it on checkout page
-      // Only set the country for tax calculation purposes
-      billing_address: {
-        country: detectedCurrency === 'INR' ? 'IN' : 'US',
-      },
+      // Let user fill their own billing address and country on checkout page
       billing_currency: detectedCurrency,
       feature_flags: {
         allow_discount_code: true, // Enable discount code support
