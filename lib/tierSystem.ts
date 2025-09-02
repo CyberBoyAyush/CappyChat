@@ -602,15 +602,28 @@ export const adminGetUserByEmail = async (email: string): Promise<{ $id: string;
  */
 export const shouldResetMonthly = (lastResetDate?: string): boolean => {
   if (!lastResetDate) return true;
-  
+
   const lastReset = new Date(lastResetDate);
   const now = new Date();
-  
+
   // Check if we're in a new month
   return (
     now.getFullYear() > lastReset.getFullYear() ||
     (now.getFullYear() === lastReset.getFullYear() && now.getMonth() > lastReset.getMonth())
   );
+};
+
+/**
+ * Check if user needs daily reset (30+ days since last reset)
+ */
+export const shouldResetDaily = (lastResetDate?: string): boolean => {
+  if (!lastResetDate) return true; // New users need reset
+
+  const lastReset = new Date(lastResetDate);
+  const now = new Date();
+  const daysDiff = Math.floor((now.getTime() - lastReset.getTime()) / (1000 * 60 * 60 * 24));
+
+  return daysDiff >= 30; // Reset after 30+ days
 };
 
 /**
