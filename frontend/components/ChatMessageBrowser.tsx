@@ -14,7 +14,7 @@ import { X, MessageCircle, Bot, User, Search, Clock } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/frontend/contexts/AuthContext';
-import { devLog, devWarn, devInfo, devError, prodError } from '@/lib/logger';
+import { devWarn, devError } from '@/lib/logger';
 
 interface MessageBrowserProps {
   threadId: string;
@@ -92,10 +92,6 @@ function PureMessageBrowser({
         try {
           const remoteSummaries = await AppwriteDB.getMessageSummariesWithRole(threadId);
           if (isMounted && remoteSummaries.length > 0) {
-            // Update local storage with remote summaries
-            // Clear local summaries for this thread first
-            const allLocalSummaries = await HybridDB.getMessageSummariesWithRole(threadId);
-
             // Replace with remote summaries
             setMessageSummaries(remoteSummaries);
 

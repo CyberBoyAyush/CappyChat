@@ -1089,12 +1089,19 @@ export class HybridDB {
       messagesMap.set(message.id, message);
     });
     
-    return summaries.map(summary => {
+    const summariesWithRole = summaries.map(summary => {
       const message = messagesMap.get(summary.messageId);
       return {
         ...summary,
         role: message ? message.role : 'user'
       };
+    });
+    
+    // Ensure robust ordering by message creation time for consistent alternation
+    return summariesWithRole.sort((a, b) => {
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+      return timeA - timeB;
     });
   }
 
