@@ -34,11 +34,13 @@ import {
   Calendar,
   Activity,
   Crown,
+  Coins,
 } from "lucide-react";
 import { getUserTierInfo, type TierType } from "@/lib/tierSystem";
 import AuthDialog from "./auth/AuthDialog";
 import { useAuthDialog } from "@/frontend/hooks/useAuthDialog";
 import { cn } from "@/lib/utils";
+import { FaMoneyBill1 } from "react-icons/fa6";
 
 // Type for tier information
 interface TierInfo {
@@ -370,6 +372,13 @@ const UserProfileDropdown: React.FC = () => {
           >
             <Info className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm">About</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => navigate("/pricing")}
+            className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-md text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <Coins className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">Pricing</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => navigate("/changelog")}
