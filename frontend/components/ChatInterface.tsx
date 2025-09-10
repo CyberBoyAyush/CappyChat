@@ -13,6 +13,7 @@ import ChatMessageBrowser from "./ChatMessageBrowser";
 import GuestWelcomeScreen from "./GuestWelcomeScreen";
 import AuthLoadingScreen from "./auth/AuthLoadingScreen";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
+import { PlusIcon } from "./ui/icons/PlusIcon";
 
 import { UIMessage } from "ai";
 
@@ -34,19 +35,12 @@ import {
   MessageSquareMore,
   PanelLeftIcon,
   ArrowDown,
-  ChevronLeftIcon,
   Code,
   Search,
   BookOpen,
   FileQuestion,
   Compass,
-  Brain,
-  Bot,
   Sparkles,
-  Laptop,
-  ChevronRight,
-  PlusIcon,
-  Info,
   CircleHelp,
   X,
 } from "lucide-react";
@@ -64,7 +58,12 @@ import GlobalSearchDialog from "./GlobalSearchDialog";
 import { extractUrlsFromContent } from "./WebSearchCitations";
 import WebSearchLoader from "./WebSearchLoader";
 import RedditSearchLoader from "./RedditSearchLoader";
-import { devLog, devWarn, devInfo, devError, prodError } from '@/lib/logger';
+import { devLog, devWarn, devInfo, devError, prodError } from "@/lib/logger";
+import { SearchIcon } from "./ui/icons/SearchIcon";
+import { MessageCircleIcon } from "./ui/icons/MessageCircleIcon";
+import { InfoIcon } from "./ui/icons/InfoIcon";
+import { PanelLeft } from "@/frontend/components/ui/icons/panel-left";
+import { AnimateIcon } from "@/frontend/components/ui/icons/icon";
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -178,9 +177,7 @@ export default function ChatInterface({
           }
         } else {
           if (isPendingAuth) {
-            devLog(
-              "[ChatInterface] 🧹 No pending auth found, clearing state"
-            );
+            devLog("[ChatInterface] 🧹 No pending auth found, clearing state");
           }
           setIsPendingAuth(false);
         }
@@ -197,9 +194,7 @@ export default function ChatInterface({
 
     // Listen for auth state changes to clear pending state
     const handleAuthStateChanged = () => {
-      devLog(
-        "[ChatInterface] 🎉 Auth state changed - clearing pending state"
-      );
+      devLog("[ChatInterface] 🎉 Auth state changed - clearing pending state");
       setIsPendingAuth(false);
       sessionStorage.removeItem("avchat_auth_pending");
     };
@@ -262,10 +257,7 @@ export default function ChatInterface({
     // Remove from tracking after 2 seconds to allow normal sync
     setTimeout(() => {
       recentlyAppendedMessages.current.delete(messageId);
-      devLog(
-        "[ChatInterface] Stopped tracking appended message:",
-        messageId
-      );
+      devLog("[ChatInterface] Stopped tracking appended message:", messageId);
     }, 2000);
   }, []);
 
@@ -348,18 +340,10 @@ export default function ChatInterface({
         message.content.length
       );
       const extractedUrls = extractUrlsFromContent(message.content);
-      devLog(
-        "🔍 onFinish: URLs found:",
-        extractedUrls.length,
-        extractedUrls
-      );
+      devLog("🔍 onFinish: URLs found:", extractedUrls.length, extractedUrls);
 
       if (extractedUrls.length > 0) {
-        devLog(
-          "✅ Extracted URLs from AI message:",
-          message.id,
-          extractedUrls
-        );
+        devLog("✅ Extracted URLs from AI message:", message.id, extractedUrls);
 
         aiMessage.webSearchResults = extractedUrls;
 
@@ -634,10 +618,7 @@ export default function ChatInterface({
       // Streaming ended, clean up
       const lastRef = lastStreamingMessageRef.current;
       streamingSync.endStreaming(threadId, lastRef.id, lastRef.content);
-      devLog(
-        "[ChatInterface] Ended streaming sync for message:",
-        lastRef.id
-      );
+      devLog("[ChatInterface] Ended streaming sync for message:", lastRef.id);
       lastStreamingMessageRef.current = null;
 
       // Clear interval
@@ -756,9 +737,7 @@ export default function ChatInterface({
 
           // For image generation updates, we need to replace existing messages with updated DB versions
           if (hasUpdatedMessages) {
-            devLog(
-              "[ChatInterface] Handling image generation message updates"
-            );
+            devLog("[ChatInterface] Handling image generation message updates");
 
             // Build a map of DB messages by ID for quick lookup
             const dbMessageMap = new Map(
@@ -1161,9 +1140,7 @@ export default function ChatInterface({
         }
 
         if (!userPrompt) {
-          devError(
-            "Could not find user prompt for image generation retry"
-          );
+          devError("Could not find user prompt for image generation retry");
           return;
         }
 
@@ -1428,14 +1405,16 @@ export default function ChatInterface({
             onClick={handleToggleNavigator}
             variant={isDarkTheme ? "outline" : "secondary"}
             size="icon"
-            className={cn("focus-enhanced shadow-sm rounded-md ")}
+            className={cn(
+              "focus:outline-none focus:ring-0 shadow-sm rounded-md "
+            )}
             aria-label={
               isNavigatorVisible
                 ? "Hide message browser"
                 : "Show message browser"
             }
           >
-            <MessageSquareMore className="h-5 w-5" />
+            <MessageCircleIcon className="h-5 w-5" />
           </Button>
 
           <ThemeToggleButton variant="inline" />
@@ -1501,17 +1480,17 @@ const AppPanelTrigger = () => {
           : "bg-background"
       }`}
     >
-      <div className="hover:bg-zinc-600/10 rounded-md">
+      <AnimateIcon animateOnHover>
         <Button
           size="icon"
           variant="outline"
-          className="bg-background"
+          className="bg-background hover:bg-zinc-600/10"
           onClick={handleToggle}
           aria-label="Toggle sidebar"
         >
-          <PanelLeftIcon className="h-5 w-5" />
+          <PanelLeft />
         </Button>
-      </div>
+      </AnimateIcon>
 
       <div className="rounded-md md:block">
         <Button
@@ -1522,7 +1501,7 @@ const AppPanelTrigger = () => {
             state === "collapsed" ? "ml-2" : "hidden"
           }`}
         >
-          <Search className="h-5 w-5" />
+          <SearchIcon />
         </Button>
         <GlobalSearchDialog
           isOpen={isSearchDialogOpen}
@@ -1621,7 +1600,7 @@ const QuickShortCutInfo = () => {
         className="bg-transparent hover:bg-primary/15 dark:hover:bg-border  rounded-full transition transform duration-300"
         aria-label="Keyboard shortcuts help"
       >
-        <CircleHelp className="h-5 w-5 text-foreground " />
+        <InfoIcon className="h-5 w-5 text-foreground " />
       </Button>
       {isOpen && (
         <motion.div

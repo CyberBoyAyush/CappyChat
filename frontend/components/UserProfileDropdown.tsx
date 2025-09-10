@@ -102,6 +102,7 @@ const UserProfileDropdown: React.FC = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [tierInfo, setTierInfo] = useState<TierInfo | null>(null);
   const [isLoadingTier, setIsLoadingTier] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const authDialog = useAuthDialog();
 
   // Don't render on authentication pages
@@ -232,7 +233,7 @@ const UserProfileDropdown: React.FC = () => {
   if (!user) return null;
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={setIsDropdownOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -254,15 +255,20 @@ const UserProfileDropdown: React.FC = () => {
             {tierInfo && tierInfo.tier !== "free" && (
               <TierBadge tier={tierInfo.tier} />
             )}
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-auto transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 text-muted-foreground ml-auto transition-transform duration-300 ease-in-out",
+                isDropdownOpen && "rotate-180"
+              )}
+            />
           </div>
         </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
         align="end"
-        className="w-72 p-1.5 bg-card/95 backdrop-blur-xl border-border shadow-2xl"
-        sideOffset={8}
+        className="w-60 p-1.5 bg-card/95 backdrop-blur-xl border-border shadow-2xl"
+        sideOffset={5}
       >
         {/* User Header with enhanced styling */}
         <DropdownMenuLabel className="px-3 py-3 bg-gradient-to-r from-muted/50 to-muted/30 rounded-md mb-1">

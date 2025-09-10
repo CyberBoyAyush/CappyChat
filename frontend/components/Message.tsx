@@ -180,7 +180,7 @@ function PureMessage({
               </div>
 
               {/* Assistant Message Content */}
-              <div className="group flex-1 flex flex-col gap-3 min-w-0 overflow-hidden max-w-full mb-2">
+              <div className="group flex-1 flex flex-col gap-3 min-w-0 overflow-hidden max-w-full mb-2 chat-message-container no-scrollbar">
                 {/* Check if this is an image generation loading message */}
                 {(() => {
                   const messageText = cleanMessageContent((part as any).text || "");
@@ -293,7 +293,7 @@ function PureMessage({
 
                     if (cleanedText) {
                       return (
-                        <div className="break-words overflow-hidden max-w-full mb-3">
+                        <div className="break-words overflow-hidden max-w-full mb-3 no-scrollbar">
                           <MarkdownRenderer content={cleanedText} id={message.id} />
                         </div>
                       );

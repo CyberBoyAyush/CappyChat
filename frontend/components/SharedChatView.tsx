@@ -9,8 +9,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "./ui/button";
-import { cn } from "@/lib/utils";
-import { GitBranch, Eye, Calendar, Loader2, AlertCircle } from "lucide-react";
+import { GitBranch, Calendar, Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import Message from "./Message";
 import { UIMessage } from "ai";
@@ -41,10 +40,12 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
       try {
         setLoading(true);
         const response = await fetch(`/api/share/${shareId}`);
-        
+
         if (!response.ok) {
           if (response.status === 404) {
-            setError("This shared conversation could not be found or is no longer available.");
+            setError(
+              "This shared conversation could not be found or is no longer available."
+            );
           } else {
             setError("Failed to load shared conversation.");
           }
@@ -55,7 +56,7 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
         setThread(data.thread);
         setMessages(data.messages);
       } catch (err) {
-        console.error('Error fetching shared chat:', err);
+        console.error("Error fetching shared chat:", err);
         setError("Failed to load shared conversation.");
       } finally {
         setLoading(false);
@@ -66,45 +67,49 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
   }, [shareId]);
 
   const handleBranch = async () => {
-    console.log('🔄 Starting branch process...', {
+    console.log("🔄 Starting branch process...", {
       user: !!user,
       isGuest,
       userId: user?.$id,
       emailVerified: user?.emailVerification,
-      userStatus: user?.status
+      userStatus: user?.status,
     });
 
     // Check if user is properly authenticated
     if (!user || isGuest || !user.$id || !user.emailVerification) {
-      console.log('❌ User not properly authenticated, trying to refresh user data...');
+      console.log(
+        "❌ User not properly authenticated, trying to refresh user data..."
+      );
 
       // Try to refresh user data first
       try {
         await refreshUser();
         // Check again after refresh
         if (!user || isGuest || !user.$id || !user.emailVerification) {
-          console.log('❌ Still not authenticated after refresh, redirecting to login');
-          navigate('/login');
+          console.log(
+            "❌ Still not authenticated after refresh, redirecting to login"
+          );
+          navigate("/login");
           return;
         }
       } catch (error) {
-        console.log('❌ Failed to refresh user, redirecting to login');
-        navigate('/login');
+        console.log("❌ Failed to refresh user, redirecting to login");
+        navigate("/login");
         return;
       }
     }
 
     setBranching(true);
     try {
-      const response = await fetch('/api/share/branch', {
-        method: 'POST',
+      const response = await fetch("/api/share/branch", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           shareId,
           title: `${thread?.title} (Branched)`,
-          userId: user.$id // Pass user ID from frontend
+          userId: user.$id, // Pass user ID from frontend
         }),
       });
 
@@ -114,29 +119,37 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
           errorData = await response.json();
         } catch (e) {
           // Response might not be JSON
-          errorData = { error: 'Network error' };
+          errorData = { error: "Network error" };
         }
 
-        console.error('Branch API error:', errorData, 'Status:', response.status);
+        console.error(
+          "Branch API error:",
+          errorData,
+          "Status:",
+          response.status
+        );
 
         // Handle authentication errors (401 status or AUTH_REQUIRED code)
-        if (response.status === 401 || errorData.code === 'AUTH_REQUIRED') {
-          console.log('Authentication required, redirecting to login');
-          navigate('/login');
+        if (response.status === 401 || errorData.code === "AUTH_REQUIRED") {
+          console.log("Authentication required, redirecting to login");
+          navigate("/login");
           return;
         }
 
-        throw new Error(errorData.error || `Failed to branch conversation (${response.status})`);
+        throw new Error(
+          errorData.error ||
+            `Failed to branch conversation (${response.status})`
+        );
       }
 
       const data = await response.json();
-      console.log('✅ Branch successful:', data);
+      console.log("✅ Branch successful:", data);
 
       // Navigate to the new branched thread
-      console.log('🔄 Navigating to new thread:', data.threadId);
+      console.log("🔄 Navigating to new thread:", data.threadId);
       navigate(`/chat/${data.threadId}`);
     } catch (err) {
-      console.error('Error branching conversation:', err);
+      console.error("Error branching conversation:", err);
       // You could add a toast notification here
     } finally {
       setBranching(false);
@@ -148,7 +161,9 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
       <div className="flex items-center justify-center h-screen">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-muted-foreground">Loading shared conversation...</p>
+          <p className="text-muted-foreground">
+            Loading shared conversation...
+          </p>
         </div>
       </div>
     );
@@ -161,7 +176,7 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
           <AlertCircle className="h-12 w-12 text-destructive" />
           <h2 className="text-xl font-semibold">Conversation Not Found</h2>
           <p className="text-muted-foreground">{error}</p>
-          <Button onClick={() => navigate('/chat')} variant="outline">
+          <Button onClick={() => navigate("/chat")} variant="outline">
             Start New Conversation
           </Button>
         </div>
@@ -172,17 +187,17 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+      <div className="w-full px-5 fixed top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="md:flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Eye className="h-5 w-5 text-muted-foreground" />
               <div>
                 <h1 className="text-lg font-semibold">{thread?.title}</h1>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    Shared {new Date(thread?.sharedAt || '').toLocaleDateString()}
+                    Shared{" "}
+                    {new Date(thread?.sharedAt || "").toLocaleDateString()}
                   </span>
                   <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
                     View Only
@@ -190,7 +205,7 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
                 </div>
               </div>
             </div>
-            
+
             {user && !isGuest && user.$id && user.emailVerification && (
               <Button
                 onClick={handleBranch}
@@ -208,7 +223,7 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
 
             {(!user || isGuest || !user.$id || !user.emailVerification) && (
               <Button
-                onClick={() => navigate('/login')}
+                onClick={() => navigate("/login")}
                 variant="outline"
                 className="flex items-center gap-2"
               >
@@ -221,12 +236,12 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
       </div>
 
       {/* Messages */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <div className="space-y-6">
-          {messages.map((message, index) => (
+      <div className="max-w-5xl mx-auto px-4 pt-48 pb-16 md:py-28 ">
+        <div className="space-y-6 no-scrollbar">
+          {messages.map((message) => (
             <Message
               key={message.id}
-              threadId={thread?.id || ''}
+              threadId={thread?.id || ""}
               message={message}
               setMessages={() => {}} // Read-only, no message updates
               reload={async () => Promise.resolve(null)} // Read-only, no reload
@@ -235,10 +250,12 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
               stop={() => {}} // No stopping needed
             />
           ))}
-          
+
           {messages.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">This conversation is empty.</p>
+              <p className="text-muted-foreground">
+                This conversation is empty.
+              </p>
             </div>
           )}
         </div>

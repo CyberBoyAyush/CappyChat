@@ -106,53 +106,55 @@ export default function ChatThreadPage() {
 
   if (showLoading) {
     return (
-      <div className="flex flex-col justify-center bg-accent  h-screen p-4 md:px-14 w-full mx-auto">
-        {/* Chat header skeleton with improved animation */}
-        <div className="flex items-center mb-6 px-2 py-2">
-          <div className="ml-auto flex gap-2">
-            <Skeleton className="h-8 w-8 bg-foreground/25 dark:bg-background/40 rounded-full animate-pulse" />
-            <Skeleton className="h-8 w-8 bg-foreground/25 dark:bg-background/40 rounded-full animate-pulse" />
-          </div>
-        </div>
-
-        {/* Chat messages skeleton with staggered animations */}
-        <div className="w-full justify-center align-middle self-center">
-          <div className="space-y-6 self-center mx-auto flex-grow overflow-hidden px-2 max-w-4xl sm:px-4">
-            {/* First user message skeleton */}
-            <div className="flex justify-end  fade-in  duration-500">
-              <div className="h-6 w-6 mr-2 rounded-full bg-primary/20 flex items-center justify-center">
-                <Skeleton className="h-4 w-4 rounded-full" />
-              </div>
-              <div className="rounded-lg bg-background/20  p-3 sm:p-4 max-w-[85%] sm:max-w-[75%] shadow-sm">
-                <Skeleton className="h-4 bg-foreground/15 dark:bg-background/65 w-32 mb-2" />
-                <Skeleton className="h-4 bg-foreground/15 dark:bg-background/65 w-48 mb-2" />
-                <Skeleton className="h-4 bg-foreground/15 dark:bg-background/65 w-20" />
-              </div>
+      <div className="min-h-screen bg-background pl-0 py-5">
+        <div className="flex flex-col md:border-l  md:border-t md:rounded-tl-xl md:border-primary/30 justify-center bg-background h-screen p-4 md:px-14 w-full mx-auto">
+          {/* Chat header skeleton with improved animation */}
+          <div className="flex items-center mb-6 px-2 py-2">
+            <div className="ml-auto flex gap-2">
+              <Skeleton className="h-8 w-8 bg-foreground/25 dark:bg-background/40 rounded-full animate-pulse" />
+              <Skeleton className="h-8 w-8 bg-foreground/25 dark:bg-background/40 rounded-full animate-pulse" />
             </div>
+          </div>
 
-            {/* First AI message skeleton with animated typing indicator */}
-            <div className="flex justify-start  fade-in  duration-500 delay-200">
-              <div className="h-6 w-6 mr-2 rounded-full bg-primary/20 flex items-center justify-center">
-                <Skeleton className="h-4 w-4 rounded-full" />
-              </div>
-              <div className="bg-background/20 rounded-lg p-3 sm:p-4 max-w-[85%] sm:max-w-[75%] shadow-sm">
-                <div className="flex items-center  mb-3">
-                  <Skeleton className="h-4 w-24 bg-foreground/15 dark:bg-background/65" />
+          {/* Chat messages skeleton with staggered animations */}
+          <div className="w-full justify-center align-middle self-center">
+            <div className="space-y-6 self-center mx-auto flex-grow overflow-hidden px-2 max-w-4xl sm:px-4">
+              {/* First user message skeleton */}
+              <div className="flex justify-end  fade-in  duration-500">
+                <div className="h-6 w-6 mr-2 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Skeleton className="h-4 w-4 rounded-full" />
                 </div>
-                <Skeleton className="h-4 bg-foreground/15 dark:bg-background/65 w-64 mb-2" />
-                <Skeleton className="h-4 bg-foreground/15 dark:bg-background/65 w-72 mb-2" />
-                <Skeleton className="h-4 bg-foreground/15 dark:bg-background/65 w-52 mb-2" />
-                <MessageLoading />
+                <div className="rounded-lg bg-background/20  p-3 sm:p-4 max-w-[85%] sm:max-w-[75%] shadow-sm">
+                  <Skeleton className="h-4 bg-foreground/15 dark:bg-background/65 w-24 md:w-32 mb-2" />
+                  <Skeleton className="h-4 bg-foreground/15 dark:bg-background/65 w-24 md:w-48 mb-2" />
+                  <Skeleton className="h-4 bg-foreground/15 dark:bg-background/65 w-20" />
+                </div>
+              </div>
+
+              {/* First AI message skeleton with animated typing indicator */}
+              <div className="flex justify-start  fade-in  duration-500 delay-200">
+                <div className="h-6 w-6 mr-2 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                </div>
+                <div className="bg-background/20 rounded-lg p-3 sm:p-4 max-w-[85%] sm:max-w-[75%] shadow-sm">
+                  <div className="flex items-center  mb-3">
+                    <Skeleton className="h-4 w-24 bg-foreground/15 dark:bg-background/65" />
+                  </div>
+                  <Skeleton className="h-4 bg-foreground/15 dark:bg-background/65 w-64 mb-2" />
+                  <Skeleton className="h-4 bg-foreground/15 dark:bg-background/65 w-72 mb-2" />
+                  <Skeleton className="h-4 bg-foreground/15 dark:bg-background/65 w-52 mb-2" />
+                  <MessageLoading />
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Chat input skeleton with improved styles */}
-        <div className="mt-auto w-full justify-center self-center align-middle">
-          <div className="mt-auto pt-4 self-center mx-auto border-t max-w-3xl border-foreground/25 dark:border-background/80">
-            <div className="flex items-center">
-              <Skeleton className="h-20 w-full bg-foreground/20 dark:bg-background/35 rounded-lg animate-pulse" />
+          {/* Chat input skeleton with improved styles */}
+          <div className="mt-auto w-full mb-4 justify-center self-center align-middle">
+            <div className="mt-auto pt-4 self-center mx-auto border-t max-w-3xl border-foreground/25 dark:border-background/80">
+              <div className="flex items-center">
+                <Skeleton className="h-20 w-full bg-foreground/20 dark:bg-background/35 rounded-lg animate-pulse" />
+              </div>
             </div>
           </div>
         </div>
