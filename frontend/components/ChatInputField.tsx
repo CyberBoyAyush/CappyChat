@@ -1222,7 +1222,7 @@ function PureInputField({
                 }
                 aria-describedby="input-field-description"
               />
-              {isVoiceInputActive && (
+              {/* {isVoiceInputActive && (
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                   <div className="text-red-500 animate-pulse flex flex-col items-center">
                     <div className="text-xs text-center text-muted-foreground/70">
@@ -1230,7 +1230,7 @@ function PureInputField({
                     </div>
                   </div>
                 </div>
-              )}
+              )} */}
             </div>
 
             {/* Enhance and Voice Input Buttons inside textarea */}
