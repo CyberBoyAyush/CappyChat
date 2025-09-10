@@ -177,6 +177,11 @@
     /* Ensure html doesn't have conflicting overflow */
     overflow-x: hidden;
   }
+
+  /* Global scrollbar styling for the entire website */
+  * {
+    @apply scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent;
+  }
 }
 
 @layer utilities {

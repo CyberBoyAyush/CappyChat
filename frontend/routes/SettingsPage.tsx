@@ -6,7 +6,12 @@
  * Provides access to all user preferences and configuration options.
  */
 
-import { Link, useSearchParams, useLocation, useNavigate } from "react-router-dom";
+import {
+  Link,
+  useSearchParams,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import {
   Settings as SettingsIcon,
@@ -455,7 +460,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="fixed top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="w-full px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
@@ -475,7 +480,7 @@ export default function SettingsPage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <div className="max-w-7xl mx-auto">
           {/* Notification */}
           {notification && (

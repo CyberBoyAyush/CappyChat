@@ -97,10 +97,7 @@ export function WebSearchCitations({
 
   return (
     <div
-      className={cn(
-        "mt-8 pt-6 pb-4 px-2 md:px-2 border-t border-border/30",
-        className
-      )}
+      className={cn("pt-6 pb-4 px-2 md:px-2 border-t border-border", className)}
     >
       {/* Collapsible Header */}
       <div
@@ -198,7 +195,7 @@ export function WebSearchCitations({
               stiffness: 300,
               damping: 25,
               mass: 0.6,
-              opacity: { duration: 0.2 }
+              opacity: { duration: 0.2 },
             }}
             className="overflow-hidden shadow-lg rounded-b-xl mx-1 sm:mx-2"
           >
@@ -221,7 +218,7 @@ export function WebSearchCitations({
                       duration: 0.3,
                       type: "spring",
                       stiffness: 200,
-                      damping: 20
+                      damping: 20,
                     }}
                   >
                     <CitationCard citation={citation} />

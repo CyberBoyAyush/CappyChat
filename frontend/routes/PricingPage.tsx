@@ -226,7 +226,7 @@ export default function PricingPage() {
         <div className="absolute bottom-40 left-1/4 w-40 h-40 bg-primary/5 rounded-full blur-2xl animate-pulse delay-2000" />
       </div>
 
-      <div className="mb-8  border-b border-border ">
+      <div className="mb-8 fixed top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center justify-between pb-2 px-4 max-w-7xl mx-auto mt-4">
           <Button
             onClick={() => navigate(-1)}
@@ -241,7 +241,7 @@ export default function PricingPage() {
         </div>
       </div>
 
-      <div className="relative container px-8 mx-auto mb-8 max-w-7xl">
+      <div className="relative container px-8 mx-auto mb-8 max-w-7xl pt-24">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}

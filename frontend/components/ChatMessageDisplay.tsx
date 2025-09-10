@@ -17,7 +17,10 @@ import { useIsMobile } from "@/hooks/useMobileDetection";
 import { AIModel } from "@/lib/models";
 import WebSearchLoader from "./WebSearchLoader";
 import RedditSearchLoader from "./RedditSearchLoader";
-import { useSearchTypeStore, SearchType } from "@/frontend/stores/SearchTypeStore";
+import {
+  useSearchTypeStore,
+  SearchType,
+} from "@/frontend/stores/SearchTypeStore";
 import { devWarn } from "@/lib/logger";
 
 function PureMessageDisplay({
@@ -99,7 +102,7 @@ function PureMessageDisplay({
   }
 
   return (
-    <section className="chat-message-container flex flex-col w-full max-w-3xl space-y-8">
+    <section className="chat-message-container flex flex-col w-full max-w-3xl space-y-6">
       {deduplicatedMessages.map((message, index) => (
         <PreviewMessage
           key={message.id}
@@ -125,11 +128,15 @@ function PureMessageDisplay({
           </div>
           {/* Loading Animation - Show appropriate search loader if search is enabled */}
           <div className="flex-1 mt-1">
-            {isWebSearching || currentSearchType !== 'chat' ? (
-              currentSearchType === 'reddit' ? (
-                <RedditSearchLoader searchQuery={webSearchQuery || "search query"} />
-              ) : currentSearchType === 'web' ? (
-                <WebSearchLoader searchQuery={webSearchQuery || "search query"} />
+            {isWebSearching || currentSearchType !== "chat" ? (
+              currentSearchType === "reddit" ? (
+                <RedditSearchLoader
+                  searchQuery={webSearchQuery || "search query"}
+                />
+              ) : currentSearchType === "web" ? (
+                <WebSearchLoader
+                  searchQuery={webSearchQuery || "search query"}
+                />
               ) : (
                 <MessageLoading />
               )
