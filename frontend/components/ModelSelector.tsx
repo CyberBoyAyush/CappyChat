@@ -412,7 +412,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent
           className={cn(
-            "w-[320px] sm:w-[420px] lg:w-[480px] max-w-[90vw] p-0",
+            "w-[320px] sm:w-[420px] lg:w-[400px] max-w-[90vw] p-0",
             "border border-border/50 bg-background/95 backdrop-blur-xl",
             "max-h-[60vh] overflow-hidden flex flex-col",
             "shadow-2xl shadow-black/10 dark:shadow-black/30",
