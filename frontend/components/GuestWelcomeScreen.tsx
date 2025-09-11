@@ -1360,7 +1360,7 @@ export default function GuestWelcomeScreen({
       </div>
 
       {/* Fixed Bottom Chat Input for Guests */}
-      <div className="fixed bottom-5 left-0 right-0 z-50">
+      <div className="fixed bottom-5 left-0 right-0 z-10">
         <div
           className={cn(
             "flex justify-center px-4",
