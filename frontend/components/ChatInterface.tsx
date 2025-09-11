@@ -1239,7 +1239,7 @@ export default function ChatInterface({
 
       <main
         ref={mainRef}
-        className="flex-1 overflow-y-scroll overflow-x-hidden pt-20 pb-40 main-chat-scrollbar"
+        className="flex-1 overflow-y-scroll overflow-x-hidden pt-20 md:pt-8 pb-40 main-chat-scrollbar"
         style={{
           scrollbarGutter: "stable",
         }}
@@ -1287,7 +1287,7 @@ export default function ChatInterface({
             }
           })()
         ) : (
-          <div className="mx-auto flex justify-center px-4">
+          <div className="mx-auto flex justify-center px-4 py-6">
             <ChatMessageDisplay
               threadId={threadId}
               messages={messages}

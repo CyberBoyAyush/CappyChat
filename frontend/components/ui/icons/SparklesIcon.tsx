@@ -15,7 +15,7 @@ interface SparklesIconProps extends HTMLMotionProps<"div"> {
 }
 
 const SparklesIcon = forwardRef<SparklesIconHandle, SparklesIconProps>(
-  ({ onMouseEnter, onMouseLeave, className, size = 22, ...props }, ref) => {
+  ({ onMouseEnter, onMouseLeave, className, size = 18, ...props }, ref) => {
     const controls = useAnimation();
     const reduced = useReducedMotion();
     const isControlled = useRef(false);

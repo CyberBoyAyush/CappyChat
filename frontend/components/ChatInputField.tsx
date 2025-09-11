@@ -1247,7 +1247,7 @@ function PureInputField({
                     !input.trim()
                   }
                   className={cn(
-                    "p-2 rounded-lg cursor-pointer transition-all",
+                    "p-2.5 rounded-lg flex items-center justify-center cursor-pointer transition-all",
                     "bg-primary/10 hover:bg-primary/20 text-primary",
                     "border border-primary/20 hover:border-primary/30",
                     "disabled:opacity-50 disabled:cursor-not-allowed",
@@ -1473,7 +1473,7 @@ const PureSendButton = ({ onSubmit, disabled }: SendButtonProps) => {
       onClick={handleClick}
       variant="default"
       size="icon"
-      className="h-10 w-10 sm:h-9 sm:w-9 mobile-touch text-white dark:text-black"
+      className="h-8 w-8 sm:h-9 sm:w-9 mobile-touch text-white dark:text-black"
       disabled={disabled}
       aria-label="Send message"
     >

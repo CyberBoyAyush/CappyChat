@@ -192,7 +192,7 @@ function PureMessage({
               </div>
 
               {/* Assistant Message Content */}
-              <div className="group flex-1 flex flex-col gap-3 min-w-0 overflow-hidden max-w-full mb-2 chat-message-container no-scrollbar">
+              <div className="group flex-1 flex flex-col gap-3 min-w-0 overflow-hidden max-w-full chat-message-container no-scrollbar">
                 {/* Check if this is an image generation loading message */}
                 {(() => {
                   const messageText = cleanMessageContent(
