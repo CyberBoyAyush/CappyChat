@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     siteName: "AVChat",
     images: [
       {
-        url: "https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPZVsBMANYVhDAoFJpwBTRvjuNX3c1dgE7CIGe",
+        url: "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
         width: 1200,
         height: 630,
         alt: "AVChat - Fastest AI Chat App",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     description:
       "Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.",
     images: [
-      "https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPZVsBMANYVhDAoFJpwBTRvjuNX3c1dgE7CIGe",
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
     ],
     creator: "@cyberboyayush",
     site: "@cyberboyayush",
@@ -77,7 +77,7 @@ export const metadata: Metadata = {
     viewport: "width=device-width, initial-scale=1, maximum-scale=1",
     // Additional Open Graph meta tags for better link previews
     "og:image:secure_url":
-      "https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPZVsBMANYVhDAoFJpwBTRvjuNX3c1dgE7CIGe",
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
     "og:image:width": "1200",
     "og:image:height": "630",
     "og:image:alt": "AVChat - Fastest AI Chat App",
@@ -85,7 +85,7 @@ export const metadata: Metadata = {
     "linkedin:owner": "cyberboyayush",
     // WhatsApp specific
     "whatsapp:image":
-      "https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPZVsBMANYVhDAoFJpwBTRvjuNX3c1dgE7CIGe",
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
   },
 };
 
