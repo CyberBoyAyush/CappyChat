@@ -64,6 +64,7 @@ import { MessageCircleIcon } from "./ui/icons/MessageCircleIcon";
 import { InfoIcon } from "./ui/icons/InfoIcon";
 import { PanelLeft } from "@/frontend/components/ui/icons/panel-left";
 import { AnimateIcon } from "@/frontend/components/ui/icons/icon";
+import FreeTierShowcase from "./FreeTierShowcase";
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -1239,7 +1240,7 @@ export default function ChatInterface({
 
       <main
         ref={mainRef}
-        className="flex-1 overflow-y-scroll overflow-x-hidden pt-20 md:pt-8 pb-40 main-chat-scrollbar"
+        className="flex-1 overflow-y-scroll relative overflow-x-hidden pt-20 md:pt-8 pb-40 main-chat-scrollbar"
         style={{
           scrollbarGutter: "stable",
         }}
@@ -1282,6 +1283,18 @@ export default function ChatInterface({
                   isDarkTheme={isDarkTheme}
                   selectedDomain={selectedDomain}
                   onDomainSelect={handleDomainSelect}
+                  threadId={threadId}
+                  input={input}
+                  status={status}
+                  setInput={setInput}
+                  append={append}
+                  setMessages={setMessages}
+                  stop={stop}
+                  pendingUserMessageRef={pendingUserMessageRef}
+                  onWebSearchMessage={handleWebSearchMessage}
+                  submitRef={chatInputSubmitRef}
+                  messages={messages}
+                  onMessageAppended={trackAppendedMessage}
                 />
               );
             }
@@ -1305,6 +1318,32 @@ export default function ChatInterface({
           </div>
         )}
       </main>
+
+      <div className="fixed hidden md:block top-0 left-0 right-0 z-50">
+        <div
+          className="relative"
+          style={{
+            width: isMobile
+              ? "100%"
+              : sidebarState === "open"
+              ? `calc(100% - ${sidebarWidth}px)`
+              : "100%",
+            marginLeft: isMobile
+              ? 0
+              : sidebarState === "open"
+              ? `${sidebarWidth}px`
+              : 0,
+          }}
+        >
+          <div
+            className={`absolute left-1/2 -translate-x-1/2 top-3 ${
+              state === "open" ? "top-5" : "top-3"
+            }`}
+          >
+            <FreeTierShowcase />
+          </div>
+        </div>
+      </div>
 
       {/* Fixed Input Container with Dynamic Width */}
       <div className="fixed bottom-5 left-0 right-0 z-20">
@@ -1344,41 +1383,51 @@ export default function ChatInterface({
           </Button>
         </div>
 
-        <div
-          className={cn(
-            "flex justify-center px-4",
-            isMobile ? "w-full" : sidebarState === "open" ? "ml-auto" : "w-full"
-          )}
-          style={{
-            width: isMobile
-              ? "100%"
-              : sidebarState === "open"
-              ? `calc(100% - ${sidebarWidth}px)`
-              : "100%",
-            marginLeft: isMobile
-              ? 0
-              : sidebarState === "open"
-              ? `${sidebarWidth}px`
-              : 0,
-          }}
-        >
-          <div className="w-full max-w-3xl">
-            <ChatInputField
-              threadId={threadId}
-              input={input}
-              status={status}
-              append={append}
-              setMessages={setMessages}
-              setInput={setInput}
-              stop={stop}
-              pendingUserMessageRef={pendingUserMessageRef}
-              onWebSearchMessage={handleWebSearchMessage}
-              submitRef={chatInputSubmitRef}
-              messages={messages}
-              onMessageAppended={trackAppendedMessage}
-            />
-          </div>
-        </div>
+        {/* Only show bottom chat input when there are messages (chat mode) */}
+        {messages.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className={cn(
+              "flex justify-center px-4",
+              isMobile
+                ? "w-full"
+                : sidebarState === "open"
+                ? "ml-auto"
+                : "w-full"
+            )}
+            style={{
+              width: isMobile
+                ? "100%"
+                : sidebarState === "open"
+                ? `calc(100% - ${sidebarWidth}px)`
+                : "100%",
+              marginLeft: isMobile
+                ? 0
+                : sidebarState === "open"
+                ? `${sidebarWidth}px`
+                : 0,
+            }}
+          >
+            <div className="w-full max-w-3xl">
+              <ChatInputField
+                threadId={threadId}
+                input={input}
+                status={status}
+                append={append}
+                setMessages={setMessages}
+                setInput={setInput}
+                stop={stop}
+                pendingUserMessageRef={pendingUserMessageRef}
+                onWebSearchMessage={handleWebSearchMessage}
+                submitRef={chatInputSubmitRef}
+                messages={messages}
+                onMessageAppended={trackAppendedMessage}
+              />
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Fixed action buttons */}
@@ -1723,6 +1772,19 @@ interface WelcomeScreenProps {
   isDarkTheme: boolean;
   selectedDomain: string | null;
   onDomainSelect: (domainId: string) => void;
+  // Chat input field props for centered input
+  threadId: string;
+  input: string;
+  status: any;
+  setInput: any;
+  append: any;
+  setMessages: any;
+  stop: any;
+  pendingUserMessageRef: any;
+  onWebSearchMessage: any;
+  submitRef: any;
+  messages: any;
+  onMessageAppended: any;
 }
 
 const WelcomeScreen = ({
@@ -1730,133 +1792,73 @@ const WelcomeScreen = ({
   isDarkTheme,
   selectedDomain,
   onDomainSelect,
+  threadId,
+  input,
+  status,
+  setInput,
+  append,
+  setMessages,
+  stop,
+  pendingUserMessageRef,
+  onWebSearchMessage,
+  submitRef,
+  messages,
+  onMessageAppended,
 }: WelcomeScreenProps) => {
+  const { user } = useAuth();
+
   return (
-    <div className="container mx-auto px-4 py-3 max-w-3xl">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-center mb-5"
-      >
-        <h1 className="text-lg md:text-2xl font-bold mb-1">
-          How can I help you, today?
-        </h1>
-        <p className="text-muted-foreground text-sm max-w-xl mx-auto">
-          Select a category below or type your own message to get started
-        </p>
-      </motion.div>
-
-      {/* Categories Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {promptDomains.map((category, index) => (
-          <motion.div
-            key={category.id}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{
-              duration: 0.5,
-              delay: 0.1 * index,
-            }}
-            className={cn(
-              "rounded-2xl p-3 cursor-pointer transition-all border border-border",
-              isDarkTheme ? "hover:bg-zinc-700/50" : "hover:bg-primary/10",
-              selectedDomain === category.id &&
-                (isDarkTheme
-                  ? "bg-zinc-700/70 border-primary/50"
-                  : "bg-primary/10 border-primary/50")
-            )}
-            onClick={() => onDomainSelect(category.id)}
-          >
-            <div className="flex flex-col items-center text-center">
-              <h3 className="font-semibold text-lg mb-2">{category.name}</h3>
-              <p className="text-sm text-muted-foreground">
-                {category.description}
-              </p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Domain-specific Prompts Section */}
-      <AnimatePresence>
-        {selectedDomain && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="mb-10 overflow-hidden"
-          >
-            <div className="bg-card/30 backdrop-blur-sm border border-border rounded-xl p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-4 flex items-center">
-                {promptDomains.find((d) => d.id === selectedDomain)?.icon}
-                <span className="ml-2">
-                  {promptDomains.find((d) => d.id === selectedDomain)?.name}{" "}
-                  Prompts
-                </span>
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {promptDomains
-                  .find((domain) => domain.id === selectedDomain)
-                  ?.prompts.map((prompt, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2, delay: index * 0.1 }}
-                    >
-                      <Button
-                        variant="ghost"
-                        className={`justify-start text-left h-auto py-3 px-4 w-full ${
-                          isDarkTheme
-                            ? "hover:bg-zinc-700/50"
-                            : "hover:bg-primary/10"
-                        }`}
-                        onClick={() => onPromptSelect(prompt)}
-                      >
-                        <FileQuestion className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <span className="truncate">{prompt}</span>
-                      </Button>
-                    </motion.div>
-                  ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Popular Prompts Section - Only shown when no domain is selected */}
-      {!selectedDomain && (
+    <div className="flex flex-col h-full">
+      {/* Top section with branding and greeting */}
+      <div className="flex-1 flex flex-col justify-center items-center px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="mb-8"
+          transition={{ duration: 0.5 }}
+          className="text-center mb-16"
         >
-          <h2 className="text-xl font-semibold mb-4">Popular prompts</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {[
-              "How does AI work?",
-              "Are black holes real?",
-              'How many Rs are in the word "strawberry"?',
-              "What is the meaning of life?",
-            ].map((prompt, index) => (
-              <Button
-                key={index}
-                variant="ghost"
-                className={`justify-start text-left h-auto py-3 px-4 ${
-                  isDarkTheme ? "hover:bg-zinc-700/50" : "hover:bg-primary/10"
-                }`}
-                onClick={() => onPromptSelect(prompt)}
-              >
-                <FileQuestion className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span className="truncate">{prompt}</span>
-              </Button>
-            ))}
-          </div>
+          <h1 className="text-3xl md:text-6xl font-bold mb-4 flex items-end justify-center">
+            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              AV
+            </span>
+            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              Chat
+            </span>
+            {/* <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-primary ml-1 mb-2 animate-pulse"></div> */}
+          </h1>
+          <h2 className="text-xl md:text-2xl font-medium mb-3">
+            Welcome Back, {user?.name || "User"}!
+          </h2>
+          <p className="text-muted-foreground text-base max-w-2xl mx-auto leading-relaxed">
+            Ready to help with anything you need. Whether it's answering
+            questions, coding assistance, or just having a conversation - let's
+            get started!
+          </p>
         </motion.div>
-      )}
+
+        {/* Centered Chat Input */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="w-full max-w-3xl "
+        >
+          <ChatInputField
+            threadId={threadId}
+            input={input}
+            status={status}
+            setInput={setInput}
+            append={append}
+            setMessages={setMessages}
+            stop={stop}
+            pendingUserMessageRef={pendingUserMessageRef}
+            onWebSearchMessage={onWebSearchMessage}
+            submitRef={submitRef}
+            messages={messages}
+            onMessageAppended={onMessageAppended}
+          />
+        </motion.div>
+      </div>
     </div>
   );
 };
