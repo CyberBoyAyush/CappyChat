@@ -8,10 +8,13 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
-import { Button } from "./ui/button";
+import { useOutletContext } from "react-router-dom";
+import { useIsMobile } from "@/hooks/useMobileDetection";
 import { cn } from "@/lib/utils";
+import { Button } from "./ui/button";
 import { AnimatedPrice } from "./ui/animated-price";
 import CompareDemo from "./compare-drag-demo";
+import ChatInputField from "./ChatInputField";
 import {
   MessageSquare,
   Zap,
@@ -35,6 +38,19 @@ import {
 interface GuestWelcomeScreenProps {
   onSignUp: () => void;
   onLogin: () => void;
+  // Chat input field props for guest messaging
+  threadId: string;
+  input: string;
+  status: any;
+  setInput: any;
+  append: any;
+  setMessages: any;
+  stop: any;
+  pendingUserMessageRef: any;
+  onWebSearchMessage: any;
+  submitRef: any;
+  messages: any;
+  onMessageAppended: any;
 }
 
 // Currency type and pricing configuration
@@ -669,8 +685,27 @@ Much cleaner! This approach:
 export default function GuestWelcomeScreen({
   onSignUp,
   onLogin,
+  threadId,
+  input,
+  status,
+  setInput,
+  append,
+  setMessages,
+  stop,
+  pendingUserMessageRef,
+  onWebSearchMessage,
+  submitRef,
+  messages,
+  onMessageAppended,
 }: GuestWelcomeScreenProps) {
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>("USD");
+
+  // Get sidebar context for proper positioning
+  const { sidebarWidth, state: sidebarState } = useOutletContext<{
+    sidebarWidth: number;
+    state: "open" | "collapsed";
+  }>();
+  const isMobile = useIsMobile();
 
   // Auto-detect currency based on locale (optional enhancement)
   useEffect(() => {
@@ -700,7 +735,7 @@ export default function GuestWelcomeScreen({
         <div className="absolute bottom-40 left-1/4 w-40 h-40 bg-primary/5 rounded-full blur-2xl animate-pulse delay-2000" />
       </div>
 
-      <div className="relative container mx-auto px-4 pb-12 max-w-7xl">
+      <div className="relative container mx-auto px-4 pb-32 max-w-7xl">
         {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -1322,6 +1357,50 @@ export default function GuestWelcomeScreen({
             </div>
           </div>
         </motion.div>
+      </div>
+
+      {/* Fixed Bottom Chat Input for Guests */}
+      <div className="fixed bottom-5 left-0 right-0 z-50">
+        <div
+          className={cn(
+            "flex justify-center px-4",
+            isMobile ? "w-full" : sidebarState === "open" ? "ml-auto" : "w-full"
+          )}
+          style={{
+            width: isMobile
+              ? "100%"
+              : sidebarState === "open"
+              ? `calc(100% - ${sidebarWidth}px)`
+              : "100%",
+            marginLeft: isMobile
+              ? 0
+              : sidebarState === "open"
+              ? `${sidebarWidth}px`
+              : 0,
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="w-full max-w-3xl"
+          >
+            <ChatInputField
+              threadId={threadId}
+              input={input}
+              status={status}
+              setInput={setInput}
+              append={append}
+              setMessages={setMessages}
+              stop={stop}
+              pendingUserMessageRef={pendingUserMessageRef}
+              onWebSearchMessage={onWebSearchMessage}
+              submitRef={submitRef}
+              messages={messages}
+              onMessageAppended={onMessageAppended}
+            />
+          </motion.div>
+        </div>
       </div>
     </div>
   );

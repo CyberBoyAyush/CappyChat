@@ -1274,6 +1274,19 @@ export default function ChatInterface({
                 <GuestWelcomeScreen
                   onSignUp={() => authDialog.navigateToSignup()}
                   onLogin={() => authDialog.navigateToLogin()}
+                  // Add chat input props for guest messaging
+                  threadId={threadId}
+                  input={input}
+                  status={status}
+                  setInput={setInput}
+                  append={append}
+                  setMessages={setMessages}
+                  stop={stop}
+                  pendingUserMessageRef={pendingUserMessageRef}
+                  onWebSearchMessage={handleWebSearchMessage}
+                  submitRef={chatInputSubmitRef}
+                  messages={messages}
+                  onMessageAppended={trackAppendedMessage}
                 />
               );
             } else {
@@ -1347,41 +1360,45 @@ export default function ChatInterface({
 
       {/* Fixed Input Container with Dynamic Width */}
       <div className="fixed bottom-5 left-0 right-0 z-20">
-        {/* Scroll to bottom button */}
-        <div
-          className={cn(
-            "relative transition-opacity duration-300",
-            showScrollToBottom ? "opacity-100" : "opacity-0 pointer-events-none"
-          )}
-          style={{
-            width: isMobile
-              ? "100%"
-              : sidebarState === "open"
-              ? `calc(100% - ${sidebarWidth}px)`
-              : "100%",
-            marginLeft: isMobile
-              ? 0
-              : sidebarState === "open"
-              ? `${sidebarWidth}px`
-              : 0,
-          }}
-        >
-          <Button
-            onClick={scrollToBottom}
-            variant="secondary"
-            size="sm"
+        {/* Scroll to bottom button - only show when there are messages and not on guest welcome screen */}
+        {messages.length > 0 && !isGuest && (
+          <div
             className={cn(
-              "rounded-full absolute bottom-0 left-1/2 -translate-x-1/2 shadow-lg text-primary-foreground mb-2 transition-all duration-200",
-              isDarkTheme
-                ? "bg-primary/90 hover:bg-primary"
-                : "bg-primary hover:bg-primary/90"
+              "relative transition-opacity duration-300",
+              showScrollToBottom
+                ? "opacity-100"
+                : "opacity-0 pointer-events-none"
             )}
-            aria-label="Scroll to bottom"
+            style={{
+              width: isMobile
+                ? "100%"
+                : sidebarState === "open"
+                ? `calc(100% - ${sidebarWidth}px)`
+                : "100%",
+              marginLeft: isMobile
+                ? 0
+                : sidebarState === "open"
+                ? `${sidebarWidth}px`
+                : 0,
+            }}
           >
-            <ArrowDown className="h-4 w-4 md:mr-1" />
-            <span className="text-xs hidden md:block">Latest messages</span>
-          </Button>
-        </div>
+            <Button
+              onClick={scrollToBottom}
+              variant="secondary"
+              size="sm"
+              className={cn(
+                "rounded-full absolute bottom-0 left-1/2 -translate-x-1/2 shadow-lg text-primary-foreground mb-2 transition-all duration-200",
+                isDarkTheme
+                  ? "bg-primary/90 hover:bg-primary"
+                  : "bg-primary hover:bg-primary/90"
+              )}
+              aria-label="Scroll to bottom"
+            >
+              <ArrowDown className="h-4 w-4 md:mr-1" />
+              <span className="text-xs hidden md:block">Latest messages</span>
+            </Button>
+          </div>
+        )}
 
         {/* Only show bottom chat input when there are messages (chat mode) */}
         {messages.length > 0 && (
