@@ -32,7 +32,14 @@ const getServerClient = () => {
 export const getUserPreferencesServer = async (userId: string): Promise<UserTierPreferences | null> => {
   try {
     const users = getServerClient();
-    const user = await users.get(userId);
+    let user: any;
+    try {
+      user = await users.get(userId);
+    } catch (e1) {
+      console.warn('[Server] users.get first attempt failed, retrying once');
+      // Retry exactly once
+      user = await users.get(userId);
+    }
     const prefs = user.prefs as Record<string, unknown>;
 
     console.log('[Server] Raw user preferences:', prefs);
