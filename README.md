@@ -7,7 +7,7 @@
 ### *Next-Generation AI Chat Platform*
 
 [![Version](https://img.shields.io/badge/version-3.0.1-2563eb?style=for-the-badge&logo=semver&logoColor=white)](https://github.com/CyberBoyAyush/AVChat)
-[![License](https://img.shields.io/badge/license-MIT-10b981?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPL%20v3-10b981?style=for-the-badge&logo=gnu&logoColor=white)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-15.3-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Appwrite](https://img.shields.io/badge/Appwrite-Database-f02e65?style=for-the-badge&logo=appwrite&logoColor=white)](https://appwrite.io/)
@@ -1518,9 +1518,9 @@ pnpm lighthouse
 
 <div align="center">
 
-**MIT License** - See the [LICENSE](LICENSE) file for details
+**GNU General Public License v3.0** - See the [LICENSE](LICENSE) file for details
 
-*Feel free to use, modify, and distribute this project*
+*This project is licensed under GPL v3 with additional restrictions for commercial use*
 
 </div>
 
@@ -1565,6 +1565,17 @@ pnpm lighthouse
 - **Contributors** who help make AVChat better every day
 - **Users** who trust AVChat for their AI conversations
 
+### 📋 **License Notice**
+
+This project is licensed under **GPL v3** with additional restrictions:
+- ✅ **Personal Use**: Free to use, modify, and distribute
+- ✅ **Open Source Projects**: Compatible with GPL-compatible licenses
+- ⚠️ **Commercial Use**: Requires explicit permission from copyright holders
+- 📝 **Modifications**: Must be disclosed and properly attributed
+- 🌐 **Network Deployment**: Modified versions require source code disclosure
+
+For commercial licensing or permission requests, contact the copyright holders.
+
 ---
 
 <div align="center">
@@ -1583,6 +1594,6 @@ pnpm lighthouse
 
 ---
 
-<sub>© 2024 AVChat. All rights reserved. | Made with passion for the AI community</sub>
+<sub>© 2024 AVChat (AtChat). All rights reserved. | Made with passion for the AI community</sub>
 
 </div>
