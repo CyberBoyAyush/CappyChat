@@ -29,6 +29,8 @@ import {
 } from "@/frontend/components/ui/card";
 import { Badge } from "@/frontend/components/ui/BasicComponents";
 import { GitHubIcon, XIcon } from "@/frontend/components/ui/icons";
+import ThemeToggleButton from "@/frontend/components/ui/ThemeComponents";
+import { useNavigate } from "react-router-dom";
 
 interface TeamMember {
   name: string;
@@ -57,8 +59,7 @@ const teamMembers: TeamMember[] = [
     role: "Co-Founder & Full Stack Developer",
     description:
       "Full-stack developer passionate about AI and creating seamless user experiences. Loves building fast, scalable applications.",
-    photo:
-      "https://media.licdn.com/dms/image/v2/D4D03AQHrimd9wDhXTQ/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1700307125570?e=1756339200&v=beta&t=kEc5XgGLCVSG09u7s8FyeCstvmaMqhXSnKu4RQJQS0I",
+    photo: "https://avatars.githubusercontent.com/u/69210117?v=4",
     github: "cyberboyayush",
     twitter: "cyberboyayush",
   },
@@ -69,7 +70,7 @@ const teamMembers: TeamMember[] = [
       "Frontend developer with a focus on creating beautiful and intuitive interfaces. Loves making complex things simple.",
     photo: "https://avatars.githubusercontent.com/u/166229165?v=4",
     github: "vrandaagarg",
-    twitter: "vranda_garg_",
+    twitter: "vrandaagarg",
   },
 ];
 
@@ -164,6 +165,8 @@ const techStack: TechStackItem[] = [
 ];
 
 export default function AboutPage() {
+  const navigate = useNavigate();
+
   const handleContribute = () => {
     window.open("https://github.com/cyberboyayush/AVChat", "_blank");
   };
@@ -171,35 +174,33 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border/50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <Link
-              to="/"
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4 " />
-                <span className="hidden md:block">Back to AVChat</span>
-              </Button>
-            </Link>
+      <div className="fixed top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center justify-between pb-2 px-4 max-w-7xl mx-auto mt-4">
+          <Button
+            onClick={() => navigate(-1)}
+            variant="ghost"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
+          <div className="flex items-center gap-2">
             <Button
               onClick={handleContribute}
+              size="lg"
               className="flex items-center gap-2 bg-primary hover:bg-primary/80"
             >
-              <Heart className="h-4 w-4" />
-              Contribute to AVChat
+              <GitHubIcon className="h-5 w-5" />
+              Contribute
+              <ExternalLink className="h-4 w-4" />
             </Button>
+            <ThemeToggleButton variant="inline" />
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8 space-y-12">
         {/* Hero Section */}
         <div className="text-center space-y-6">
           <div className="space-y-4">

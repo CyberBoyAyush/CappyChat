@@ -52,6 +52,7 @@ import { useAuthDialog } from "@/frontend/hooks/useAuthDialog";
 import AuthDialog from "./auth/AuthDialog";
 import { extractMemories, shouldAddMemory } from "@/lib/memoryExtractor";
 import { AppwriteDB } from "@/lib/appwriteDB";
+import { SparklesIcon } from "./ui/icons/SparklesIcon";
 
 // Extended UIMessage type to include attachments
 type ExtendedUIMessage = UIMessage & {
@@ -960,25 +961,27 @@ function PureInputField({
     try {
       // Get last few messages for context (if available)
       // Only include text content, limit to 100 chars per message to avoid token limits
-      const contextMessages = messages?.slice(-6)
-        .filter(m => m.content && m.content.length > 0)
+      const contextMessages = messages
+        ?.slice(-6)
+        .filter((m) => m.content && m.content.length > 0)
         .map((m) => {
-          const content = m.content.length > 100 
-            ? m.content.substring(0, 100) + '...' 
-            : m.content;
-          return `${m.role === 'user' ? 'User' : 'Assistant'}: ${content}`;
+          const content =
+            m.content.length > 100
+              ? m.content.substring(0, 100) + "..."
+              : m.content;
+          return `${m.role === "user" ? "User" : "Assistant"}: ${content}`;
         })
-        .join('\n');
+        .join("\n");
 
-      const response = await fetch('/api/ai-text-generation', {
-        method: 'POST',
+      const response = await fetch("/api/ai-text-generation", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           prompt: input,
           isEnhancement: true,
-          context: contextMessages || '', // Send empty string if no context
+          context: contextMessages || "", // Send empty string if no context
           userApiKey: null, // Will use system key for free enhancement
         }),
       });
@@ -986,7 +989,7 @@ function PureInputField({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Enhancement failed');
+        throw new Error(result.error || "Enhancement failed");
       }
 
       if (result.enhancedPrompt) {
@@ -1001,8 +1004,8 @@ function PureInputField({
         adjustHeight();
       }
     } catch (error) {
-      console.error('Failed to enhance prompt:', error);
-      toast.error('Failed to enhance prompt. Please try again.');
+      console.error("Failed to enhance prompt:", error);
+      toast.error("Failed to enhance prompt. Please try again.");
     } finally {
       setIsEnhancing(false);
     }
@@ -1050,7 +1053,7 @@ function PureInputField({
   return (
     <div className="w-full max-w-full">
       <div className="border-[1px] border-primary/30 rounded-2xl shadow-lg w-full backdrop-blur-md overflow-hidden">
-        <div className="flex flex-col bg-background/55 border-t-2 sm:border-t-4 md:border-t-8 rounded-t-2xl border-x-2 sm:border-x-4 md:border-x-8 border-primary/10 dark:border-zinc-900/50 overflow-hidden">
+        <div className="flex flex-col bg-background/55 border-y-2 sm:border-y-4 md:border-y-8 rounded-2xl border-x-2 sm:border-x-4 md:border-x-8 border-primary/10 dark:border-zinc-800/50 overflow-hidden">
           {/* Upload Status - Enhanced responsive design */}
           {uploadingFiles.length > 0 && (
             <div
@@ -1219,7 +1222,7 @@ function PureInputField({
                 }
                 aria-describedby="input-field-description"
               />
-              {isVoiceInputActive && (
+              {/* {isVoiceInputActive && (
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                   <div className="text-red-500 animate-pulse flex flex-col items-center">
                     <div className="text-xs text-center text-muted-foreground/70">
@@ -1227,7 +1230,7 @@ function PureInputField({
                     </div>
                   </div>
                 </div>
-              )}
+              )} */}
             </div>
 
             {/* Enhance and Voice Input Buttons inside textarea */}
@@ -1244,7 +1247,7 @@ function PureInputField({
                     !input.trim()
                   }
                   className={cn(
-                    "p-2 rounded-lg transition-all",
+                    "p-2.5 rounded-lg flex items-center justify-center cursor-pointer transition-all",
                     "bg-primary/10 hover:bg-primary/20 text-primary",
                     "border border-primary/20 hover:border-primary/30",
                     "disabled:opacity-50 disabled:cursor-not-allowed",
@@ -1256,11 +1259,11 @@ function PureInputField({
                   {isEnhancing ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Sparkles className="w-4 h-4" />
+                    <SparklesIcon />
                   )}
                 </button>
               )}
-              
+
               {/* Voice Input Button */}
               <div
                 className={cn(
@@ -1394,7 +1397,7 @@ function PureInputField({
                         size={20}
                         className={cn(
                           "text-foreground",
-                          isImageGenMode && "text-black"
+                          isImageGenMode && " text-white dark:text-black"
                         )}
                       />
                     </Button>
@@ -1470,7 +1473,7 @@ const PureSendButton = ({ onSubmit, disabled }: SendButtonProps) => {
       onClick={handleClick}
       variant="default"
       size="icon"
-      className="h-10 w-10 sm:h-9 sm:w-9 mobile-touch text-white dark:text-black"
+      className="h-8 w-8 sm:h-9 sm:w-9 mobile-touch text-white dark:text-black"
       disabled={disabled}
       aria-label="Send message"
     >

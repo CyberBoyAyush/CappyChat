@@ -42,7 +42,8 @@ export async function GET(
         content: msg.content,
         createdAt: msg.createdAt.toISOString(),
         model: msg.model,
-        attachments: msg.attachments || []
+        attachments: msg.attachments || [],
+        imgurl: msg.imgurl
       }))
     });
 

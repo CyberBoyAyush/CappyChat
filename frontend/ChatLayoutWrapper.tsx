@@ -14,6 +14,7 @@ import { useIsMobile } from "@/hooks/useMobileDetection";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import EmailVerificationGuard from "@/frontend/components/EmailVerificationGuard";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Memoized sidebar panel to prevent unnecessary re-renders
 const MemoizedChatSidebarPanel = memo(ChatSidebarPanel);
@@ -250,30 +251,6 @@ export default function ChatLayoutWrapper() {
     [sidebarWidth, toggleSidebar, sidebarOpen, isMobile]
   );
 
-  // Memoized sidebar styles for performance
-  const sidebarStyles = useMemo(
-    () => ({
-      width: isMobile ? "80%" : `${sidebarWidth}px`,
-      flexShrink: isMobile ? undefined : 0,
-      transition: isDragging ? "none" : "width 0.2s ease-out",
-    }),
-    [isMobile, sidebarWidth, isDragging]
-  );
-
-  // Memoized sidebar classes
-  const sidebarClasses = useMemo(
-    () =>
-      cn(
-        "h-screen bg-gradient-to-t dark:from-zinc-950 dark:to-50%",
-        isMobile
-          ? `fixed top-0 left-0 z-50 bg-background transition-transform duration-200 ease-out ${
-              sidebarOpen ? "translate-x-0" : "-translate-x-full"
-            }`
-          : `relative z-50 ${sidebarOpen ? "block" : "hidden"}`
-      ),
-    [isMobile, sidebarOpen]
-  );
-
   // If user is authenticated but email is not verified, show verification guard
   if (isAuthenticated && !isEmailVerified) {
     return (
@@ -291,43 +268,95 @@ export default function ChatLayoutWrapper() {
     >
       <div className="flex h-screen w-full overflow-hidden relative">
         {/* Overlay for mobile when sidebar is open */}
-        {isMobile && sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 z-40 md:hidden sidebar-mobile-overlay"
-            onClick={toggleSidebar}
-            role="button"
-            aria-label="Close sidebar"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                toggleSidebar();
-              }
-            }}
-          />
-        )}
-
-        {/* Sidebar section with dynamic width */}
-        <div className={sidebarClasses} style={sidebarStyles}>
-          <MemoizedChatSidebarPanel />
-
-          {/* Draggable resizer */}
-          {!isMobile && sidebarOpen && (
-            <div
-              className="absolute top-0 right-0 w-2 h-full cursor-col-resize z-50 transition-colors"
-              onMouseDown={handleMouseDown}
-              role="separator"
-              aria-orientation="vertical"
-              aria-label="Resize sidebar"
-              aria-valuenow={sidebarWidth}
-              aria-valuemin={MIN_WIDTH}
-              aria-valuemax={MAX_WIDTH}
-              style={{
-                touchAction: "none", // Prevent touch scroll interference
+        <AnimatePresence>
+          {isMobile && sidebarOpen && (
+            <motion.div
+              key="overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/50 z-40 md:hidden sidebar-mobile-overlay"
+              onClick={toggleSidebar}
+              role="button"
+              aria-label="Close sidebar"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggleSidebar();
+                }
               }}
             />
           )}
-        </div>
+        </AnimatePresence>
+
+        {/* Sidebar section with dynamic width and Framer Motion animations */}
+        <AnimatePresence mode="wait">
+          {sidebarOpen && (
+            <motion.div
+              key="sidebar"
+              initial={isMobile ? { x: "-100%" } : { width: 0, opacity: 0 }}
+              animate={
+                isDragging
+                  ? { width: `${sidebarWidth}px`, opacity: 1 } // Direct control during drag
+                  : isMobile
+                  ? { x: 0, opacity: 1 }
+                  : { width: `${sidebarWidth}px`, opacity: 1 }
+              }
+              exit={isMobile ? { x: "-100%" } : { width: 0, opacity: 0 }}
+              transition={
+                isDragging
+                  ? { duration: 0, ease: "linear" } // Instant updates during drag
+                  : {
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 25,
+                      mass: 0.5,
+                    }
+              }
+              className={cn(
+                "h-screen bg-gradient-to-t dark:from-zinc-950 dark:to-50% overflow-hidden",
+                isMobile
+                  ? "fixed top-0 left-0 z-50 bg-background"
+                  : "relative z-50"
+              )}
+              style={
+                isMobile
+                  ? { width: "80%" }
+                  : {
+                      flexShrink: 0,
+                    }
+              }
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: isDragging ? 0 : 0.1, duration: 0.2 }}
+                className="h-full"
+              >
+                <MemoizedChatSidebarPanel />
+              </motion.div>
+
+              {/* Draggable resizer */}
+              {!isMobile && (
+                <div
+                  className="absolute top-0 right-0 w-2 h-full cursor-col-resize z-50 transition-colors "
+                  onMouseDown={handleMouseDown}
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="Resize sidebar"
+                  aria-valuenow={sidebarWidth}
+                  aria-valuemin={MIN_WIDTH}
+                  aria-valuemax={MAX_WIDTH}
+                  style={{
+                    touchAction: "none",
+                  }}
+                />
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Main content area that flexes with sidebar width */}
         <div className="flex-1 relative min-h-screen bg-gradient-to-t from-background dark:from-zinc-950 dark:to-50% overflow-hidden">

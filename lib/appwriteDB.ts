@@ -8,7 +8,7 @@
 import { Databases, ID, Models, Query } from 'appwrite';
 import { client } from './appwrite';
 import { getCachedAccount } from './accountCache';
-import { devLog, devWarn, devInfo, devError, prodError } from './logger';
+import { devLog, devWarn, devError } from './logger';
 
 // Database and Collection IDs
 export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
@@ -1641,13 +1641,14 @@ export class AppwriteDB {
       const summaries = await this.getMessageSummaries(threadId);
       const userId = await this.getCurrentUserId();
       
-      // Get corresponding messages for each summary
+      // Get corresponding messages for each summary with proper ordering
       const messagesResponse = await databases.listDocuments(
         DATABASE_ID,
         MESSAGES_COLLECTION_ID,
         [
           Query.equal('threadId', threadId),
-          Query.equal('userId', userId)
+          Query.equal('userId', userId),
+          Query.orderAsc('createdAt')
         ]
       );
       
@@ -1666,7 +1667,12 @@ export class AppwriteDB {
         };
       });
       
-      return summariesWithRole;
+      // Ensure robust ordering by message creation time
+      return summariesWithRole.sort((a, b) => {
+        const timeA = new Date(a.createdAt).getTime();
+        const timeB = new Date(b.createdAt).getTime();
+        return timeA - timeB;
+      });
     } catch (error) {
       devError('Error fetching message summaries with role from Appwrite:', error);
       return []; // Return empty array instead of using localDb as fallback

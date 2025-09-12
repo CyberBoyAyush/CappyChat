@@ -60,7 +60,11 @@ export default function MessageControls({
     stop();
 
     if (message.role === "user") {
-      await HybridDB.deleteTrailingMessages(threadId, message.createdAt as Date, false);
+      await HybridDB.deleteTrailingMessages(
+        threadId,
+        message.createdAt as Date,
+        false
+      );
 
       setMessages((messages) => {
         const index = messages.findIndex((m) => m.id === message.id);
@@ -72,7 +76,10 @@ export default function MessageControls({
         return messages;
       });
     } else {
-      await HybridDB.deleteTrailingMessages(threadId, message.createdAt as Date);
+      await HybridDB.deleteTrailingMessages(
+        threadId,
+        message.createdAt as Date
+      );
 
       setMessages((messages) => {
         const index = messages.findIndex((m) => m.id === message.id);
@@ -93,7 +100,7 @@ export default function MessageControls({
   return (
     <div
       className={cn(
-        "opacity-60 group-hover:opacity-100 transition-all duration-200 flex gap-1 items-center",
+        "opacity-60 group-hover:opacity-100 transition-all pb-3 duration-200 flex gap-1 items-center",
         "relative z-10 pointer-events-auto"
       )}
     >
@@ -107,7 +114,11 @@ export default function MessageControls({
           copied && "bg-green-500/10 border-green-500/30 text-green-600"
         )}
       >
-        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+        {copied ? (
+          <Check className="w-3.5 h-3.5" />
+        ) : (
+          <Copy className="w-3.5 h-3.5" />
+        )}
       </Button>
       {setMode && (
         <Button

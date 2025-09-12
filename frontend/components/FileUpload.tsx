@@ -12,6 +12,7 @@ import { Paperclip, Upload, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { devError } from "@/lib/logger";
+import { LinkIcon } from "./ui/icons/LinkIcon";
 
 interface FileUploadProps {
   onFilesUploaded: (attachments: FileAttachment[]) => void;
@@ -49,7 +50,8 @@ export default function FileUpload({
     if (acceptedFileTypes.includes("image/png,image/jpeg,image/jpg")) {
       // Image-to-image mode: only PNG, JPEG, JPG
       allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
-      errorMessage = "Only PNG, JPEG, and JPG images are allowed for image-to-image generation";
+      errorMessage =
+        "Only PNG, JPEG, and JPG images are allowed for image-to-image generation";
     } else {
       // Default mode: images, PDFs, text, and docx files
       allowedTypes = [
@@ -61,7 +63,8 @@ export default function FileUpload({
         "text/plain",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ];
-      errorMessage = "Only images (JPEG, PNG, GIF, WebP), PDF, text (.txt), and Word (.docx) files are allowed";
+      errorMessage =
+        "Only images (JPEG, PNG, GIF, WebP), PDF, text (.txt), and Word (.docx) files are allowed";
     }
 
     if (file.size > maxSize) {
@@ -253,7 +256,7 @@ export default function FileUpload({
             <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
           </div>
         ) : (
-          <Paperclip className="w-4 h-4 transition-transform group-hover:rotate-12" />
+          <LinkIcon className="w-4 h-4 transition-transform group-hover:rotate-12" />
         )}
 
         {/* Upload count indicator */}
@@ -283,7 +286,8 @@ export default function FileUpload({
                 Drop files here to upload
               </p>
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                Images (JPEG, PNG, GIF, WebP), PDF, text (.txt), and Word (.docx) files
+                Images (JPEG, PNG, GIF, WebP), PDF, text (.txt), and Word
+                (.docx) files
               </p>
               <p className="text-xs sm:text-sm text-muted-foreground">
                 Maximum file size: 5MB each

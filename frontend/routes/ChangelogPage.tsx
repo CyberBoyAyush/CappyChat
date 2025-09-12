@@ -35,6 +35,8 @@ import {
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { CHANGELOG, CURRENT_VERSION } from "../../lib/version";
+import ThemeToggleButton from "../components/ui/ThemeComponents";
+import { useNavigate } from "react-router-dom";
 
 // Icon mapping for dynamic rendering
 const iconMap = {
@@ -104,6 +106,8 @@ const descriptionColorMap = {
 };
 
 export default function ChangelogPage() {
+  const navigate = useNavigate();
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -116,28 +120,34 @@ export default function ChangelogPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="w-full px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                <span className="hidden md:block">Back to AVChat</span>
-              </Button>
-            </Link>
+      <header className="fixed top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center justify-between pb-2 px-4 max-w-7xl mx-auto mt-4">
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => navigate(-1)}
+              variant="ghost"
+              className="flex border border-border rounded-full items-center gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" />
-              <h1 className="text-xl font-semibold">Changelog</h1>
+              <h1 className="text-lg font-semibold">Changelog</h1>
             </div>
           </div>
-          <div className="text-sm text-muted-foreground text-right">
-            Current Version: v{CURRENT_VERSION}
+
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              version {CURRENT_VERSION}
+            </div>
+            <ThemeToggleButton variant="inline" />
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-4xl">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8 max-w-4xl">
         <div className="space-y-8">
           {/* Page Header */}
           <div className="text-center space-y-4">

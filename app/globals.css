@@ -177,6 +177,11 @@
     /* Ensure html doesn't have conflicting overflow */
     overflow-x: hidden;
   }
+
+  /* Global scrollbar styling for the entire website */
+  * {
+    @apply scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent;
+  }
 }
 
 @layer utilities {
@@ -300,30 +305,30 @@
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: var(--border);
     border-radius: 3px;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background-color: var(--muted-foreground);
   }
-  
+
   /* Custom scrollbar utilities */
   .scrollbar-thumb-border {
     scrollbar-color: var(--border) transparent;
   }
-  
+
   .scrollbar-track-transparent {
     scrollbar-gutter: stable;
   }

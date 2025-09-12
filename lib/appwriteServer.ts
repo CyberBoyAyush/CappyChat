@@ -96,7 +96,8 @@ export class AppwriteServerDB {
           content: messageDoc.content || "",
           createdAt: new Date(doc.$createdAt),
           model: messageDoc.model,
-          attachments: attachments
+          attachments: attachments,
+          imgurl: messageDoc.imgurl
         };
       });
     } catch (error) {

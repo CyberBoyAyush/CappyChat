@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { Share2, Check, Copy, Loader2 } from "lucide-react";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import { HybridDB } from "@/lib/hybridDB";
+import { SendIcon } from "./ui/icons/SendIcon";
 
 interface ShareButtonProps {
   threadId: string;
@@ -24,7 +25,7 @@ export default function ShareButton({
   threadId,
   className,
   variant = "outline",
-  size = "icon"
+  size = "icon",
 }: ShareButtonProps) {
   const [isSharing, setIsSharing] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -54,9 +55,8 @@ export default function ShareButton({
       await navigator.clipboard.writeText(newShareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-
     } catch (error) {
-      console.error('Error creating share link:', error);
+      console.error("Error creating share link:", error);
       // You could add a toast notification here
     } finally {
       setIsSharing(false);
@@ -65,13 +65,13 @@ export default function ShareButton({
 
   const handleCopy = async () => {
     if (!shareUrl) return;
-    
+
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Error copying to clipboard:', error);
+      console.error("Error copying to clipboard:", error);
     }
   };
 
@@ -79,16 +79,16 @@ export default function ShareButton({
     if (isSharing) {
       return <Loader2 className="h-5 w-5 animate-spin" />;
     }
-    
+
     if (copied) {
       return <Check className="h-5 w-5" />;
     }
-    
+
     if (shareUrl) {
       return <Copy className="h-5 w-5" />;
     }
-    
-    return <Share2 className="h-5 w-5" />;
+
+    return <SendIcon className="h-5 w-5" />;
   };
 
   const getAriaLabel = () => {
@@ -105,7 +105,7 @@ export default function ShareButton({
       size={size}
       disabled={isSharing}
       className={cn(
-        "focus-enhanced shadow-sm rounded-md transition-all duration-200",
+        "focus:outline-none focus:ring-0 shadow-sm rounded-md transition-all duration-200",
         copied && "bg-green-500/10 border-green-500/30 text-green-600",
         className
       )}

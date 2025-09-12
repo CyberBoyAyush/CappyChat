@@ -341,7 +341,7 @@ export function MessageLoading() {
  *
  * Used in: frontend/components/Message.tsx
  * Purpose: Displays a loading placeholder for image generation with dynamic aspect ratio.
- * Shows an advanced loading animation that mimics AI image generation in progress.
+ * Shows a lightweight block wave animation that's optimized for performance.
  */
 interface ImageGenerationLoadingProps {
   aspectRatio?: string;
@@ -350,11 +350,6 @@ interface ImageGenerationLoadingProps {
 export function ImageGenerationLoading({
   aspectRatio = "1:1",
 }: ImageGenerationLoadingProps) {
-  console.log(
-    "🍳 ImageGenerationLoading component rendered with aspect ratio:",
-    aspectRatio
-  );
-
   // Map aspect ratios to CSS classes - matching the generated image display classes
   const aspectRatioClasses = {
     "1:1": "aspect-square max-w-md",
@@ -367,104 +362,58 @@ export function ImageGenerationLoading({
     aspectRatioClasses[aspectRatio as keyof typeof aspectRatioClasses] ||
     "aspect-square max-w-md";
 
+  // Generate grid blocks with randomized animations for realistic effect
+  const gridSize = 16; // 16x16 grid for more blocks
+  const totalBlocks = gridSize * gridSize;
+  const blocks = Array.from({ length: totalBlocks }, (_, i) => {
+    const row = Math.floor(i / gridSize);
+    const col = i % gridSize;
+
+    // Create more realistic timing with randomization
+    const baseDelay = (row + col) * 25;
+    const randomOffset = Math.random() * 500; // Random 0-500ms offset
+    const delay = baseDelay + randomOffset;
+
+    // Vary animation duration for more organic feel
+    const baseDuration = 1.5;
+    const durationVariation = Math.random() * 1; // 0-1s variation
+    const duration = baseDuration + durationVariation;
+
+    // Random intensity for each block
+    const intensity = 0.2 + Math.random() * 0.3; // 0.2-0.5 opacity range
+
+    return { id: i, row, col, delay, duration, intensity };
+  });
+
   return (
     <div
       className={cn(
-        "relative w-full rounded-lg border border-border/50 bg-card/30 overflow-hidden",
+        "relative w-full rounded-lg  bg-background/50 overflow-hidden",
         aspectClass
       )}
     >
-        {/* Animated grid background */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5"></div>
-
-          {/* Grid pattern */}
-          <div className="absolute inset-0 opacity-20 dark:opacity-30">
-            <div className="w-full h-full grid grid-cols-8 grid-rows-8 gap-0.5">
-              {Array.from({ length: 64 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-primary/20 dark:bg-primary/30 rounded-sm animate-pulse"
-                  style={{
-                    animationDelay: `${(i * 50) % 2000}ms`,
-                    animationDuration: "2s",
-                  }}
-                ></div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Scanning lines */}
-        <div className="absolute inset-0">
-          <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-primary/60 to-transparent animate-scan-vertical"></div>
-          <div className="absolute h-full w-0.5 bg-gradient-to-b from-transparent via-primary/60 to-transparent animate-scan-horizontal"></div>
-        </div>
-
-        {/* Central loading area */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 dark:bg-background/70 backdrop-blur-sm">
-          {/* Rotating ring */}
-          <div className="relative mb-6">
-            <div className="w-16 h-16 rounded-full border-2 border-primary/20 dark:border-primary/30"></div>
-            <div className="absolute inset-0 w-16 h-16 rounded-full border-2 border-transparent border-t-primary animate-spin"></div>
-            <div className="absolute inset-2 w-12 h-12 rounded-full border border-primary/30 dark:border-primary/40"></div>
-
-            {/* Center icon */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-lg animate-pulse">🎨</div>
-            </div>
-          </div>
-
-          {/* Loading text with typewriter effect */}
-          <div className="text-center space-y-3">
-            <div className="text-sm font-medium text-foreground animate-pulse">
-              Generating Image
-            </div>
-
-            {/* Progress bar */}
-            <div className="w-32 h-1 bg-muted/50 dark:bg-muted/30 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-primary/60 to-primary animate-progress"></div>
-            </div>
-
-            <span className="font-sm text-foreground animate-pulse">
-              Refresh Page After Confirmation Toast
-            </span>
-
-            {/* Status indicators */}
-            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <div
-                  className="w-1 h-1 bg-primary rounded-full animate-pulse"
-                  style={{ animationDelay: "0ms" }}
-                ></div>
-                <span>Processing</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div
-                  className="w-1 h-1 bg-primary rounded-full animate-pulse"
-                  style={{ animationDelay: "300ms" }}
-                ></div>
-                <span>Rendering</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div
-                  className="w-1 h-1 bg-primary rounded-full animate-pulse"
-                  style={{ animationDelay: "600ms" }}
-                ></div>
-                <span>Finalizing</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Shimmer overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 dark:via-white/10 to-transparent transform -skew-x-12 animate-shimmer"></div>
-
-        {/* Corner effects */}
-        <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-primary/40 dark:border-primary/50"></div>
-        <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-primary/40 dark:border-primary/50"></div>
-        <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-primary/40 dark:border-primary/50"></div>
-        <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-primary/40 dark:border-primary/50"></div>
+      {/* Grid of animated blocks filling the entire area */}
+      <div
+        className="absolute inset-0 grid gap-0.5 p-1"
+        style={{
+          gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
+          gridTemplateRows: `repeat(${gridSize}, 1fr)`,
+        }}
+      >
+        {blocks.map(({ id, delay, duration, intensity }) => (
+          <div
+            key={id}
+            className="rounded-sm animate-pulse"
+            style={{
+              backgroundColor: `rgba(185, 185, 185, ${intensity})`, // Orange with variable opacity
+              animationDelay: `${delay}ms`,
+              animationDuration: `${duration}s`,
+              animationIterationCount: "infinite",
+              animationTimingFunction: "ease-in-out",
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }

@@ -7,10 +7,14 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { motion, useInView } from "framer-motion";
-import { Button } from "./ui/button";
+import { motion, useInView, AnimatePresence } from "framer-motion";
+import { useOutletContext } from "react-router-dom";
+import { useIsMobile } from "@/hooks/useMobileDetection";
 import { cn } from "@/lib/utils";
+import { Button } from "./ui/button";
+import { AnimatedPrice } from "./ui/animated-price";
 import CompareDemo from "./compare-drag-demo";
+import ChatInputField from "./ChatInputField";
 import {
   MessageSquare,
   Zap,
@@ -34,7 +38,95 @@ import {
 interface GuestWelcomeScreenProps {
   onSignUp: () => void;
   onLogin: () => void;
+  // Chat input field props for guest messaging
+  threadId: string;
+  input: string;
+  status: any;
+  setInput: any;
+  append: any;
+  setMessages: any;
+  stop: any;
+  pendingUserMessageRef: any;
+  onWebSearchMessage: any;
+  submitRef: any;
+  messages: any;
+  onMessageAppended: any;
 }
+
+// Currency type and pricing configuration
+type Currency = "USD" | "INR";
+
+const PRICING_CONFIG = {
+  USD: {
+    free: { original: 0, discounted: 0 },
+    pro: { original: 15, discounted: 11.25 },
+    currency: "$",
+    flag: "🇺🇸",
+  },
+  INR: {
+    free: { original: 0, discounted: 0 },
+    pro: { original: 1350, discounted: 999 },
+    currency: "₹",
+    flag: "🇮🇳",
+  },
+} as const;
+
+// Currency Toggle Component
+const CurrencyToggle = ({
+  currency,
+  onCurrencyChange,
+}: {
+  currency: Currency;
+  onCurrencyChange: (currency: Currency) => void;
+}) => {
+  return (
+    <div className="flex items-center justify-center mb-12">
+      <div className="relative bg-muted/30 backdrop-blur-sm rounded-full p-1 border border-border/50">
+        <motion.div
+          className="absolute inset-1 bg-background rounded-full shadow-sm border border-border/30"
+          initial={false}
+          animate={{
+            x: currency === "USD" ? 0 : "100%",
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+          }}
+          style={{
+            width: "calc(50% - 2px)",
+          }}
+        />
+        <div className="relative flex">
+          <button
+            onClick={() => onCurrencyChange("USD")}
+            className={cn(
+              "flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-colors duration-200 relative z-10",
+              currency === "USD"
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <span className="text-base">🇺🇸</span>
+            <span>USD</span>
+          </button>
+          <button
+            onClick={() => onCurrencyChange("INR")}
+            className={cn(
+              "flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-colors duration-200 relative z-10",
+              currency === "INR"
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <span className="text-base">🇮🇳</span>
+            <span>INR</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // User message component with typing animation
 const UserMessage = ({
@@ -593,7 +685,47 @@ Much cleaner! This approach:
 export default function GuestWelcomeScreen({
   onSignUp,
   onLogin,
+  threadId,
+  input,
+  status,
+  setInput,
+  append,
+  setMessages,
+  stop,
+  pendingUserMessageRef,
+  onWebSearchMessage,
+  submitRef,
+  messages,
+  onMessageAppended,
 }: GuestWelcomeScreenProps) {
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>("USD");
+
+  // Get sidebar context for proper positioning
+  const { sidebarWidth, state: sidebarState } = useOutletContext<{
+    sidebarWidth: number;
+    state: "open" | "collapsed";
+  }>();
+  const isMobile = useIsMobile();
+
+  // Auto-detect currency based on locale (optional enhancement)
+  useEffect(() => {
+    const userLocale = navigator.language || "en-US";
+    const detectedCurrency = userLocale.includes("IN") ? "INR" : "USD";
+    setSelectedCurrency(detectedCurrency);
+  }, []);
+
+  const handleSubscribe = async () => {
+    if (!onSignUp) return;
+
+    try {
+      // This would integrate with the existing subscription logic
+      // For now, we'll just trigger the signup flow
+      onSignUp();
+    } catch (error) {
+      console.error("Subscription error:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen pt-6">
       {/* Floating Background Elements */}
@@ -603,7 +735,7 @@ export default function GuestWelcomeScreen({
         <div className="absolute bottom-40 left-1/4 w-40 h-40 bg-primary/5 rounded-full blur-2xl animate-pulse delay-2000" />
       </div>
 
-      <div className="relative container mx-auto px-4 pb-12 max-w-7xl">
+      <div className="relative container mx-auto px-4 pb-32 max-w-7xl">
         {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -904,75 +1036,102 @@ export default function GuestWelcomeScreen({
           transition={{ duration: 0.8, delay: 0.4 }}
           className="mb-20"
         >
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <div className="text-center mb-8">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-sm font-medium text-primary mb-6"
+            >
+              <Crown className="h-4 w-4" />
               Simple, Transparent Pricing
+            </motion.div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-3 bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent">
+              Choose Your Perfect Plan
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              Choose the perfect plan for your AI conversation needs
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed">
+              From free tier to enterprise solutions, find the perfect plan for
+              your AI conversation needs
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Starter Plan */}
+          {/* Currency Toggle */}
+          <CurrencyToggle
+            currency={selectedCurrency}
+            onCurrencyChange={setSelectedCurrency}
+          />
+
+          <div className="flex flex-wrap justify-center gap-8 max-w-6xl mx-auto">
+            {/* Free Plan */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="p-8 rounded-2xl border border-border/50 relative bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300"
+              className={cn(
+                "relative p-8 rounded-2xl border border-border text-center group hover:border-primary/40 transition-all duration-500",
+                "bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-md",
+                "hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2",
+                "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-primary/5 before:to-transparent before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100"
+              )}
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 text-primary" />
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-6 justify-start">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Sparkles className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-xl font-bold">Starter</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Perfect for trying out
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold">Starter</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Perfect for trying out
-                  </p>
+
+                <div className="mb-6 flex items-end justify-start gap-1">
+                  <AnimatedPrice
+                    value={PRICING_CONFIG[selectedCurrency].free.discounted}
+                    currency={PRICING_CONFIG[selectedCurrency].currency}
+                    className="text-5xl font-bold"
+                  />
+                  <span className="text-muted-foreground text-lg">/month</span>
                 </div>
+
+                <ul className="space-y-4 mb-8 text-left">
+                  <li className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm">80 budget model prompts</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm">
+                      10 premium credits (Chat + Image Gen)
+                    </span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm">Basic conversation history</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm">Standard support</span>
+                  </li>
+                </ul>
+
+                <Button
+                  onClick={onSignUp}
+                  className="w-full py-3 bg-muted hover:bg-muted/80 text-foreground font-medium border border-border/50 hover:border-primary/30 transition-all duration-300"
+                >
+                  Get Started Free
+                </Button>
               </div>
-
-              <div className="mb-6">
-                <span className="text-4xl font-bold">$0</span>
-                <span className="text-muted-foreground text-lg">/month</span>
-              </div>
-
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm">80 budget model prompts</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm">
-                    10 premium credits (Chat + Image Gen)
-                  </span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm">Basic conversation history</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm">Standard support</span>
-                </li>
-              </ul>
-
-              <Button
-                onClick={onSignUp}
-                className="w-full py-3 bg-primary/85 font-medium"
-              >
-                Get Started Free
-              </Button>
             </motion.div>
 
             {/* Pro Plan - Popular */}
@@ -980,79 +1139,107 @@ export default function GuestWelcomeScreen({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
-              className="p-8 rounded-2xl border-2 border-primary/50 relative bg-card/70 backdrop-blur-sm hover:border-primary/60 transition-all duration-300 scale-105"
+              className={cn(
+                "relative p-8 rounded-2xl border-2 border-primary/50 text-center group hover:border-primary/60 transition-all duration-500 scale-105",
+                "bg-gradient-to-br from-primary/5 via-card/80 to-primary/5 backdrop-blur-md",
+                "hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-2",
+                "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-primary/10 before:to-transparent before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100"
+              )}
             >
+              {/* 26% OFF Badge */}
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <div className="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2">
-                  <Star className="h-4 w-4" />
-                  Most Popular
+                <div className="bg-neutral-800 dark:bg-neutral-300 dark:text-black text-white px-4 py-2 rounded-full text-sm font-medium">
+                  26% OFF
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 mb-6 mt-4">
-                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                  <Crown className="h-5 w-5 text-primary" />
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-6 mt-4 justify-start">
+                  <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+                    <Crown className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-xl font-bold">Pro Plan</h3>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold">Pro</h3>
-                  <p className="text-sm text-muted-foreground">
-                    For power users
-                  </p>
+
+                <div className="mb-6 flex items-end justify-start gap-1">
+                  <div className="flex items-center justify-center gap-2">
+                    {PRICING_CONFIG[selectedCurrency].pro.original >
+                      PRICING_CONFIG[selectedCurrency].pro.discounted && (
+                      <AnimatedPrice
+                        value={PRICING_CONFIG[selectedCurrency].pro.original}
+                        currency={PRICING_CONFIG[selectedCurrency].currency}
+                        className="text-2xl text-muted-foreground line-through"
+                      />
+                    )}
+                    <AnimatedPrice
+                      value={PRICING_CONFIG[selectedCurrency].pro.discounted}
+                      currency={PRICING_CONFIG[selectedCurrency].currency}
+                      className="text-5xl font-bold text-primary"
+                    />
+                  </div>
+                  <p className="text-muted-foreground text-lg">/month</p>
+                </div>
+
+                <ul className="space-y-4 mb-8 text-left">
+                  <li className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm">
+                      Free Models: 1,200 credits/month
+                    </span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm">
+                      Premium Models: 600 credits/month
+                    </span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm">
+                      Super Premium Models: 50 credits/month
+                    </span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm">Priority support</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm">Advanced features access</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm">No ads or interruptions</span>
+                  </li>
+                </ul>
+
+                <Button
+                  onClick={handleSubscribe}
+                  className="w-full py-3 font-medium bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2 group"
+                >
+                  <Zap className="h-4 w-4" />
+                  Subscribe Now
+                </Button>
+
+                {/* Security Badge */}
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mt-4">
+                  <span>🔒 Secure payment powered by DODO Payments</span>
                 </div>
               </div>
-
-              <div className="mb-6">
-                <span className="text-4xl font-bold">$12</span>
-                <span className="text-muted-foreground text-lg">/month</span>
-              </div>
-
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm">1200 budget model prompts</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm">
-                    600 premium credits (Chat + Image Gen)
-                  </span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm">50 super premium credits</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm">Priority response speed</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm">Advanced conversation history</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm">Priority support</span>
-                </li>
-              </ul>
-
-              <Button
-                onClick={onSignUp}
-                className="w-full py-3 font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                Upgrade to Pro
-              </Button>
             </motion.div>
 
             {/* Enterprise Plan */}
@@ -1060,65 +1247,75 @@ export default function GuestWelcomeScreen({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="p-8 rounded-2xl border border-border/50 relative bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300"
+              className={cn(
+                "relative p-8 rounded-2xl border border-border text-center group hover:border-primary/40 transition-all duration-500",
+                "bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-md",
+                "hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2",
+                "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-primary/5 before:to-transparent before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100"
+              )}
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Building2 className="h-5 w-5 text-primary" />
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-6 justify-start">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Building2 className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-xl font-bold">Enterprise</h3>
+                    <p className="text-sm text-muted-foreground">
+                      For teams & businesses
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold">Enterprise</h3>
-                  <p className="text-sm text-muted-foreground">
-                    For teams & businesses
-                  </p>
+
+                <div className="mb-6 flex items-end justify-start gap-1">
+                  <span className="text-5xl font-bold">Custom</span>
+                  <span className="text-muted-foreground text-lg">
+                    {" "}
+                    pricing
+                  </span>
                 </div>
+
+                <ul className="space-y-4 mb-8 text-left">
+                  <li className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm">Unlimited model access</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm">Custom API integration</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm">Dedicated account manager</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm">Advanced security</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm">Custom model fine-tuning</span>
+                  </li>
+                </ul>
+
+                <Button
+                  className="w-full py-3 font-medium bg-muted hover:bg-muted/80 text-foreground border border-border/50 hover:border-primary/30 transition-all duration-300"
+                  onClick={() => window.open("mailto:connect@aysh.me")}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Contact Sales
+                </Button>
               </div>
-
-              <div className="mb-6">
-                <span className="text-4xl font-bold">Custom</span>
-                <span className="text-muted-foreground text-lg"> pricing</span>
-              </div>
-
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm">Unlimited model access</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm">Custom API integration</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm">Dedicated account manager</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm">Advanced security</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm">Custom model fine-tuning</span>
-                </li>
-              </ul>
-
-              <Button
-                className="w-full py-3 font-medium bg-primary/85"
-                onClick={() => window.open("mailto:connect@ayush-sharma.in")}
-              >
-                <Mail className="h-4 w-4 mr-2" />
-                Contact Sales
-              </Button>
             </motion.div>
           </div>
         </motion.div>
@@ -1160,6 +1357,50 @@ export default function GuestWelcomeScreen({
             </div>
           </div>
         </motion.div>
+      </div>
+
+      {/* Fixed Bottom Chat Input for Guests */}
+      <div className="fixed bottom-5 left-0 right-0 z-10">
+        <div
+          className={cn(
+            "flex justify-center px-4",
+            isMobile ? "w-full" : sidebarState === "open" ? "ml-auto" : "w-full"
+          )}
+          style={{
+            width: isMobile
+              ? "100%"
+              : sidebarState === "open"
+              ? `calc(100% - ${sidebarWidth}px)`
+              : "100%",
+            marginLeft: isMobile
+              ? 0
+              : sidebarState === "open"
+              ? `${sidebarWidth}px`
+              : 0,
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="w-full max-w-3xl"
+          >
+            <ChatInputField
+              threadId={threadId}
+              input={input}
+              status={status}
+              setInput={setInput}
+              append={append}
+              setMessages={setMessages}
+              stop={stop}
+              pendingUserMessageRef={pendingUserMessageRef}
+              onWebSearchMessage={onWebSearchMessage}
+              submitRef={submitRef}
+              messages={messages}
+              onMessageAppended={onMessageAppended}
+            />
+          </motion.div>
+        </div>
       </div>
     </div>
   );

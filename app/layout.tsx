@@ -1,55 +1,60 @@
-import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
-import Script from 'next/script';
-import './styles.css';
-import 'katex/dist/katex.min.css';
-import { Toaster } from '@/frontend/components/ui/BasicComponents';
-import { ThemeProvider } from '@/frontend/components/ui/ThemeComponents';
-import { Analytics } from '@vercel/analytics/react';
-import PerformanceOptimizations from '@/frontend/components/PerformanceOptimizations';
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
+import "./globals.css";
+import "katex/dist/katex.min.css";
+import { Toaster } from "@/frontend/components/ui/BasicComponents";
+import { ThemeProvider } from "@/frontend/components/ui/ThemeComponents";
+import { Analytics } from "@vercel/analytics/react";
+import PerformanceOptimizations from "@/frontend/components/PerformanceOptimizations";
 
 const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: 'AVChat - Fastest AI Chat App',
-  description: 'Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.',
+  title: "AVChat - Fastest AI Chat App",
+  description:
+    "Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.",
   icons: {
-    icon: '/logo.png',
-    shortcut: '/logo.png',
-    apple: '/logo.png',
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
   },
   openGraph: {
-    title: 'AVChat - Fastest AI Chat App',
-    description: 'Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.',
-    url: 'https://avchat.xyz',
-    siteName: 'AVChat',
+    title: "AVChat - Fastest AI Chat App",
+    description:
+      "Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.",
+    url: "https://avchat.xyz",
+    siteName: "AVChat",
     images: [
       {
-        url: 'https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPZVsBMANYVhDAoFJpwBTRvjuNX3c1dgE7CIGe',
+        url: "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
         width: 1200,
         height: 630,
-        alt: 'AVChat - Fastest AI Chat App',
-        type: 'image/png',
+        alt: "AVChat - Fastest AI Chat App",
+        type: "image/png",
       },
     ],
-    type: 'website',
-    locale: 'en_US',
+    type: "website",
+    locale: "en_US",
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'AVChat - Fastest AI Chat App',
-    description: 'Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.',
-    images: ['https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPZVsBMANYVhDAoFJpwBTRvjuNX3c1dgE7CIGe'],
-    creator: '@cyberboyayush',
-    site: '@cyberboyayush',
+    card: "summary_large_image",
+    title: "AVChat - Fastest AI Chat App",
+    description:
+      "Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.",
+    images: [
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
+    ],
+    creator: "@cyberboyayush",
+    site: "@cyberboyayush",
   },
   robots: {
     index: true,
@@ -57,28 +62,30 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
   verification: {
-    google: 'your-google-verification-code', // Replace with your actual verification code
+    google: "your-google-verification-code", // Replace with your actual verification code
   },
   other: {
     // Performance optimization meta tags
-    'dns-prefetch': 'https://avchatbackend.avchat.xyz',
-    'preconnect': 'https://avchatbackend.avchat.xyz',
-    'viewport': 'width=device-width, initial-scale=1, maximum-scale=1',
+    "dns-prefetch": "https://avchatbackend.avchat.xyz",
+    preconnect: "https://avchatbackend.avchat.xyz",
+    viewport: "width=device-width, initial-scale=1, maximum-scale=1",
     // Additional Open Graph meta tags for better link previews
-    'og:image:secure_url': 'https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPZVsBMANYVhDAoFJpwBTRvjuNX3c1dgE7CIGe',
-    'og:image:width': '1200',
-    'og:image:height': '630',
-    'og:image:alt': 'AVChat - Fastest AI Chat App',
+    "og:image:secure_url":
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
+    "og:image:width": "1200",
+    "og:image:height": "630",
+    "og:image:alt": "AVChat - Fastest AI Chat App",
     // LinkedIn specific
-    'linkedin:owner': 'cyberboyayush',
+    "linkedin:owner": "cyberboyayush",
     // WhatsApp specific
-    'whatsapp:image': 'https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPZVsBMANYVhDAoFJpwBTRvjuNX3c1dgE7CIGe',
+    "whatsapp:image":
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
   },
 };
 
@@ -103,7 +110,7 @@ export default function RootLayout({
           <Toaster richColors position="top-right" />
         </ThemeProvider>
         <Analytics />
-        
+
         {/* Analytics Tracking Script */}
         <Script
           src="https://stats.avchat.xyz/script.js"

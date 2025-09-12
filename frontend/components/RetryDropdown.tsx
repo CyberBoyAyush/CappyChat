@@ -268,7 +268,7 @@ export default function RetryDropdown({
       <DropdownMenuContent
         align="end"
         className={cn(
-          "w-72 max-h-[600px] main-chat-scrollbar bg-card/95 backdrop-blur-sm border border-border/50 shadow-xl",
+          "w-72 max-h-[400px] main-chat-scrollbar bg-card/95 backdrop-blur-sm border border-border/50 shadow-xl",
           "animate-in slide-in-from-top-2 duration-200 rounded-xl p-2"
         )}
       >

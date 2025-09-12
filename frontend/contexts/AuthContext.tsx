@@ -10,6 +10,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { account, APPWRITE_CONFIG, ID } from '@/lib/appwrite';
+import { getCachedAccount, invalidateAccountCache } from '@/lib/accountCache';
 import { OAuthProvider } from 'appwrite';
 import { Models, AppwriteException } from 'appwrite';
 import { AppwriteDB } from '@/lib/appwriteDB';
@@ -20,7 +21,7 @@ import { globalErrorHandler } from '@/lib/globalErrorHandler';
 import { useSearchTypeStore } from '@/frontend/stores/SearchTypeStore';
 import { SessionManager, type SessionInfo, type DetailedSession } from '@/lib/sessionManager';
 
-interface User extends Models.User<Models.Preferences> {}
+type User = Models.User<Models.Preferences>;
 
 interface GuestUser {
   isGuest: true;
@@ -235,7 +236,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Cached user session to avoid repeated API calls
   const getCurrentUser = useCallback(async (): Promise<User | null> => {
     try {
-      const currentUser = await account.get();
+      const currentUser = await getCachedAccount();
       return currentUser;
     } catch (error) {
       return null;
@@ -311,6 +312,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setLoading(false);
       });
 
+      // Ensure in-memory account cache is cleared
+      invalidateAccountCache();
 
     } catch (error) {
       console.error('Error during clean logout:', error);
@@ -381,7 +384,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Refresh user data
   const refreshUser = useCallback(async (): Promise<void> => {
     try {
-      const currentUser = await account.get();
+      const currentUser = await getCachedAccount(true);
       // Update both caches with fresh user data for consistency
       setCachedAuthState(currentUser);
       setSessionAuthState(currentUser);
@@ -713,7 +716,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // STEP 2: Create session and get user data
       await account.createEmailPasswordSession(email, password);
-      const currentUser = await account.get(); // Get fresh user data after session creation
+      let currentUser: User | null = await getCachedAccount(true); // Get fresh user data after session creation
+      if (!currentUser) {
+        // Fallback to direct fetch to preserve behavior
+        currentUser = await account.get();
+      }
 
       // STEP 3: Cleanup any excess sessions (backup enforcement)
       try {
@@ -781,7 +788,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await account.createVerification(APPWRITE_CONFIG.verificationUrl);
 
       // Get fresh user data after session creation to ensure correct verification status
-      const currentUser = await account.get();
+      let currentUser: User | null = await getCachedAccount(true);
+      if (!currentUser) {
+        currentUser = await account.get();
+      }
 
       // Update session state for real-time sync (no long-term caching)
       setSessionAuthState(currentUser);
@@ -1038,8 +1048,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Add a small delay to ensure Appwrite has processed the verification
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Directly call account.get() to ensure we get fresh user data
-      const currentUser = await account.get();
+      // Fetch fresh user data via cache deduplication
+      const currentUser = await getCachedAccount(true);
       if (currentUser) {
         // Update cache with verified user data
         setCachedAuthState(currentUser);

@@ -15,7 +15,7 @@ import {
   ThreadListItem,
 } from "./panel";
 import { ThreadData } from "./panel/ThreadManager";
-import { Pin, FolderPlus, Folder, PinIcon } from "lucide-react";
+import { FolderPlus, Folder, PinIcon } from "lucide-react";
 import { useProjectManager } from "@/frontend/hooks/useProjectManager";
 import ProjectFolder from "./projects/ProjectFolder";
 import ProjectCreateDialog from "./projects/ProjectCreateDialog";

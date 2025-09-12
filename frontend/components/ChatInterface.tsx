@@ -13,6 +13,7 @@ import ChatMessageBrowser from "./ChatMessageBrowser";
 import GuestWelcomeScreen from "./GuestWelcomeScreen";
 import AuthLoadingScreen from "./auth/AuthLoadingScreen";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
+import { PlusIcon } from "./ui/icons/PlusIcon";
 
 import { UIMessage } from "ai";
 
@@ -34,19 +35,12 @@ import {
   MessageSquareMore,
   PanelLeftIcon,
   ArrowDown,
-  ChevronLeftIcon,
   Code,
   Search,
   BookOpen,
   FileQuestion,
   Compass,
-  Brain,
-  Bot,
   Sparkles,
-  Laptop,
-  ChevronRight,
-  PlusIcon,
-  Info,
   CircleHelp,
   X,
 } from "lucide-react";
@@ -64,7 +58,13 @@ import GlobalSearchDialog from "./GlobalSearchDialog";
 import { extractUrlsFromContent } from "./WebSearchCitations";
 import WebSearchLoader from "./WebSearchLoader";
 import RedditSearchLoader from "./RedditSearchLoader";
-import { devLog, devWarn, devInfo, devError, prodError } from '@/lib/logger';
+import { devLog, devWarn, devInfo, devError, prodError } from "@/lib/logger";
+import { SearchIcon } from "./ui/icons/SearchIcon";
+import { MessageCircleIcon } from "./ui/icons/MessageCircleIcon";
+import { InfoIcon } from "./ui/icons/InfoIcon";
+import { PanelLeft } from "@/frontend/components/ui/icons/panel-left";
+import { AnimateIcon } from "@/frontend/components/ui/icons/icon";
+import FreeTierShowcase from "./FreeTierShowcase";
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -178,9 +178,7 @@ export default function ChatInterface({
           }
         } else {
           if (isPendingAuth) {
-            devLog(
-              "[ChatInterface] 🧹 No pending auth found, clearing state"
-            );
+            devLog("[ChatInterface] 🧹 No pending auth found, clearing state");
           }
           setIsPendingAuth(false);
         }
@@ -197,9 +195,7 @@ export default function ChatInterface({
 
     // Listen for auth state changes to clear pending state
     const handleAuthStateChanged = () => {
-      devLog(
-        "[ChatInterface] 🎉 Auth state changed - clearing pending state"
-      );
+      devLog("[ChatInterface] 🎉 Auth state changed - clearing pending state");
       setIsPendingAuth(false);
       sessionStorage.removeItem("avchat_auth_pending");
     };
@@ -262,10 +258,7 @@ export default function ChatInterface({
     // Remove from tracking after 2 seconds to allow normal sync
     setTimeout(() => {
       recentlyAppendedMessages.current.delete(messageId);
-      devLog(
-        "[ChatInterface] Stopped tracking appended message:",
-        messageId
-      );
+      devLog("[ChatInterface] Stopped tracking appended message:", messageId);
     }, 2000);
   }, []);
 
@@ -348,18 +341,10 @@ export default function ChatInterface({
         message.content.length
       );
       const extractedUrls = extractUrlsFromContent(message.content);
-      devLog(
-        "🔍 onFinish: URLs found:",
-        extractedUrls.length,
-        extractedUrls
-      );
+      devLog("🔍 onFinish: URLs found:", extractedUrls.length, extractedUrls);
 
       if (extractedUrls.length > 0) {
-        devLog(
-          "✅ Extracted URLs from AI message:",
-          message.id,
-          extractedUrls
-        );
+        devLog("✅ Extracted URLs from AI message:", message.id, extractedUrls);
 
         aiMessage.webSearchResults = extractedUrls;
 
@@ -634,10 +619,7 @@ export default function ChatInterface({
       // Streaming ended, clean up
       const lastRef = lastStreamingMessageRef.current;
       streamingSync.endStreaming(threadId, lastRef.id, lastRef.content);
-      devLog(
-        "[ChatInterface] Ended streaming sync for message:",
-        lastRef.id
-      );
+      devLog("[ChatInterface] Ended streaming sync for message:", lastRef.id);
       lastStreamingMessageRef.current = null;
 
       // Clear interval
@@ -756,9 +738,7 @@ export default function ChatInterface({
 
           // For image generation updates, we need to replace existing messages with updated DB versions
           if (hasUpdatedMessages) {
-            devLog(
-              "[ChatInterface] Handling image generation message updates"
-            );
+            devLog("[ChatInterface] Handling image generation message updates");
 
             // Build a map of DB messages by ID for quick lookup
             const dbMessageMap = new Map(
@@ -1161,9 +1141,7 @@ export default function ChatInterface({
         }
 
         if (!userPrompt) {
-          devError(
-            "Could not find user prompt for image generation retry"
-          );
+          devError("Could not find user prompt for image generation retry");
           return;
         }
 
@@ -1262,7 +1240,7 @@ export default function ChatInterface({
 
       <main
         ref={mainRef}
-        className="flex-1 overflow-y-scroll overflow-x-hidden pt-20 pb-40 main-chat-scrollbar"
+        className="flex-1 overflow-y-scroll relative overflow-x-hidden pt-20 md:pt-8 pb-40 main-chat-scrollbar"
         style={{
           scrollbarGutter: "stable",
         }}
@@ -1296,6 +1274,19 @@ export default function ChatInterface({
                 <GuestWelcomeScreen
                   onSignUp={() => authDialog.navigateToSignup()}
                   onLogin={() => authDialog.navigateToLogin()}
+                  // Add chat input props for guest messaging
+                  threadId={threadId}
+                  input={input}
+                  status={status}
+                  setInput={setInput}
+                  append={append}
+                  setMessages={setMessages}
+                  stop={stop}
+                  pendingUserMessageRef={pendingUserMessageRef}
+                  onWebSearchMessage={handleWebSearchMessage}
+                  submitRef={chatInputSubmitRef}
+                  messages={messages}
+                  onMessageAppended={trackAppendedMessage}
                 />
               );
             } else {
@@ -1305,12 +1296,24 @@ export default function ChatInterface({
                   isDarkTheme={isDarkTheme}
                   selectedDomain={selectedDomain}
                   onDomainSelect={handleDomainSelect}
+                  threadId={threadId}
+                  input={input}
+                  status={status}
+                  setInput={setInput}
+                  append={append}
+                  setMessages={setMessages}
+                  stop={stop}
+                  pendingUserMessageRef={pendingUserMessageRef}
+                  onWebSearchMessage={handleWebSearchMessage}
+                  submitRef={chatInputSubmitRef}
+                  messages={messages}
+                  onMessageAppended={trackAppendedMessage}
                 />
               );
             }
           })()
         ) : (
-          <div className="mx-auto flex justify-center px-4">
+          <div className="mx-auto flex justify-center px-4 py-6">
             <ChatMessageDisplay
               threadId={threadId}
               messages={messages}
@@ -1329,14 +1332,9 @@ export default function ChatInterface({
         )}
       </main>
 
-      {/* Fixed Input Container with Dynamic Width */}
-      <div className="fixed bottom-5 left-0 right-0 z-20">
-        {/* Scroll to bottom button */}
+      <div className="fixed hidden md:block top-0 left-0 right-0 z-50">
         <div
-          className={cn(
-            "relative transition-opacity duration-300",
-            showScrollToBottom ? "opacity-100" : "opacity-0 pointer-events-none"
-          )}
+          className="relative"
           style={{
             width: isMobile
               ? "100%"
@@ -1350,58 +1348,103 @@ export default function ChatInterface({
               : 0,
           }}
         >
-          <Button
-            onClick={scrollToBottom}
-            variant="secondary"
-            size="sm"
-            className={cn(
-              "rounded-full absolute bottom-0 left-1/2 -translate-x-1/2 shadow-lg text-primary-foreground mb-2 transition-all duration-200",
-              isDarkTheme
-                ? "bg-primary/90 hover:bg-primary"
-                : "bg-primary hover:bg-primary/90"
-            )}
-            aria-label="Scroll to bottom"
+          <div
+            className={`absolute left-1/2 -translate-x-1/2 top-3 ${
+              state === "open" ? "top-5" : "top-3"
+            }`}
           >
-            <ArrowDown className="h-4 w-4 md:mr-1" />
-            <span className="text-xs hidden md:block">Latest messages</span>
-          </Button>
-        </div>
-
-        <div
-          className={cn(
-            "flex justify-center px-4",
-            isMobile ? "w-full" : sidebarState === "open" ? "ml-auto" : "w-full"
-          )}
-          style={{
-            width: isMobile
-              ? "100%"
-              : sidebarState === "open"
-              ? `calc(100% - ${sidebarWidth}px)`
-              : "100%",
-            marginLeft: isMobile
-              ? 0
-              : sidebarState === "open"
-              ? `${sidebarWidth}px`
-              : 0,
-          }}
-        >
-          <div className="w-full max-w-3xl">
-            <ChatInputField
-              threadId={threadId}
-              input={input}
-              status={status}
-              append={append}
-              setMessages={setMessages}
-              setInput={setInput}
-              stop={stop}
-              pendingUserMessageRef={pendingUserMessageRef}
-              onWebSearchMessage={handleWebSearchMessage}
-              submitRef={chatInputSubmitRef}
-              messages={messages}
-              onMessageAppended={trackAppendedMessage}
-            />
+            <FreeTierShowcase />
           </div>
         </div>
+      </div>
+
+      {/* Fixed Input Container with Dynamic Width */}
+      <div className="fixed bottom-5 left-0 right-0 z-20">
+        {/* Scroll to bottom button - only show when there are messages and not on guest welcome screen */}
+        {messages.length > 0 && !isGuest && (
+          <div
+            className={cn(
+              "relative transition-opacity duration-300",
+              showScrollToBottom
+                ? "opacity-100"
+                : "opacity-0 pointer-events-none"
+            )}
+            style={{
+              width: isMobile
+                ? "100%"
+                : sidebarState === "open"
+                ? `calc(100% - ${sidebarWidth}px)`
+                : "100%",
+              marginLeft: isMobile
+                ? 0
+                : sidebarState === "open"
+                ? `${sidebarWidth}px`
+                : 0,
+            }}
+          >
+            <Button
+              onClick={scrollToBottom}
+              variant="secondary"
+              size="sm"
+              className={cn(
+                "rounded-full absolute bottom-0 left-1/2 -translate-x-1/2 shadow-lg text-primary-foreground mb-2 transition-all duration-200",
+                isDarkTheme
+                  ? "bg-primary/90 hover:bg-primary"
+                  : "bg-primary hover:bg-primary/90"
+              )}
+              aria-label="Scroll to bottom"
+            >
+              <ArrowDown className="h-4 w-4 md:mr-1" />
+              <span className="text-xs hidden md:block">Latest messages</span>
+            </Button>
+          </div>
+        )}
+
+        {/* Only show bottom chat input when there are messages (chat mode) */}
+        {messages.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className={cn(
+              "flex justify-center px-4",
+              isMobile
+                ? "w-full"
+                : sidebarState === "open"
+                ? "ml-auto"
+                : "w-full"
+            )}
+            style={{
+              width: isMobile
+                ? "100%"
+                : sidebarState === "open"
+                ? `calc(100% - ${sidebarWidth}px)`
+                : "100%",
+              marginLeft: isMobile
+                ? 0
+                : sidebarState === "open"
+                ? `${sidebarWidth}px`
+                : 0,
+            }}
+          >
+            <div className="w-full max-w-3xl">
+              <ChatInputField
+                threadId={threadId}
+                input={input}
+                status={status}
+                append={append}
+                setMessages={setMessages}
+                setInput={setInput}
+                stop={stop}
+                pendingUserMessageRef={pendingUserMessageRef}
+                onWebSearchMessage={handleWebSearchMessage}
+                submitRef={chatInputSubmitRef}
+                messages={messages}
+                onMessageAppended={trackAppendedMessage}
+              />
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Fixed action buttons */}
@@ -1428,14 +1471,16 @@ export default function ChatInterface({
             onClick={handleToggleNavigator}
             variant={isDarkTheme ? "outline" : "secondary"}
             size="icon"
-            className={cn("focus-enhanced shadow-sm rounded-md ")}
+            className={cn(
+              "focus:outline-none focus:ring-0 shadow-sm rounded-md "
+            )}
             aria-label={
               isNavigatorVisible
                 ? "Hide message browser"
                 : "Show message browser"
             }
           >
-            <MessageSquareMore className="h-5 w-5" />
+            <MessageCircleIcon className="h-5 w-5" />
           </Button>
 
           <ThemeToggleButton variant="inline" />
@@ -1501,17 +1546,17 @@ const AppPanelTrigger = () => {
           : "bg-background"
       }`}
     >
-      <div className="hover:bg-zinc-600/10 rounded-md">
+      <AnimateIcon animateOnHover>
         <Button
           size="icon"
           variant="outline"
-          className="bg-background"
+          className="bg-background hover:bg-zinc-600/10"
           onClick={handleToggle}
           aria-label="Toggle sidebar"
         >
-          <PanelLeftIcon className="h-5 w-5" />
+          <PanelLeft />
         </Button>
-      </div>
+      </AnimateIcon>
 
       <div className="rounded-md md:block">
         <Button
@@ -1522,7 +1567,7 @@ const AppPanelTrigger = () => {
             state === "collapsed" ? "ml-2" : "hidden"
           }`}
         >
-          <Search className="h-5 w-5" />
+          <SearchIcon />
         </Button>
         <GlobalSearchDialog
           isOpen={isSearchDialogOpen}
@@ -1621,7 +1666,7 @@ const QuickShortCutInfo = () => {
         className="bg-transparent hover:bg-primary/15 dark:hover:bg-border  rounded-full transition transform duration-300"
         aria-label="Keyboard shortcuts help"
       >
-        <CircleHelp className="h-5 w-5 text-foreground " />
+        <InfoIcon className="h-5 w-5 text-foreground " />
       </Button>
       {isOpen && (
         <motion.div
@@ -1744,6 +1789,19 @@ interface WelcomeScreenProps {
   isDarkTheme: boolean;
   selectedDomain: string | null;
   onDomainSelect: (domainId: string) => void;
+  // Chat input field props for centered input
+  threadId: string;
+  input: string;
+  status: any;
+  setInput: any;
+  append: any;
+  setMessages: any;
+  stop: any;
+  pendingUserMessageRef: any;
+  onWebSearchMessage: any;
+  submitRef: any;
+  messages: any;
+  onMessageAppended: any;
 }
 
 const WelcomeScreen = ({
@@ -1751,133 +1809,73 @@ const WelcomeScreen = ({
   isDarkTheme,
   selectedDomain,
   onDomainSelect,
+  threadId,
+  input,
+  status,
+  setInput,
+  append,
+  setMessages,
+  stop,
+  pendingUserMessageRef,
+  onWebSearchMessage,
+  submitRef,
+  messages,
+  onMessageAppended,
 }: WelcomeScreenProps) => {
+  const { user } = useAuth();
+
   return (
-    <div className="container mx-auto px-4 py-3 max-w-3xl">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-center mb-5"
-      >
-        <h1 className="text-lg md:text-2xl font-bold mb-1">
-          How can I help you, today?
-        </h1>
-        <p className="text-muted-foreground text-sm max-w-xl mx-auto">
-          Select a category below or type your own message to get started
-        </p>
-      </motion.div>
-
-      {/* Categories Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {promptDomains.map((category, index) => (
-          <motion.div
-            key={category.id}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{
-              duration: 0.5,
-              delay: 0.1 * index,
-            }}
-            className={cn(
-              "rounded-2xl p-3 cursor-pointer transition-all border border-border",
-              isDarkTheme ? "hover:bg-zinc-700/50" : "hover:bg-primary/10",
-              selectedDomain === category.id &&
-                (isDarkTheme
-                  ? "bg-zinc-700/70 border-primary/50"
-                  : "bg-primary/10 border-primary/50")
-            )}
-            onClick={() => onDomainSelect(category.id)}
-          >
-            <div className="flex flex-col items-center text-center">
-              <h3 className="font-semibold text-lg mb-2">{category.name}</h3>
-              <p className="text-sm text-muted-foreground">
-                {category.description}
-              </p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Domain-specific Prompts Section */}
-      <AnimatePresence>
-        {selectedDomain && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="mb-10 overflow-hidden"
-          >
-            <div className="bg-card/30 backdrop-blur-sm border border-border rounded-xl p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-4 flex items-center">
-                {promptDomains.find((d) => d.id === selectedDomain)?.icon}
-                <span className="ml-2">
-                  {promptDomains.find((d) => d.id === selectedDomain)?.name}{" "}
-                  Prompts
-                </span>
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {promptDomains
-                  .find((domain) => domain.id === selectedDomain)
-                  ?.prompts.map((prompt, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2, delay: index * 0.1 }}
-                    >
-                      <Button
-                        variant="ghost"
-                        className={`justify-start text-left h-auto py-3 px-4 w-full ${
-                          isDarkTheme
-                            ? "hover:bg-zinc-700/50"
-                            : "hover:bg-primary/10"
-                        }`}
-                        onClick={() => onPromptSelect(prompt)}
-                      >
-                        <FileQuestion className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <span className="truncate">{prompt}</span>
-                      </Button>
-                    </motion.div>
-                  ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Popular Prompts Section - Only shown when no domain is selected */}
-      {!selectedDomain && (
+    <div className="flex flex-col h-full">
+      {/* Top section with branding and greeting */}
+      <div className="flex-1 flex flex-col justify-center items-center px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="mb-8"
+          transition={{ duration: 0.5 }}
+          className="text-center mb-16"
         >
-          <h2 className="text-xl font-semibold mb-4">Popular prompts</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {[
-              "How does AI work?",
-              "Are black holes real?",
-              'How many Rs are in the word "strawberry"?',
-              "What is the meaning of life?",
-            ].map((prompt, index) => (
-              <Button
-                key={index}
-                variant="ghost"
-                className={`justify-start text-left h-auto py-3 px-4 ${
-                  isDarkTheme ? "hover:bg-zinc-700/50" : "hover:bg-primary/10"
-                }`}
-                onClick={() => onPromptSelect(prompt)}
-              >
-                <FileQuestion className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span className="truncate">{prompt}</span>
-              </Button>
-            ))}
-          </div>
+          <h1 className="text-3xl md:text-6xl font-bold mb-4 flex items-end justify-center">
+            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              AV
+            </span>
+            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              Chat
+            </span>
+            {/* <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-primary ml-1 mb-2 animate-pulse"></div> */}
+          </h1>
+          <h2 className="text-xl md:text-2xl font-medium mb-3">
+            Welcome Back, {user?.name || "User"}!
+          </h2>
+          <p className="text-muted-foreground text-base max-w-2xl mx-auto leading-relaxed">
+            Ready to help with anything you need. Whether it's answering
+            questions, coding assistance, or just having a conversation - let's
+            get started!
+          </p>
         </motion.div>
-      )}
+
+        {/* Centered Chat Input */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="w-full max-w-3xl "
+        >
+          <ChatInputField
+            threadId={threadId}
+            input={input}
+            status={status}
+            setInput={setInput}
+            append={append}
+            setMessages={setMessages}
+            stop={stop}
+            pendingUserMessageRef={pendingUserMessageRef}
+            onWebSearchMessage={onWebSearchMessage}
+            submitRef={submitRef}
+            messages={messages}
+            onMessageAppended={onMessageAppended}
+          />
+        </motion.div>
+      </div>
     </div>
   );
 };
