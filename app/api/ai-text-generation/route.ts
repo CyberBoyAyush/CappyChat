@@ -126,7 +126,7 @@ OUTPUT THE ENHANCED PROMPT ONLY. NO EXPLANATIONS. NO ANSWERS.`,
       const cleanItem = (s: string) => s.replace(/^["'\s]+|["'\s,]+$/g, '').trim();
 
       // Remove code fences and language tags
-      let candidate = text
+      const candidate = text
         .replace(/```[a-zA-Z]+/g, '```')
         .replace(/```/g, '')
         .trim();
