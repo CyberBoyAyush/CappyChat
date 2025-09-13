@@ -34,8 +34,8 @@ const updateUserSubscriptionAndTierServer = async (
     const updatedPrefs = {
       ...currentPrefs,
       // Subscription fields as separate preferences
-      subscriptionTier: subscriptionData.tier || currentPrefs.subscriptionTier,
-      subscriptionStatus: subscriptionData.status || currentPrefs.subscriptionStatus,
+      subscriptionTier: subscriptionData.tier || currentPrefs.subscriptionTier || 'FREE',
+      subscriptionStatus: subscriptionData.status || currentPrefs.subscriptionStatus || 'expired',
       subscriptionCustomerId: subscriptionData.customerId || currentPrefs.subscriptionCustomerId,
       subscriptionId: subscriptionData.subscriptionId || currentPrefs.subscriptionId,
       subscriptionPeriodEnd: subscriptionData.currentPeriodEnd || currentPrefs.subscriptionPeriodEnd,
@@ -57,6 +57,11 @@ const updateUserSubscriptionAndTierServer = async (
     };
 
     // Single atomic update
+    console.log('🔧 About to update preferences with:', {
+      subscriptionTier: updatedPrefs.subscriptionTier,
+      subscriptionStatus: updatedPrefs.subscriptionStatus,
+      tier: updatedPrefs.tier
+    });
     await users.updatePrefs(userId, updatedPrefs);
 
     console.log('Server-side subscription and tier update successful:', {
@@ -134,6 +139,8 @@ export const POST = Webhooks({
     };
 
     console.log('📝 Atomically updating subscription and tier system...');
+    console.log('📋 Subscription update data:', subscriptionUpdate);
+    console.log('📋 Tier update data:', tierUpdate);
     await updateUserSubscriptionAndTierServer(userId!, subscriptionUpdate, tierUpdate);
 
     console.log('🎊 User successfully upgraded to premium:', userId);

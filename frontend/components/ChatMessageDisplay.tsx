@@ -36,6 +36,7 @@ function PureMessageDisplay({
   isWebSearching,
   webSearchQuery,
   selectedSearchType,
+  onSuggestedQuestionClick,
 }: {
   threadId: string;
   messages: UIMessage[];
@@ -49,6 +50,7 @@ function PureMessageDisplay({
   isWebSearching?: boolean;
   webSearchQuery?: string;
   selectedSearchType?: SearchType;
+  onSuggestedQuestionClick?: (q: string) => void;
 }) {
   const { selectedSearchType: storeSearchType } = useSearchTypeStore();
   // Use the passed selectedSearchType prop if available, otherwise fall back to store
@@ -103,21 +105,33 @@ function PureMessageDisplay({
 
   return (
     <section className="chat-message-container flex flex-col w-full max-w-3xl space-y-6">
-      {deduplicatedMessages.map((message, index) => (
-        <PreviewMessage
-          key={message.id}
-          threadId={threadId}
-          message={message}
-          isStreaming={
-            status === "streaming" && deduplicatedMessages.length - 1 === index
+      {deduplicatedMessages.map((message, index) => {
+        const isLast = deduplicatedMessages.length - 1 === index;
+        const prevUserMessage = (() => {
+          for (let i = index - 1; i >= 0; i--) {
+            if (deduplicatedMessages[i].role === "user") {
+              return deduplicatedMessages[i].content;
+            }
           }
-          setMessages={setMessages}
-          reload={reload}
-          registerRef={registerRef}
-          stop={stop}
-          onRetryWithModel={onRetryWithModel}
-        />
-      ))}
+          return undefined;
+        })();
+        return (
+          <PreviewMessage
+            key={message.id}
+            threadId={threadId}
+            message={message}
+            isStreaming={status === "streaming" && isLast}
+            setMessages={setMessages}
+            reload={reload}
+            registerRef={registerRef}
+            stop={stop}
+            onRetryWithModel={onRetryWithModel}
+            onSuggestedQuestionClick={onSuggestedQuestionClick}
+            prevUserMessage={prevUserMessage}
+            isLast={isLast}
+          />
+        );
+      })}
       {status === "submitted" && (
         <div className="flex gap-2 w-full max-w-full pr-4 pb-6">
           {/* Assistant Avatar */}

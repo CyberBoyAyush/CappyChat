@@ -18,7 +18,7 @@ import ChatMessageReasoning from "./ChatMessageReasoning";
 import WebSearchCitations, { cleanMessageContent } from "./WebSearchCitations";
 import MessageAttachments from "./MessageAttachments";
 import { AIModel, getModelConfig } from "@/lib/models";
-import { User, Bot, Download } from "lucide-react";
+import { User, Bot, Download, ChevronRight, Plus, List } from "lucide-react";
 import { getModelIcon } from "@/frontend/components/ui/ModelComponents";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { Button } from "@/frontend/components/ui/button";
@@ -56,6 +56,80 @@ const extractAspectRatio = (message: UIMessage): string => {
   return "1:1";
 };
 
+// Collapsible Suggested Questions section
+function SuggestedQuestions({
+  suggestions,
+  loading,
+  onClick,
+  onGenerate,
+}: {
+  suggestions?: string[];
+  loading?: boolean;
+  onClick?: (q: string) => void;
+  onGenerate?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const handleToggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (
+      next &&
+      !loading &&
+      (!suggestions || suggestions.length === 0)
+    ) {
+      onGenerate?.();
+    }
+  };
+
+  return (
+    <div className="pt-2">
+      <Button
+        onClick={handleToggle}
+        variant="ghost"
+        size="sm"
+        aria-expanded={open}
+        className="group flex items-center w-full h-9 px-3 rounded-md border border-border/50 bg-card text-foreground/90 hover:bg-accent/30"
+      >
+        <List className="w-4 h-4 text-muted-foreground mr-2" />
+        <span className="text-[13px] font-semibold tracking-wide">Suggested questions</span>
+        <div className="ml-auto">
+          <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${open ? 'rotate-90' : ''}`} />
+        </div>
+      </Button>
+
+      {open && (
+        <div className="mt-2 p-2 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm animate-in fade-in-50">
+          {loading ? (
+            <div className="text-sm text-muted-foreground px-2 py-3">Generating suggestions…</div>
+          ) : suggestions && suggestions.length > 0 ? (
+            <ul className="flex flex-col divide-y divide-border/40">
+              {suggestions.slice(0, 3).map((q, i) => (
+                <li key={i}>
+                  <button
+                    type="button"
+                    onClick={() => onClick?.(q)}
+                    className="group w-full flex items-center justify-between px-4 py-3 hover:bg-accent/20 text-left"
+                    title="Ask this"
+                  >
+                    <span className="flex-1 text-sm text-foreground/90 text-left">{q}</span>
+                    <span className="ml-3 inline-flex items-center justify-center w-5 h-5 rounded-full border border-border/50 text-muted-foreground group-hover:text-foreground">
+                      <Plus className="w-3.5 h-3.5" />
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-sm text-muted-foreground px-2 py-3">Tap again to regenerate</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function PureMessage({
   threadId,
   message,
@@ -65,6 +139,9 @@ function PureMessage({
   registerRef,
   stop,
   onRetryWithModel,
+  onSuggestedQuestionClick,
+  prevUserMessage,
+  isLast,
 }: {
   threadId: string;
   message: UIMessage;
@@ -74,7 +151,74 @@ function PureMessage({
   registerRef: (id: string, ref: HTMLDivElement | null) => void;
   stop: UseChatHelpers["stop"];
   onRetryWithModel?: (model?: AIModel, message?: UIMessage) => void;
+  onSuggestedQuestionClick?: (q: string) => void;
+  prevUserMessage?: string;
+  isLast?: boolean;
 }) {
+  // Generate suggestions on demand (when the section is opened)
+  const handleGenerateSuggestions = async () => {
+    try {
+      if (isStreaming) return;
+      if (!isLast) return;
+      const userQuestion = prevUserMessage;
+      const aiAnswer = message.content;
+      if (!userQuestion || !aiAnswer) return;
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === message.id
+            ? ({ ...m, suggestedQuestionsLoading: true } as any)
+            : m
+        )
+      );
+
+      const resp = await fetch("/api/ai-text-generation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          isSuggestions: true,
+          userQuestion,
+          aiAnswer,
+          suggestionCount: 3,
+        }),
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const suggestions: string[] = Array.isArray(data.suggestions)
+          ? data.suggestions.slice(0, 3)
+          : [];
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === message.id
+              ? ({
+                  ...m,
+                  suggestedQuestions: suggestions,
+                  suggestedQuestionsLoading: false,
+                } as any)
+              : m
+          )
+        );
+      } else {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === message.id
+              ? ({ ...m, suggestedQuestionsLoading: false } as any)
+              : m
+          )
+        );
+      }
+    } catch {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === message.id
+            ? ({ ...m, suggestedQuestionsLoading: false } as any)
+            : m
+        )
+      );
+    }
+  };
+
   const [mode, setMode] = useState<"view" | "edit">("view");
   const { selectedModel } = useModelStore();
 
@@ -368,20 +512,6 @@ function PureMessage({
                   return null;
                 })()}
 
-                {!isStreaming && (
-                  <div className="flex-shrink-0 mt-1">
-                    <ChatMessageControls
-                      threadId={threadId}
-                      content={(part as any).text || ""}
-                      message={message}
-                      setMessages={setMessages}
-                      reload={reload}
-                      stop={stop}
-                      onRetryWithModel={onRetryWithModel}
-                    />
-                  </div>
-                )}
-
                 {/* Show web search citations for assistant messages with search results */}
                 {(() => {
                   const hasWebSearchResults =
@@ -410,6 +540,32 @@ function PureMessage({
                     )
                   );
                 })()}
+
+                {/* Suggested Questions */}
+                {!isStreaming && isLast && message.role === "assistant" && (
+                  <SuggestedQuestions
+                    suggestions={(message as any).suggestedQuestions}
+                    loading={(message as any).suggestedQuestionsLoading}
+                    onClick={(q) => onSuggestedQuestionClick?.(q)}
+                    onGenerate={handleGenerateSuggestions}
+                  />
+                )}
+
+                {/* Controls - placed after citations and suggestions */}
+                {!isStreaming && (
+                  <div className="flex-shrink-0 mt-1">
+                    <ChatMessageControls
+                      threadId={threadId}
+                      content={(part as any).text || ""}
+                      message={message}
+                      setMessages={setMessages}
+                      reload={reload}
+                      stop={stop}
+                      onRetryWithModel={onRetryWithModel}
+                    />
+                  </div>
+                )}
+
               </div>
             </div>
           );
@@ -424,6 +580,7 @@ const PreviewMessage = memo(PureMessage, (prevProps, nextProps) => {
   if (prevProps.message.id !== nextProps.message.id) return false;
   if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
   // Check if model field changed (important for assistant messages)
+
   if ((prevProps.message as any).model !== (nextProps.message as any).model)
     return false;
   // Check if imgurl field changed (important for image generation messages)
@@ -441,6 +598,16 @@ const PreviewMessage = memo(PureMessage, (prevProps, nextProps) => {
     (nextProps.message as any).isImageGeneration
   )
     return false;
+  // Check if suggested questions loading changed
+  if (
+    (prevProps.message as any).suggestedQuestionsLoading !==
+    (nextProps.message as any).suggestedQuestionsLoading
+  )
+    return false;
+  // Check if suggested questions array changed
+  const prevSug = ((prevProps.message as any).suggestedQuestions || []) as any[];
+  const nextSug = ((nextProps.message as any).suggestedQuestions || []) as any[];
+  if (!equal(prevSug, nextSug)) return false;
   return true;
 });
 

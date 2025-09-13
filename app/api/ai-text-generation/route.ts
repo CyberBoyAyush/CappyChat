@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { prompt, isTitle, isEnhancement, context, messageId, threadId, userApiKey } = body;
+  const { prompt, isTitle, isEnhancement, context, messageId, threadId, userApiKey, isSuggestions, userQuestion, aiAnswer, suggestionCount } = body;
 
   // AI text generation is completely free - no tier validation or credit consumption
   console.log('📝 AI text generation - completely free service (no credits consumed)');
@@ -30,16 +30,18 @@ export async function POST(req: Request) {
     }
   });
 
-  // Validate required fields
-  if (!prompt || typeof prompt !== 'string') {
-    return NextResponse.json(
-      { error: 'Prompt is required' },
-      { status: 400 }
-    );
+  // Validate required fields (skip for suggestions)
+  if (!isEnhancement && !isSuggestions) {
+    if (!prompt || typeof prompt !== 'string') {
+      return NextResponse.json(
+        { error: 'Prompt is required' },
+        { status: 400 }
+      );
+    }
   }
 
-  // For enhancement, we don't need messageId and threadId
-  if (!isEnhancement) {
+  // For enhancement or suggestions, we don't need messageId and threadId
+  if (!isEnhancement && !isSuggestions) {
     if (!messageId || typeof messageId !== 'string') {
       return NextResponse.json(
         { error: 'Message ID is required' },
@@ -103,6 +105,76 @@ OUTPUT THE ENHANCED PROMPT ONLY. NO EXPLANATIONS. NO ANSWERS.`,
       });
 
       return NextResponse.json({ enhancedPrompt, isEnhancement });
+    } else if (isSuggestions) {
+      const count = Math.min(Math.max(Number(suggestionCount) || 4, 3), 6);
+      if (!userQuestion || !aiAnswer) {
+        return NextResponse.json(
+          { error: 'userQuestion and aiAnswer are required for suggestions' },
+          { status: 400 }
+        );
+      }
+
+      const { text } = await generateText({
+        model: openrouter('google/gemini-2.5-flash-lite'),
+        system: `You write short, specific follow-up questions to continue a conversation based only on the provided pair of messages. Return ONLY a JSON array of strings, nothing else. Each question should be < 120 chars.`,
+        prompt: `USER_QUESTION:\n${userQuestion}\n\nAI_ANSWER:\n${aiAnswer}\n\nReturn ${count} follow-up questions as a JSON array of strings.`,
+        temperature: 0.4,
+        maxTokens: 200,
+      });
+
+      let suggestions: string[] = [];
+      const cleanItem = (s: string) => s.replace(/^["'\s]+|["'\s,]+$/g, '').trim();
+
+      // Remove code fences and language tags
+      const candidate = text
+        .replace(/```[a-zA-Z]+/g, '```')
+        .replace(/```/g, '')
+        .trim();
+
+      // Try to extract JSON array between [ ... ]
+      const start = candidate.indexOf('[');
+      const end = candidate.lastIndexOf(']');
+      if (start !== -1 && end !== -1 && end > start) {
+        const slice = candidate.slice(start, end + 1);
+        try {
+          const parsed = JSON.parse(slice);
+          if (Array.isArray(parsed)) {
+            suggestions = parsed
+              .filter((q: any) => typeof q === 'string')
+              .map((q: string) => cleanItem(q));
+          }
+        } catch {}
+      }
+
+      // Fallback: pull out quoted strings
+      if (suggestions.length === 0) {
+        const quoted = candidate.match(/"([^"]{1,200}?)"/g);
+        if (quoted && quoted.length > 0) {
+          suggestions = quoted.map((q) => cleanItem(q));
+        }
+      }
+
+      // Fallback: line by line cleanup (remove bullets/brackets/artifacts)
+      if (suggestions.length === 0) {
+        suggestions = candidate
+          .split('\n')
+          .map((s: string) => s.replace(/^[\[\]\s]*/g, ''))
+          .map((s: string) => s.replace(/^[\-\*\+\d.\s]+/, ''))
+          .map((s: string) => s.replace(/^["']|["'],?$/g, ''))
+          .map((s: string) => s.trim())
+          .filter((s: string) => s && s.toLowerCase() !== 'json' && s !== '[' && s !== ']' );
+      }
+
+      // Final cleanup: unique, length limit, slice to count
+      const seen = new Set<string>();
+      suggestions = suggestions
+        .map(cleanItem)
+        .filter((s) => s && !seen.has(s) && s.length <= 200)
+        .map((s) => s.replace(/\s{2,}/g, ' '))
+        .filter((s) => { seen.add(s); return true; })
+        .slice(0, count);
+
+      return NextResponse.json({ suggestions, isSuggestions: true });
     } else {
       // Title generation (existing functionality) - handles both isTitle=true and undefined
       const { text: title } = await generateText({
