@@ -1167,6 +1167,15 @@ export default function ChatInterface({
     [selectedModel, reload, stop, setMessages, threadId]
   );
 
+
+  // Click handler for Suggested Questions: submit immediately as a new user message
+  const handleSuggestedQuestionClick = useCallback(
+    (question: string) => {
+      append({ role: "user", content: question });
+    },
+    [append]
+  );
+
   // This useEffect is no longer needed since we handle web search results in onFinish
   // Keeping it commented for reference
   // useEffect(() => {
@@ -1327,6 +1336,7 @@ export default function ChatInterface({
               isWebSearching={isWebSearching}
               webSearchQuery={webSearchQuery}
               selectedSearchType={selectedSearchType}
+              onSuggestedQuestionClick={handleSuggestedQuestionClick}
             />
           </div>
         )}
