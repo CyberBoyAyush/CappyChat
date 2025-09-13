@@ -325,6 +325,7 @@ export default function ChatInterface({
       const modelUsed = retryModel || selectedModel;
       const aiMessage: UIMessage & {
         webSearchResults?: string[];
+        webSearchImgs?: string[];
         model?: string;
       } = {
         id: message.id,
@@ -361,6 +362,37 @@ export default function ChatInterface({
           return deduplicateMessages(updatedMessages);
         });
       }
+
+
+      // Extract image URLs from hidden marker and persist
+      const extractImagesFromContent = (c: string): string[] => (
+        c.match(/<!-- SEARCH_IMAGES: (.*?) -->/)
+          ? (c.match(/<!-- SEARCH_IMAGES: (.*?) -->/) as RegExpMatchArray)[1]
+              .split("|")
+              .filter(Boolean)
+              .slice(0, 15)
+          : []
+      );
+
+      const extractedImgs = extractImagesFromContent(message.content);
+      if (extractedImgs.length > 0) {
+        aiMessage.webSearchImgs = extractedImgs;
+        setMessages((prev) => {
+          const updated = prev.map((m) =>
+            m.id === message.id
+              ? ({ ...m, webSearchImgs: extractedImgs } as UIMessage & {
+                  webSearchImgs?: string[];
+                })
+              : m
+          );
+          return deduplicateMessages(updated);
+        });
+      }
+
+      // Clear prefetched streaming images once final images (if any) are applied
+      setStreamingWebImgs(null);
+
+
 
       // Reset the web search flag if it was set
       if (nextResponseNeedsWebSearch.current) {
@@ -411,6 +443,38 @@ export default function ChatInterface({
       setSelectedPrompt("");
     }
   }, [selectedPrompt, setInput]);
+
+  // Auto-submit pending input handed off during new-chat navigation
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("avchat_pending_input");
+      if (!raw) return;
+      const pending = JSON.parse(raw) as { threadId: string; input: string };
+      if (pending.threadId !== threadId) return;
+      if (messages.length > 0) {
+        sessionStorage.removeItem("avchat_pending_input");
+        return;
+      }
+      if (pending.input && pending.input.trim()) {
+        setInput(pending.input);
+        sessionStorage.removeItem("avchat_pending_input");
+
+        // Wait until ChatInputField registers submitRef
+        let attempts = 0;
+        const maxAttempts = 30; // ~3s
+        const trySubmit = () => {
+          if (chatInputSubmitRef.current) {
+            chatInputSubmitRef.current();
+          } else if (attempts++ < maxAttempts) {
+            setTimeout(trySubmit, 100);
+          }
+        };
+        setTimeout(trySubmit, 100);
+      }
+    } catch {}
+    // Only run on mount/when threadId changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [threadId]);
 
   // Effect to handle search query from URL parameter - only run once
   useEffect(() => {
@@ -681,6 +745,7 @@ export default function ChatInterface({
               parts: msg.parts || [{ type: "text", text: msg.content }],
               createdAt: msg.createdAt,
               webSearchResults: msg.webSearchResults,
+              webSearchImgs: (msg as any).webSearchImgs,
               attachments: msg.attachments,
               model: msg.model,
               imgurl: msg.imgurl,
@@ -903,6 +968,8 @@ export default function ChatInterface({
   const nextResponseNeedsWebSearch = useRef<boolean>(false);
   const [isWebSearching, setIsWebSearching] = useState<boolean>(false);
   const [webSearchQuery, setWebSearchQuery] = useState<string>("");
+  // Prefetched images to show immediately while streaming starts
+  const [streamingWebImgs, setStreamingWebImgs] = useState<string[] | null>(null);
 
   // Effect to stop web search loading when streaming starts
   useEffect(() => {
@@ -919,13 +986,24 @@ export default function ChatInterface({
       if (selectedSearchType !== "chat") {
         setIsWebSearching(true);
         // Use the provided search query or fallback to getting from messages
-        if (searchQuery) {
-          setWebSearchQuery(searchQuery);
-        } else {
+        const q = (() => {
+          if (searchQuery) return searchQuery;
           const lastUserMessage = messages
             .filter((msg) => msg.role === "user")
             .pop();
-          setWebSearchQuery(lastUserMessage?.content || "search query");
+          return lastUserMessage?.content || "";
+        })();
+        setWebSearchQuery(q || "search query");
+
+        // Prefetch images so they can render immediately above the streaming message
+        if (!isGuest && q && q.length > 0) {
+          fetch(`/api/web-search?q=${encodeURIComponent(q)}`)
+            .then((r) => (r.ok ? r.json() : Promise.resolve({ images: [] })))
+            .then((data) => {
+              const imgs = Array.isArray(data?.images) ? (data.images as string[]) : [];
+              if (imgs.length > 0) setStreamingWebImgs(imgs.slice(0, 15));
+            })
+            .catch(() => {});
         }
       }
     },
@@ -1322,23 +1400,46 @@ export default function ChatInterface({
             }
           })()
         ) : (
-          <div className="mx-auto flex justify-center px-4 py-6">
-            <ChatMessageDisplay
-              threadId={threadId}
-              messages={messages}
-              status={status}
-              setMessages={setMessages}
-              reload={reload}
-              error={error}
-              registerRef={registerRef}
-              stop={stop}
-              onRetryWithModel={handleRetryWithModel}
-              isWebSearching={isWebSearching}
-              webSearchQuery={webSearchQuery}
-              selectedSearchType={selectedSearchType}
-              onSuggestedQuestionClick={handleSuggestedQuestionClick}
-            />
-          </div>
+          messages.length === 0 ? (
+            // Empty thread page: show centered input so the user can start
+            <div className="mx-auto flex justify-center px-4 py-6">
+              <div className="w-full max-w-3xl">
+                <ChatInputField
+                  threadId={threadId}
+                  input={input}
+                  status={status}
+                  append={append}
+                  setMessages={setMessages}
+                  setInput={setInput}
+                  stop={stop}
+                  pendingUserMessageRef={pendingUserMessageRef}
+                  onWebSearchMessage={handleWebSearchMessage}
+                  submitRef={chatInputSubmitRef}
+                  messages={messages}
+                  onMessageAppended={trackAppendedMessage}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="mx-auto flex justify-center px-4 py-6">
+              <ChatMessageDisplay
+                threadId={threadId}
+                messages={messages}
+                status={status}
+                setMessages={setMessages}
+                reload={reload}
+                error={error}
+                registerRef={registerRef}
+                stop={stop}
+                onRetryWithModel={handleRetryWithModel}
+                isWebSearching={isWebSearching}
+                webSearchQuery={webSearchQuery}
+                selectedSearchType={selectedSearchType}
+                onSuggestedQuestionClick={handleSuggestedQuestionClick}
+                streamingWebImgs={streamingWebImgs || undefined}
+              />
+            </div>
+          )
         )}
       </main>
 
@@ -1410,7 +1511,7 @@ export default function ChatInterface({
           </div>
         )}
 
-        {/* Only show bottom chat input when there are messages (chat mode) */}
+        {/* Bottom chat input: show on thread pages always, and on home when messages exist */}
         {messages.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}

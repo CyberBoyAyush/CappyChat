@@ -37,6 +37,7 @@ function PureMessageDisplay({
   webSearchQuery,
   selectedSearchType,
   onSuggestedQuestionClick,
+  streamingWebImgs,
 }: {
   threadId: string;
   messages: UIMessage[];
@@ -51,6 +52,7 @@ function PureMessageDisplay({
   webSearchQuery?: string;
   selectedSearchType?: SearchType;
   onSuggestedQuestionClick?: (q: string) => void;
+  streamingWebImgs?: string[];
 }) {
   const { selectedSearchType: storeSearchType } = useSearchTypeStore();
   // Use the passed selectedSearchType prop if available, otherwise fall back to store
@@ -129,6 +131,7 @@ function PureMessageDisplay({
             onSuggestedQuestionClick={onSuggestedQuestionClick}
             prevUserMessage={prevUserMessage}
             isLast={isLast}
+            streamingWebImgs={isLast ? streamingWebImgs : undefined}
           />
         );
       })}

@@ -97,8 +97,10 @@ export class AppwriteServerDB {
           createdAt: new Date(doc.$createdAt),
           model: messageDoc.model,
           attachments: attachments,
-          imgurl: messageDoc.imgurl
-        };
+          imgurl: messageDoc.imgurl,
+          webSearchResults: (messageDoc as any).webSearchResults || undefined,
+          webSearchImgs: (messageDoc as any).webSearchImgs || undefined,
+        } as DBMessage;
       });
     } catch (error) {
       devError('Error getting shared thread messages (server):', error);
@@ -145,6 +147,8 @@ export class AppwriteServerDB {
     model?: string;
     attachments?: FileAttachment[];
     imgurl?: string;
+    webSearchResults?: string[];
+    webSearchImgs?: string[];
   }): Promise<void> {
     try {
       const createdAtISO = (messageData.createdAt ?? new Date()).toISOString();
@@ -162,7 +166,9 @@ export class AppwriteServerDB {
           createdAt: createdAtISO,
           model: messageData.model || undefined,
           attachments: messageData.attachments ? JSON.stringify(messageData.attachments) : undefined,
-          imgurl: messageData.imgurl || undefined
+          imgurl: messageData.imgurl || undefined,
+          webSearchResults: messageData.webSearchResults && messageData.webSearchResults.length ? messageData.webSearchResults : undefined,
+          webSearchImgs: messageData.webSearchImgs && messageData.webSearchImgs.length ? messageData.webSearchImgs : undefined
         }
       );
     } catch (error) {

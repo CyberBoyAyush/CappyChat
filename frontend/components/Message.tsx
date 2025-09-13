@@ -6,7 +6,7 @@
  * Handles message controls, markdown rendering, and message editing functionality.
  */
 
-import { memo, useState } from "react";
+import { memo, useState, useEffect } from "react";
 import MarkdownRenderer from "@/frontend/components/MarkdownRenderer";
 import { cn } from "@/lib/utils";
 import { UIMessage } from "ai";
@@ -18,7 +18,7 @@ import ChatMessageReasoning from "./ChatMessageReasoning";
 import WebSearchCitations, { cleanMessageContent } from "./WebSearchCitations";
 import MessageAttachments from "./MessageAttachments";
 import { AIModel, getModelConfig } from "@/lib/models";
-import { User, Bot, Download, ChevronRight, Plus, List } from "lucide-react";
+import { User, Bot, Download, ChevronRight, ChevronLeft, X, Plus, List } from "lucide-react";
 import { getModelIcon } from "@/frontend/components/ui/ModelComponents";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { Button } from "@/frontend/components/ui/button";
@@ -142,6 +142,7 @@ function PureMessage({
   onSuggestedQuestionClick,
   prevUserMessage,
   isLast,
+  streamingWebImgs,
 }: {
   threadId: string;
   message: UIMessage;
@@ -154,6 +155,7 @@ function PureMessage({
   onSuggestedQuestionClick?: (q: string) => void;
   prevUserMessage?: string;
   isLast?: boolean;
+  streamingWebImgs?: string[];
 }) {
   // Generate suggestions on demand (when the section is opened)
   const handleGenerateSuggestions = async () => {
@@ -234,6 +236,27 @@ function PureMessage({
       : selectedModel;
   const modelConfig = getModelConfig(validModelToUse);
   const modelIcon = getModelIcon(modelConfig.iconType, 16, "text-primary");
+
+  // Image preview state for web search images
+  const [previewIdx, setPreviewIdx] = useState<number | null>(null);
+  const [visibleCount, setVisibleCount] = useState<number>(4);
+  // Keyboard navigation for preview
+  useEffect(() => {
+    if (previewIdx === null) return;
+    const overlayImgs = ((message as any).webSearchImgs as string[] | undefined) ||
+      (isStreaming ? (streamingWebImgs as string[] | undefined) : undefined) || [];
+    const total = overlayImgs.length;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewIdx(null);
+      if (e.key === "ArrowLeft" && total > 1)
+        setPreviewIdx((i) => (i! <= 0 ? total - 1 : i! - 1));
+      if (e.key === "ArrowRight" && total > 1)
+        setPreviewIdx((i) => (i! >= total - 1 ? 0 : i! + 1));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [previewIdx, isStreaming]);
+
 
   return (
     <div
@@ -461,6 +484,93 @@ function PureMessage({
                   </div>
                 )}
 
+
+                {/* Web search images (always visible) — now shown above message text */}
+                {(() => {
+                  const fromDb = (message as any).webSearchImgs as string[] | undefined;
+                  const fromStream = isStreaming
+                    ? ((streamingWebImgs as string[] | undefined) || undefined)
+                    : undefined;
+                  const imgs = (fromDb && fromDb.length > 0 ? fromDb : fromStream) || [];
+                  const showImages = message.role === "assistant" && imgs.length > 0;
+                  if (!showImages) return null;
+
+                  const showCount = Math.min(visibleCount, imgs.length);
+                  const remaining = Math.max(imgs.length - showCount, 0);
+
+                  return (
+                    <div className="mb-3">
+                      <div className="text-sm text-muted-foreground mb-2">Images from the web ({imgs.length})</div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {imgs.slice(0, showCount).map((src, i) => {
+                          const isLastVisible = i === showCount - 1 && remaining > 0;
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => setPreviewIdx(i)}
+                              className="relative block focus:outline-none"
+                              title="Preview image"
+                            >
+                              <img
+                                src={src}
+                                alt=""
+                                className="h-36 sm:h-44 md:h-48 w-full object-cover rounded border hover:opacity-90 transition"
+                                loading="lazy"
+                              />
+                              {isLastVisible && (
+                                <div
+                                  className="absolute inset-0 bg-black/50 text-white flex items-center justify-center rounded"
+                                  aria-hidden="true"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setVisibleCount(Math.min(imgs.length, 15));
+                                  }}
+                                >
+                                  <span className="text-base sm:text-lg font-medium">+{remaining} more</span>
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {remaining > 0 && (
+                        <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                          <button
+                            type="button"
+                            className="px-3 py-1 rounded border hover:bg-accent"
+                            onClick={() => setVisibleCount(Math.min(imgs.length, 15))}
+                          >
+                            Show more
+                          </button>
+                          <button
+                            type="button"
+                            className="px-2 py-1 rounded border hover:bg-accent"
+                            onClick={() => setVisibleCount((c) => Math.min(c + 1, Math.min(imgs.length, 15)))}
+                          >
+                            +1
+                          </button>
+                          <button
+                            type="button"
+                            className="px-2 py-1 rounded border hover:bg-accent"
+                            onClick={() => setVisibleCount((c) => Math.min(c + 2, Math.min(imgs.length, 15)))}
+                          >
+                            +2
+                          </button>
+                          <button
+                            type="button"
+                            className="px-2 py-1 rounded border hover:bg-accent"
+                            onClick={() => setVisibleCount((c) => Math.min(c + 5, Math.min(imgs.length, 15)))}
+                          >
+                            +5
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {/* Only show regular markdown content if not an image generation message */}
                 {(() => {
                   const messageText = cleanMessageContent(
@@ -512,6 +622,8 @@ function PureMessage({
                   return null;
                 })()}
 
+
+
                 {/* Show web search citations for assistant messages with search results */}
                 {(() => {
                   const hasWebSearchResults =
@@ -529,15 +641,83 @@ function PureMessage({
                   });
 
                   return (
-                    hasWebSearchResults && (
-                      <div className="flex-shrink-0">
-                        <WebSearchCitations
-                          results={(message as any).webSearchResults}
-                          searchQuery="web search"
-                          isStreaming={isStreaming}
-                        />
-                      </div>
-                    )
+                    <>
+                      {/* In-app image preview overlay with navigation & close */}
+                      {previewIdx !== null && (() => {
+                        const overlayImgs = ((message as any).webSearchImgs as string[] | undefined) ||
+                          (isStreaming ? (streamingWebImgs as string[] | undefined) : undefined) || [];
+                        const total = overlayImgs.length;
+                        if (total === 0) return null;
+                        const idx = Math.min(Math.max(previewIdx as number, 0), total - 1);
+                        const src = overlayImgs[idx];
+                        const host = (() => { try { return new URL(src).hostname.replace(/^www\./, ""); } catch { return ""; } })();
+                        const goPrev = (e?: any) => { e?.stopPropagation?.(); setPreviewIdx((i) => (i! <= 0 ? total - 1 : (i! - 1))); };
+                        const goNext = (e?: any) => { e?.stopPropagation?.(); setPreviewIdx((i) => (i! >= total - 1 ? 0 : (i! + 1))); };
+                        return (
+                          <div
+                            className="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+                            onClick={() => setPreviewIdx(null)}
+                            role="dialog"
+                            aria-modal="true"
+                          >
+                            <div className="absolute top-4 left-4 text-xs px-2 py-1 rounded bg-white/10 text-white">
+                              {idx + 1} of {total}
+                            </div>
+                            <button
+                              type="button"
+                              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
+                              onClick={(e) => { e.stopPropagation(); setPreviewIdx(null); }}
+                              aria-label="Close"
+                            >
+                              <X className="h-5 w-5" />
+                            </button>
+                            {total > 1 && (
+                              <button
+                                type="button"
+                                className="absolute left-6 md:left-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
+                                onClick={goPrev}
+                                aria-label="Previous"
+                              >
+                                <ChevronLeft className="h-6 w-6" />
+                              </button>
+                            )}
+                            <img
+                              src={src}
+                              alt=""
+                              className="max-h-[80vh] max-w-[90vw] object-contain rounded-lg shadow-2xl border"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            {total > 1 && (
+                              <button
+                                type="button"
+                                className="absolute right-6 md:right-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
+                                onClick={goNext}
+                                aria-label="Next"
+                              >
+                                <ChevronRight className="h-6 w-6" />
+                              </button>
+                            )}
+                            {host && (
+                              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[90vw] max-w-3xl">
+                                <div className="mx-auto text-center text-xs md:text-sm text-white/90 bg-black/40 rounded px-3 py-2">
+                                  {host}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {hasWebSearchResults && (
+                        <div className="flex-shrink-0">
+                          <WebSearchCitations
+                            results={(message as any).webSearchResults}
+                            searchQuery="web search"
+                            isStreaming={isStreaming}
+                          />
+                        </div>
+                      )}
+                    </>
                   );
                 })()}
 
@@ -579,8 +759,9 @@ const PreviewMessage = memo(PureMessage, (prevProps, nextProps) => {
   if (prevProps.isStreaming !== nextProps.isStreaming) return false;
   if (prevProps.message.id !== nextProps.message.id) return false;
   if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
+  // Re-render if streaming images change while streaming
+  if (!equal(prevProps.streamingWebImgs, nextProps.streamingWebImgs)) return false;
   // Check if model field changed (important for assistant messages)
-
   if ((prevProps.message as any).model !== (nextProps.message as any).model)
     return false;
   // Check if imgurl field changed (important for image generation messages)

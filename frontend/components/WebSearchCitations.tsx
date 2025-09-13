@@ -454,9 +454,10 @@ export function extractUrlsFromContent(content: string): string[] {
 
 // Utility function to clean message content by removing search URLs marker
 export function cleanMessageContent(content: string): string {
-  // Remove the search URLs marker from the content
+  // Remove the search URLs and images markers from the content
   const searchUrlsMarker = /<!-- SEARCH_URLS: .*? -->/g;
-  return content.replace(searchUrlsMarker, "").trim();
+  const searchImagesMarker = /<!-- SEARCH_IMAGES: .*? -->/g;
+  return content.replace(searchUrlsMarker, "").replace(searchImagesMarker, "").trim();
 }
 
 export default WebSearchCitations;

@@ -43,7 +43,9 @@ export async function GET(
         createdAt: msg.createdAt.toISOString(),
         model: msg.model,
         attachments: msg.attachments || [],
-        imgurl: msg.imgurl
+        imgurl: msg.imgurl,
+        webSearchResults: (msg as any).webSearchResults || undefined,
+        webSearchImgs: (msg as any).webSearchImgs || undefined,
       }))
     });
 
