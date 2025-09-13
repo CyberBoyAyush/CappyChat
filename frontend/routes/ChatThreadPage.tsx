@@ -94,6 +94,7 @@ export default function ChatThreadPage() {
         content: message.content || "",
         createdAt: message.createdAt,
         webSearchResults: message.webSearchResults,
+        webSearchImgs: (message as any).webSearchImgs,
         attachments: message.attachments, // ✅ Include attachments!
         model: message.model, // ✅ Include model field!
         imgurl: message.imgurl, // ✅ Include imgurl field!

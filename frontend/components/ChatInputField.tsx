@@ -495,35 +495,33 @@ function PureInputField({
       const isNewConversation = !id || (messages && messages.length === 0);
 
       if (isNewConversation) {
-        // New conversation - navigate first if not already there
+        // New conversation: hand off the first input to the thread page
         if (!id) {
+          try {
+            // Store pending input so the thread page can auto-submit after mount
+            sessionStorage.setItem(
+              "avchat_pending_input",
+              JSON.stringify({ threadId, input: finalInput })
+            );
+          } catch {}
+
           navigate(`/chat/${threadId}`);
-          // Create thread instantly with local update + async backend sync (skip for guest users)
-          // Use createThreadIfNotExists to avoid duplicate creation errors
+
+          // Create thread in background for authenticated users
           if (!isGuest) {
-            console.log(
-              "👤 Authenticated user - creating thread in ChatInputField:",
-              threadId
-            );
-            HybridDB.createThread(threadId)
-              .then(() => {
-                console.log(
-                  "✅ Thread created successfully in ChatInputField:",
-                  threadId
-                );
-              })
-              .catch((error) => {
-                // Thread might already exist (e.g., from URL search pre-creation)
-                console.log(
-                  "Thread creation handled or already exists:",
-                  error.message || error
-                );
-              });
-          } else {
-            console.log(
-              "🎯 Guest user - skipping thread creation in ChatInputField"
-            );
+            HybridDB.createThread(threadId).catch((error) => {
+              console.log(
+                "Thread creation handled or already exists:",
+                error?.message || error
+              );
+            });
           }
+
+          // Clear local UI state and stop here to avoid starting a stream
+          setInput("");
+          setAttachments([]);
+          adjustHeight(true);
+          return;
         }
 
         // Start completion immediately for better UX

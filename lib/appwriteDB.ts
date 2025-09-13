@@ -1,6 +1,6 @@
 /**
  * Appwrite Database Service
- * 
+ *
  * Provides a centralized database service using Appwrite entirely.
  * All data is stored directly in Appwrite for better synchronization.
  */
@@ -102,6 +102,7 @@ export interface AppwriteMessage extends Models.Document {
   role: 'user' | 'assistant' | 'system' | 'data';
   createdAt: string; // ISO date string
   webSearchResults?: string[]; // URLs from web search results
+  webSearchImgs?: string[]; // Image URLs from web search
   attachments?: string | FileAttachment[]; // File attachments (stored as JSON string in Appwrite)
   model?: string; // AI model used to generate the message (for assistant messages)
   imgurl?: string; // URL of generated image (for image generation messages)
@@ -116,6 +117,7 @@ export interface DBMessage {
   role: 'user' | 'assistant' | 'system' | 'data';
   createdAt: Date;
   webSearchResults?: string[]; // URLs from web search results
+  webSearchImgs?: string[]; // Image URLs from web search
   attachments?: FileAttachment[]; // File attachments
   model?: string; // AI model used to generate the message (for assistant messages)
   imgurl?: string; // URL of generated image (for image generation messages)
@@ -272,7 +274,7 @@ export class AppwriteDB {
   }> {
     try {
       const userId = await this.getCurrentUserId();
-      
+
       // Get threads from Appwrite with pagination
       const response = await databases.listDocuments(
         DATABASE_ID,
@@ -284,7 +286,7 @@ export class AppwriteDB {
           Query.offset(offset)
         ]
       );
-      
+
       // Map Appwrite threads to Thread format
       const threads = response.documents.map((doc) => {
         const threadDoc = doc as unknown as AppwriteThread;
@@ -300,7 +302,7 @@ export class AppwriteDB {
           projectId: threadDoc.projectId // Optional project ID
         };
       });
-      
+
       return {
         threads,
         hasMore: response.total > offset + limit,
@@ -320,7 +322,7 @@ export class AppwriteDB {
   static async getPriorityThreads(): Promise<Thread[]> {
     try {
       const userId = await this.getCurrentUserId();
-      
+
       // Optimized approach: Get pinned threads and project threads separately then combine
       // This is faster than filtering all threads
       const [pinnedResponse, projectResponse] = await Promise.all([
@@ -346,7 +348,7 @@ export class AppwriteDB {
           ]
         )
       ]);
-      
+
       // Map pinned threads
       const pinnedThreads = pinnedResponse.documents.map((doc: any) => {
         const threadDoc = doc as unknown as AppwriteThread;
@@ -379,20 +381,20 @@ export class AppwriteDB {
             projectId: threadDoc.projectId
           };
         })
-        .filter((thread: any) => 
+        .filter((thread: any) =>
           // Only include threads with projectId that are not already pinned
-          thread.projectId && 
-          thread.projectId !== '' && 
+          thread.projectId &&
+          thread.projectId !== '' &&
           !thread.isPinned
         );
 
       // Combine pinned and project threads, removing duplicates
       const allPriorityThreads = [...pinnedThreads, ...projectThreads];
       const uniquePriorityThreads = allPriorityThreads.filter(
-        (thread: any, index: number, arr: any[]) => 
+        (thread: any, index: number, arr: any[]) =>
           arr.findIndex((t: any) => t.id === thread.id) === index
       );
-      
+
       return uniquePriorityThreads;
     } catch (error) {
       devError('Error fetching priority threads from Appwrite:', error);
@@ -408,7 +410,7 @@ export class AppwriteDB {
   }> {
     try {
       const userId = await this.getCurrentUserId();
-      
+
       // Get regular threads (not pinned and no projectId) - optimized for performance
       // We fetch unpinned threads and filter out project threads for better performance
       const response = await databases.listDocuments(
@@ -422,7 +424,7 @@ export class AppwriteDB {
           Query.offset(offset)
         ]
       );
-      
+
       // Map Appwrite threads to Thread format and filter out threads with projectId
       const allThreads = response.documents.map((doc) => {
         const threadDoc = doc as unknown as AppwriteThread;
@@ -443,7 +445,7 @@ export class AppwriteDB {
       const regularThreads = allThreads
         .filter(thread => !thread.projectId || thread.projectId === '')
         .slice(0, limit); // Only return the requested limit
-      
+
       return {
         threads: regularThreads,
         hasMore: response.total > offset + limit, // Approximate hasMore
@@ -487,7 +489,7 @@ export class AppwriteDB {
       if (projectId) {
         threadData.projectId = projectId;
       }
-      
+
       // Use upsert-like behavior by trying to create and handling duplicates
       try {
         await databases.createDocument(
@@ -513,7 +515,7 @@ export class AppwriteDB {
         }
         throw error;
       }
-      
+
       return threadId;
     } catch (error) {
       devError('Error creating thread:', error);
@@ -689,7 +691,7 @@ export class AppwriteDB {
   static async deleteThread(threadId: string): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
-      
+
       // Find the thread document
       const threadsResponse = await databases.listDocuments(
         DATABASE_ID,
@@ -699,12 +701,12 @@ export class AppwriteDB {
           Query.equal('userId', userId)
         ]
       );
-      
+
       if (threadsResponse.documents.length === 0) {
         devWarn(`Thread ${threadId} not found, may already be deleted`);
         return;
       }
-      
+
       // Find and delete all messages for this thread
       const messagesResponse = await databases.listDocuments(
         DATABASE_ID,
@@ -714,7 +716,7 @@ export class AppwriteDB {
           Query.equal('userId', userId)
         ]
       );
-      
+
       for (const doc of messagesResponse.documents) {
         await databases.deleteDocument(
           DATABASE_ID,
@@ -722,7 +724,7 @@ export class AppwriteDB {
           doc.$id
         );
       }
-      
+
       // Find and delete all message summaries for this thread
       const summariesResponse = await databases.listDocuments(
         DATABASE_ID,
@@ -732,7 +734,7 @@ export class AppwriteDB {
           Query.equal('userId', userId)
         ]
       );
-      
+
       for (const doc of summariesResponse.documents) {
         await databases.deleteDocument(
           DATABASE_ID,
@@ -740,7 +742,7 @@ export class AppwriteDB {
           doc.$id
         );
       }
-      
+
       // Delete the thread itself
       const threadDoc = threadsResponse.documents[0] as unknown as AppwriteThread;
       await databases.deleteDocument(
@@ -758,19 +760,19 @@ export class AppwriteDB {
   static async deleteAllThreads(): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
-      
+
       // Get all threads for this user
       const threadsResponse = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
         [Query.equal('userId', userId)]
       );
-      
+
       // Delete each thread, which will cascade to delete messages and summaries
       for (const threadDoc of threadsResponse.documents) {
         await this.deleteThread((threadDoc as unknown as AppwriteThread).threadId);
       }
-      
+
       // No need to clear local DB as we're using Appwrite exclusively now
     } catch (error) {
       devError('Error deleting all threads:', error);
@@ -1273,7 +1275,7 @@ export class AppwriteDB {
           Query.orderAsc('createdAt')
         ]
       );
-      
+
       // Map Appwrite messages to local DBMessage format
       const messages = response.documents.map((doc) => {
         const messageDoc = doc as unknown as AppwriteMessage;
@@ -1324,12 +1326,13 @@ export class AppwriteDB {
           parts: parts,
           createdAt: new Date(messageDoc.createdAt),
           webSearchResults: messageDoc.webSearchResults || undefined,
+          webSearchImgs: (messageDoc as any).webSearchImgs || undefined,
           attachments: attachments,
           model: messageDoc.model || undefined,
           imgurl: messageDoc.imgurl || undefined
         };
       });
-      
+
       return messages;
     } catch (error) {
       devError('Error fetching messages from Appwrite:', error);
@@ -1341,7 +1344,7 @@ export class AppwriteDB {
   static async updateMessage(threadId: string, message: any): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
-      
+
       // Find the existing message document
       const messagesResponse = await databases.listDocuments(
         DATABASE_ID,
@@ -1369,6 +1372,12 @@ export class AppwriteDB {
       };
 
       // Add webSearchResults if present
+
+      // Add webSearchImgs if present
+      if (message.webSearchImgs && message.webSearchImgs.length > 0) {
+        messageData.webSearchImgs = message.webSearchImgs;
+      }
+
       if (message.webSearchResults && message.webSearchResults.length > 0) {
         messageData.webSearchResults = message.webSearchResults;
       }
@@ -1429,6 +1438,11 @@ export class AppwriteDB {
         messageData.webSearchResults = message.webSearchResults;
       }
 
+      // Add webSearchImgs if present
+      if (message.webSearchImgs && message.webSearchImgs.length > 0) {
+        messageData.webSearchImgs = message.webSearchImgs;
+      }
+
       // Add attachments if present (serialize to JSON string for Appwrite)
       if (message.attachments && message.attachments.length > 0) {
         devLog('💾 Storing attachments to Appwrite:', message.attachments);
@@ -1472,7 +1486,7 @@ export class AppwriteDB {
   private static async updateThreadLastMessage(threadId: string, messageCreatedAt: Date, now: Date): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
-      
+
       const threadsResponse = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
@@ -1481,7 +1495,7 @@ export class AppwriteDB {
           Query.equal('userId', userId)
         ]
       );
-      
+
       if (threadsResponse.documents.length > 0) {
         const doc = threadsResponse.documents[0] as unknown as AppwriteThread;
         await databases.updateDocument(
@@ -1512,7 +1526,7 @@ export class AppwriteDB {
   ): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
-      
+
       // Find messages to delete in Appwrite
       const messagesResponse = await databases.listDocuments(
         DATABASE_ID,
@@ -1525,9 +1539,9 @@ export class AppwriteDB {
             : Query.greaterThan('createdAt', createdAt.toISOString())
         ]
       );
-      
+
       const messageIds = messagesResponse.documents.map(doc => (doc as unknown as AppwriteMessage).messageId);
-      
+
       // Delete messages from Appwrite
       for (const doc of messagesResponse.documents) {
         await databases.deleteDocument(
@@ -1536,7 +1550,7 @@ export class AppwriteDB {
           doc.$id
         );
       }
-      
+
       // Delete associated message summaries from Appwrite
       if (messageIds.length > 0) {
         const summariesResponse = await databases.listDocuments(
@@ -1548,7 +1562,7 @@ export class AppwriteDB {
             Query.equal('messageId', messageIds)
           ]
         );
-        
+
         for (const doc of summariesResponse.documents) {
           await databases.deleteDocument(
             DATABASE_ID,
@@ -1557,7 +1571,7 @@ export class AppwriteDB {
           );
         }
       }
-      
+
       // No more LocalDB operations - we're using Appwrite exclusively
     } catch (error) {
       devError('Error deleting messages:', error);
@@ -1577,7 +1591,7 @@ export class AppwriteDB {
       const userId = await this.getCurrentUserId();
       const now = new Date();
       const summaryId = ID.unique();
-      
+
       // Create summary directly - thread existence is handled by message creation
       await databases.createDocument(
         DATABASE_ID,
@@ -1592,7 +1606,7 @@ export class AppwriteDB {
           createdAt: now.toISOString()
         }
       );
-      
+
       return summaryId;
     } catch (error) {
       devError('Error creating message summary:', error);
@@ -1604,7 +1618,7 @@ export class AppwriteDB {
   static async getMessageSummaries(threadId: string): Promise<any[]> {
     try {
       const userId = await this.getCurrentUserId();
-      
+
       // Get summaries from Appwrite
       const response = await databases.listDocuments(
         DATABASE_ID,
@@ -1615,7 +1629,7 @@ export class AppwriteDB {
           Query.orderAsc('createdAt')
         ]
       );
-      
+
       // Map to local format
       const summaries = response.documents.map((doc) => {
         const summaryDoc = doc as unknown as AppwriteMessageSummary;
@@ -1627,7 +1641,7 @@ export class AppwriteDB {
           createdAt: new Date(summaryDoc.createdAt)
         };
       });
-      
+
       return summaries;
     } catch (error) {
       devError('Error fetching message summaries from Appwrite:', error);
@@ -1640,7 +1654,7 @@ export class AppwriteDB {
     try {
       const summaries = await this.getMessageSummaries(threadId);
       const userId = await this.getCurrentUserId();
-      
+
       // Get corresponding messages for each summary with proper ordering
       const messagesResponse = await databases.listDocuments(
         DATABASE_ID,
@@ -1651,13 +1665,13 @@ export class AppwriteDB {
           Query.orderAsc('createdAt')
         ]
       );
-      
+
       const messagesMap = new Map();
       for (const doc of messagesResponse.documents) {
         const message = doc as unknown as AppwriteMessage;
         messagesMap.set(message.messageId, message);
       }
-      
+
       // Enhance summaries with role information
       const summariesWithRole = summaries.map(summary => {
         const message = messagesMap.get(summary.messageId);
@@ -1666,7 +1680,7 @@ export class AppwriteDB {
           role: message ? message.role : 'user'
         };
       });
-      
+
       // Ensure robust ordering by message creation time
       return summariesWithRole.sort((a, b) => {
         const timeA = new Date(a.createdAt).getTime();
@@ -1788,14 +1802,14 @@ export class AppwriteDB {
   static async syncWithAppwrite(): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
-      
+
       // Check connection by getting threads from Appwrite
       await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
         [Query.equal('userId', userId)]
       );
-      
+
       // No need to sync with local DB since Appwrite is the source of truth
     } catch (error) {
       devError('Error connecting to Appwrite:', error);

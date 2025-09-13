@@ -8,6 +8,52 @@ import { tavily } from '@tavily/core';
 import { devLog, devWarn, devError, prodError } from '@/lib/logger';
 
 export const maxDuration = 60;
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const q = searchParams.get('q');
+    const userTavilyApiKey = searchParams.get('userTavilyApiKey') || undefined;
+
+    if (!q || q.trim().length === 0) {
+      return NextResponse.json({ images: [] }, { status: 200 });
+    }
+
+    const tavilyApiKey = userTavilyApiKey || process.env.TAVILY_API_KEY;
+    if (!tavilyApiKey) {
+      return NextResponse.json({ images: [] }, { status: 200 });
+    }
+
+    const tvly = tavily({ apiKey: tavilyApiKey });
+
+    // 12 images max, fast/basic search
+    const tavilyResponse: any = await tvly.search(q, {
+      search_depth: 'basic',
+      max_results: 10,
+      include_answer: false,
+      include_raw_content: false,
+      include_images: true,
+    });
+
+    let imageUrls: string[] = [];
+    try {
+      const rawImages = tavilyResponse?.images || [];
+      imageUrls = (Array.from(
+        new Set(
+          rawImages
+            .map((img: any) => (typeof img === 'string' ? img : img?.url))
+            .filter((u: any) => typeof u === 'string' && /^https?:\/\//.test(u))
+        )
+      ) as string[]).slice(0, 15);
+    } catch {
+      imageUrls = [];
+    }
+
+    return NextResponse.json({ images: imageUrls }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ images: [] }, { status: 200 });
+  }
+}
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -111,6 +157,8 @@ export async function POST(req: NextRequest) {
 
     // Perform Tavily search with timeout protection
     let searchResults;
+    let imageUrls: string[] = [];
+
     try {
       const tvly = tavily({ apiKey: tavilyApiKey });
       devLog(`🔍 Performing Tavily search for: "${searchQuery}"`);
@@ -125,10 +173,24 @@ export async function POST(req: NextRequest) {
         max_results: 15,
         include_answer: false,
         include_raw_content: false,
-        include_images: false
+        include_images: true
       });
 
       const tavilyResponse = await Promise.race([searchPromise, searchTimeout]);
+
+	      // Extract image URLs from Tavily response (top-level images array)
+	      try {
+	        const rawImages = (tavilyResponse as any)?.images || [];
+	        imageUrls = (Array.from(new Set(rawImages
+	          .map((img: any) => (typeof img === 'string' ? img : img?.url))
+	          .filter((u: any) => typeof u === 'string' && /^https?:\/\//.test(u))
+	        )) as string[]).slice(0, 15);
+	        devLog(`🖼️ Tavily images extracted: ${imageUrls.length}`);
+	      } catch (e) {
+	        devWarn('Failed to parse Tavily images array', e);
+	        imageUrls = [];
+	      }
+
       searchResults = tavilyResponse.results || [];
       devLog(`✅ Tavily search completed. Found ${searchResults.length} results`);
     } catch (error) {
@@ -274,7 +336,9 @@ export async function POST(req: NextRequest) {
       - If the search results don't contain relevant information, acknowledge this and suggest alternative approaches
       - When possible, cross-reference multiple sources to provide balanced perspectives
       - Include relevant details, statistics, and examples from the search results
-      - IMPORTANT: End your response with this exact marker: "<!-- SEARCH_URLS: ${searchUrls.join('|')} -->"
+      - IMPORTANT: End your response with these exact markers on separate lines:
+        "<!-- SEARCH_URLS: ${searchUrls.join('|')} -->"
+        "<!-- SEARCH_IMAGES: ${imageUrls.join('|')} -->"
 
       Always use LaTeX for mathematical expressions:
       - Inline math must be wrapped in single dollar signs: $content$
@@ -290,8 +354,10 @@ export async function POST(req: NextRequest) {
       IMPORTANT: When referencing information from the search results, include the source URLs in your response.
       Available source URLs: ${searchUrls.join(', ')}
 
-      CRITICAL: You MUST end your response with exactly this line: "<!-- SEARCH_URLS: ${searchUrls.join('|')} -->"
-      This marker is required for proper citation functionality and will be hidden from the user.
+      CRITICAL: You MUST end your response with exactly these two lines:
+      "<!-- SEARCH_URLS: ${searchUrls.join('|')} -->"
+      "<!-- SEARCH_IMAGES: ${imageUrls.join('|')} -->"
+      These markers are required for proper citation and image preview functionality and will be hidden from the user.
       `,
       experimental_transform: [smoothStream({ chunking: 'word' })],
       abortSignal: req.signal,

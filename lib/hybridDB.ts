@@ -895,6 +895,7 @@ export class HybridDB {
       parts: message.parts || [],
       createdAt: message.createdAt || new Date(),
       webSearchResults: message.webSearchResults || undefined,
+      webSearchImgs: message.webSearchImgs || undefined,
       attachments: message.attachments || undefined,
       model: message.model || undefined,
       imgurl: message.imgurl || undefined
@@ -952,6 +953,7 @@ export class HybridDB {
       parts: message.parts || [],
       createdAt: message.createdAt || new Date(),
       webSearchResults: message.webSearchResults || undefined,
+      webSearchImgs: message.webSearchImgs || undefined,
       attachments: message.attachments || undefined,
       model: message.model || undefined,
       imgurl: message.imgurl || undefined
@@ -1324,6 +1326,7 @@ export class HybridDB {
       parts: parts,
       createdAt: new Date(appwriteMessage.createdAt),
       webSearchResults: appwriteMessage.webSearchResults || undefined,
+      webSearchImgs: (appwriteMessage as any).webSearchImgs || undefined,
       attachments: attachments,
       model: appwriteMessage.model || undefined,
       imgurl: appwriteMessage.imgurl || undefined
@@ -1411,6 +1414,7 @@ export class HybridDB {
       parts: parts,
       createdAt: new Date(appwriteMessage.createdAt),
       webSearchResults: appwriteMessage.webSearchResults || undefined,
+      webSearchImgs: (appwriteMessage as any).webSearchImgs || undefined,
       attachments: attachments,
       model: appwriteMessage.model || undefined,
       imgurl: appwriteMessage.imgurl || undefined
