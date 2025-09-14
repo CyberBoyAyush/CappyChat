@@ -995,8 +995,8 @@ export default function ChatInterface({
         })();
         setWebSearchQuery(q || "search query");
 
-        // Prefetch images so they can render immediately above the streaming message
-        if (!isGuest && q && q.length > 0) {
+        // Prefetch images only for standard Web Search (not for Reddit)
+        if (selectedSearchType === "web" && !isGuest && q && q.length > 0) {
           fetch(`/api/web-search?q=${encodeURIComponent(q)}`)
             .then((r) => (r.ok ? r.json() : Promise.resolve({ images: [] })))
             .then((data) => {
