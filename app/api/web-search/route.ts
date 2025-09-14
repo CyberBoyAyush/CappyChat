@@ -327,7 +327,6 @@ export async function POST(req: NextRequest) {
       ${searchContext}
 
       Instructions:
-      - Start your response with "🔎 **Searched the web** for relevant information..."
       - Use the search results above to provide accurate, up-to-date information from trusted sources
       - Always cite your sources by including the URLs from the search results as clickable links
       - Provide comprehensive, well-structured answers with proper citations and context
