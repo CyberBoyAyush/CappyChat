@@ -2,7 +2,7 @@
 
 <div align="center">
 
-# 🚀 AVChat
+# 🚀AVChat
 
 ### *Next-Generation AI Chat Platform*
 
