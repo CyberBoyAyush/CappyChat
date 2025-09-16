@@ -25,8 +25,8 @@ export async function POST(req: Request) {
     apiKey,
     headers: {
       'HTTP-Referer': 'https://avchat.xyz',
-      'X-Title': 'AVChat - AI Chat Application',
-      'User-Agent': 'AVChat/1.0.0'
+      'X-Title': 'CapyChat - AI Chat Application',
+      'User-Agent': 'CapyChat/1.0.0'
     }
   });
 

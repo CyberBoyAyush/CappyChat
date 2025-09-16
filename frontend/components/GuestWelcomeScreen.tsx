@@ -563,7 +563,7 @@ Much cleaner! This approach:
           <MessageSquare className="h-4 w-4 text-primary" />
         </div>
         <div>
-          <h3 className="font-semibold text-sm">AVChat Demo</h3>
+          <h3 className="font-semibold text-sm">CapyChat Demo</h3>
           <p className="text-xs text-muted-foreground">
             Live coding assistance
           </p>
@@ -656,7 +656,7 @@ Much cleaner! This approach:
             <div className="bg-muted/50 border border-border/30 rounded-2xl rounded-bl-md px-4 py-3 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>AVChat is thinking...</span>
+                <span>CapyChat is thinking...</span>
               </div>
             </div>
           </motion.div>
@@ -874,7 +874,7 @@ export default function GuestWelcomeScreen({
               Why Choose AV<span className="text-primary">Chat</span>?
             </h2>
             <p className="text-muted-foreground max-w-3xl mx-auto text-lg leading-relaxed">
-              Discover the cutting-edge features that make AVChat the preferred
+              Discover the cutting-edge features that make CapyChat the preferred
               choice for intelligent conversations and seamless AI interactions
             </p>
           </div>
@@ -1018,7 +1018,7 @@ export default function GuestWelcomeScreen({
               Light & Dark Theme
             </h3>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              AVChat automatically adapts to your system preferences or manual
+              CapyChat automatically adapts to your system preferences or manual
               theme selection. Experience the seamless transition between our
               beautifully crafted light and dark modes.
             </p>
@@ -1334,7 +1334,7 @@ export default function GuestWelcomeScreen({
               </h3>
               <p className="text-muted-foreground mb-8 text-lg leading-relaxed">
                 Join thousands of users already experiencing intelligent
-                conversations with AVChat. Start your journey with AI-powered
+                conversations with CapyChat. Start your journey with AI-powered
                 communication today.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">

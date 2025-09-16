@@ -1,7 +1,7 @@
 /**
  * Version Configuration and Changelog Data
  * 
- * Centralized version management and changelog information for AVChat.
+ * Centralized version management and changelog information for CapyChat.
  * This file contains the current version and detailed changelog entries.
  */
 

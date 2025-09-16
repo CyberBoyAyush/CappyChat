@@ -173,8 +173,8 @@ export async function POST(req: NextRequest) {
       apiKey,
       headers: {
         'HTTP-Referer': 'https://avchat.xyz/',
-        'X-Title': 'AVChat - AI Chat Application',
-        'User-Agent': 'AVChat/1.0.0'
+        'X-Title': 'CapyChat - AI Chat Application',
+        'User-Agent': 'CapyChat/1.0.0'
       }
     });
     const aiModel = openrouter(modelConfig.modelId);
@@ -288,7 +288,7 @@ export async function POST(req: NextRequest) {
     let systemPrompt = `
       ${styleConfig.systemPrompt}
 
-      You are AVChat, an ai assistant that can answer questions and help with tasks.
+      You are CapyChat, an ai assistant that can answer questions and help with tasks.
       Your developer's name are Ayush Sharma and Vranda Garg
       Be helpful and provide relevant information about any documents, images, or files that are shared with you.
       Be respectful and polite in all interactions.

@@ -1394,8 +1394,7 @@ function PureInputField({
                       <RiImageAiFill
                         size={20}
                         className={cn(
-                          "text-foreground",
-                          isImageGenMode && " text-white dark:text-black"
+                          isImageGenMode ? "text-background" : "text-foreground"
                         )}
                       />
                     </Button>
@@ -1471,11 +1470,11 @@ const PureSendButton = ({ onSubmit, disabled }: SendButtonProps) => {
       onClick={handleClick}
       variant="default"
       size="icon"
-      className="h-8 w-8 sm:h-9 sm:w-9 mobile-touch text-white dark:text-black"
+      className="h-8 w-8 sm:h-9 sm:w-9 mobile-touch "
       disabled={disabled}
       aria-label="Send message"
     >
-      <ArrowUpIcon size={18} />
+      <ArrowUpIcon size={18} className="text-background" />
     </Button>
   );
 };

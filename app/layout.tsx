@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AVChat - Fastest AI Chat App",
+  title: "CapyChat - Fastest AI Chat App",
   description:
     "Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.",
   icons: {
@@ -28,17 +28,17 @@ export const metadata: Metadata = {
     apple: "/logo.png",
   },
   openGraph: {
-    title: "AVChat - Fastest AI Chat App",
+    title: "CapyChat - Fastest AI Chat App",
     description:
       "Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.",
     url: "https://avchat.xyz",
-    siteName: "AVChat",
+    siteName: "CapyChat",
     images: [
       {
         url: "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
         width: 1200,
         height: 630,
-        alt: "AVChat - Fastest AI Chat App",
+        alt: "CapyChat - Fastest AI Chat App",
         type: "image/png",
       },
     ],
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "AVChat - Fastest AI Chat App",
+    title: "CapyChat - Fastest AI Chat App",
     description:
       "Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.",
     images: [
@@ -80,7 +80,7 @@ export const metadata: Metadata = {
       "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
     "og:image:width": "1200",
     "og:image:height": "630",
-    "og:image:alt": "AVChat - Fastest AI Chat App",
+    "og:image:alt": "CapyChat - Fastest AI Chat App",
     // LinkedIn specific
     "linkedin:owner": "cyberboyayush",
     // WhatsApp specific
@@ -104,6 +104,7 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
+          themes={["light", "dark", "capybara-light", "capybara-dark"]}
         >
           <PerformanceOptimizations />
           {children}

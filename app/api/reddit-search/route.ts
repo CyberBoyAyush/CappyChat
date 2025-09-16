@@ -220,8 +220,8 @@ export async function POST(req: NextRequest) {
       apiKey,
       headers: {
         'HTTP-Referer': 'https://avchat.xyz/',
-        'X-Title': 'AVChat - AI Chat Application',
-        'User-Agent': 'AVChat/1.0.0'
+        'X-Title': 'CapyChat - AI Chat Application',
+        'User-Agent': 'CapyChat/1.0.0'
       }
     });
     const aiModel = openrouter(modelConfig.modelId);
@@ -264,7 +264,7 @@ export async function POST(req: NextRequest) {
       system: `
       ${styleConfig.systemPrompt}
 
-      You are AVChat, an ai assistant that can answer questions and help with tasks.
+      You are CapyChat, an ai assistant that can answer questions and help with tasks.
       You have access to real-time Reddit search capabilities through Tavily Search.
 
       REDDIT SEARCH RESULTS FOR QUERY: "${searchQuery}"

@@ -338,7 +338,7 @@ export default function VoiceInputButton({
           "rounded-full flex items-center justify-center transition-all text-white dark:text-black bg-primary  hover:bg-primary/60",
           className
         ),
-        icon: <Mic size={iconSize} className="text-white dark:text-black" />,
+        icon: <Mic size={iconSize} className="text-background" />,
       };
     }
 
@@ -351,7 +351,9 @@ export default function VoiceInputButton({
           "rounded-full flex items-center justify-center transition-all bg-primary/60",
           className
         ),
-        icon: <Loader2 size={iconSize} className="animate-spin text-white" />,
+        icon: (
+          <Loader2 size={iconSize} className="animate-spin text-background" />
+        ),
       };
     }
 
@@ -364,7 +366,7 @@ export default function VoiceInputButton({
           "rounded-full flex items-center justify-center transition-all bg-primary/60",
           className
         ),
-        icon: <Ban size={iconSize} className="text-white" />,
+        icon: <Ban size={iconSize} className="text-background" />,
         style: pulseStyle,
       };
     }
@@ -377,9 +379,7 @@ export default function VoiceInputButton({
         "rounded-full flex items-center justify-center transition-all bg-primary hover:bg-primary/60 disabled:opacity-50 disabled:cursor-not-allowed",
         className
       ),
-      icon: (
-        <AudioLines size={iconSize} className="text-white dark:text-black" />
-      ),
+      icon: <AudioLines size={iconSize} className="text-background" />,
     };
   };
 

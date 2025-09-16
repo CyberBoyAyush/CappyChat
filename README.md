@@ -2,11 +2,11 @@
 
 <div align="center">
 
-# 🚀AVChat
+# 🚀CapyChat
 
 ### *Next-Generation AI Chat Platform*
 
-[![Version](https://img.shields.io/badge/version-3.0.1-2563eb?style=for-the-badge&logo=semver&logoColor=white)](https://github.com/CyberBoyAyush/AVChat)
+[![Version](https://img.shields.io/badge/version-3.0.1-2563eb?style=for-the-badge&logo=semver&logoColor=white)](https://github.com/CyberBoyAyush/CapyChat)
 [![License](https://img.shields.io/badge/license-GPL%20v3-10b981?style=for-the-badge&logo=gnu&logoColor=white)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-15.3-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -24,7 +24,7 @@
 
 ## 📖 **Overview**
 
-> **AVChat** is a cutting-edge AI chat platform engineered for **performance**, **scalability**, and **seamless user experience**. Built with a **local-first architecture**, it delivers instant responses while maintaining data consistency across devices through intelligent cloud synchronization.
+> **CapyChat** is a cutting-edge AI chat platform engineered for **performance**, **scalability**, and **seamless user experience**. Built with a **local-first architecture**, it delivers instant responses while maintaining data consistency across devices through intelligent cloud synchronization.
 
 ### ✨ **Key Highlights**
 
@@ -300,7 +300,7 @@ graph TB
 
 <div align="center">
 
-### *Get AVChat running in under 5 minutes*
+### *Get CapyChat running in under 5 minutes*
 
 </div>
 
@@ -332,8 +332,8 @@ graph TB
 
 ```bash
 # Clone the repository
-git clone https://github.com/CyberBoyAyush/AVChat.git
-cd AVChat
+git clone https://github.com/CyberBoyAyush/CapyChat.git
+cd CapyChat
 
 # Install dependencies
 pnpm install
@@ -379,7 +379,7 @@ open http://localhost:3000
 
 </details>
 
-> **🎉 Success!** Your AVChat instance should now be running at [http://localhost:3000](http://localhost:3000)
+> **🎉 Success!** Your CapyChat instance should now be running at [http://localhost:3000](http://localhost:3000)
 
 ### Environment Configuration
 
@@ -449,7 +449,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
 
 ### Database Setup
 
-AVChat uses Appwrite as the primary database with local IndexedDB for performance. Follow these steps to set up your database:
+CapyChat uses Appwrite as the primary database with local IndexedDB for performance. Follow these steps to set up your database:
 
 #### 1. Create Appwrite Project
 
@@ -898,7 +898,7 @@ interface Project {
 
 ### Vercel (Recommended)
 
-AVChat is optimized for deployment on Vercel with automatic builds and deployments.
+CapyChat is optimized for deployment on Vercel with automatic builds and deployments.
 
 1. **Fork the repository** to your GitHub account
 
@@ -1038,8 +1038,8 @@ sudo apt-get install -y nodejs
 npm install -g pnpm pm2
 
 # Clone and setup
-git clone https://github.com/CyberBoyAyush/AVChat.git
-cd AVChat
+git clone https://github.com/CyberBoyAyush/CapyChat.git
+cd CapyChat
 pnpm install
 pnpm build
 
@@ -1153,7 +1153,7 @@ module.exports = {
 ### Project Structure
 
 ```
-AVChat/
+CapyChat/
 ├── app/                          # Next.js App Router
 │   ├── api/                      # Backend API routes
 │   │   ├── admin/                # Admin endpoints
@@ -1286,15 +1286,15 @@ describe('ChatMessage', () => {
 
 ## Contributing
 
-We welcome contributions from developers of all skill levels! Whether you're fixing bugs, adding features, or improving documentation, every contribution helps make AVChat better.
+We welcome contributions from developers of all skill levels! Whether you're fixing bugs, adding features, or improving documentation, every contribution helps make CapyChat better.
 
 ### Getting Started
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally
    ```bash
-   git clone https://github.com/your-username/AVChat.git
-   cd AVChat
+   git clone https://github.com/your-username/CapyChat.git
+   cd CapyChat
    ```
 3. **Create a feature branch**
    ```bash
@@ -1496,11 +1496,11 @@ pnpm lighthouse
 <table>
 <tr>
 <td width="25%"><strong>🐛 Bug Reports</strong></td>
-<td width="75%"><a href="https://github.com/CyberBoyAyush/AVChat/issues">GitHub Issues</a></td>
+<td width="75%"><a href="https://github.com/CyberBoyAyush/CapyChat/issues">GitHub Issues</a></td>
 </tr>
 <tr>
 <td width="25%"><strong>💬 Discussions</strong></td>
-<td width="75%"><a href="https://github.com/CyberBoyAyush/AVChat/discussions">Community Q&A</a></td>
+<td width="75%"><a href="https://github.com/CyberBoyAyush/CapyChat/discussions">Community Q&A</a></td>
 </tr>
 <tr>
 <td width="25%"><strong>📚 Documentation</strong></td>
@@ -1562,8 +1562,8 @@ pnpm lighthouse
 **🌟 Special Recognition:**
 - **Open Source Community** for the incredible tools and libraries
 - **Beta Testers** who provided valuable feedback and bug reports
-- **Contributors** who help make AVChat better every day
-- **Users** who trust AVChat for their AI conversations
+- **Contributors** who help make CapyChat better every day
+- **Users** who trust CapyChat for their AI conversations
 
 ### 📋 **License Notice**
 
@@ -1583,17 +1583,17 @@ For commercial licensing or permission requests, contact the copyright holders.
 ## 🚀 **Ready to Experience the Future of AI Chat?**
 
 [![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-avchat.xyz-2563eb?style=for-the-badge&logoColor=white)](https://avchat.xyz)
-[![GitHub](https://img.shields.io/badge/⭐_Star_on_GitHub-CyberBoyAyush/AVChat-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/CyberBoyAyush/AVChat)
+[![GitHub](https://img.shields.io/badge/⭐_Star_on_GitHub-CyberBoyAyush/CapyChat-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/CyberBoyAyush/CapyChat)
 [![Documentation](https://img.shields.io/badge/📚_Read_Docs-Project.md-10b981?style=for-the-badge&logoColor=white)](docs/Project.md)
 
 ---
 
-### *Built with ❤️ by the AVChat Team*
+### *Built with ❤️ by the CapyChat Team*
 
 **Making AI conversations accessible, fast, and delightful for everyone**
 
 ---
 
-<sub>© 2024 AVChat (AtChat). All rights reserved. | Made with passion for the AI community</sub>
+<sub>© 2024 CapyChat (AtChat). All rights reserved. | Made with passion for the AI community</sub>
 
 </div>

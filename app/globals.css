@@ -111,6 +111,112 @@
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
 }
 
+.capybara-light {
+  /* Light brown capybara theme */
+  --background: #fdf6f0;
+  --foreground: #3d2914;
+  --card: #f9f1e8;
+  --card-foreground: #3d2914;
+  --popover: #f9f1e8;
+  --popover-foreground: #3d2914;
+  --primary: #8b4513;
+  --primary-foreground: #fdf6f0;
+  --secondary: #f4e6d7;
+  --secondary-foreground: #3d2914;
+  --muted: #f0e5d8;
+  --muted-foreground: #6b4e37;
+  --accent: #e8d5c4;
+  --accent-foreground: #3d2914;
+  --destructive: #d2691e;
+  --destructive-foreground: #fdf6f0;
+  --border: #d2b48c;
+  --input: #fdf6f0;
+  --ring: #8b4513;
+  --chart-1: #8b4513;
+  --chart-2: #a0522d;
+  --chart-3: #cd853f;
+  --chart-4: #daa520;
+  --chart-5: #f4a460;
+  --sidebar: #f9f1e8;
+  --sidebar-foreground: #3d2914;
+  --sidebar-primary: #8b4513;
+  --sidebar-primary-foreground: #fdf6f0;
+  --sidebar-accent: #f4e6d7;
+  --sidebar-accent-foreground: #3d2914;
+  --sidebar-border: #d2b48c;
+  --sidebar-ring: #8b4513;
+  --font-sans: Geist, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: Geist Mono, monospace;
+  --radius: 0.625rem;
+  --shadow-2xs: 0 1px 3px 0px hsl(30 45% 30% / 0.05);
+  --shadow-xs: 0 1px 3px 0px hsl(30 45% 30% / 0.05);
+  --shadow-sm: 0 1px 3px 0px hsl(30 45% 30% / 0.1),
+    0 1px 2px -1px hsl(30 45% 30% / 0.1);
+  --shadow: 0 1px 3px 0px hsl(30 45% 30% / 0.1),
+    0 1px 2px -1px hsl(30 45% 30% / 0.1);
+  --shadow-md: 0 1px 3px 0px hsl(30 45% 30% / 0.1),
+    0 2px 4px -1px hsl(30 45% 30% / 0.1);
+  --shadow-lg: 0 1px 3px 0px hsl(30 45% 30% / 0.1),
+    0 4px 6px -1px hsl(30 45% 30% / 0.1);
+  --shadow-xl: 0 1px 3px 0px hsl(30 45% 30% / 0.1),
+    0 8px 10px -1px hsl(30 45% 30% / 0.1);
+  --shadow-2xl: 0 1px 3px 0px hsl(30 45% 30% / 0.25);
+}
+
+.capybara-dark {
+  /* Dark brown capybara theme */
+  --background: #1a0f0a;
+  --foreground: #ffe3c6;
+  --card: #2d1b0f;
+  --card-foreground: #fff3dc;
+  --popover: #2d1b0f;
+  --popover-foreground: #fff2da;
+  --primary: #ffdab0;
+  --primary-foreground: #1a0f0a;
+  --secondary: #3e2723;
+  --secondary-foreground: #f5deb3;
+  --muted: #4e342e;
+  --muted-foreground: #ffdfb9;
+  --accent: #5d4037;
+  --accent-foreground: #f5deb3;
+  --destructive: #ff6b35;
+  --destructive-foreground: #1a0f0a;
+  --border: #6d4c41;
+  --input: #2d1b0f;
+  --ring: #daa520;
+  --chart-1: #daa520;
+  --chart-2: #cd853f;
+  --chart-3: #a0522d;
+  --chart-4: #8b4513;
+  --chart-5: #654321;
+  --sidebar: #2d1b0f;
+  --sidebar-foreground: #f5deb3;
+  --sidebar-primary: #daa520;
+  --sidebar-primary-foreground: #1a0f0a;
+  --sidebar-accent: #3e2723;
+  --sidebar-accent-foreground: #f5deb3;
+  --sidebar-border: #6d4c41;
+  --sidebar-ring: #daa520;
+  --font-sans: Geist, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: Geist Mono, monospace;
+  --radius: 0.625rem;
+  --shadow-2xs: 0 1px 3px 0px hsl(30 45% 15% / 0.2);
+  --shadow-xs: 0 1px 3px 0px hsl(30 45% 15% / 0.2);
+  --shadow-sm: 0 1px 3px 0px hsl(30 45% 15% / 0.3),
+    0 1px 2px -1px hsl(30 45% 15% / 0.3);
+  --shadow: 0 1px 3px 0px hsl(30 45% 15% / 0.3),
+    0 1px 2px -1px hsl(30 45% 15% / 0.3);
+  --shadow-md: 0 1px 3px 0px hsl(30 45% 15% / 0.3),
+    0 2px 4px -1px hsl(30 45% 15% / 0.3);
+  --shadow-lg: 0 1px 3px 0px hsl(30 45% 15% / 0.3),
+    0 4px 6px -1px hsl(30 45% 15% / 0.3);
+  --shadow-xl: 0 1px 3px 0px hsl(30 45% 15% / 0.3),
+    0 8px 10px -1px hsl(30 45% 15% / 0.3);
+  --shadow-2xl: 0 1px 3px 0px hsl(30 45% 15% / 0.5);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -509,84 +615,35 @@
   background-color: transparent !important;
 }
 
-/* Fix: Improve dark mode syntax highlighting with higher specificity */
-/* These rules take precedence to ensure visibility in dark mode */
+/* Fix: dark mode syntax highlighting should rely on Shiki colors.
+   Remove broad overrides that flattened token colors and instead
+   apply only minimal, safe adjustments. */
 .dark .shiki {
-  color: #e1e5e9 !important;
+  /* Ensure good base contrast for any unthemed text */
+  color: #e8eef4 !important;
 }
 
-/* Make sure these selectors have higher specificity than any default styles */
-html.dark .shiki .token.comment,
-html.dark .shiki .token.prolog,
-html.dark .shiki .token.doctype,
-html.dark .shiki .token.cdata {
-  color: #8b949e !important;
-}
-
-html.dark .shiki .token.keyword,
-html.dark .shiki .token.operator,
-html.dark .shiki .token.boolean,
-html.dark .shiki .token.number {
-  color: #ff7b72 !important;
-}
-
-html.dark .shiki .token.string,
-html.dark .shiki .token.char,
-html.dark .shiki .token.attr-value {
-  color: #a5d6ff !important;
-}
-
-html.dark .shiki .token.function,
-html.dark .shiki .token.class-name {
-  color: #d2a8ff !important;
-}
-
-html.dark .shiki .token.variable,
-html.dark .shiki .token.parameter {
-  color: #ffa657 !important;
-}
-
-html.dark .shiki .token.punctuation,
-html.dark .shiki .token.bracket {
-  color: #c9d1d9 !important;
-}
-
-html.dark .shiki .token.tag,
-html.dark .shiki .token.attr-name {
-  color: #7ee787 !important;
-}
-
-/* Additional fix for Shiki spans in dark mode */
-html.dark .shiki span[style*="color:#"] {
-  color: inherit !important; /* First reset all colors */
-}
-
-html.dark .shiki span[style*="color:#ff7b72"] {
-  color: #ff7b72 !important; /* Keywords */
-}
-
-html.dark .shiki span[style*="color:#79c0ff"] {
-  color: #79c0ff !important; /* Functions/types */
-}
-
-html.dark .shiki span[style*="color:#a5d6ff"] {
-  color: #a5d6ff !important; /* Strings */
-}
-
-html.dark .shiki span[style*="color:#ffa657"] {
-  color: #ffa657 !important; /* Numbers/constants */
-}
-
+/* Do NOT reset colors on token spans — Shiki provides inline styles. */
+/* Fine‑tune a few well‑known token colors from the GitHub Dark theme
+   to improve contrast on the Capybara dark background. */
 html.dark .shiki span[style*="color:#8b949e"] {
-  color: #8b949e !important; /* Comments */
+  /* Comments – slightly lighter than stock for readability,
+     but still low emphasis */
+  color: #a6afb9 !important;
+}
+html.dark .shiki span[style*="color:#79c0ff"], /* functions/types */
+html.dark .shiki span[style*="color:#a5d6ff"]  /* strings */ {
+  filter: saturate(1.05) brightness(1.05);
+}
+html.dark .shiki span[style*="color:#ff7b72"], /* keywords */
+html.dark .shiki span[style*="color:#ffa657"], /* numbers/constants */
+html.dark .shiki span[style*="color:#7ee787"], /* tags/attrs */
+html.dark .shiki span[style*="color:#c9d1d9"]  /* punctuation */ {
+  filter: saturate(1.04);
 }
 
-html.dark .shiki span[style*="color:#f85149"] {
-  color: #f85149 !important; /* Operators */
-}
-
-/* Fix inline code in dark mode */
-.dark code:not(.shiki code) {
+/* Fix inline code in dark mode (exclude code blocks) */
+.dark :not(pre) > code {
   background-color: var(--secondary) !important;
   color: var(--foreground) !important;
 }
@@ -597,6 +654,49 @@ html.dark .shiki span[style*="color:#f85149"] {
 :root .shiki .token.doctype,
 :root .shiki .token.cdata {
   color: var(--muted-foreground) !important;
+}
+
+/* Fix markdown element visibility in dark mode */
+.dark .prose strong,
+.dark .prose b {
+  color: var(--foreground) !important;
+  font-weight: 700;
+}
+
+.dark .prose em,
+.dark .prose i {
+  color: var(--foreground) !important;
+}
+
+.dark .prose h1,
+.dark .prose h2,
+.dark .prose h3,
+.dark .prose h4,
+.dark .prose h5,
+.dark .prose h6 {
+  color: var(--foreground) !important;
+}
+
+.dark .prose p {
+  color: var(--foreground) !important;
+}
+
+.dark .prose li {
+  color: var(--foreground) !important;
+}
+
+.dark .prose blockquote {
+  color: var(--muted-foreground) !important;
+  border-left-color: var(--border) !important;
+}
+
+.dark .prose a {
+  color: var(--primary) !important;
+}
+
+.dark .prose a:hover {
+  color: var(--primary) !important;
+  opacity: 0.8;
 }
 
 /* Model Selector Utilities */
@@ -1210,5 +1310,234 @@ html {
   .error-button-mobile {
     min-height: 2.5rem;
     font-size: 0.875rem;
+  }
+}
+
+/* Capybara Loader Animation */
+.capybaraloader {
+  width: 14em;
+  height: 10em;
+  position: relative;
+  z-index: 1;
+  --color: var(--primary);
+  --color2: var(--muted-foreground);
+  transform: scale(0.75);
+}
+
+.capybara {
+  width: 100%;
+  height: 7.5em;
+  position: relative;
+  z-index: 1;
+}
+
+.loader {
+  width: 100%;
+  height: 2.5em;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.capy {
+  width: 85%;
+  height: 100%;
+  background: linear-gradient(var(--color), 90%, var(--color2));
+  border-radius: 45%;
+  position: relative;
+  z-index: 1;
+  animation: movebody 1s linear infinite;
+}
+
+.capyhead {
+  width: 7.5em;
+  height: 7em;
+  bottom: 0em;
+  right: 0em;
+  position: absolute;
+  background-color: var(--color);
+  z-index: 3;
+  border-radius: 3.5em;
+  box-shadow: -1em 0em var(--color2);
+  animation: movebody 1s linear infinite;
+}
+
+.capyear {
+  width: 2em;
+  height: 2em;
+  background: linear-gradient(-45deg, var(--color), 90%, var(--color2));
+  top: 0em;
+  left: 0em;
+  border-radius: 100%;
+  position: absolute;
+  overflow: hidden;
+  z-index: 3;
+}
+
+.capyear:nth-child(2) {
+  left: 5em;
+  background: linear-gradient(25deg, var(--color), 90%, var(--color2));
+}
+
+.capyear2 {
+  width: 100%;
+  height: 1em;
+  background-color: var(--color2);
+  bottom: 0em;
+  left: 0.5em;
+  border-radius: 100%;
+  position: absolute;
+  transform: rotate(-45deg);
+}
+
+.capymouth {
+  width: 3.5em;
+  height: 2em;
+  background-color: var(--color2);
+  position: absolute;
+  bottom: 0em;
+  left: 2.5em;
+  border-radius: 50%;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0.5em;
+}
+
+.capylips {
+  width: 0.25em;
+  height: 0.75em;
+  border-radius: 100%;
+  transform: rotate(-45deg);
+  background-color: var(--color);
+}
+
+.capylips:nth-child(2) {
+  transform: rotate(45deg);
+}
+
+.capyeye {
+  width: 2em;
+  height: 0.5em;
+  background-color: var(--color2);
+  position: absolute;
+  bottom: 3.5em;
+  left: 1.5em;
+  border-radius: 5em;
+  transform: rotate(45deg);
+}
+
+.capyeye:nth-child(4) {
+  transform: rotate(-45deg);
+  left: 5.5em;
+  width: 1.75em;
+}
+
+.capyleg {
+  width: 6em;
+  height: 5em;
+  bottom: 0em;
+  left: 0em;
+  position: absolute;
+  background: linear-gradient(var(--color), 95%, var(--color2));
+  z-index: 2;
+  border-radius: 2em;
+  animation: movebody 1s linear infinite;
+}
+
+.capyleg2 {
+  width: 1.75em;
+  height: 3em;
+  bottom: 0em;
+  left: 3.25em;
+  position: absolute;
+  background: linear-gradient(var(--color), 80%, var(--color2));
+  z-index: 2;
+  border-radius: 0.75em;
+  box-shadow: inset 0em -0.5em var(--color2);
+  animation: moveleg 1s linear infinite;
+}
+
+.capyleg2:nth-child(3) {
+  width: 1.25em;
+  left: 0.5em;
+  height: 2em;
+  animation: moveleg2 1s linear infinite 0.075s;
+}
+
+@keyframes moveleg {
+  0% {
+    transform: rotate(-45deg) translateX(-5%);
+  }
+  50% {
+    transform: rotate(45deg) translateX(5%);
+  }
+  100% {
+    transform: rotate(-45deg) translateX(-5%);
+  }
+}
+
+@keyframes moveleg2 {
+  0% {
+    transform: rotate(45deg);
+  }
+  50% {
+    transform: rotate(-45deg);
+  }
+  100% {
+    transform: rotate(45deg);
+  }
+}
+
+@keyframes movebody {
+  0% {
+    transform: translateX(0%);
+  }
+  50% {
+    transform: translateX(2%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+/* Animation utility classes for CapybaraIcon component */
+.animate-movebody {
+  animation: movebody 1s linear infinite;
+}
+
+.animate-moveleg {
+  animation: moveleg 1s linear infinite;
+}
+
+.animate-moveleg2 {
+  animation: moveleg2 1s linear infinite;
+}
+
+.animate-moveline {
+  animation: moveline 10s linear infinite;
+}
+
+.loaderline {
+  width: 50em;
+  height: 0.5em;
+  border-top: 0.5em dashed var(--color2);
+  animation: moveline 10s linear infinite;
+}
+
+@keyframes moveline {
+  0% {
+    transform: translateX(0%);
+    opacity: 0%;
+  }
+  5% {
+    opacity: 100%;
+  }
+  95% {
+    opacity: 100%;
+  }
+  100% {
+    opacity: 0%;
+    transform: translateX(-70%);
   }
 }

@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'User-Agent': 'AVChat/1.0.0',
+        'User-Agent': 'CapyChat/1.0.0',
       },
       body: whisperFormData,
     });
