@@ -184,7 +184,7 @@
   --destructive-foreground: #1a0f0a;
   --border: #6d4c41;
   --input: #2d1b0f;
-  --ring: #daa520;
+  --ring: #ffe8c6;
   --chart-1: #daa520;
   --chart-2: #cd853f;
   --chart-3: #a0522d;
@@ -646,6 +646,43 @@ html.dark .shiki span[style*="color:#c9d1d9"]  /* punctuation */ {
 .dark :not(pre) > code {
   background-color: var(--secondary) !important;
   color: var(--foreground) !important;
+}
+
+/* Theme-aware gradient bars for progress indicators */
+.progress-bar-primary {
+  background-color: var(--primary);
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary) 65%, transparent) 0%,
+    var(--primary) 100%
+  );
+}
+
+.progress-bar-accent {
+  background-color: var(--accent);
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 65%, transparent) 0%,
+    var(--accent) 100%
+  );
+}
+
+.progress-bar-destructive {
+  background-color: var(--destructive);
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--destructive) 65%, transparent) 0%,
+    var(--destructive) 100%
+  );
+}
+
+.progress-bar-foreground {
+  background-color: var(--foreground);
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--foreground) 50%, transparent) 0%,
+    var(--foreground) 100%
+  );
 }
 
 /* Keep light mode colors as they are - no changes needed */

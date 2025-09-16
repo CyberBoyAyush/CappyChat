@@ -488,7 +488,7 @@ export default function SettingsPage() {
               className={`mb-6 p-4 rounded-lg border flex items-center space-x-3 ${
                 notification.type === "error"
                   ? "bg-destructive/10 text-destructive border-destructive/30"
-                  : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                  : "bg-accent/10 text-accent border-accent/30"
               }`}
             >
               {notification.type === "error" ? (
@@ -597,7 +597,7 @@ export default function SettingsPage() {
                     ].map(({ action, keys }) => (
                       <div
                         key={action}
-                        className="flex items-center justify-between rounded-lg bg-muted/30"
+                        className="flex items-center justify-between rounded-lg bg-muted/30 p-2"
                       >
                         <span className="text-sm">{action}</span>
                         <div className="flex items-center gap-1">
@@ -725,12 +725,12 @@ export default function SettingsPage() {
                                   {getTierDisplayInfo(tierInfo.tier).name} Plan
                                 </span>
                                 {tierInfo.tier === "premium" && (
-                                  <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
+                                  <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary text-primary-foreground">
                                     PRO
                                   </span>
                                 )}
                                 {tierInfo.tier === "admin" && (
-                                  <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-zinc-700 to-zinc-900 dark:from-zinc-300 dark:to-zinc-100 text-white dark:text-black rounded-full">
+                                  <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-foreground text-background">
                                     ADMIN
                                   </span>
                                 )}
@@ -767,19 +767,15 @@ export default function SettingsPage() {
                           </dt>
                           <dd className="flex items-center gap-1">
                             {user?.emailVerification ? (
-                              <>
-                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                <span className="text-emerald-600 dark:text-emerald-400">
-                                  Verified
-                                </span>
-                              </>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/60 text-primary/75 border border-accent/30">
+                                <CheckCircle2 className="w-4 h-4" />
+                                Verified
+                              </span>
                             ) : (
-                              <>
-                                <AlertTriangle className="w-4 h-4 text-amber-500" />
-                                <span className="text-amber-600 dark:text-amber-400">
-                                  Unverified
-                                </span>
-                              </>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/30">
+                                <AlertTriangle className="w-4 h-4" />
+                                Unverified
+                              </span>
                             )}
                           </dd>
                         </div>
@@ -890,7 +886,7 @@ export default function SettingsPage() {
                               </div>
                               <div className="w-full bg-muted rounded-full h-2">
                                 <div
-                                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                                  className="progress-bar-primary h-2 rounded-full transition-all duration-300"
                                   style={{
                                     width: `${Math.max(
                                       0,
@@ -922,7 +918,7 @@ export default function SettingsPage() {
                               </div>
                               <div className="w-full bg-muted rounded-full h-2">
                                 <div
-                                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                                  className="progress-bar-primary h-2 rounded-full transition-all duration-300"
                                   style={{
                                     width: `${Math.max(
                                       0,
@@ -954,7 +950,7 @@ export default function SettingsPage() {
                               </div>
                               <div className="w-full bg-muted rounded-full h-2">
                                 <div
-                                  className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                                  className="progress-bar-primary h-2 rounded-full transition-all duration-300"
                                   style={{
                                     width: `${Math.max(
                                       0,
@@ -992,9 +988,9 @@ export default function SettingsPage() {
                       {tierInfo?.tier === "admin" && (
                         <div className="mt-6 pt-4 border-t border-border">
                           <div className="text-center py-4">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-black/5 to-black/10 dark:from-white/10 dark:to-white/20 border border-black/10 dark:border-white/20 rounded-lg">
-                              <Shield className="w-4 h-4 text-black dark:text-white" />
-                              <span className="text-sm font-medium text-black dark:text-white">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-foreground/10 to-foreground/20 border border-foreground/15 rounded-lg">
+                              <Shield className="w-4 h-4 text-foreground" />
+                              <span className="text-sm font-medium text-foreground">
                                 Administrator - Unlimited Access
                               </span>
                             </div>
@@ -1061,7 +1057,7 @@ export default function SettingsPage() {
                               onClick={handleClearCustomProfile}
                               variant="outline"
                               size="sm"
-                              className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                              className="text-destructive border-destructive/30 hover:border-destructive hover:bg-destructive/10"
                               disabled={profileLoading}
                             >
                               <Trash2 className="h-4 w-4 mr-1" />
@@ -1083,6 +1079,7 @@ export default function SettingsPage() {
                               }
                               placeholder="How would you like the AI to address you?"
                               disabled={profileLoading}
+                              className="rounded-md border border-ring/20 bg-ring/5 text-foreground placeholder:text-muted-foreground/40 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-[color,box-shadow]"
                             />
                             <p className="text-xs text-muted-foreground">
                               The AI will use this name when addressing you in
@@ -1103,7 +1100,7 @@ export default function SettingsPage() {
                                 }
                               }}
                               placeholder="Tell the AI about yourself, your interests, profession, or anything that would help personalize responses..."
-                              className="min-h-[100px] resize-none"
+                              className="min-h-[100px] resize-none rounded-md border border-ring/20 bg-ring/5 text-foreground placeholder:text-muted-foreground/40 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
                               disabled={profileLoading}
                             />
                             <p className="text-xs text-muted-foreground">
@@ -1158,7 +1155,7 @@ export default function SettingsPage() {
                                 </div>
                               )}
 
-                              <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+                              <div className="flex items-center gap-2 text-xs text-accent">
                                 <CheckCircle2 className="w-4 h-4" />
                                 <span>
                                   Custom profile is active - AI responses will
@@ -1228,19 +1225,7 @@ export default function SettingsPage() {
                                 <h4 className="font-medium text-sm">
                                   {font.displayName}
                                 </h4>
-                                <span
-                                  className={`px-2 py-1 text-xs rounded-full ${
-                                    font.category === "modern"
-                                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                                      : font.category === "stylish"
-                                      ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                                      : font.category === "classic"
-                                      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                                      : font.category === "artistic"
-                                      ? "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300"
-                                      : "bg-zinc-100 text-zinc-700 dark:bg-zinc-900/30 dark:text-zinc-300"
-                                  }`}
-                                >
+                                <span className="px-2 py-1 text-xs rounded-full bg-secondary text-secondary-foreground">
                                   {font.category}
                                 </span>
                               </div>
@@ -1299,16 +1284,16 @@ export default function SettingsPage() {
                       {hasOpenRouterKey() ? (
                         // Key is configured
                         <div className="space-y-4">
-                          <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4">
+                          <div className="rounded-lg bg-accent/10 border border-accent/30 p-4">
                             <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
-                                <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              <div className="p-2 rounded-full bg-accent/20">
+                                <Check className="h-4 w-4 text-accent" />
                               </div>
                               <div className="flex-1">
-                                <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                <p className="text-sm font-medium text-accent-foreground">
                                   OpenRouter API Key Configured
                                 </p>
-                                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                <p className="text-xs text-accent mt-1">
                                   Key: {maskKey(openRouterApiKey || "")}
                                 </p>
                               </div>
@@ -1316,7 +1301,7 @@ export default function SettingsPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={handleRemoveKey}
-                                className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                                className="text-destructive border-destructive/30 hover:border-destructive hover:bg-destructive/10"
                               >
                                 <X className="h-4 w-4 mr-1" />
                                 Remove
@@ -1378,7 +1363,9 @@ export default function SettingsPage() {
                                     setKeyInput(e.target.value);
                                     setKeyError("");
                                   }}
-                                  className={keyError ? "border-red-500" : ""}
+                                  className={
+                                    keyError ? "border-destructive" : ""
+                                  }
                                 />
                                 <Button
                                   type="button"
@@ -1395,12 +1382,12 @@ export default function SettingsPage() {
                                 </Button>
                               </div>
                               {keyError && (
-                                <p className="text-sm text-red-600">
+                                <p className="text-sm text-destructive">
                                   {keyError}
                                 </p>
                               )}
                               {keySaved && (
-                                <p className="text-sm text-green-600">
+                                <p className="text-sm text-accent">
                                   ✓ API key saved successfully!
                                 </p>
                               )}
@@ -1428,7 +1415,7 @@ export default function SettingsPage() {
                           <h3 className="text-lg font-medium">
                             OpenAI API Key
                           </h3>
-                          <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
+                          <span className="text-xs bg-accent/20 text-accent px-2 py-1 rounded-full">
                             Voice Input
                           </span>
                         </div>
@@ -1441,16 +1428,16 @@ export default function SettingsPage() {
                       {hasOpenAIKey() ? (
                         // OpenAI Key is configured
                         <div className="space-y-4">
-                          <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4">
+                          <div className="rounded-lg bg-accent/10 border border-accent/30 p-4">
                             <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
-                                <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              <div className="p-2 rounded-full bg-accent/20">
+                                <Check className="h-4 w-4 text-accent" />
                               </div>
                               <div className="flex-1">
-                                <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                <p className="text-sm font-medium text-accent-foreground">
                                   OpenAI API Key Configured
                                 </p>
-                                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                <p className="text-xs text-accent mt-1">
                                   Key: {maskKey(openAIApiKey || "")}
                                 </p>
                               </div>
@@ -1458,7 +1445,7 @@ export default function SettingsPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={handleRemoveOpenAIKey}
-                                className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                                className="text-destructive border-destructive/30 hover:border-destructive hover:bg-destructive/10"
                               >
                                 <Trash2 className="h-4 w-4 mr-1" />
                                 Remove
@@ -1521,7 +1508,7 @@ export default function SettingsPage() {
                                     setOpenAIKeyError("");
                                   }}
                                   className={
-                                    openAIKeyError ? "border-red-500" : ""
+                                    openAIKeyError ? "border-destructive" : ""
                                   }
                                 />
                                 <Button
@@ -1541,12 +1528,12 @@ export default function SettingsPage() {
                                 </Button>
                               </div>
                               {openAIKeyError && (
-                                <p className="text-sm text-red-600">
+                                <p className="text-sm text-destructive">
                                   {openAIKeyError}
                                 </p>
                               )}
                               {openAIKeySaved && (
-                                <p className="text-sm text-green-600">
+                                <p className="text-sm text-accent">
                                   ✓ OpenAI API key saved successfully!
                                 </p>
                               )}
@@ -1574,7 +1561,7 @@ export default function SettingsPage() {
                           <h3 className="text-lg font-medium">
                             Tavily API Key
                           </h3>
-                          <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full">
+                          <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
                             Web Search
                           </span>
                         </div>
@@ -1587,16 +1574,16 @@ export default function SettingsPage() {
                       {hasTavilyKey() ? (
                         // Tavily Key is configured
                         <div className="space-y-4">
-                          <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4">
+                          <div className="rounded-lg bg-accent/10 border border-accent/30 p-4">
                             <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
-                                <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              <div className="p-2 rounded-full bg-accent/20">
+                                <Check className="h-4 w-4 text-accent" />
                               </div>
                               <div className="flex-1">
-                                <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                <p className="text-sm font-medium text-accent-foreground">
                                   Tavily API Key Configured
                                 </p>
-                                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                <p className="text-xs text-accent mt-1">
                                   Key: {maskKey(tavilyApiKey || "")}
                                 </p>
                               </div>
@@ -1604,7 +1591,7 @@ export default function SettingsPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={handleRemoveTavilyKey}
-                                className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                                className="text-destructive border-destructive/30 hover:border-destructive hover:bg-destructive/10"
                               >
                                 <Trash2 className="h-4 w-4 mr-1" />
                                 Remove
@@ -1666,7 +1653,7 @@ export default function SettingsPage() {
                                     setTavilyKeyError("");
                                   }}
                                   className={
-                                    tavilyKeyError ? "border-red-500" : ""
+                                    tavilyKeyError ? "border-destructive" : ""
                                   }
                                 />
                                 <Button
@@ -1686,12 +1673,12 @@ export default function SettingsPage() {
                                 </Button>
                               </div>
                               {tavilyKeyError && (
-                                <p className="text-sm text-red-600">
+                                <p className="text-sm text-destructive">
                                   {tavilyKeyError}
                                 </p>
                               )}
                               {tavilyKeySaved && (
-                                <p className="text-sm text-green-600">
+                                <p className="text-sm text-accent">
                                   ✓ Tavily API key saved successfully!
                                 </p>
                               )}

@@ -19,6 +19,7 @@ import {
   ImageIcon,
   AlertTriangle,
   File,
+  X,
 } from "lucide-react";
 import {
   Dialog,
@@ -33,19 +34,19 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useAuth } from "../contexts/AuthContext";
 
-// Helper function to get file icon and color
+// Helper function to get file icon and theme-aware color
 const getFileIcon = (fileType: string) => {
   switch (fileType) {
-    case 'image':
-      return { icon: FileImage, color: 'text-blue-500' };
-    case 'pdf':
-      return { icon: FileText, color: 'text-red-500' };
-    case 'text':
-      return { icon: FileText, color: 'text-green-500' };
-    case 'document':
-      return { icon: File, color: 'text-purple-500' };
+    case "image":
+      return { icon: FileImage, color: "text-primary" };
+    case "pdf":
+      return { icon: FileText, color: "text-primary" };
+    case "text":
+      return { icon: FileText, color: "text-primary" };
+    case "document":
+      return { icon: File, color: "text-primary" };
     default:
-      return { icon: File, color: 'text-zinc-500' };
+      return { icon: File, color: "text-muted-foreground" };
   }
 };
 
@@ -95,7 +96,7 @@ const FileDeleteDialog = ({
       <DialogContent className="sm:max-w-md border-border shadow-lg bg-background">
         <DialogHeader className="space-y-4 pb-2">
           <div className="flex items-center justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-destructive/20 to-destructive/10 border border-destructive/30">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 border border-destructive/30">
               <Trash2 className="h-5 w-5 text-destructive" />
             </div>
           </div>
@@ -110,7 +111,7 @@ const FileDeleteDialog = ({
           </div>
         </DialogHeader>
 
-        <div className="rounded-lg bg-gradient-to-r from-secondary/80 to-muted/60 border border-border/50 p-4 my-2">
+        <div className="rounded-lg bg-secondary/40 border border-border p-4 my-2">
           <div className="flex items-center gap-2 mb-2">
             <div className="flex items-center gap-2">
               {(() => {
@@ -134,10 +135,10 @@ const FileDeleteDialog = ({
           </div>
         </div>
 
-        <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 p-3">
+        <div className="rounded-lg bg-destructive/5 border border-destructive/30 p-3">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-            <div className="text-xs text-amber-800 dark:text-amber-200">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <div className="text-xs text-destructive">
               <p className="font-medium">This action is permanent</p>
               <p className="mt-1">
                 The file will be completely removed and cannot be recovered.
@@ -159,7 +160,7 @@ const FileDeleteDialog = ({
             variant="destructive"
             onClick={handleConfirm}
             disabled={isDeleting}
-            className="w-full sm:w-auto sm:flex-1 h-10 font-medium bg-gradient-to-r from-destructive to-destructive/90 hover:from-destructive/90 hover:to-destructive/80 shadow-sm transition-all duration-200 gap-2"
+            className="w-full sm:w-auto sm:flex-1 h-10 font-medium bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-sm transition-all duration-200 gap-2"
           >
             <Trash2 className="h-4 w-4" />
             {isDeleting ? "Deleting..." : "Delete File"}
@@ -197,7 +198,7 @@ const BulkDeleteDialog = ({
       <DialogContent className="sm:max-w-md border-border shadow-lg bg-background">
         <DialogHeader className="space-y-4 pb-2">
           <div className="flex items-center justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-destructive/20 to-destructive/10 border border-destructive/30">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 border border-destructive/30">
               <ImageIcon className="h-5 w-5 text-destructive" />
             </div>
           </div>
@@ -212,9 +213,9 @@ const BulkDeleteDialog = ({
           </div>
         </DialogHeader>
 
-        <div className="rounded-lg bg-gradient-to-r from-secondary/80 to-muted/60 border border-border/50 p-4 my-2">
+        <div className="rounded-lg bg-secondary/40 border border-border p-4 my-2">
           <div className="flex items-center gap-2 mb-2">
-            <ImageIcon className="w-4 h-4 text-blue-500" />
+            <ImageIcon className="w-4 h-4 text-primary" />
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Images to Delete
             </span>
@@ -229,10 +230,10 @@ const BulkDeleteDialog = ({
           </div>
         </div>
 
-        <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/30 p-3">
+        <div className="rounded-lg bg-destructive/5 border border-destructive/30 p-3">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-            <div className="text-xs text-red-800 dark:text-red-200">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <div className="text-xs text-destructive">
               <p className="font-medium">
                 This action is permanent and irreversible
               </p>
@@ -257,7 +258,7 @@ const BulkDeleteDialog = ({
             variant="destructive"
             onClick={handleConfirm}
             disabled={isDeleting}
-            className="w-full sm:w-auto sm:flex-1 h-10 font-medium bg-gradient-to-r from-destructive to-destructive/90 hover:from-destructive/90 hover:to-destructive/80 shadow-sm transition-all duration-200 gap-2"
+            className="w-full sm:w-auto sm:flex-1 h-10 font-medium bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-sm transition-all duration-200 gap-2"
           >
             <ImageIcon className="h-4 w-4" />
             {isDeleting ? "Deleting..." : `Delete ${imageCount} Images`}
@@ -279,6 +280,9 @@ export default function FileManager({ className }: FileManagerProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<UserFile | null>(null);
+  // Image preview dialog state
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState<UserFile | null>(null);
 
   const { user } = useAuth();
 
@@ -462,7 +466,12 @@ export default function FileManager({ className }: FileManagerProps) {
   };
 
   const handleView = (file: UserFile) => {
-    window.open(file.url, "_blank");
+    if (file.fileType === "image") {
+      setPreviewFile(file);
+      setPreviewOpen(true);
+    } else {
+      window.open(file.url, "_blank", "noopener,noreferrer");
+    }
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -519,7 +528,7 @@ export default function FileManager({ className }: FileManagerProps) {
               variant="outline"
               onClick={handleBulkDeleteClick}
               disabled={bulkDeleting || loading}
-              className="text-xs text-red-600 px-0 hover:text-red-700 border-red-200 hover:border-red-300 hover:bg-red-50 dark:border-red-800 dark:hover:border-red-700 dark:hover:bg-red-950/20"
+              className="text-xs text-destructive px-0 hover:text-destructive border-border hover:bg-destructive/10"
             >
               {bulkDeleting ? (
                 <>
@@ -588,28 +597,35 @@ export default function FileManager({ className }: FileManagerProps) {
 
               {/* Image preview for images */}
               {file.fileType === "image" && (
-                <div className="mb-3">
+                <button
+                  type="button"
+                  onClick={() => handleView(file)}
+                  className="mb-3 group block relative rounded border overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                >
                   <img
                     src={file.url}
                     alt={file.originalName}
-                    className="w-full h-20 object-cover rounded border"
+                    className="w-full h-20 object-cover transition-transform duration-200 group-hover:scale-[1.02]"
                     loading="lazy"
                   />
-                </div>
+                  <span className="pointer-events-none absolute inset-0 ring-0 group-hover:ring-2 ring-inset ring-ring/40 rounded"></span>
+                </button>
               )}
 
               {/* Action buttons */}
               <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleView(file)}
-                  disabled={bulkDeleting}
-                  className="flex-1 h-8 text-xs"
-                >
-                  <Eye className="w-3 h-3 mr-1" />
-                  View
-                </Button>
+                {file.fileType !== "image" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleView(file)}
+                    disabled={bulkDeleting}
+                    className="flex-1 h-8 text-xs"
+                  >
+                    <Eye className="w-3 h-3 mr-1" />
+                    View
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
@@ -625,7 +641,7 @@ export default function FileManager({ className }: FileManagerProps) {
                   variant="outline"
                   onClick={() => handleDeleteClick(file)}
                   disabled={deleting === file.id || bulkDeleting}
-                  className="h-8 text-xs text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 dark:border-red-800 dark:hover:border-red-700 dark:hover:bg-red-950/20"
+                  className="h-8 text-xs text-destructive hover:text-destructive border-border hover:bg-destructive/10"
                 >
                   {deleting === file.id ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -657,6 +673,29 @@ export default function FileManager({ className }: FileManagerProps) {
         onConfirm={handleBulkDeleteImages}
         isDeleting={bulkDeleting}
       />
+
+      {/* Image Preview Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent showCloseButton={false} className="sm:max-w-3xl bg-background border-border p-0 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(false)}
+            className="absolute top-3 right-3 inline-flex items-center justify-center h-8 w-8 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            aria-label="Close preview"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          {previewFile && (
+            <div className="max-h-[85vh] w-full flex items-center justify-center bg-card">
+              <img
+                src={previewFile.url}
+                alt={previewFile.originalName}
+                className="max-h-[85vh] w-auto object-contain"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

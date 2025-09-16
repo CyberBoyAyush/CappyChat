@@ -217,7 +217,7 @@ const SessionManager: React.FC = () => {
               {sessionInfo.sessionCount} of 3
             </span>
             {sessionInfo.sessionCount >= 3 && (
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <AlertTriangle className="w-4 h-4 text-destructive" />
             )}
           </div>
         </div>
@@ -227,10 +227,10 @@ const SessionManager: React.FC = () => {
           <div
             className={`h-3 rounded-full transition-all duration-300 ${
               sessionInfo.sessionCount >= 3
-                ? "bg-gradient-to-r from-zinc-700 to-black dark:from-zinc-300 dark:to-white"
+                ? "progress-bar-destructive"
                 : sessionInfo.sessionCount >= 2
-                ? "bg-gradient-to-r from-blue-500 to-indigo-500"
-                : "bg-gradient-to-r from-green-500 to-emerald-500"
+                ? "progress-bar-accent"
+                : "progress-bar-primary"
             }`}
             style={{
               width: `${Math.min((sessionInfo.sessionCount / 3) * 100, 100)}%`,
@@ -239,7 +239,7 @@ const SessionManager: React.FC = () => {
         </div>
 
         {sessionInfo.sessionCount >= 3 && (
-          <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 p-2 rounded-lg">
+          <div className="flex items-center gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded-lg">
             <AlertTriangle className="w-3 h-3" />
             Session limit reached. New logins will remove oldest sessions.
           </div>
@@ -260,14 +260,14 @@ const SessionManager: React.FC = () => {
               key={session.$id}
               className={`p-5 border rounded-xl transition-all duration-200 hover:shadow-md ${
                 session.current
-                  ? "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800 shadow-sm"
+                  ? "bg-primary/5 border-primary/30 shadow-sm"
                   : "bg-card border-border hover:border-primary/30"
               } ${
                 SessionService.isSuspiciousSession(
                   session,
                   sessionInfo.currentSession
                 )
-                  ? "ring-2 ring-amber-200 dark:ring-amber-800 bg-gradient-to-r from-amber-50 to-black/5 dark:from-amber-950/20 dark:to-white/10"
+                  ? "ring-2 ring-destructive/30 bg-destructive/5"
                   : ""
               }`}
             >
@@ -282,7 +282,7 @@ const SessionManager: React.FC = () => {
                         {SessionService.getDeviceInfo(session)}
                       </p>
                       {session.current && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/30">
                           <CheckCircle2 className="w-3 h-3 mr-1" />
                           Current
                         </span>
@@ -291,7 +291,7 @@ const SessionManager: React.FC = () => {
                         session,
                         sessionInfo.currentSession
                       ) && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-destructive/10 text-destructive border border-destructive/30">
                           <Shield className="w-3 h-3 mr-1" />
                           Different Location
                         </span>
@@ -369,28 +369,28 @@ const SessionManager: React.FC = () => {
       </div>
 
       {/* Help Text */}
-      <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200/50 dark:border-blue-800/50">
+      <div className="p-4 bg-secondary/40 rounded-xl border border-border">
         <div className="flex items-center gap-2 mb-3">
-          <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          <h5 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+          <Shield className="w-4 h-4 text-primary" />
+          <h5 className="text-sm font-medium text-foreground">
             Security Information
           </h5>
         </div>
-        <div className="text-xs text-blue-700 dark:text-blue-300 space-y-2">
+        <div className="text-xs text-muted-foreground space-y-2">
           <p className="flex items-start gap-2">
-            <span className="w-1 h-1 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
+            <span className="w-1 h-1 bg-primary rounded-full mt-2 flex-shrink-0"></span>
             Maximum 3 concurrent sessions allowed
           </p>
           <p className="flex items-start gap-2">
-            <span className="w-1 h-1 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
+            <span className="w-1 h-1 bg-primary rounded-full mt-2 flex-shrink-0"></span>
             Oldest sessions are automatically removed when limit is exceeded
           </p>
           <p className="flex items-start gap-2">
-            <span className="w-1 h-1 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
+            <span className="w-1 h-1 bg-primary rounded-full mt-2 flex-shrink-0"></span>
             Sessions are refreshed every 6 hours to maintain security
           </p>
           <p className="flex items-start gap-2">
-            <span className="w-1 h-1 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
+            <span className="w-1 h-1 bg-primary rounded-full mt-2 flex-shrink-0"></span>
             Sign out suspicious sessions immediately if you don't recognize them
           </p>
         </div>

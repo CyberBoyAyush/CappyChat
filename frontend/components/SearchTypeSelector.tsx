@@ -84,7 +84,7 @@ function PureSearchTypeSelector({ className }: SearchTypeSelectorProps) {
       <DropdownMenuContent
         align="start"
         className={cn(
-          "w-56 max-h-72 p-0",
+          "w-48 max-h-72 p-0",
           "border border-border/50 bg-background/95 backdrop-blur-xl",
           "shadow-xl rounded-xl"
         )}

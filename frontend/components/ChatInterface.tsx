@@ -1574,6 +1574,7 @@ export default function ChatInterface({
           <ShareButton
             threadId={threadId}
             variant={isDarkTheme ? "outline" : "secondary"}
+            className="text-primary"
           />
 
           <Button
@@ -1589,7 +1590,7 @@ export default function ChatInterface({
                 : "Show message browser"
             }
           >
-            <MessageCircleIcon className="h-5 w-5" />
+            <MessageCircleIcon className="h-5 w-5 text-primary" />
           </Button>
 
           <ThemeToggleButton variant="inline" />
@@ -1663,7 +1664,7 @@ const AppPanelTrigger = () => {
           onClick={handleToggle}
           aria-label="Toggle sidebar"
         >
-          <PanelLeft />
+          <PanelLeft className={"text-primary"} />
         </Button>
       </AnimateIcon>
 
@@ -1676,7 +1677,7 @@ const AppPanelTrigger = () => {
             state === "collapsed" ? "ml-2" : "hidden"
           }`}
         >
-          <SearchIcon />
+          <SearchIcon className="text-primary" />
         </Button>
         <GlobalSearchDialog
           isOpen={isSearchDialogOpen}
