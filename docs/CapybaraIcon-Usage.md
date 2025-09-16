@@ -33,7 +33,7 @@ import CapybaraIcon from "@/frontend/components/ui/CapybaraIcon";
 
 | Prop         | Type                                                                                | Default | Description                             |
 | ------------ | ----------------------------------------------------------------------------------- | ------- | --------------------------------------- |
-| `size`       | `"xs" \| "sm" \| "md" \| "lg" \| "xl" \| "2xl" \| "3xl" \| "4xl" \| "5xl" \| "6xl"` | `"lg"`  | Controls the size of the icon           |
+| `size`       | `"text-xs" \| "text-sm" \| "text-md" \| "text-lg" \| "xs" \| "sm" \| "md" \| "lg" \| "xl" \| "2xl"` | `"2xl"` | Controls the size of the icon           |
 | `animated`   | `boolean`                                                                           | `true`  | Whether to show walking animation       |
 | `showLoader` | `boolean`                                                                           | `false` | Whether to show the walking line loader |
 | `className`  | `string`                                                                            | `""`    | Additional CSS classes                  |
@@ -42,30 +42,18 @@ import CapybaraIcon from "@/frontend/components/ui/CapybaraIcon";
 
 The component automatically adjusts its height based on whether the loader is shown. Heights shown as `with loader / without loader`. **Note**: Heights have been optimized to eliminate excessive bottom spacing.
 
-### Tiny Sizes
+### Available Sizes
 
-- **xs**: 24px × (24px / 16px) - Ultra small for inline text, badges, or micro-interactions
-
-### Small Sizes
-
-- **sm**: 48px × (48px / 36px) - Perfect for buttons, navigation items, or small UI elements
-- **md**: 80px × (80px / 60px) - Good for cards, tooltips, or medium components
-
-### Standard Sizes
-
-- **lg**: 112px × (112px / 84px) - Default size, ideal for most general uses
-- **xl**: 144px × (144px / 108px) - Large size for prominent display areas
-
-### Large Sizes
-
-- **2xl**: 176px × (176px / 132px) - Perfect for welcome screens and feature highlights
-- **3xl**: 240px × (240px / 180px) - Great for hero sections and main branding areas
-- **4xl**: 320px × (320px / 240px) - Large hero sections and splash screens
-
-### Giant Sizes
-
-- **5xl**: 384px × (384px / 288px) - Full-screen displays and major focal points
-- **6xl**: 448px × (448px / 336px) - Ultra-large displays, main landing pages
+- **text-xs** (~15 × 14px): Fits inside `text-xs` copy for inline flair
+- **text-sm** (~19 × 18px): Ideal for status pills or tiny loaders
+- **text-md** (~24 × 22px): Pairs with body text (Tailwind `text-base`/`text-md`)
+- **text-lg** (~30 × 28px): Works with `text-lg` headlines or chat typing rows
+- **xs** (~42 × 39px): Micro badges or compact component headers
+- **sm** (~67 × 62px): Navigation, avatar badges, or small cards
+- **md** (~96 × 88px): Cards, tooltips, or empty states
+- **lg** (~134 × 123px): Default size for most layouts
+- **xl** (~163 × 149px): Prominent headings or spotlight sections
+- **2xl** (192 × 176px): Base artwork used across the app; ideal for welcome screens
 
 ## Examples
 
@@ -73,7 +61,7 @@ The component automatically adjusts its height based on whether the loader is sh
 
 ```tsx
 <span className="flex items-center gap-1">
-  Welcome to <CapybaraIcon size="xs" animated={false} /> CapyChat!
+  Welcome to <CapybaraIcon size="text-sm" animated={false} /> CapyChat!
 </span>
 ```
 
@@ -89,7 +77,7 @@ The component automatically adjusts its height based on whether the loader is sh
 ### Loading State
 
 ```tsx
-<CapybaraIcon size="md" animated={true} showLoader={true} className="mx-auto" />
+<CapybaraIcon size="text-md" animated showLoader className="inline-flex" />
 ```
 
 ### Button Icon
@@ -114,7 +102,7 @@ The component automatically adjusts its height based on whether the loader is sh
 
 ```tsx
 <div className="text-center">
-  <CapybaraIcon size="3xl" animated={true} showLoader={true} className="mb-6" />
+  <CapybaraIcon size="2xl" animated={true} showLoader={true} className="mb-6" />
   <h1>Welcome to CapyChat!</h1>
 </div>
 ```
@@ -124,7 +112,7 @@ The component automatically adjusts its height based on whether the loader is sh
 ```tsx
 <section className="hero">
   <CapybaraIcon
-    size="5xl"
+    size="2xl"
     animated={true}
     showLoader={true}
     className="mx-auto mb-8"
@@ -138,7 +126,7 @@ The component automatically adjusts its height based on whether the loader is sh
 ```tsx
 <div className="landing-page-hero">
   <CapybaraIcon
-    size="6xl"
+    size="2xl"
     animated={true}
     showLoader={false}
     className="mx-auto opacity-90"
@@ -167,8 +155,8 @@ This means it will look perfect in all four themes:
 
 The component includes responsive considerations:
 
-- Very large sizes (`5xl`, `6xl`) automatically scale down on mobile devices
-- `flex-shrink-0` class prevents unwanted shrinking in flex layouts
+- Sizes scale proportionally from the base 2xl illustration so spacing stays consistent
+- `flex-shrink-0` ensures the icon maintains its footprint in flex layouts
 - All sizes maintain their aspect ratio across different screen sizes
 - **Compact Mode**: When `showLoader={false}`, the component automatically becomes more compact (about 20% shorter)
 

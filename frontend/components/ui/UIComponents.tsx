@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
+import CapybaraIcon from "./CapybaraIcon";
 
 // ===============================================
 // Custom Icons
@@ -304,9 +305,9 @@ export function SmartError({ message, className }: SmartErrorProps) {
  */
 export function MessageLoading() {
   return (
-    <div className="flex items-center gap-3 py-2 px-3">
+    <div className="flex items-center gap-3 py-2  px-2">
       {/* Simple typing dots */}
-      <div className="flex items-center gap-1">
+      {/* <div className="flex items-center gap-1">
         <div
           className="w-2 h-2 rounded-full bg-muted-foreground/60 animate-bounce"
           style={{
@@ -328,10 +329,13 @@ export function MessageLoading() {
             animationDuration: "1.4s",
           }}
         />
-      </div>
+      </div> */}
 
       {/* Simple status text */}
-      <span className="text-sm text-muted-foreground">AI is typing...</span>
+      <span className="text-sm flex gap-1 text-muted-foreground">
+        CappyChat is typing{" "}
+        <CapybaraIcon size="text-lg" animated={true} showLoader={false} /> ...
+      </span>
     </div>
   );
 }

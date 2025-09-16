@@ -1978,12 +1978,19 @@ const WelcomeScreen = ({
           transition={{ duration: 0.5 }}
           className="text-center mb-8"
         >
-          <div className="flex flex-col items-center mb-4">
+          <div className="flex flex-col items-center ">
             <CapybaraIcon
-              size="2xl"
+              size="lg"
               animated={true}
               showLoader={true}
-              className=""
+              className="hidden md:block"
+            />
+
+            <CapybaraIcon
+              size="sm"
+              animated={true}
+              showLoader={true}
+              className="md:hidden"
             />
           </div>
           <h2 className="text-xl md:text-4xl font-medium mb-3">

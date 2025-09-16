@@ -101,7 +101,7 @@ export default function RootLayout({
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="capybara-dark"
           enableSystem
           disableTransitionOnChange
           themes={["light", "dark", "capybara-light", "capybara-dark"]}

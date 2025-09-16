@@ -9,7 +9,7 @@
 import { memo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { Button } from "../ui/button";
-import { Trash2, GitBranch, Settings, LogIn } from "lucide-react";
+import { Trash2, GitBranch, Settings, LogIn, Crown, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThreadData, ThreadOperations } from "./ThreadManager";
 import UserProfileDropdown from "../UserProfileDropdown";
@@ -54,11 +54,8 @@ const AppTitle = memo(() => (
   <div className="flex items-center gap-2 shrink-0">
     {/* Logo Text */}
     <div className="flex items-baseline">
-      <span className="text-xl font-bold text-sidebar-foreground tracking-tight">
-        AV
-      </span>
       <span className="text-xl font-bold text-primary tracking-tight">
-        Chat
+        CappyChat
       </span>
       <div className="w-1.5 h-1.5 rounded-full bg-primary ml-0.5 animate-pulse"></div>
     </div>
@@ -176,7 +173,7 @@ const PanelHeaderComponent = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Settings
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-foreground md:hidden cursor-pointer hover:text-primary transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-primary md:hidden cursor-pointer hover:text-primary transition-colors"
                   onClick={() => navigate("/settings")}
                 />
               </DropdownMenuTrigger>
@@ -276,6 +273,15 @@ const PanelHeaderComponent = ({
                   <span>About</span>
                 </DropdownMenuItem>
 
+                {/* Pricing */}
+                <DropdownMenuItem
+                  onClick={() => navigate("/pricing")}
+                  className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  <Coins className="h-4 w-4" />
+                  <span>Pricing</span>
+                </DropdownMenuItem>
+
                 {/* Changelog */}
                 <DropdownMenuItem
                   onClick={() => navigate("/changelog")}
@@ -288,10 +294,7 @@ const PanelHeaderComponent = ({
                 {/* Status */}
                 <DropdownMenuItem
                   onClick={() =>
-                    window.open(
-                      "https://status.avchat.xyz",
-                      "_blank"
-                    )
+                    window.open("https://status.avchat.xyz", "_blank")
                   }
                   className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 >

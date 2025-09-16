@@ -874,8 +874,9 @@ export default function GuestWelcomeScreen({
               Why Choose AV<span className="text-primary">Chat</span>?
             </h2>
             <p className="text-muted-foreground max-w-3xl mx-auto text-lg leading-relaxed">
-              Discover the cutting-edge features that make CapyChat the preferred
-              choice for intelligent conversations and seamless AI interactions
+              Discover the cutting-edge features that make CapyChat the
+              preferred choice for intelligent conversations and seamless AI
+              interactions
             </p>
           </div>
 
