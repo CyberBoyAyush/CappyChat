@@ -17,7 +17,11 @@ import {
 } from "@/frontend/components/ui/card";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import { getUserTierInfo } from "@/lib/tierSystem";
-import { adminService, type AdminUser, type AdminStats } from "@/lib/adminService";
+import {
+  adminService,
+  type AdminUser,
+  type AdminStats,
+} from "@/lib/adminService";
 import {
   Shield,
   User,
@@ -38,10 +42,10 @@ import {
   TrendingUp,
   CreditCard,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/frontend/components/ui/toast";
 import { useNavigate } from "react-router-dom";
-import { devError } from '@/lib/logger';
-import SubscriptionManagement from '@/frontend/components/admin/SubscriptionManagement';
+import { devError } from "@/lib/logger";
+import SubscriptionManagement from "@/frontend/components/admin/SubscriptionManagement";
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -93,7 +97,9 @@ export default function AdminPage() {
       toast.success("Statistics loaded successfully");
     } catch (error) {
       devError("Error loading stats:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to load statistics");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load statistics"
+      );
     } finally {
       setLoadingStats(false);
     }
@@ -108,12 +114,17 @@ export default function AdminPage() {
 
     setIsLoading(true);
     try {
-      const user = await adminService.getUserByEmail(adminKey.trim(), userEmail.trim());
+      const user = await adminService.getUserByEmail(
+        adminKey.trim(),
+        userEmail.trim()
+      );
       setSelectedUser(user);
       toast.success("User found successfully");
     } catch (error) {
       devError("Error searching user:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to search user");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to search user"
+      );
       setSelectedUser(null);
     } finally {
       setIsLoading(false);
@@ -131,12 +142,18 @@ export default function AdminPage() {
 
     setIsLoading(true);
     try {
-      await adminService.updateUserTier(adminKey.trim(), selectedUser.$id, newTier);
+      await adminService.updateUserTier(
+        adminKey.trim(),
+        selectedUser.$id,
+        newTier
+      );
       toast.success(`User tier updated to ${newTier}`);
       handleSearchUser(); // Refresh user data
     } catch (error) {
       devError("Error updating user tier:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to update user tier");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update user tier"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -159,7 +176,9 @@ export default function AdminPage() {
       handleLoadStats(); // Refresh stats to update pro users list
     } catch (error) {
       devError("Error updating user tier:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to update user tier");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update user tier"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -187,7 +206,11 @@ export default function AdminPage() {
       }
     } catch (error) {
       devError("Error performing monthly reset:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to perform monthly reset");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to perform monthly reset"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -219,7 +242,11 @@ export default function AdminPage() {
       toast.info(`Starting logout process for ${totalUsers} users...`);
 
       // Perform chunked logout
-      const result = await adminService.logoutAllUsers(adminKey.trim(), 25, 25000);
+      const result = await adminService.logoutAllUsers(
+        adminKey.trim(),
+        25,
+        25000
+      );
 
       if (result.details) {
         const { processedUsers, loggedOutUsers, timeElapsed } = result.details;
@@ -243,13 +270,13 @@ export default function AdminPage() {
       }
     } catch (error) {
       devError("Error logging out all users:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to logout all users");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to logout all users"
+      );
     } finally {
       setIsLoading(false);
     }
   };
-
-
 
   // Load all users
   const handleLoadAllUsers = async () => {
@@ -266,7 +293,9 @@ export default function AdminPage() {
       toast.success(`Loaded ${users.length} users`);
     } catch (error) {
       devError("Error loading users:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to load users");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load users"
+      );
     } finally {
       setLoadingUsers(false);
     }
@@ -291,7 +320,9 @@ export default function AdminPage() {
       toast.success("User session cleared successfully");
     } catch (error) {
       devError("Error clearing user session:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to clear user session");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to clear user session"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -319,7 +350,9 @@ export default function AdminPage() {
       }
     } catch (error) {
       devError("Error resetting user credits:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to reset user credits");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to reset user credits"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -339,14 +372,20 @@ export default function AdminPage() {
 
     setIsLoading(true);
     try {
-      const result = await adminService.deleteUserData(adminKey.trim(), userId, email);
+      const result = await adminService.deleteUserData(
+        adminKey.trim(),
+        userId,
+        email
+      );
       toast.success(result.message || "User data deleted successfully");
       if (adminStats) {
         handleLoadStats(); // Refresh stats
       }
     } catch (error) {
       devError("Error deleting user data:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to delete user data");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete user data"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -376,7 +415,9 @@ export default function AdminPage() {
       }
     } catch (error) {
       devError("Error deleting all data:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to delete all data");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete all data"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -596,7 +637,9 @@ export default function AdminPage() {
                       <p className="text-2xl font-bold text-black dark:text-white">
                         {adminStats.tiers?.distribution?.admin || "0"}
                       </p>
-                      <p className="text-xs text-black/80 dark:text-white/80">Admin Users</p>
+                      <p className="text-xs text-black/80 dark:text-white/80">
+                        Admin Users
+                      </p>
                     </div>
                     <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg text-center">
                       <AlertTriangle className="h-5 w-5 mx-auto mb-2 text-red-600" />
@@ -649,7 +692,8 @@ export default function AdminPage() {
                     <div className="bg-black/5 dark:bg-white/10 p-4 rounded-lg">
                       <div>
                         <p className="text-lg font-bold text-black dark:text-white">
-                          {adminStats.tiers?.credits?.totalSuperPremiumCredits || 0}
+                          {adminStats.tiers?.credits
+                            ?.totalSuperPremiumCredits || 0}
                         </p>
                         <p className="text-xs text-black/80 dark:text-white/80">
                           Remaining Super
@@ -657,9 +701,12 @@ export default function AdminPage() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-black/90 dark:text-white/90">
-                          {adminStats.tiers?.credits?.usedSuperPremiumCredits || 0}
+                          {adminStats.tiers?.credits?.usedSuperPremiumCredits ||
+                            0}
                         </p>
-                        <p className="text-xs text-black/70 dark:text-white/70">Used Super</p>
+                        <p className="text-xs text-black/70 dark:text-white/70">
+                          Used Super
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -974,7 +1021,8 @@ export default function AdminPage() {
                   </p>
                   <p className="text-xs text-green-600">Total Credits Issued</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {adminStats.monthlyCredits.usersResetThisMonth} users reset this month
+                    {adminStats.monthlyCredits.usersResetThisMonth} users reset
+                    this month
                   </p>
                 </div>
 
@@ -984,7 +1032,9 @@ export default function AdminPage() {
                   <p className="text-2xl font-bold text-black dark:text-white">
                     {adminStats.monthlyCredits?.creditsUsed?.total || "0"}
                   </p>
-                  <p className="text-xs text-black/80 dark:text-white/80">Credits Used</p>
+                  <p className="text-xs text-black/80 dark:text-white/80">
+                    Credits Used
+                  </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {adminStats.monthlyCredits.utilizationRate}% utilization
                   </p>
@@ -992,45 +1042,63 @@ export default function AdminPage() {
 
                 {/* Free Credits Breakdown */}
                 <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg text-center">
-                  <div className="text-xs text-muted-foreground mb-2">Free Credits</div>
+                  <div className="text-xs text-muted-foreground mb-2">
+                    Free Credits
+                  </div>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span>Issued:</span>
-                      <span className="font-medium">{adminStats.monthlyCredits.totalCreditsIssued.free.toLocaleString()}</span>
+                      <span className="font-medium">
+                        {adminStats.monthlyCredits.totalCreditsIssued.free.toLocaleString()}
+                      </span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span>Used:</span>
-                      <span className="font-medium">{adminStats.monthlyCredits.creditsUsed.free.toLocaleString()}</span>
+                      <span className="font-medium">
+                        {adminStats.monthlyCredits.creditsUsed.free.toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Premium Credits Breakdown */}
                 <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg text-center">
-                  <div className="text-xs text-purple-600 mb-2">Premium Credits</div>
+                  <div className="text-xs text-purple-600 mb-2">
+                    Premium Credits
+                  </div>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span>Issued:</span>
-                      <span className="font-medium">{adminStats.monthlyCredits.totalCreditsIssued.premium.toLocaleString()}</span>
+                      <span className="font-medium">
+                        {adminStats.monthlyCredits.totalCreditsIssued.premium.toLocaleString()}
+                      </span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span>Used:</span>
-                      <span className="font-medium">{adminStats.monthlyCredits.creditsUsed.premium.toLocaleString()}</span>
+                      <span className="font-medium">
+                        {adminStats.monthlyCredits.creditsUsed.premium.toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Super Premium Credits Breakdown */}
                 <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg text-center">
-                  <div className="text-xs text-indigo-600 mb-2">Super Premium</div>
+                  <div className="text-xs text-indigo-600 mb-2">
+                    Super Premium
+                  </div>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span>Issued:</span>
-                      <span className="font-medium">{adminStats.monthlyCredits.totalCreditsIssued.superPremium.toLocaleString()}</span>
+                      <span className="font-medium">
+                        {adminStats.monthlyCredits.totalCreditsIssued.superPremium.toLocaleString()}
+                      </span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span>Used:</span>
-                      <span className="font-medium">{adminStats.monthlyCredits.creditsUsed.superPremium.toLocaleString()}</span>
+                      <span className="font-medium">
+                        {adminStats.monthlyCredits.creditsUsed.superPremium.toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1040,12 +1108,19 @@ export default function AdminPage() {
               <div className="mt-4">
                 <div className="flex justify-between text-sm mb-2">
                   <span>Overall Utilization</span>
-                  <span className="font-medium">{adminStats.monthlyCredits.utilizationRate}%</span>
+                  <span className="font-medium">
+                    {adminStats.monthlyCredits.utilizationRate}%
+                  </span>
                 </div>
                 <div className="w-full bg-zinc-200 rounded-full h-2">
                   <div
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min(adminStats.monthlyCredits.utilizationRate, 100)}%` }}
+                    style={{
+                      width: `${Math.min(
+                        adminStats.monthlyCredits.utilizationRate,
+                        100
+                      )}%`,
+                    }}
                   ></div>
                 </div>
               </div>
@@ -1062,7 +1137,9 @@ export default function AdminPage() {
                 Pro Users Management
               </CardTitle>
               <CardDescription>
-                Manage premium tier users ({adminStats.proUsers.totalCount} total, {adminStats.proUsers.activeCount} active, {adminStats.proUsers.verifiedCount} verified)
+                Manage premium tier users ({adminStats.proUsers.totalCount}{" "}
+                total, {adminStats.proUsers.activeCount} active,{" "}
+                {adminStats.proUsers.verifiedCount} verified)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1099,7 +1176,9 @@ export default function AdminPage() {
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <h6 className="font-medium text-sm">{user.email}</h6>
+                            <h6 className="font-medium text-sm">
+                              {user.email}
+                            </h6>
                             {user.emailVerification && (
                               <CheckCircle2 className="h-4 w-4 text-green-500" />
                             )}
@@ -1109,18 +1188,30 @@ export default function AdminPage() {
                           </div>
                           <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                             <div>Name: {user.name}</div>
-                            <div>Registered: {new Date(user.registration).toLocaleDateString()}</div>
+                            <div>
+                              Registered:{" "}
+                              {new Date(user.registration).toLocaleDateString()}
+                            </div>
                             <div>Free: {user.freeCredits}</div>
                             <div>Premium: {user.premiumCredits}</div>
                             <div>Super: {user.superPremiumCredits}</div>
-                            <div>Reset: {user.lastResetDate ? new Date(user.lastResetDate).toLocaleDateString() : 'Never'}</div>
+                            <div>
+                              Reset:{" "}
+                              {user.lastResetDate
+                                ? new Date(
+                                    user.lastResetDate
+                                  ).toLocaleDateString()
+                                : "Never"}
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-1 ml-4">
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleUpdateAnyUserTier(user.$id, 'free')}
+                            onClick={() =>
+                              handleUpdateAnyUserTier(user.$id, "free")
+                            }
                             disabled={isLoading}
                             className="text-xs px-2 py-1 h-6"
                           >
@@ -1152,7 +1243,8 @@ export default function AdminPage() {
 
                 {adminStats.proUsers.totalCount > 10 && (
                   <div className="text-center text-sm text-muted-foreground">
-                    Showing first 10 of {adminStats.proUsers.totalCount} pro users
+                    Showing first 10 of {adminStats.proUsers.totalCount} pro
+                    users
                   </div>
                 )}
               </div>

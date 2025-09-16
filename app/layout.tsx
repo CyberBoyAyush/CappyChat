@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import "katex/dist/katex.min.css";
-import { Toaster } from "@/frontend/components/ui/BasicComponents";
+import { ToastViewport } from "@/frontend/components/ui/toast";
 import { ThemeProvider } from "@/frontend/components/ui/ThemeComponents";
 import { Analytics } from "@vercel/analytics/react";
 import PerformanceOptimizations from "@/frontend/components/PerformanceOptimizations";
@@ -108,7 +108,7 @@ export default function RootLayout({
         >
           <PerformanceOptimizations />
           {children}
-          <Toaster richColors position="top-right" />
+          <ToastViewport />
         </ThemeProvider>
         <Analytics />
 

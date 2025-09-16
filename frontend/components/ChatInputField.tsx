@@ -46,7 +46,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { RiImageAiFill } from "react-icons/ri";
-import { toast } from "sonner";
+import { toast } from "./ui/toast";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import { useAuthDialog } from "@/frontend/hooks/useAuthDialog";
 import AuthDialog from "./auth/AuthDialog";
@@ -72,6 +72,8 @@ interface InputFieldProps {
   submitRef?: React.RefObject<(() => void) | null>;
   messages?: UIMessage[];
   onMessageAppended?: (messageId: string) => void;
+  pendingAttachments?: FileAttachment[] | null;
+  onPendingAttachmentsConsumed?: () => void;
 }
 
 interface StopButtonProps {
@@ -146,6 +148,8 @@ function PureInputField({
   submitRef,
   messages,
   onMessageAppended,
+  pendingAttachments,
+  onPendingAttachmentsConsumed,
 }: InputFieldProps) {
   const { textareaRef, adjustHeight } = useTextAreaAutoResize({
     minHeight: 72,
@@ -165,6 +169,16 @@ function PureInputField({
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragOverTextarea, setIsDragOverTextarea] = useState(false);
+
+  useEffect(() => {
+    if (!pendingAttachments) return;
+
+    if (pendingAttachments.length > 0) {
+      setAttachments(pendingAttachments);
+    }
+
+    onPendingAttachmentsConsumed?.();
+  }, [pendingAttachments, onPendingAttachmentsConsumed]);
 
   // State for image generation mode
   const [isImageGenMode, setIsImageGenMode] = useState(false);
@@ -499,9 +513,24 @@ function PureInputField({
         if (!id) {
           try {
             // Store pending input so the thread page can auto-submit after mount
+            const attachmentsForStorage =
+              finalAttachments.length > 0
+                ? finalAttachments.map((attachment) => ({
+                    ...attachment,
+                    createdAt:
+                      attachment.createdAt instanceof Date
+                        ? attachment.createdAt.toISOString()
+                        : new Date(attachment.createdAt).toISOString(),
+                  }))
+                : undefined;
+
             sessionStorage.setItem(
               "avchat_pending_input",
-              JSON.stringify({ threadId, input: finalInput })
+              JSON.stringify({
+                threadId,
+                input: finalInput,
+                attachments: attachmentsForStorage,
+              })
             );
           } catch {}
 
@@ -1058,7 +1087,7 @@ function PureInputField({
               className={cn(
                 "px-3 sm:px-4 py-3 border-b border-border/50 bg-muted/30",
                 uploadingFiles.every((f) => f.status === "success") &&
-                  "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800",
+                  "bg-primary/5 border-ring/15 border rounded-t-md",
                 uploadingFiles.some((f) => f.status === "error") &&
                   "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
               )}
@@ -1132,12 +1161,12 @@ function PureInputField({
 
           {/* Enhanced Attachment Preview */}
           {attachments.length > 0 && (
-            <div className="px-3 sm:px-4 pt-3 pb-2 border-b border-border/50">
+            <div className="px-3 sm:px-4 pt-3 pb-2 bg-primary/5 border-b border-border/50">
               <div className="flex flex-wrap gap-2">
                 {attachments.map((attachment) => (
                   <div
                     key={attachment.id}
-                    className="group flex items-center gap-2 bg-muted/70 hover:bg-muted rounded-xl px-3 py-2 text-xs transition-colors mobile-touch"
+                    className="group flex items-center gap-2 bg-primary/15 hover:bg-primary/20 rounded-xl px-3 py-2 text-xs transition-colors mobile-touch"
                   >
                     <div className="flex-shrink-0">
                       {attachment.fileType === "image" ? (
@@ -1160,11 +1189,11 @@ function PureInputField({
                     </div>
                     <button
                       onClick={() => removeAttachment(attachment.id)}
-                      className="flex-shrink-0 text-muted-foreground hover:text-red-500 opacity-70 group-hover:opacity-100 transition-all mobile-touch"
+                      className="flex-shrink-0 flex justify-center items-center text-muted-foreground hover:text-red-500 opacity-70 group-hover:opacity-100 transition-all mobile-touch"
                       type="button"
                       aria-label={`Remove ${attachment.originalName}`}
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
@@ -1191,7 +1220,7 @@ function PureInputField({
                 }
                 className={cn(
                   "w-full px-3 sm:px-4 py-3 sm:py-2 md:pt-4 pr-10 sm:pr-12 border-none shadow-none scrollbar-none",
-                  "placeholder:text-muted-foreground resize-none text-foreground",
+                  "placeholder:text-muted-foreground/40 resize-none text-foreground",
                   "focus-visible:ring-0 focus-visible:ring-offset-0",
                   "min-h-[44px] sm:min-h-[40px] text-base sm:text-base",
                   "selection:bg-primary selection:text-primary-foreground",

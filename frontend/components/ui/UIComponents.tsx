@@ -403,9 +403,9 @@ export function ImageGenerationLoading({
         {blocks.map(({ id, delay, duration, intensity }) => (
           <div
             key={id}
-            className="rounded-sm animate-pulse"
+            className="rounded-sm animate-pulse bg-primary"
             style={{
-              backgroundColor: `rgba(185, 185, 185, ${intensity})`, // Orange with variable opacity
+              opacity: intensity,
               animationDelay: `${delay}ms`,
               animationDuration: `${duration}s`,
               animationIterationCount: "infinite",

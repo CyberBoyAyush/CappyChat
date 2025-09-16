@@ -18,6 +18,7 @@ import { PlusIcon } from "./ui/icons/PlusIcon";
 import { UIMessage } from "ai";
 
 import { HybridDB, dbEvents } from "@/lib/hybridDB";
+import type { FileAttachment } from "@/lib/appwriteDB";
 import { streamingSync, StreamingState } from "@/lib/streamingSync";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { getModelConfig, AIModel } from "@/lib/models";
@@ -237,6 +238,8 @@ export default function ChatInterface({
   const { complete: createSummary } = useChatMessageSummary();
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
+  const [pendingAttachmentsForSubmit, setPendingAttachmentsForSubmit] =
+    useState<FileAttachment[] | null>(null);
   const pendingUserMessageRef = useRef<UIMessage | null>(null);
 
   // State for model-specific retry
@@ -446,14 +449,44 @@ export default function ChatInterface({
     try {
       const raw = sessionStorage.getItem("avchat_pending_input");
       if (!raw) return;
-      const pending = JSON.parse(raw) as { threadId: string; input: string };
+      const pending = JSON.parse(raw) as {
+        threadId: string;
+        input?: string;
+        attachments?: Array<
+          Omit<FileAttachment, "createdAt"> & { createdAt?: string }
+        >;
+      };
       if (pending.threadId !== threadId) return;
       if (messages.length > 0) {
         sessionStorage.removeItem("avchat_pending_input");
         return;
       }
-      if (pending.input && pending.input.trim()) {
-        setInput(pending.input);
+      const normalizedAttachments = Array.isArray(pending.attachments)
+        ? (pending.attachments
+            .map((attachment) => {
+              if (!attachment) return null;
+              const createdAt = attachment.createdAt
+                ? new Date(attachment.createdAt)
+                : new Date();
+              return {
+                ...attachment,
+                createdAt,
+              } as FileAttachment;
+            })
+            .filter(Boolean) as FileAttachment[])
+        : [];
+
+      const hasInput = pending.input && pending.input.trim().length > 0;
+      const hasAttachments = normalizedAttachments.length > 0;
+
+      if (hasAttachments) {
+        setPendingAttachmentsForSubmit(normalizedAttachments);
+      } else {
+        setPendingAttachmentsForSubmit(null);
+      }
+
+      if (hasInput || hasAttachments) {
+        setInput(pending.input ?? "");
         sessionStorage.removeItem("avchat_pending_input");
 
         // Wait until ChatInputField registers submitRef
@@ -1416,6 +1449,10 @@ export default function ChatInterface({
                 submitRef={chatInputSubmitRef}
                 messages={messages}
                 onMessageAppended={trackAppendedMessage}
+                pendingAttachments={pendingAttachmentsForSubmit}
+                onPendingAttachmentsConsumed={() =>
+                  setPendingAttachmentsForSubmit(null)
+                }
               />
             </div>
           </div>
@@ -1628,6 +1665,8 @@ const AppPanelTrigger = () => {
     isMobile: boolean;
   }>();
 
+  const { theme } = useTheme();
+  const isDarkTheme = theme === "dark";
   const sidebarOpen = localStorage.getItem("sidebarOpen") === "true";
 
   // Enhanced toggle function for debugging
@@ -1659,8 +1698,7 @@ const AppPanelTrigger = () => {
       <AnimateIcon animateOnHover>
         <Button
           size="icon"
-          variant="outline"
-          className="bg-background hover:bg-zinc-600/10"
+          variant={isDarkTheme ? "outline" : "secondary"}
           onClick={handleToggle}
           aria-label="Toggle sidebar"
         >
@@ -1672,10 +1710,8 @@ const AppPanelTrigger = () => {
         <Button
           onClick={handleOpenSearch}
           size="icon"
-          variant="outline"
-          className={`hover:bg-zinc-600/10 ${
-            state === "collapsed" ? "ml-2" : "hidden"
-          }`}
+          variant={isDarkTheme ? "outline" : "secondary"}
+          className={` ${state === "collapsed" ? "ml-2" : "hidden"}`}
         >
           <SearchIcon className="text-primary" />
         </Button>
@@ -1692,10 +1728,8 @@ const AppPanelTrigger = () => {
           }}
           disabled={location.pathname === "/chat"}
           size="icon"
-          variant="outline"
-          className={`hover:bg-zinc-600/10 ${
-            state === "collapsed" ? "ml-2" : "hidden"
-          }`}
+          variant={isDarkTheme ? "outline" : "secondary"}
+          className={` ${state === "collapsed" ? "ml-2" : "hidden"}`}
         >
           <PlusIcon className="h-5 w-5" />
         </Button>

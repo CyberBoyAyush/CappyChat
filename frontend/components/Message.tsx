@@ -31,7 +31,7 @@ import {
 import { getModelIcon } from "@/frontend/components/ui/ModelComponents";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { Button } from "@/frontend/components/ui/button";
-import { toast } from "sonner";
+import { toast } from "@/frontend/components/ui/toast";
 import { ImageGenerationLoading } from "./ui/UIComponents";
 
 // Utility function to extract aspect ratio from message content

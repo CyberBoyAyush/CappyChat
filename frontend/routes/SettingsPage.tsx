@@ -506,7 +506,7 @@ export default function SettingsPage() {
             <div className="lg:col-span-1">
               <div className="sticky top-24 ">
                 {/* User Profile Card */}
-                <div className="p-6 border rounded-xl bg-card shadow-sm space-y-4">
+                <div className="p-6 border rounded-xl bg-card/60 shadow-sm space-y-4">
                   {/* Profile Avatar */}
                   <div className="flex flex-col items-center text-center space-y-3">
                     <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
@@ -575,7 +575,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 {/* Keyboard Shortcuts */}
-                <div className="p-4 border rounded-xl bg-card mt-6 shadow-sm">
+                <div className="p-4 border rounded-xl bg-card/60 mt-6 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <Keyboard className="h-5 w-5 text-primary" />
                     <h3 className="text-lg font-medium">Keyboard Shortcuts</h3>
@@ -622,7 +622,7 @@ export default function SettingsPage() {
             {/* Right Content - Settings Sections */}
             <div className="lg:col-span-3">
               {/* Section Navigation Tabs */}
-              <div className="flex flex-wrap justify-around mb-8 p-2 bg-primary/10 dark:bg-accent/10 border-[1px] border-primary/30 rounded-lg">
+              <div className="flex flex-wrap justify-around mb-8 p-2 bg-card/60 border-[1px] border-primary/30 rounded-lg">
                 {[
                   { id: "profile", label: "Profile", icon: User },
                   {
@@ -669,7 +669,7 @@ export default function SettingsPage() {
                   <div className="space-y-6">
                     {/* Profile Edit Form */}
                     {isEditing && (
-                      <div className="p-6 border rounded-xl bg-card shadow-sm">
+                      <div className="p-6 border rounded-xl bg-card/60 shadow-sm">
                         <h3 className="text-lg font-medium mb-4 pb-2 border-b border-border">
                           Edit Profile
                         </h3>
@@ -708,7 +708,7 @@ export default function SettingsPage() {
                     )}
 
                     {/* Account Information */}
-                    <div className="p-6 border rounded-xl bg-card shadow-sm">
+                    <div className="p-6 border rounded-xl bg-card/60 shadow-sm">
                       <h3 className="text-lg font-medium mb-4 pb-2 border-b border-border">
                         Account Information
                       </h3>
@@ -1008,7 +1008,7 @@ export default function SettingsPage() {
                 {activeSection === "storage" && (
                   <div className="space-y-6">
                     {/* File Management Section */}
-                    <div className="p-6 border rounded-xl bg-card shadow-sm">
+                    <div className="p-6 border rounded-xl bg-card/60 shadow-sm">
                       <h3 className="text-lg font-medium mb-4 pb-2 border-b border-border">
                         File Management
                       </h3>
@@ -1036,7 +1036,7 @@ export default function SettingsPage() {
                 {activeSection === "customization" && (
                   <div className="space-y-6">
                     {/* Preferred Name Section */}
-                    <div className="p-6 border rounded-xl bg-card shadow-sm">
+                    <div className="p-6 border rounded-xl bg-card/60 shadow-sm">
                       <div className="flex items-center justify-between mb-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
@@ -1199,7 +1199,7 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Font Selection */}
-                    <div className="p-6 border rounded-xl bg-card shadow-sm">
+                    <div className="p-6 border rounded-xl bg-card/60 shadow-sm">
                       <div className="flex items-center gap-2 mb-4">
                         <Settings className="h-5 w-5 text-primary" />
                         <h3 className="text-lg font-medium">Font Selection</h3>
@@ -1267,7 +1267,7 @@ export default function SettingsPage() {
                 {activeSection === "application" && (
                   <div className="space-y-6">
                     {/* Bring Your Own Key (BYOK) Card */}
-                    <div className="p-6 border rounded-xl bg-card shadow-sm">
+                    <div className="p-6 border rounded-xl bg-card/60 shadow-sm">
                       <div className="space-y-1 mb-4">
                         <div className="flex items-center gap-2">
                           <Key className="h-5 w-5 text-primary" />
@@ -1363,9 +1363,9 @@ export default function SettingsPage() {
                                     setKeyInput(e.target.value);
                                     setKeyError("");
                                   }}
-                                  className={
+                                  className={`border-ring/15 bg-border/10 rounded-lg border ${
                                     keyError ? "border-destructive" : ""
-                                  }
+                                  }`}
                                 />
                                 <Button
                                   type="button"
@@ -1408,7 +1408,7 @@ export default function SettingsPage() {
                     </div>
 
                     {/* OpenAI API Key (for Voice Input) Card */}
-                    <div className="p-6 border rounded-xl bg-card shadow-sm">
+                    <div className="p-6 border rounded-xl bg-card/60 shadow-sm">
                       <div className="space-y-1 mb-4">
                         <div className="flex items-center gap-2">
                           <Key className="h-5 w-5 text-primary" />
@@ -1554,7 +1554,7 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Tavily API Key (for Web Search) Card */}
-                    <div className="p-6 border rounded-xl bg-card shadow-sm">
+                    <div className="p-6 border rounded-xl bg-card/60 shadow-sm">
                       <div className="space-y-1 mb-4">
                         <div className="flex items-center gap-2">
                           <Key className="h-5 w-5 text-primary" />
@@ -1704,7 +1704,7 @@ export default function SettingsPage() {
                 {activeSection === "contact" && (
                   <div className="space-y-6">
                     {/* About Us Section */}
-                    <div className="p-6 border rounded-xl bg-card shadow-sm">
+                    <div className="p-6 border rounded-xl bg-card/60 shadow-sm">
                       <div className="flex items-center gap-2 mb-4">
                         <Info className="h-5 w-5 text-primary" />
                         <h3 className="text-lg font-medium">About AVChat</h3>
@@ -1735,7 +1735,7 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Contact Information */}
-                    <div className="p-6 border rounded-xl bg-card shadow-sm">
+                    <div className="p-6 border rounded-xl bg-card/60 shadow-sm">
                       <div className="flex items-center gap-2 mb-4">
                         <MessageSquareMore className="h-5 w-5 text-primary" />
                         <h3 className="text-lg font-medium">Get in Touch</h3>
