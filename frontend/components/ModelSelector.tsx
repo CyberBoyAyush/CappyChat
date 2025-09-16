@@ -122,7 +122,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
           )}
         >
           {isSelected && (
-            <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black" />
+            <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-background" />
           )}
         </div>
       </div>

@@ -1394,7 +1394,7 @@ function PureInputField({
                       <RiImageAiFill
                         size={20}
                         className={cn(
-                          isImageGenMode ? "text-background" : "text-foreground"
+                          isImageGenMode ? "text-background" : "text-primary"
                         )}
                       />
                     </Button>
