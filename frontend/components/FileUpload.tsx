@@ -10,7 +10,7 @@ import { FileAttachment } from "@/lib/appwriteDB";
 import { Button } from "./ui/button";
 import { Paperclip, Upload, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "./ui/toast";
+import { toast } from "./ui/Toast";
 import { devError } from "@/lib/logger";
 import { LinkIcon } from "./ui/icons/LinkIcon";
 

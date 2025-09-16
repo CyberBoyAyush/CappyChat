@@ -31,7 +31,7 @@ import {
 } from "./ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
-import { toast } from "./ui/toast";
+import { toast } from "./ui/Toast";
 import { format } from "date-fns";
 import { useAuth } from "../contexts/AuthContext";
 

@@ -17,7 +17,7 @@ import { Dispatch, SetStateAction } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
-import { toast } from '@/frontend/components/ui/toast';
+import { toast } from '@/frontend/components/ui/Toast';
 
 export default function MessageEditor({
   threadId,

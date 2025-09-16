@@ -46,7 +46,7 @@ import {
   Edit,
 } from "lucide-react";
 import { useAuth } from "@/frontend/contexts/AuthContext";
-import { toast } from "@/frontend/components/ui/toast";
+import { toast } from "@/frontend/components/ui/Toast";
 
 interface SubscriptionData {
   subscription: any;

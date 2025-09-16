@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import "katex/dist/katex.min.css";
-import { ToastViewport } from "@/frontend/components/ui/toast";
+import { ToastViewport } from "@/frontend/components/ui/Toast";
 import { ThemeProvider } from "@/frontend/components/ui/ThemeComponents";
 import { Analytics } from "@vercel/analytics/react";
 import PerformanceOptimizations from "@/frontend/components/PerformanceOptimizations";

@@ -42,7 +42,7 @@ import {
   TrendingUp,
   CreditCard,
 } from "lucide-react";
-import { toast } from "@/frontend/components/ui/toast";
+import { toast } from "@/frontend/components/ui/Toast";
 import { useNavigate } from "react-router-dom";
 import { devError } from "@/lib/logger";
 import SubscriptionManagement from "@/frontend/components/admin/SubscriptionManagement";

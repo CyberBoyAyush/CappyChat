@@ -46,7 +46,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { RiImageAiFill } from "react-icons/ri";
-import { toast } from "./ui/toast";
+import { toast } from "./ui/Toast";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import { useAuthDialog } from "@/frontend/hooks/useAuthDialog";
 import AuthDialog from "./auth/AuthDialog";

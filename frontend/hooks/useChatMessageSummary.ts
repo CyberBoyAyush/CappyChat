@@ -1,5 +1,5 @@
 import { useCompletion } from "@ai-sdk/react";
-import { toast } from "@/frontend/components/ui/toast";
+import { toast } from "@/frontend/components/ui/Toast";
 import { AppwriteDB } from "@/lib/appwriteDB";
 import { HybridDB } from "@/lib/hybridDB";
 import { useBYOKStore } from "@/frontend/stores/BYOKStore";
