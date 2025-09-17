@@ -1,17 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { devError, prodError } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { devError, prodError } from "@/lib/logger";
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const audioFile = formData.get('audio') as File;
-    const userOpenAIKey = formData.get('userOpenAIKey') as string;
+    const audioFile = formData.get("audio") as File;
+    const userOpenAIKey = formData.get("userOpenAIKey") as string;
 
     if (!audioFile) {
       return NextResponse.json(
-        { error: 'Audio file is required' },
+        { error: "Audio file is required" },
         { status: 400 }
       );
     }
@@ -21,7 +21,10 @@ export async function POST(req: NextRequest) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'OpenAI API key not configured. Please add your OpenAI API key in Settings → Application for voice input.' },
+        {
+          error:
+            "OpenAI API key not configured. Please add your OpenAI API key in Settings → Application for voice input.",
+        },
         { status: 500 }
       );
     }
@@ -32,48 +35,58 @@ export async function POST(req: NextRequest) {
 
     // Create form data for OpenAI Whisper API
     const whisperFormData = new FormData();
-    whisperFormData.append('file', new Blob([buffer], { type: audioFile.type }), audioFile.name);
-    whisperFormData.append('model', 'whisper-1');
-    whisperFormData.append('response_format', 'json');
-    whisperFormData.append('language', 'en'); // You can make this configurable later
+    whisperFormData.append(
+      "file",
+      new Blob([buffer], { type: audioFile.type }),
+      audioFile.name
+    );
+    whisperFormData.append("model", "whisper-1");
+    whisperFormData.append("response_format", "json");
+    whisperFormData.append("language", "en"); // You can make this configurable later
 
     // Call OpenAI's Whisper API endpoint directly
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'User-Agent': 'CapyChat/1.0.0',
-      },
-      body: whisperFormData,
-    });
+    const response = await fetch(
+      "https://api.openai.com/v1/audio/transcriptions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "User-Agent": "CappyChat/1.0.0",
+        },
+        body: whisperFormData,
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      prodError('OpenAI Whisper API error', errorText, 'SpeechToTextAPI');
+      prodError("OpenAI Whisper API error", errorText, "SpeechToTextAPI");
 
       if (response.status === 401) {
         return NextResponse.json(
-          { error: 'Invalid OpenAI API key. Please check your OpenAI API key in Settings.' },
+          {
+            error:
+              "Invalid OpenAI API key. Please check your OpenAI API key in Settings.",
+          },
           { status: 401 }
         );
       }
 
       if (response.status === 429) {
         return NextResponse.json(
-          { error: 'OpenAI rate limit exceeded. Please try again later.' },
+          { error: "OpenAI rate limit exceeded. Please try again later." },
           { status: 429 }
         );
       }
 
       if (response.status === 413) {
         return NextResponse.json(
-          { error: 'Audio file too large. Please record a shorter message.' },
+          { error: "Audio file too large. Please record a shorter message." },
           { status: 413 }
         );
       }
 
       return NextResponse.json(
-        { error: 'Speech recognition failed. Please try again.' },
+        { error: "Speech recognition failed. Please try again." },
         { status: 500 }
       );
     }
@@ -82,20 +95,19 @@ export async function POST(req: NextRequest) {
 
     if (!result.text) {
       return NextResponse.json(
-        { error: 'No speech detected in audio. Please try again.' },
+        { error: "No speech detected in audio. Please try again." },
         { status: 400 }
       );
     }
 
     return NextResponse.json({
       text: result.text.trim(),
-      success: true
+      success: true,
     });
-
   } catch (error) {
-    prodError('Speech-to-text API error', error, 'SpeechToTextAPI');
+    prodError("Speech-to-text API error", error, "SpeechToTextAPI");
     return NextResponse.json(
-      { error: 'Internal server error. Please try again.' },
+      { error: "Internal server error. Please try again." },
       { status: 500 }
     );
   }

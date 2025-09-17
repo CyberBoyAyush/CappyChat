@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { motion, useInView, AnimatePresence } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { useOutletContext } from "react-router-dom";
 import { useIsMobile } from "@/hooks/useMobileDetection";
 import { cn } from "@/lib/utils";
@@ -15,25 +15,21 @@ import { Button } from "./ui/button";
 import { AnimatedPrice } from "./ui/animated-price";
 import CompareDemo from "./compare-drag-demo";
 import ChatInputField from "./ChatInputField";
+import ShikiHighlighter from "react-shiki";
+import BentoGrid from "./ui/bento-grid";
 import {
   MessageSquare,
   Zap,
-  Globe,
   Sparkles,
   Check,
   Crown,
   Building2,
   Mail,
   ArrowRight,
-  Star,
-  Image,
-  Layers,
   Bot,
   User,
-  Loader2,
-  Search,
-  Mic,
 } from "lucide-react";
+import CapybaraIcon from "./ui/CapybaraIcon";
 
 interface GuestWelcomeScreenProps {
   onSignUp: () => void;
@@ -70,6 +66,37 @@ const PRICING_CONFIG = {
     flag: "🇮🇳",
   },
 } as const;
+
+// Theme detection hook similar to MarkdownRenderer
+function useThemeDetection() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const computeIsDark = () => {
+      const root = document.documentElement;
+      return (
+        root.classList.contains("dark") ||
+        root.classList.contains("capybara-dark")
+      );
+    };
+
+    setIsDarkMode(computeIsDark());
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.attributeName === "class") {
+          setIsDarkMode(computeIsDark());
+        }
+      }
+    });
+
+    observer.observe(document.documentElement, { attributes: true });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return isDarkMode;
+}
 
 // Currency Toggle Component
 const CurrencyToggle = ({
@@ -214,7 +241,76 @@ const TypingText = ({
     return () => clearTimeout(timer);
   }, [isVisible, hasStarted, currentIndex, text, delay, speed, onComplete]);
 
-  return <span className="whitespace-pre-wrap">{displayedText}</span>;
+  return <span className="m-2">{displayedText}</span>;
+};
+
+// Typing code block component with syntax highlighting
+const TypingCodeBlock = ({
+  code,
+  language,
+  isVisible,
+  delay = 0,
+  speed = 15,
+  onComplete,
+  isDarkMode,
+}: {
+  code: string;
+  language: string;
+  isVisible: boolean;
+  delay?: number;
+  speed?: number;
+  onComplete?: () => void;
+  isDarkMode: boolean;
+}) => {
+  const [displayedCode, setDisplayedCode] = useState("");
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
+
+  useEffect(() => {
+    if (!isVisible) {
+      setDisplayedCode("");
+      setCurrentIndex(0);
+      setHasStarted(false);
+      return;
+    }
+
+    if (!hasStarted) {
+      setHasStarted(true);
+      setDisplayedCode("");
+      setCurrentIndex(0);
+    }
+  }, [isVisible, hasStarted]);
+
+  useEffect(() => {
+    if (!isVisible || !hasStarted) return;
+
+    const timer = setTimeout(
+      () => {
+        if (currentIndex < code.length) {
+          setDisplayedCode((prev) => prev + code[currentIndex]);
+          setCurrentIndex((prev) => prev + 1);
+        } else if (onComplete && currentIndex === code.length) {
+          onComplete();
+        }
+      },
+      currentIndex === 0 ? delay : speed
+    );
+
+    return () => clearTimeout(timer);
+  }, [isVisible, hasStarted, currentIndex, code, delay, speed, onComplete]);
+
+  return (
+    <div className="bg-card dark:bg-background overflow-x-auto">
+      <ShikiHighlighter
+        language={language}
+        theme={isDarkMode ? "github-dark" : "min-light"}
+        className="text-sm font-mono overflow-x-auto bg-transparent min-w-0 max-w-full"
+        showLanguage={false}
+      >
+        {displayedCode}
+      </ShikiHighlighter>
+    </div>
+  );
 };
 
 // Demo Chat Component
@@ -229,7 +325,7 @@ const DemoChat = () => {
     new Set()
   );
   const [demoFinished, setDemoFinished] = useState(false);
-  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const isDarkMode = useThemeDetection();
 
   const demoMessages = [
     {
@@ -358,17 +454,8 @@ Much cleaner! This approach:
 
   // Auto-scroll to bottom during message generation
   const scrollToBottom = () => {
-    if (scrollRef.current && !isUserScrolling) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  };
-
-  // Detect user scrolling
-  const handleScroll = () => {
     if (scrollRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10; // 10px tolerance
-      setIsUserScrolling(!isAtBottom);
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   };
 
@@ -377,13 +464,13 @@ Much cleaner! This approach:
     scrollToBottom();
   }, [currentMessageIndex, showThinking, isMessageTyping]);
 
-  // Auto-scroll during typing animation
+  // Auto-scroll during typing animation with more frequent updates
   useEffect(() => {
-    if (isMessageTyping && !isUserScrolling) {
-      const interval = setInterval(scrollToBottom, 100);
+    if (isMessageTyping) {
+      const interval = setInterval(scrollToBottom, 50);
       return () => clearInterval(interval);
     }
-  }, [isMessageTyping, isUserScrolling]);
+  }, [isMessageTyping]);
 
   // Function to restart the demo
   const restartDemo = () => {
@@ -392,7 +479,6 @@ Much cleaner! This approach:
     setIsMessageTyping(false);
     setCompletedMessages(new Set());
     setDemoFinished(false);
-    setIsUserScrolling(false);
     // Start demo after a brief delay
     setTimeout(() => {
       setCurrentMessageIndex(0);
@@ -412,7 +498,7 @@ Much cleaner! This approach:
       if (match.index > lastIndex) {
         const textPart = content.slice(lastIndex, match.index);
         parts.push(
-          <span key={`text-${parts.length}`} className="whitespace-pre-wrap">
+          <span key={`text-${parts.length}`} className="mb-2">
             {textPart}
           </span>
         );
@@ -420,21 +506,20 @@ Much cleaner! This approach:
 
       // Add code block with syntax highlighting
       const codeContent = match[2];
+      const language = match[1] || "javascript";
+
       parts.push(
         <div key={`code-${parts.length}`} className="my-4">
-          <div className=" border border-muted-foreground/25 overflow-hidden rounded-lg  code-block">
-            <div className="flex items-center bg-card gap-2 p-4 pb-2 border-b border-muted-foreground/25">
-              <div className="flex gap-1">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              </div>
-              <span className="text-foreground dark:text-zinc-400 text-xs ml-2 font-medium">
-                React Component
-              </span>
-            </div>
-            <div className="text-foreground p-4 bg-card dark:bg-background dark:text-zinc-200 font-mono text-sm">
-              <pre className="whitespace-pre-wrap">{codeContent}</pre>
+          <div className="border border-muted-foreground/25 overflow-hidden rounded-lg code-block">
+            <div className="bg-card dark:bg-background overflow-x-auto">
+              <ShikiHighlighter
+                language={language}
+                theme={isDarkMode ? "github-dark" : "min-light"}
+                className="text-sm font-mono overflow-x-auto bg-transparent min-w-0 max-w-full"
+                showLanguage={false}
+              >
+                {codeContent}
+              </ShikiHighlighter>
             </div>
           </div>
         </div>
@@ -447,7 +532,7 @@ Much cleaner! This approach:
     if (lastIndex < content.length) {
       const remainingText = content.slice(lastIndex);
       parts.push(
-        <span key={`text-${parts.length}`} className="whitespace-pre-wrap">
+        <span key={`text-${parts.length}`} className="mt-2">
           {remainingText}
         </span>
       );
@@ -499,27 +584,19 @@ Much cleaner! This approach:
 
       // Add code block
       const codeContent = match[2];
+      const language = match[1] || "javascript";
+
       parts.push(
-        <div key={`code-${parts.length}`} className="my-4">
-          <div className=" border border-muted-foreground/25 overflow-hidden rounded-lg  code-block">
-            <div className="flex items-center bg-card gap-2 p-4 pb-2 border-b border-muted-foreground/25">
-              <div className="flex gap-1">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              </div>
-              <span className="text-foreground dark:text-zinc-400 text-xs ml-2 font-medium">
-                React Component
-              </span>
-            </div>
-            <div className="text-foreground p-4 bg-card dark:bg-background dark:text-zinc-200 font-mono text-sm">
-              <TypingText
-                text={codeContent}
-                isVisible={shouldShowTyping}
-                speed={15}
-                delay={totalTextLength * 25}
-              />
-            </div>
+        <div key={`code-${parts.length}`} className="my-2">
+          <div className="border border-muted-foreground/25 overflow-hidden rounded-lg code-block">
+            <TypingCodeBlock
+              code={codeContent}
+              language={language}
+              isVisible={shouldShowTyping}
+              speed={15}
+              delay={totalTextLength * 25}
+              isDarkMode={isDarkMode}
+            />
           </div>
         </div>
       );
@@ -556,14 +633,14 @@ Much cleaner! This approach:
   return (
     <div
       ref={ref}
-      className="bg-card/30 backdrop-blur-sm border border-zinc-300 dark:border-zinc-300/10 rounded-2xl p-6 h-[600px] flex flex-col"
+      className="bg-card/30 backdrop-blur-sm border border-ring/30 rounded-2xl p-6 h-[500px] flex flex-col"
     >
-      <div className="flex items-center gap-3 mb-4 pb-3 border-b border-zinc-300 dark:border-zinc-300/10">
+      <div className="flex items-center gap-3 mb-4 pb-3 border-b border-ring/30">
         <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
           <MessageSquare className="h-4 w-4 text-primary" />
         </div>
         <div>
-          <h3 className="font-semibold text-sm">CapyChat Demo</h3>
+          <h3 className="font-semibold text-sm">CappyChat Demo</h3>
           <p className="text-xs text-muted-foreground">
             Live coding assistance
           </p>
@@ -576,8 +653,11 @@ Much cleaner! This approach:
 
       <div
         ref={scrollRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar"
+        className="flex-1 overflow-y-auto space-y-4 [&::-webkit-scrollbar]:hidden"
+        style={{
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        }}
       >
         {demoMessages.map((message, index) => {
           const isCurrentMessage = index === currentMessageIndex;
@@ -655,8 +735,15 @@ Much cleaner! This approach:
             </div>
             <div className="bg-muted/50 border border-border/30 rounded-2xl rounded-bl-md px-4 py-3 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>CapyChat is thinking...</span>
+                <span className="flex gap-2 items-end">
+                  CappyChat is thinking{" "}
+                  <CapybaraIcon
+                    size="text-md"
+                    animated={true}
+                    showLoader={false}
+                  />{" "}
+                  ...
+                </span>
               </div>
             </div>
           </motion.div>
@@ -728,34 +815,24 @@ export default function GuestWelcomeScreen({
 
   return (
     <div className="min-h-screen pt-6">
-      {/* Floating Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-primary/5 rounded-full blur-xl animate-pulse" />
-        <div className="absolute top-40 right-20 w-24 h-24 bg-primary/10 rounded-full blur-lg animate-pulse delay-1000" />
-        <div className="absolute bottom-40 left-1/4 w-40 h-40 bg-primary/5 rounded-full blur-2xl animate-pulse delay-2000" />
-      </div>
-
       <div className="relative container mx-auto px-4 pb-32 max-w-7xl">
         {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-20"
+          className="text-center mb-8"
         >
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium ">
             <Sparkles className="h-4 w-4" />
             Next-Generation AI Chat Platform
           </div>
 
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-3 leading-tight">
             <span className="bg-gradient-to-r from-foreground via-foreground dark:via-primary to-foreground bg-clip-text text-transparent">
-              Welcome to
+              CappyChat
             </span>
             <br />
-            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-foreground">
-              Cappy<span className="text-primary">Chat</span>
-            </span>
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8 leading-relaxed">
@@ -780,88 +857,25 @@ export default function GuestWelcomeScreen({
               Sign In
             </Button>
           </div>
-
-          {/* Quick Features */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="flex gap-4 justify-center mx-auto mt-8 flex-wrap"
-          >
-            {/* Web Search Feature */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, delay: 0.5 }}
-              className="group flex items-center gap-2 bg-gradient-to-r from-muted/15 to-muted/8 hover:from-muted/20 hover:to-primary/8 rounded-full px-3 py-1.5 border border-primary/20 hover:border-primary/20 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-500 ease-out cursor-pointer backdrop-blur-sm"
-            >
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-muted/25 to-muted/15 group-hover:from-muted/30 group-hover:to-primary/15 flex items-center justify-center group-hover:scale-105 transition-all duration-500 ease-out">
-                <Search className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors duration-500 ease-out" />
-              </div>
-              <span className="font-medium text-muted-foreground group-hover:text-primary text-xs whitespace-nowrap transition-colors duration-500 ease-out">
-                Web Search
-              </span>
-            </motion.div>
-
-            {/* Image Generation Feature */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, delay: 0.6 }}
-              className="group flex items-center gap-2 bg-gradient-to-r from-muted/15 to-muted/8 hover:from-muted/20 hover:to-primary/8 rounded-full px-3 py-1.5 border border-primary/20 hover:border-primary/20 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-500 ease-out cursor-pointer backdrop-blur-sm"
-            >
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-muted/25 to-muted/15 group-hover:from-muted/30 group-hover:to-primary/15 flex items-center justify-center group-hover:scale-105 transition-all duration-500 ease-out">
-                <Image className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors duration-500 ease-out" />
-              </div>
-              <span className="font-medium text-muted-foreground group-hover:text-primary text-xs whitespace-nowrap transition-colors duration-500 ease-out">
-                Image Generation
-              </span>
-            </motion.div>
-
-            {/* 20+ AI Models Feature */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, delay: 0.7 }}
-              className="group flex items-center gap-2 bg-gradient-to-r from-muted/15 to-muted/8 hover:from-muted/20 hover:to-primary/8 rounded-full px-3 py-1.5 border border-primary/20 hover:border-primary/20 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-500 ease-out cursor-pointer backdrop-blur-sm"
-            >
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-muted/25 to-muted/15 group-hover:from-muted/30 group-hover:to-primary/15 flex items-center justify-center group-hover:scale-105 transition-all duration-500 ease-out">
-                <Layers className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors duration-500 ease-out" />
-              </div>
-              <span className="font-medium text-muted-foreground group-hover:text-primary text-xs whitespace-nowrap transition-colors duration-500 ease-out">
-                20+ AI Models
-              </span>
-            </motion.div>
-
-            {/* Voice Input Feature */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, delay: 0.8 }}
-              className="group flex items-center gap-2 bg-gradient-to-r from-muted/15 to-muted/8 hover:from-muted/20 hover:to-primary/8 rounded-full px-3 py-1.5 border border-primary/20 hover:border-primary/20 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-500 ease-out cursor-pointer backdrop-blur-sm"
-            >
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-muted/25 to-muted/15 group-hover:from-muted/30 group-hover:to-primary/15 flex items-center justify-center group-hover:scale-105 transition-all duration-500 ease-out">
-                <Mic className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors duration-500 ease-out" />
-              </div>
-              <span className="font-medium text-muted-foreground group-hover:text-primary text-xs whitespace-nowrap transition-colors duration-500 ease-out">
-                Voice Input
-              </span>
-            </motion.div>
-          </motion.div>
         </motion.div>
 
-        {/* Features Showcase */}
+        {/* Quick Features */}
+        <div className="max-w-4xl px-6 mb-9 mx-auto">
+          <DemoChat />
+        </div>
+
+        {/* Features Showcase - Bento Grid */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="mb-20 relative"
+          className="my-20 px-7 relative max-w-4xl mx-auto"
         >
           {/* Background gradient */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 rounded-3xl -z-10" />
 
-          <div className="text-center mb-16">
-            <motion.div
+          <div className="text-center mb-8">
+            {/* <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 0.3 }}
@@ -869,118 +883,18 @@ export default function GuestWelcomeScreen({
             >
               <Zap className="h-4 w-4" />
               Powerful Features
-            </motion.div>
+            </motion.div> */}
             <h2 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent">
               Why Choose Cappy<span className="text-primary">Chat</span>?
             </h2>
             <p className="text-muted-foreground max-w-3xl mx-auto text-lg leading-relaxed">
-              Discover the cutting-edge features that make CapyChat the
+              Discover the cutting-edge features that make CappyChat the
               preferred choice for intelligent conversations and seamless AI
               interactions
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className={cn(
-                "relative p-8 rounded-2xl border border-border/30 text-center group hover:border-primary/40 transition-all duration-500",
-                "bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-md",
-                "hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2",
-                "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-primary/5 before:to-transparent before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100"
-              )}
-            >
-              <div className="relative z-10">
-                <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center group-hover:from-primary/30 group-hover:to-primary/20 transition-all duration-300 group-hover:scale-110">
-                  <Layers className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">
-                  Multiple AI Models
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  From OpenAI's GPT to Claude Sonnet, access 20+ cutting-edge
-                  models for every conversation need
-                </p>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className={cn(
-                "relative p-8 rounded-2xl border border-border/30 text-center group hover:border-primary/40 transition-all duration-500",
-                "bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-md",
-                "hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2",
-                "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-primary/5 before:to-transparent before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100"
-              )}
-            >
-              <div className="relative z-10">
-                <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center group-hover:from-primary/30 group-hover:to-primary/20 transition-all duration-300 group-hover:scale-110">
-                  <Image className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">
-                  Image Generation
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Transform ideas into visuals with advanced text-to-image and
-                  image-to-image AI capabilities
-                </p>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-              className={cn(
-                "relative p-8 rounded-2xl border border-border/30 text-center group hover:border-primary/40 transition-all duration-500",
-                "bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-md",
-                "hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2",
-                "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-primary/5 before:to-transparent before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100"
-              )}
-            >
-              <div className="relative z-10">
-                <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center group-hover:from-primary/30 group-hover:to-primary/20 transition-all duration-300 group-hover:scale-110">
-                  <Zap className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">
-                  Lightning Fast
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Experience blazing-fast AI responses with optimized
-                  infrastructure for seamless conversations
-                </p>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.7 }}
-              className={cn(
-                "relative p-8 rounded-2xl border border-border/30 text-center group hover:border-primary/40 transition-all duration-500",
-                "bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-md",
-                "hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2",
-                "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-primary/5 before:to-transparent before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100"
-              )}
-            >
-              <div className="relative z-10">
-                <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center group-hover:from-primary/30 group-hover:to-primary/20 transition-all duration-300 group-hover:scale-110">
-                  <Globe className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">
-                  Real-time Sync
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Seamless conversation synchronization across all your devices
-                  with instant real-time updates
-                </p>
-              </div>
-            </motion.div>
-          </div>
+          <BentoGrid />
         </motion.div>
 
         {/* Demo Section */}
@@ -990,20 +904,6 @@ export default function GuestWelcomeScreen({
           transition={{ duration: 0.8, delay: 0.1 }}
           className="mb-20"
         >
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              See Cappy<span className="text-primary">Chat</span> in Action
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Watch how our AI handles code generation, image creation, and
-              intelligent conversations
-            </p>
-          </div>
-
-          <div className="max-w-4xl mx-auto">
-            <DemoChat />
-          </div>
-
           {/* Theme Demo Section */}
           <div className="text-center mb-5 mt-16">
             <motion.div
@@ -1019,9 +919,9 @@ export default function GuestWelcomeScreen({
               Light & Dark Theme
             </h3>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              CapyChat automatically adapts to your system preferences or manual
-              theme selection. Experience the seamless transition between our
-              beautifully crafted light and dark modes.
+              CappyChat automatically adapts to your system preferences or
+              manual theme selection. Experience the seamless transition between
+              our beautifully crafted light and dark modes.
             </p>
           </div>
 
@@ -1035,7 +935,7 @@ export default function GuestWelcomeScreen({
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="mb-20"
+          className="mb-28"
         >
           <div className="text-center mb-8">
             <motion.div
@@ -1069,9 +969,9 @@ export default function GuestWelcomeScreen({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
               className={cn(
-                "relative p-8 rounded-2xl border border-border text-center group hover:border-primary/40 transition-all duration-500",
+                "relative p-8 rounded-2xl border border-ring/50 text-center group hover:border-primary/40 transition-all duration-500",
                 "bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-md",
-                "hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2",
+
                 "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-primary/5 before:to-transparent before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100"
               )}
             >
@@ -1143,13 +1043,13 @@ export default function GuestWelcomeScreen({
               className={cn(
                 "relative p-8 rounded-2xl border-2 border-primary/50 text-center group hover:border-primary/60 transition-all duration-500 scale-105",
                 "bg-gradient-to-br from-primary/5 via-card/80 to-primary/5 backdrop-blur-md",
-                "hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-2",
+
                 "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-primary/10 before:to-transparent before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100"
               )}
             >
               {/* 26% OFF Badge */}
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <div className="bg-neutral-800 dark:bg-neutral-300 dark:text-black text-white px-4 py-2 rounded-full text-sm font-medium">
+                <div className="bg-gradient-to-r from-primary to-ring text-background px-4 py-2 rounded-full text-sm font-medium">
                   26% OFF
                 </div>
               </div>
@@ -1249,9 +1149,9 @@ export default function GuestWelcomeScreen({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.7 }}
               className={cn(
-                "relative p-8 rounded-2xl border border-border text-center group hover:border-primary/40 transition-all duration-500",
+                "relative p-8 rounded-2xl border border-ring/50 text-center group hover:border-primary/40 transition-all duration-500",
                 "bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-md",
-                "hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2",
+
                 "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-primary/5 before:to-transparent before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100"
               )}
             >
@@ -1321,39 +1221,69 @@ export default function GuestWelcomeScreen({
           </div>
         </motion.div>
 
-        {/* CTA Section */}
+        {/* Modern CTA Section */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="text-center"
+          className="w-full max-w-4xl mx-auto"
         >
-          <div className="p-12 rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-primary/5 backdrop-blur-sm">
-            <div className="max-w-2xl mx-auto">
-              <h3 className="text-3xl md:text-4xl font-bold mb-6">
-                Ready to Experience the Future?
-              </h3>
-              <p className="text-muted-foreground mb-8 text-lg leading-relaxed">
-                Join thousands of users already experiencing intelligent
-                conversations with CapyChat. Start your journey with AI-powered
-                communication today.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  onClick={onSignUp}
-                  size="lg"
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-5 text-lg font-medium group"
-                >
-                  Start Free Trial
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-                <Button
-                  onClick={onLogin}
-                  size="lg"
-                  className="px-8 py-5 text-lg border-[1px] text-primary dark:text-foreground border-primary/20 bg-background hover:bg-border/35 font-medium"
-                >
-                  Sign In
-                </Button>
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-md border border-border/30 p-8 md:p-12">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-50"></div>
+
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              {/* Left Content */}
+              <div className="space-y-6">
+                <div className="inline-block">
+                  <span className="text-sm font-medium text-primary/80 bg-primary/10 px-3 py-1 rounded-full">
+                    CappyChat AI
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
+                    Make your chat a{" "}
+                    <span className="text-primary">true standout.</span>
+                  </h3>
+
+                  <p className="text-muted-foreground text-lg leading-relaxed max-w-lg">
+                    Discover new AI capabilities that help you craft
+                    intelligent, highly functional conversations that drive
+                    engagement and convert interactions into meaningful
+                    connections.
+                  </p>
+                </div>
+
+                <div className="pt-4">
+                  <Button
+                    onClick={onSignUp}
+                    size="lg"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg font-medium rounded-xl group shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    Start Chatting
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Right Content - CapybaraIcon */}
+              <div className="flex justify-center lg:justify-end">
+                <div className="relative">
+                  {/* Background decoration */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-primary/5 rounded-3xl transform rotate-3 scale-110"></div>
+                  <div className="absolute inset-0 bg-gradient-to-tl from-primary/5 to-transparent rounded-3xl transform -rotate-2 scale-105"></div>
+
+                  {/* Icon container */}
+                  <div className="relative bg-gradient-to-br from-background/90 to-background/70 backdrop-blur-sm rounded-3xl p-8 md:p-12 border border-border/20 shadow-2xl">
+                    <CapybaraIcon
+                      size="2xl"
+                      animated={true}
+                      showLoader={true}
+                      className="drop-shadow-lg"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
