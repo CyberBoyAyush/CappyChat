@@ -62,7 +62,7 @@ const AppTitle = memo(() => (
   </div>
 ));
 
-AppTitle.displayName = "AVChatAppTitle";
+AppTitle.displayName = "CappyChatAppTitle";
 
 /**
  * New Chat Button Component

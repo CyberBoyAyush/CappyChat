@@ -754,7 +754,7 @@ export default function GuestWelcomeScreen({
             </span>
             <br />
             <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-foreground">
-              AV<span className="text-primary">Chat</span>
+              Cappy<span className="text-primary">Chat</span>
             </span>
           </h1>
 
@@ -871,7 +871,7 @@ export default function GuestWelcomeScreen({
               Powerful Features
             </motion.div>
             <h2 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent">
-              Why Choose AV<span className="text-primary">Chat</span>?
+              Why Choose Cappy<span className="text-primary">Chat</span>?
             </h2>
             <p className="text-muted-foreground max-w-3xl mx-auto text-lg leading-relaxed">
               Discover the cutting-edge features that make CapyChat the
@@ -992,7 +992,7 @@ export default function GuestWelcomeScreen({
         >
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              See AV<span className="text-primary">Chat</span> in Action
+              See Cappy<span className="text-primary">Chat</span> in Action
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Watch how our AI handles code generation, image creation, and
