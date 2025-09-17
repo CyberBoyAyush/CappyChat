@@ -22,7 +22,7 @@ import { marked } from "marked";
 import ShikiHighlighter from "react-shiki";
 import type { ComponentProps } from "react";
 import type { ExtraProps } from "react-markdown";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, ExternalLink } from "lucide-react";
 
 // Theme detection that supports both default and Capybara dark themes
 function useThemeDetection() {
@@ -57,6 +57,7 @@ function useThemeDetection() {
 }
 
 type CodeComponentProps = ComponentProps<"code"> & ExtraProps;
+type LinkComponentProps = ComponentProps<"a"> & ExtraProps;
 type MarkdownSize = "default" | "small";
 
 // Context to pass size down to components
@@ -65,6 +66,7 @@ const MarkdownSizeContext = createContext<MarkdownSize>("default");
 const components: Components = {
   code: CodeBlock as Components["code"],
   pre: ({ children }) => <>{children}</>,
+  a: LinkComponent as Components["a"],
 };
 
 function CodeBlock({ children, className, ...props }: CodeComponentProps) {
@@ -111,6 +113,24 @@ function CodeBlock({ children, className, ...props }: CodeComponentProps) {
     <code className={inlineCodeClasses} {...props}>
       {children}
     </code>
+  );
+}
+
+function LinkComponent({ href, children, ...props }: LinkComponentProps) {
+  const isExternal =
+    href && (href.startsWith("http://") || href.startsWith("https://"));
+
+  return (
+    <a
+      href={href}
+      target={isExternal ? "_blank" : undefined}
+      rel={isExternal ? "noopener noreferrer" : undefined}
+      className="text-primary hover:text-primary/90 font-light underline underline-offset-2 decoration-1 hover:decoration-2 transition-all duration-200 inline-flex items-center gap-1 break-all"
+      {...props}
+    >
+      {children}
+      {isExternal && <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />}
+    </a>
   );
 }
 
