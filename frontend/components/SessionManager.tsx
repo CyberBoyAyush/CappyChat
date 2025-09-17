@@ -223,15 +223,9 @@ const SessionManager: React.FC = () => {
         </div>
 
         {/* Session limit progress bar */}
-        <div className="w-full bg-muted rounded-full h-3 mb-3">
+        <div className="w-full bg-muted rounded-full h-2 mb-3">
           <div
-            className={`h-3 rounded-full transition-all duration-300 ${
-              sessionInfo.sessionCount >= 3
-                ? "progress-bar-destructive"
-                : sessionInfo.sessionCount >= 2
-                ? "progress-bar-accent"
-                : "progress-bar-primary"
-            }`}
+            className={`h-2 rounded-full transition-all duration-300 progress-bar-primary `}
             style={{
               width: `${Math.min((sessionInfo.sessionCount / 3) * 100, 100)}%`,
             }}
