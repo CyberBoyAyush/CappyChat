@@ -194,7 +194,7 @@ export function TierLimitError({
               <Button
                 onClick={() => {
                   window.location.href =
-                    "mailto:hi@aysh.me?subject=Upgrade%20Plan%20in%20AVChat";
+                    "mailto:hi@aysh.me?subject=Upgrade%20Plan%20in%20CappyChat";
                 }}
                 className={cn(
                   "bg-primary",
