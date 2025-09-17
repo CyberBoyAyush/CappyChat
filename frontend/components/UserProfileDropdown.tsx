@@ -61,14 +61,14 @@ const TierBadge = memo(
             label: "PRO",
             icon: Crown,
             className:
-              "bg-gradient-to-r dark:from-zinc-100 dark:to-zinc-300 from-zinc-600 to-zinc-800 text-white dark:text-black shadow-lg shadow-purple-500/25",
+              "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-purple-500/25",
           };
         case "admin":
           return {
             label: "ADMIN",
             icon: Shield,
             className:
-              "bg-gradient-to-r dark:from-zinc-100 dark:to-zinc-300 from-zinc-600 to-zinc-800 text-white dark:text-black shadow-lg shadow-zinc-500/25",
+              "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-zinc-500/25",
           };
         default:
           return null;
@@ -365,7 +365,7 @@ const UserProfileDropdown: React.FC = () => {
           </div>
           <DropdownMenuItem
             onClick={() =>
-              window.open("https://github.com/cyberboyayush/AVChat", "_blank")
+              window.open("https://github.com/cyberboyayush/CappyChat", "_blank")
             }
             className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-md text-foreground hover:bg-muted/50 transition-colors"
           >
@@ -394,7 +394,7 @@ const UserProfileDropdown: React.FC = () => {
             <span className="text-sm">Changelog</span>
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => window.open("https://status.avchat.xyz", "_blank")}
+            onClick={() => window.open("https://status.cappychat.com", "_blank")}
             className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-md text-foreground hover:bg-muted/50 transition-colors"
           >
             <Activity className="h-4 w-4 text-muted-foreground" />

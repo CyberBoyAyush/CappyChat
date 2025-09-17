@@ -18,6 +18,7 @@ import { PlusIcon } from "./ui/icons/PlusIcon";
 import { UIMessage } from "ai";
 
 import { HybridDB, dbEvents } from "@/lib/hybridDB";
+import type { FileAttachment } from "@/lib/appwriteDB";
 import { streamingSync, StreamingState } from "@/lib/streamingSync";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { getModelConfig, AIModel } from "@/lib/models";
@@ -65,6 +66,7 @@ import { InfoIcon } from "./ui/icons/InfoIcon";
 import { PanelLeft } from "@/frontend/components/ui/icons/panel-left";
 import { AnimateIcon } from "@/frontend/components/ui/icons/icon";
 import FreeTierShowcase from "./FreeTierShowcase";
+import CapybaraIcon from "./ui/CapybaraIcon";
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -147,14 +149,14 @@ export default function ChatInterface({
         "[ChatInterface] 🎉 User detected while pending auth - force clearing pending state"
       );
       setIsPendingAuth(false);
-      sessionStorage.removeItem("avchat_auth_pending");
+      sessionStorage.removeItem("cappychat_auth_pending");
     }
   }, [user, isPendingAuth]);
 
   useEffect(() => {
     const checkPendingAuth = () => {
       try {
-        const pending = sessionStorage.getItem("avchat_auth_pending");
+        const pending = sessionStorage.getItem("cappychat_auth_pending");
         if (pending) {
           const parsed = JSON.parse(pending);
           const age = Date.now() - parsed.timestamp;
@@ -174,7 +176,7 @@ export default function ChatInterface({
               age,
               "ms)"
             );
-            sessionStorage.removeItem("avchat_auth_pending");
+            sessionStorage.removeItem("cappychat_auth_pending");
           }
         } else {
           if (isPendingAuth) {
@@ -197,7 +199,7 @@ export default function ChatInterface({
     const handleAuthStateChanged = () => {
       devLog("[ChatInterface] 🎉 Auth state changed - clearing pending state");
       setIsPendingAuth(false);
-      sessionStorage.removeItem("avchat_auth_pending");
+      sessionStorage.removeItem("cappychat_auth_pending");
     };
 
     // Emergency timeout to force clear pending state after 8 seconds
@@ -207,7 +209,7 @@ export default function ChatInterface({
           "[ChatInterface] 🚨 EMERGENCY: Force clearing pending auth after 8 seconds"
         );
         setIsPendingAuth(false);
-        sessionStorage.removeItem("avchat_auth_pending");
+        sessionStorage.removeItem("cappychat_auth_pending");
       }
     }, 8000);
 
@@ -236,6 +238,8 @@ export default function ChatInterface({
   const { complete: createSummary } = useChatMessageSummary();
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
+  const [pendingAttachmentsForSubmit, setPendingAttachmentsForSubmit] =
+    useState<FileAttachment[] | null>(null);
   const pendingUserMessageRef = useRef<UIMessage | null>(null);
 
   // State for model-specific retry
@@ -363,16 +367,14 @@ export default function ChatInterface({
         });
       }
 
-
       // Extract image URLs from hidden marker and persist
-      const extractImagesFromContent = (c: string): string[] => (
+      const extractImagesFromContent = (c: string): string[] =>
         c.match(/<!-- SEARCH_IMAGES: (.*?) -->/)
           ? (c.match(/<!-- SEARCH_IMAGES: (.*?) -->/) as RegExpMatchArray)[1]
               .split("|")
               .filter(Boolean)
               .slice(0, 15)
-          : []
-      );
+          : [];
 
       const extractedImgs = extractImagesFromContent(message.content);
       if (extractedImgs.length > 0) {
@@ -391,8 +393,6 @@ export default function ChatInterface({
 
       // Clear prefetched streaming images once final images (if any) are applied
       setStreamingWebImgs(null);
-
-
 
       // Reset the web search flag if it was set
       if (nextResponseNeedsWebSearch.current) {
@@ -447,17 +447,47 @@ export default function ChatInterface({
   // Auto-submit pending input handed off during new-chat navigation
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem("avchat_pending_input");
+      const raw = sessionStorage.getItem("cappychat_pending_input");
       if (!raw) return;
-      const pending = JSON.parse(raw) as { threadId: string; input: string };
+      const pending = JSON.parse(raw) as {
+        threadId: string;
+        input?: string;
+        attachments?: Array<
+          Omit<FileAttachment, "createdAt"> & { createdAt?: string }
+        >;
+      };
       if (pending.threadId !== threadId) return;
       if (messages.length > 0) {
-        sessionStorage.removeItem("avchat_pending_input");
+        sessionStorage.removeItem("cappychat_pending_input");
         return;
       }
-      if (pending.input && pending.input.trim()) {
-        setInput(pending.input);
-        sessionStorage.removeItem("avchat_pending_input");
+      const normalizedAttachments = Array.isArray(pending.attachments)
+        ? (pending.attachments
+            .map((attachment) => {
+              if (!attachment) return null;
+              const createdAt = attachment.createdAt
+                ? new Date(attachment.createdAt)
+                : new Date();
+              return {
+                ...attachment,
+                createdAt,
+              } as FileAttachment;
+            })
+            .filter(Boolean) as FileAttachment[])
+        : [];
+
+      const hasInput = pending.input && pending.input.trim().length > 0;
+      const hasAttachments = normalizedAttachments.length > 0;
+
+      if (hasAttachments) {
+        setPendingAttachmentsForSubmit(normalizedAttachments);
+      } else {
+        setPendingAttachmentsForSubmit(null);
+      }
+
+      if (hasInput || hasAttachments) {
+        setInput(pending.input ?? "");
+        sessionStorage.removeItem("cappychat_pending_input");
 
         // Wait until ChatInputField registers submitRef
         let attempts = 0;
@@ -969,7 +999,9 @@ export default function ChatInterface({
   const [isWebSearching, setIsWebSearching] = useState<boolean>(false);
   const [webSearchQuery, setWebSearchQuery] = useState<string>("");
   // Prefetched images to show immediately while streaming starts
-  const [streamingWebImgs, setStreamingWebImgs] = useState<string[] | null>(null);
+  const [streamingWebImgs, setStreamingWebImgs] = useState<string[] | null>(
+    null
+  );
 
   // Effect to stop web search loading when streaming starts
   useEffect(() => {
@@ -1000,7 +1032,9 @@ export default function ChatInterface({
           fetch(`/api/web-search?q=${encodeURIComponent(q)}`)
             .then((r) => (r.ok ? r.json() : Promise.resolve({ images: [] })))
             .then((data) => {
-              const imgs = Array.isArray(data?.images) ? (data.images as string[]) : [];
+              const imgs = Array.isArray(data?.images)
+                ? (data.images as string[])
+                : [];
               if (imgs.length > 0) setStreamingWebImgs(imgs.slice(0, 15));
             })
             .catch(() => {});
@@ -1245,7 +1279,6 @@ export default function ChatInterface({
     [selectedModel, reload, stop, setMessages, threadId]
   );
 
-
   // Click handler for Suggested Questions: submit immediately as a new user message
   const handleSuggestedQuestionClick = useCallback(
     (question: string) => {
@@ -1399,47 +1432,49 @@ export default function ChatInterface({
               );
             }
           })()
-        ) : (
-          messages.length === 0 ? (
-            // Empty thread page: show centered input so the user can start
-            <div className="mx-auto flex justify-center px-4 py-6">
-              <div className="w-full max-w-3xl">
-                <ChatInputField
-                  threadId={threadId}
-                  input={input}
-                  status={status}
-                  append={append}
-                  setMessages={setMessages}
-                  setInput={setInput}
-                  stop={stop}
-                  pendingUserMessageRef={pendingUserMessageRef}
-                  onWebSearchMessage={handleWebSearchMessage}
-                  submitRef={chatInputSubmitRef}
-                  messages={messages}
-                  onMessageAppended={trackAppendedMessage}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="mx-auto flex justify-center px-4 py-6">
-              <ChatMessageDisplay
+        ) : messages.length === 0 ? (
+          // Empty thread page: show centered input so the user can start
+          <div className="mx-auto flex justify-center px-4 py-6">
+            <div className="w-full max-w-3xl">
+              <ChatInputField
                 threadId={threadId}
-                messages={messages}
+                input={input}
                 status={status}
+                append={append}
                 setMessages={setMessages}
-                reload={reload}
-                error={error}
-                registerRef={registerRef}
+                setInput={setInput}
                 stop={stop}
-                onRetryWithModel={handleRetryWithModel}
-                isWebSearching={isWebSearching}
-                webSearchQuery={webSearchQuery}
-                selectedSearchType={selectedSearchType}
-                onSuggestedQuestionClick={handleSuggestedQuestionClick}
-                streamingWebImgs={streamingWebImgs || undefined}
+                pendingUserMessageRef={pendingUserMessageRef}
+                onWebSearchMessage={handleWebSearchMessage}
+                submitRef={chatInputSubmitRef}
+                messages={messages}
+                onMessageAppended={trackAppendedMessage}
+                pendingAttachments={pendingAttachmentsForSubmit}
+                onPendingAttachmentsConsumed={() =>
+                  setPendingAttachmentsForSubmit(null)
+                }
               />
             </div>
-          )
+          </div>
+        ) : (
+          <div className="mx-auto flex justify-center px-4 py-6">
+            <ChatMessageDisplay
+              threadId={threadId}
+              messages={messages}
+              status={status}
+              setMessages={setMessages}
+              reload={reload}
+              error={error}
+              registerRef={registerRef}
+              stop={stop}
+              onRetryWithModel={handleRetryWithModel}
+              isWebSearching={isWebSearching}
+              webSearchQuery={webSearchQuery}
+              selectedSearchType={selectedSearchType}
+              onSuggestedQuestionClick={handleSuggestedQuestionClick}
+              streamingWebImgs={streamingWebImgs || undefined}
+            />
+          </div>
         )}
       </main>
 
@@ -1576,6 +1611,7 @@ export default function ChatInterface({
           <ShareButton
             threadId={threadId}
             variant={isDarkTheme ? "outline" : "secondary"}
+            className="text-primary"
           />
 
           <Button
@@ -1591,7 +1627,7 @@ export default function ChatInterface({
                 : "Show message browser"
             }
           >
-            <MessageCircleIcon className="h-5 w-5" />
+            <MessageCircleIcon className="h-5 w-5 text-primary" />
           </Button>
 
           <ThemeToggleButton variant="inline" />
@@ -1629,6 +1665,8 @@ const AppPanelTrigger = () => {
     isMobile: boolean;
   }>();
 
+  const { theme } = useTheme();
+  const isDarkTheme = theme === "dark";
   const sidebarOpen = localStorage.getItem("sidebarOpen") === "true";
 
   // Enhanced toggle function for debugging
@@ -1660,12 +1698,11 @@ const AppPanelTrigger = () => {
       <AnimateIcon animateOnHover>
         <Button
           size="icon"
-          variant="outline"
-          className="bg-background hover:bg-zinc-600/10"
+          variant={isDarkTheme ? "outline" : "secondary"}
           onClick={handleToggle}
           aria-label="Toggle sidebar"
         >
-          <PanelLeft />
+          <PanelLeft className={"text-primary"} />
         </Button>
       </AnimateIcon>
 
@@ -1673,12 +1710,10 @@ const AppPanelTrigger = () => {
         <Button
           onClick={handleOpenSearch}
           size="icon"
-          variant="outline"
-          className={`hover:bg-zinc-600/10 ${
-            state === "collapsed" ? "ml-2" : "hidden"
-          }`}
+          variant={isDarkTheme ? "outline" : "secondary"}
+          className={` ${state === "collapsed" ? "ml-2" : "hidden"}`}
         >
-          <SearchIcon />
+          <SearchIcon className="text-primary" />
         </Button>
         <GlobalSearchDialog
           isOpen={isSearchDialogOpen}
@@ -1693,10 +1728,8 @@ const AppPanelTrigger = () => {
           }}
           disabled={location.pathname === "/chat"}
           size="icon"
-          variant="outline"
-          className={`hover:bg-zinc-600/10 ${
-            state === "collapsed" ? "ml-2" : "hidden"
-          }`}
+          variant={isDarkTheme ? "outline" : "secondary"}
+          className={` ${state === "collapsed" ? "ml-2" : "hidden"}`}
         >
           <PlusIcon className="h-5 w-5" />
         </Button>
@@ -1943,25 +1976,29 @@ const WelcomeScreen = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-16"
+          className="text-center mb-8"
         >
-          <h1 className="text-3xl md:text-6xl font-bold mb-4 flex items-end justify-center">
-            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              AV
-            </span>
-            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              Chat
-            </span>
-            {/* <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-primary ml-1 mb-2 animate-pulse"></div> */}
-          </h1>
-          <h2 className="text-xl md:text-2xl font-medium mb-3">
+          <div className="flex flex-col items-center ">
+            <CapybaraIcon
+              size="lg"
+              animated={true}
+              showLoader={true}
+              className="hidden md:block"
+            />
+
+            <CapybaraIcon
+              size="sm"
+              animated={true}
+              showLoader={true}
+              className="md:hidden"
+            />
+          </div>
+          <h2 className="text-xl md:text-4xl font-medium mb-3">
             Welcome Back, {user?.name || "User"}!
+            <p className="text-muted-foreground/60 mt-2.5 text-lg max-w-2xl mx-auto leading-relaxed">
+              Let's get started! What would you like to chat about today?
+            </p>
           </h2>
-          <p className="text-muted-foreground text-base max-w-2xl mx-auto leading-relaxed">
-            Ready to help with anything you need. Whether it's answering
-            questions, coding assistance, or just having a conversation - let's
-            get started!
-          </p>
         </motion.div>
 
         {/* Centered Chat Input */}

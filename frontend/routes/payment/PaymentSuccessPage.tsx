@@ -101,7 +101,7 @@ const PaymentSuccessPage: React.FC = () => {
             <div className="space-y-2">
               <h1 className="text-2xl font-bold tracking-tight">Payment Successful!</h1>
               <p className="text-muted-foreground">
-                Thank you for upgrading to AVChat Premium
+                Thank you for upgrading to CappyChat Premium
               </p>
             </div>
           </div>
@@ -185,8 +185,8 @@ const PaymentSuccessPage: React.FC = () => {
           {/* Help Text */}
           <p className="text-xs text-muted-foreground">
             Need help? Contact us at{' '}
-            <a href="mailto:support@avchat.xyz" className="text-primary hover:underline">
-              support@avchat.xyz
+            <a href="mailto:support@cappychat.com" className="text-primary hover:underline">
+              support@cappychat.com
             </a>
           </p>
         </div>

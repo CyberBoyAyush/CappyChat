@@ -18,11 +18,20 @@ import ChatMessageReasoning from "./ChatMessageReasoning";
 import WebSearchCitations, { cleanMessageContent } from "./WebSearchCitations";
 import MessageAttachments from "./MessageAttachments";
 import { AIModel, getModelConfig } from "@/lib/models";
-import { User, Bot, Download, ChevronRight, ChevronLeft, X, Plus, List } from "lucide-react";
+import {
+  User,
+  Bot,
+  Download,
+  ChevronRight,
+  ChevronLeft,
+  X,
+  Plus,
+  List,
+} from "lucide-react";
 import { getModelIcon } from "@/frontend/components/ui/ModelComponents";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { Button } from "@/frontend/components/ui/button";
-import { toast } from "sonner";
+import { toast } from "@/frontend/components/ui/Toast";
 import { ImageGenerationLoading } from "./ui/UIComponents";
 
 // Utility function to extract aspect ratio from message content
@@ -73,11 +82,7 @@ function SuggestedQuestions({
   const handleToggle = () => {
     const next = !open;
     setOpen(next);
-    if (
-      next &&
-      !loading &&
-      (!suggestions || suggestions.length === 0)
-    ) {
+    if (next && !loading && (!suggestions || suggestions.length === 0)) {
       onGenerate?.();
     }
   };
@@ -92,16 +97,24 @@ function SuggestedQuestions({
         className="group flex items-center w-full h-9 px-3 rounded-md border border-border/50 bg-card text-foreground/90 hover:bg-accent/30"
       >
         <List className="w-4 h-4 text-muted-foreground mr-2" />
-        <span className="text-[13px] font-semibold tracking-wide">Suggested questions</span>
+        <span className="text-[13px] font-semibold tracking-wide">
+          Suggested questions
+        </span>
         <div className="ml-auto">
-          <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${open ? 'rotate-90' : ''}`} />
+          <ChevronRight
+            className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
+              open ? "rotate-90" : ""
+            }`}
+          />
         </div>
       </Button>
 
       {open && (
         <div className="mt-2 p-2 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm animate-in fade-in-50">
           {loading ? (
-            <div className="text-sm text-muted-foreground px-2 py-3">Generating suggestions…</div>
+            <div className="text-sm text-muted-foreground px-2 py-3">
+              Generating suggestions…
+            </div>
           ) : suggestions && suggestions.length > 0 ? (
             <ul className="flex flex-col divide-y divide-border/40">
               {suggestions.slice(0, 3).map((q, i) => (
@@ -112,7 +125,9 @@ function SuggestedQuestions({
                     className="group w-full flex items-center justify-between px-4 py-3 hover:bg-accent/20 text-left"
                     title="Ask this"
                   >
-                    <span className="flex-1 text-sm text-foreground/90 text-left">{q}</span>
+                    <span className="flex-1 text-sm text-foreground/90 text-left">
+                      {q}
+                    </span>
                     <span className="ml-3 inline-flex items-center justify-center w-5 h-5 rounded-full border border-border/50 text-muted-foreground group-hover:text-foreground">
                       <Plus className="w-3.5 h-3.5" />
                     </span>
@@ -121,14 +136,15 @@ function SuggestedQuestions({
               ))}
             </ul>
           ) : (
-            <div className="text-sm text-muted-foreground px-2 py-3">Tap again to regenerate</div>
+            <div className="text-sm text-muted-foreground px-2 py-3">
+              Tap again to regenerate
+            </div>
           )}
         </div>
       )}
     </div>
   );
 }
-
 
 function PureMessage({
   threadId,
@@ -243,8 +259,10 @@ function PureMessage({
   // Keyboard navigation for preview
   useEffect(() => {
     if (previewIdx === null) return;
-    const overlayImgs = ((message as any).webSearchImgs as string[] | undefined) ||
-      (isStreaming ? (streamingWebImgs as string[] | undefined) : undefined) || [];
+    const overlayImgs =
+      ((message as any).webSearchImgs as string[] | undefined) ||
+      (isStreaming ? (streamingWebImgs as string[] | undefined) : undefined) ||
+      [];
     const total = overlayImgs.length;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setPreviewIdx(null);
@@ -257,12 +275,11 @@ function PureMessage({
     return () => window.removeEventListener("keydown", onKey);
   }, [previewIdx, isStreaming]);
 
-
   return (
     <div
       role="article"
       className={cn(
-        "flex flex-col w-full gap-2",
+        "flex flex-col w-full gap-2 text-foreground",
         message.role === "user" ? "items-end py-1" : "items-start py-1 pb-6"
       )}
     >
@@ -314,7 +331,7 @@ function PureMessage({
                   )}
                   {mode === "view" && (
                     <>
-                      <p className="break-words whitespace-pre-wrap text-sm leading-relaxed overflow-wrap-anywhere">
+                      <p className="break-words whitespace-pre-wrap text-sm leading-relaxed overflow-wrap-anywhere text-foreground">
                         {cleanMessageContent((part as any).text || "")}
                       </p>
                       {/* Show attachments for user messages */}
@@ -484,15 +501,18 @@ function PureMessage({
                   </div>
                 )}
 
-
                 {/* Web search images (always visible) — now shown above message text */}
                 {(() => {
-                  const fromDb = (message as any).webSearchImgs as string[] | undefined;
+                  const fromDb = (message as any).webSearchImgs as
+                    | string[]
+                    | undefined;
                   const fromStream = isStreaming
-                    ? ((streamingWebImgs as string[] | undefined) || undefined)
+                    ? (streamingWebImgs as string[] | undefined) || undefined
                     : undefined;
-                  const imgs = (fromDb && fromDb.length > 0 ? fromDb : fromStream) || [];
-                  const showImages = message.role === "assistant" && imgs.length > 0;
+                  const imgs =
+                    (fromDb && fromDb.length > 0 ? fromDb : fromStream) || [];
+                  const showImages =
+                    message.role === "assistant" && imgs.length > 0;
                   if (!showImages) return null;
 
                   const showCount = Math.min(visibleCount, imgs.length);
@@ -500,10 +520,13 @@ function PureMessage({
 
                   return (
                     <div className="mb-3">
-                      <div className="text-sm text-muted-foreground mb-2">Images from the web ({imgs.length})</div>
+                      <div className="text-sm text-muted-foreground mb-2">
+                        Images from the web ({imgs.length})
+                      </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         {imgs.slice(0, showCount).map((src, i) => {
-                          const isLastVisible = i === showCount - 1 && remaining > 0;
+                          const isLastVisible =
+                            i === showCount - 1 && remaining > 0;
                           return (
                             <button
                               key={i}
@@ -528,7 +551,9 @@ function PureMessage({
                                     setVisibleCount(Math.min(imgs.length, 15));
                                   }}
                                 >
-                                  <span className="text-base sm:text-lg font-medium">+{remaining} more</span>
+                                  <span className="text-base sm:text-lg font-medium">
+                                    +{remaining} more
+                                  </span>
                                 </div>
                               )}
                             </button>
@@ -540,28 +565,42 @@ function PureMessage({
                           <button
                             type="button"
                             className="px-3 py-1 rounded border hover:bg-accent"
-                            onClick={() => setVisibleCount(Math.min(imgs.length, 15))}
+                            onClick={() =>
+                              setVisibleCount(Math.min(imgs.length, 15))
+                            }
                           >
                             Show more
                           </button>
                           <button
                             type="button"
                             className="px-2 py-1 rounded border hover:bg-accent"
-                            onClick={() => setVisibleCount((c) => Math.min(c + 1, Math.min(imgs.length, 15)))}
+                            onClick={() =>
+                              setVisibleCount((c) =>
+                                Math.min(c + 1, Math.min(imgs.length, 15))
+                              )
+                            }
                           >
                             +1
                           </button>
                           <button
                             type="button"
                             className="px-2 py-1 rounded border hover:bg-accent"
-                            onClick={() => setVisibleCount((c) => Math.min(c + 2, Math.min(imgs.length, 15)))}
+                            onClick={() =>
+                              setVisibleCount((c) =>
+                                Math.min(c + 2, Math.min(imgs.length, 15))
+                              )
+                            }
                           >
                             +2
                           </button>
                           <button
                             type="button"
                             className="px-2 py-1 rounded border hover:bg-accent"
-                            onClick={() => setVisibleCount((c) => Math.min(c + 5, Math.min(imgs.length, 15)))}
+                            onClick={() =>
+                              setVisibleCount((c) =>
+                                Math.min(c + 5, Math.min(imgs.length, 15))
+                              )
+                            }
                           >
                             +5
                           </button>
@@ -622,8 +661,6 @@ function PureMessage({
                   return null;
                 })()}
 
-
-
                 {/* Show web search citations for assistant messages with search results */}
                 {(() => {
                   const hasWebSearchResults =
@@ -643,70 +680,102 @@ function PureMessage({
                   return (
                     <>
                       {/* In-app image preview overlay with navigation & close */}
-                      {previewIdx !== null && (() => {
-                        const overlayImgs = ((message as any).webSearchImgs as string[] | undefined) ||
-                          (isStreaming ? (streamingWebImgs as string[] | undefined) : undefined) || [];
-                        const total = overlayImgs.length;
-                        if (total === 0) return null;
-                        const idx = Math.min(Math.max(previewIdx as number, 0), total - 1);
-                        const src = overlayImgs[idx];
-                        const host = (() => { try { return new URL(src).hostname.replace(/^www\./, ""); } catch { return ""; } })();
-                        const goPrev = (e?: any) => { e?.stopPropagation?.(); setPreviewIdx((i) => (i! <= 0 ? total - 1 : (i! - 1))); };
-                        const goNext = (e?: any) => { e?.stopPropagation?.(); setPreviewIdx((i) => (i! >= total - 1 ? 0 : (i! + 1))); };
-                        return (
-                          <div
-                            className="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
-                            onClick={() => setPreviewIdx(null)}
-                            role="dialog"
-                            aria-modal="true"
-                          >
-                            <div className="absolute top-4 left-4 text-xs px-2 py-1 rounded bg-white/10 text-white">
-                              {idx + 1} of {total}
-                            </div>
-                            <button
-                              type="button"
-                              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
-                              onClick={(e) => { e.stopPropagation(); setPreviewIdx(null); }}
-                              aria-label="Close"
+                      {previewIdx !== null &&
+                        (() => {
+                          const overlayImgs =
+                            ((message as any).webSearchImgs as
+                              | string[]
+                              | undefined) ||
+                            (isStreaming
+                              ? (streamingWebImgs as string[] | undefined)
+                              : undefined) ||
+                            [];
+                          const total = overlayImgs.length;
+                          if (total === 0) return null;
+                          const idx = Math.min(
+                            Math.max(previewIdx as number, 0),
+                            total - 1
+                          );
+                          const src = overlayImgs[idx];
+                          const host = (() => {
+                            try {
+                              return new URL(src).hostname.replace(
+                                /^www\./,
+                                ""
+                              );
+                            } catch {
+                              return "";
+                            }
+                          })();
+                          const goPrev = (e?: any) => {
+                            e?.stopPropagation?.();
+                            setPreviewIdx((i) =>
+                              i! <= 0 ? total - 1 : i! - 1
+                            );
+                          };
+                          const goNext = (e?: any) => {
+                            e?.stopPropagation?.();
+                            setPreviewIdx((i) =>
+                              i! >= total - 1 ? 0 : i! + 1
+                            );
+                          };
+                          return (
+                            <div
+                              className="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+                              onClick={() => setPreviewIdx(null)}
+                              role="dialog"
+                              aria-modal="true"
                             >
-                              <X className="h-5 w-5" />
-                            </button>
-                            {total > 1 && (
-                              <button
-                                type="button"
-                                className="absolute left-6 md:left-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
-                                onClick={goPrev}
-                                aria-label="Previous"
-                              >
-                                <ChevronLeft className="h-6 w-6" />
-                              </button>
-                            )}
-                            <img
-                              src={src}
-                              alt=""
-                              className="max-h-[80vh] max-w-[90vw] object-contain rounded-lg shadow-2xl border"
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            {total > 1 && (
-                              <button
-                                type="button"
-                                className="absolute right-6 md:right-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
-                                onClick={goNext}
-                                aria-label="Next"
-                              >
-                                <ChevronRight className="h-6 w-6" />
-                              </button>
-                            )}
-                            {host && (
-                              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[90vw] max-w-3xl">
-                                <div className="mx-auto text-center text-xs md:text-sm text-white/90 bg-black/40 rounded px-3 py-2">
-                                  {host}
-                                </div>
+                              <div className="absolute top-4 left-4 text-xs px-2 py-1 rounded bg-white/10 text-white">
+                                {idx + 1} of {total}
                               </div>
-                            )}
-                          </div>
-                        );
-                      })()}
+                              <button
+                                type="button"
+                                className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPreviewIdx(null);
+                                }}
+                                aria-label="Close"
+                              >
+                                <X className="h-5 w-5" />
+                              </button>
+                              {total > 1 && (
+                                <button
+                                  type="button"
+                                  className="absolute left-6 md:left-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
+                                  onClick={goPrev}
+                                  aria-label="Previous"
+                                >
+                                  <ChevronLeft className="h-6 w-6" />
+                                </button>
+                              )}
+                              <img
+                                src={src}
+                                alt=""
+                                className="max-h-[80vh] max-w-[90vw] object-contain rounded-lg shadow-2xl border"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              {total > 1 && (
+                                <button
+                                  type="button"
+                                  className="absolute right-6 md:right-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
+                                  onClick={goNext}
+                                  aria-label="Next"
+                                >
+                                  <ChevronRight className="h-6 w-6" />
+                                </button>
+                              )}
+                              {host && (
+                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[90vw] max-w-3xl">
+                                  <div className="mx-auto text-center text-xs md:text-sm text-white/90 bg-black/40 rounded px-3 py-2">
+                                    {host}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
 
                       {hasWebSearchResults && (
                         <div className="flex-shrink-0">
@@ -745,7 +814,6 @@ function PureMessage({
                     />
                   </div>
                 )}
-
               </div>
             </div>
           );
@@ -760,7 +828,8 @@ const PreviewMessage = memo(PureMessage, (prevProps, nextProps) => {
   if (prevProps.message.id !== nextProps.message.id) return false;
   if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
   // Re-render if streaming images change while streaming
-  if (!equal(prevProps.streamingWebImgs, nextProps.streamingWebImgs)) return false;
+  if (!equal(prevProps.streamingWebImgs, nextProps.streamingWebImgs))
+    return false;
   // Check if model field changed (important for assistant messages)
   if ((prevProps.message as any).model !== (nextProps.message as any).model)
     return false;
@@ -786,8 +855,10 @@ const PreviewMessage = memo(PureMessage, (prevProps, nextProps) => {
   )
     return false;
   // Check if suggested questions array changed
-  const prevSug = ((prevProps.message as any).suggestedQuestions || []) as any[];
-  const nextSug = ((nextProps.message as any).suggestedQuestions || []) as any[];
+  const prevSug = ((prevProps.message as any).suggestedQuestions ||
+    []) as any[];
+  const nextSug = ((nextProps.message as any).suggestedQuestions ||
+    []) as any[];
   if (!equal(prevSug, nextSug)) return false;
   return true;
 });

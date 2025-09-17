@@ -9,9 +9,24 @@
 "use client";
 
 import * as React from "react";
-import { Moon, Sun } from "lucide-react";
+import {
+  Moon,
+  Sun,
+  Palette,
+  MoonStar,
+  MoonStarIcon,
+  CloudSun,
+  CloudSnow,
+  CloudSunIcon,
+} from "lucide-react";
 import { useTheme, ThemeProvider as NextThemesProvider } from "next-themes";
 import { Button } from "@/frontend/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/frontend/components/ui/dropdown-menu";
 
 // ===============================================
 // Theme Provider Component
@@ -41,19 +56,71 @@ export function ThemeToggleButton({
 
   const baseClasses = variant === "fixed" ? "fixed top-4 right-4 z-50" : "";
 
+  const getThemeIcon = () => {
+    switch (theme) {
+      case "light":
+        return <Sun className="h-4 w-4 text-primary" />;
+      case "dark":
+        return <Moon className="h-4 w-4 text-primary" />;
+      case "capybara-light":
+        return <CloudSunIcon className="h-4 w-4 text-primary" />;
+      case "capybara-dark":
+        return <MoonStar className="h-4 w-4 text-primary" />;
+      default:
+        return <Sun className="h-4 w-4 text-primary" />;
+    }
+  };
+
+  const isDarkTheme = theme === "dark";
+
+  const getThemeLabel = (themeValue: string) => {
+    switch (themeValue) {
+      case "light":
+        return "Bright";
+      case "dark":
+        return "Dark";
+      case "capybara-light":
+        return "Light";
+      case "capybara-dark":
+        return "Dark Pro";
+      default:
+        return "Bright";
+    }
+  };
+
   return (
-    <Button
-      variant="outline"
-      size="icon"
-      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-      className={`group focus:outline-none focus:ring-0  ${baseClasses} ${className}`}
-    >
-      <div className="relative w-4 h-4 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 ease-in-out">
-        <Sun className="absolute h-4 w-4 scale-100 transition-all duration-500 ease-in-out dark:rotate-180 dark:scale-0 dark:opacity-0" />
-        <Moon className="absolute h-4 w-4 rotate-180 scale-0 opacity-0 transition-all duration-500 ease-in-out dark:rotate-0 dark:scale-100 dark:opacity-100" />
-      </div>
-      <span className="sr-only">Toggle theme</span>
-    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant={isDarkTheme ? "outline" : "secondary"}
+          size="icon"
+          className={`group focus:outline-none shadow-sm rounded-md focus:ring-0 ${baseClasses} ${className}`}
+        >
+          <div className="relative w-4 h-4 group-hover:scale-110 transition-all duration-300 ease-in-out">
+            {getThemeIcon()}
+          </div>
+          <span className="sr-only">Toggle theme</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => setTheme("light")}>
+          <Sun className="mr-2 h-4 w-4 text-white" />
+          Bright
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("dark")}>
+          <Moon className="mr-2 h-4 w-4 text-black" />
+          Dark
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("capybara-light")}>
+          <CloudSun className="mr-2 h-4 w-4 text-[#ffd6a7]" />
+          Light
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("capybara-dark")}>
+          <MoonStarIcon className="mr-2 h-4 w-4 text-amber-800" />
+          Dark Pro
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

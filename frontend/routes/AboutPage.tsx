@@ -2,7 +2,7 @@
  * AboutPage Route Component
  *
  * Used in: frontend/ChatAppRouter.tsx (as "/about" route)
- * Purpose: Displays information about AVChat, the team, tech stack, and contribution options.
+ * Purpose: Displays information about CappyChat, the team, tech stack, and contribution options.
  * Shows team member profiles, social links, and technology stack used in the project.
  */
 
@@ -168,7 +168,7 @@ export default function AboutPage() {
   const navigate = useNavigate();
 
   const handleContribute = () => {
-    window.open("https://github.com/cyberboyayush/AVChat", "_blank");
+    window.open("https://github.com/cyberboyayush/CappyChat", "_blank");
   };
 
   return (
@@ -205,7 +205,7 @@ export default function AboutPage() {
         <div className="text-center space-y-6">
           <div className="space-y-4">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              About AVChat
+              About CappyChat
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               The fastest AI chat application built with cutting-edge technology
@@ -235,7 +235,7 @@ export default function AboutPage() {
               Meet Our Team
             </h2>
             <p className="text-muted-foreground">
-              The passionate individuals behind AVChat
+              The passionate individuals behind CappyChat
             </p>
           </div>
 
@@ -305,7 +305,7 @@ export default function AboutPage() {
           <div className="text-center space-y-2">
             <h2 className="text-3xl font-bold text-foreground">Tech Stack</h2>
             <p className="text-muted-foreground">
-              The powerful technologies that make AVChat possible
+              The powerful technologies that make CappyChat possible
             </p>
           </div>
 
@@ -364,7 +364,7 @@ export default function AboutPage() {
               Join Our Mission
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              AVChat is open source and we welcome contributions from developers
+              CappyChat is open source and we welcome contributions from developers
               around the world. Help us make AI chat faster, better, and more
               accessible for everyone.
             </p>
@@ -384,7 +384,7 @@ export default function AboutPage() {
               size="lg"
               onClick={() =>
                 window.open(
-                  "https://github.com/cyberboyayush/AVChat/issues",
+                  "https://github.com/cyberboyayush/CappyChat/issues",
                   "_blank"
                 )
               }

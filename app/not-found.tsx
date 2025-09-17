@@ -52,8 +52,8 @@ export default function NotFound() {
           <div className="text-sm text-muted-foreground">
             <p>
               Need help? Contact us at{' '}
-              <a href="mailto:support@avchat.xyz" className="text-primary hover:underline">
-                support@avchat.xyz
+              <a href="mailto:support@cappychat.com" className="text-primary hover:underline">
+                support@cappychat.com
               </a>
             </p>
           </div>

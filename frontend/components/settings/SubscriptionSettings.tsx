@@ -1,15 +1,15 @@
 /**
  * Subscription Settings Component
- * 
+ *
  * Displays current subscription status and provides management options.
  * Handles upgrade, cancellation, and customer portal access.
  */
 
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
+import React, { useState, useEffect } from "react";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
 import {
   Crown,
   Settings,
@@ -17,21 +17,25 @@ import {
   CheckCircle2,
   ExternalLink,
   Shield,
-  Clock
-} from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { getSubscriptionStatus } from '@/services/subscription.service';
-import { UserSubscription } from '@/lib/appwrite';
-import { format } from 'date-fns';
-import UpgradeButton from './UpgradeButton';
+  Clock,
+} from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
+import { getSubscriptionStatus } from "@/services/subscription.service";
+import { UserSubscription } from "@/lib/appwrite";
+import { format } from "date-fns";
+import UpgradeButton from "./UpgradeButton";
 
 interface SubscriptionSettingsProps {
   className?: string;
 }
 
-export default function SubscriptionSettings({ className }: SubscriptionSettingsProps) {
+export default function SubscriptionSettings({
+  className,
+}: SubscriptionSettingsProps) {
   const { user } = useAuth();
-  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const [subscription, setSubscription] = useState<UserSubscription | null>(
+    null
+  );
   const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -44,17 +48,17 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
 
   const loadSubscriptionStatus = async () => {
     if (!user?.$id) return;
-    
+
     try {
       setLoading(true);
       setError(null);
-      
+
       const status = await getSubscriptionStatus();
       setSubscription(status.subscription);
       setIsPremium(status.isPremium);
     } catch (err) {
-      console.error('Error loading subscription status:', err);
-      setError('Failed to load subscription status');
+      console.error("Error loading subscription status:", err);
+      setError("Failed to load subscription status");
     } finally {
       setLoading(false);
     }
@@ -62,15 +66,15 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
 
   const handleManageSubscription = async () => {
     if (!user?.$id) return;
-    
+
     try {
       setPortalLoading(true);
       setError(null);
 
-      const response = await fetch('/api/checkout/portal', {
-        method: 'POST',
+      const response = await fetch("/api/checkout/portal", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userId: user.$id,
@@ -80,14 +84,16 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create portal session');
+        throw new Error(data.error || "Failed to create portal session");
       }
 
       // Redirect to customer portal
-      window.open(data.portalUrl, '_blank');
+      window.open(data.portalUrl, "_blank");
     } catch (err) {
-      console.error('Error creating portal session:', err);
-      setError(err instanceof Error ? err.message : 'Failed to open customer portal');
+      console.error("Error creating portal session:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to open customer portal"
+      );
     } finally {
       setPortalLoading(false);
     }
@@ -105,7 +111,10 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
 
     if (subscription.adminOverride) {
       return (
-        <Badge variant="default" className="flex items-center gap-1 bg-purple-600">
+        <Badge
+          variant="default"
+          className="flex items-center gap-1 bg-purple-600"
+        >
           <Shield className="w-3 h-3" />
           Admin Override
         </Badge>
@@ -113,43 +122,49 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
     }
 
     switch (subscription.status) {
-      case 'active':
+      case "active":
         if (subscription.cancelAtPeriodEnd) {
           return (
-            <Badge variant="outline" className="flex items-center gap-1 border-yellow-500 text-yellow-600">
+            <Badge
+              variant="outline"
+              className="flex items-center gap-1 border-yellow-500 text-yellow-600"
+            >
               <Clock className="w-3 h-3" />
               Cancelling
             </Badge>
           );
         }
         return (
-          <Badge variant="default" className="flex items-center gap-1 bg-green-600">
+          <Badge
+            variant="default"
+            className="flex items-center gap-1 bg-green-600"
+          >
             <CheckCircle2 className="w-3 h-3" />
             Active
           </Badge>
         );
-      case 'cancelled':
+      case "cancelled":
         return (
           <Badge variant="destructive" className="flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" />
             Cancelled
           </Badge>
         );
-      case 'expired':
+      case "expired":
         return (
           <Badge variant="secondary" className="flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" />
             Expired
           </Badge>
         );
-      case 'on_hold':
+      case "on_hold":
         return (
           <Badge variant="outline" className="flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" />
             On Hold
           </Badge>
         );
-      case 'failed':
+      case "failed":
         return (
           <Badge variant="destructive" className="flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" />
@@ -168,9 +183,9 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
 
   const formatExpiryDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'MMM dd, yyyy');
+      return format(new Date(dateString), "MMM dd, yyyy");
     } catch {
-      return 'Invalid date';
+      return "Invalid date";
     }
   };
 
@@ -182,15 +197,17 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
           <h3 className="text-lg font-medium">Subscription</h3>
         </div>
         <div className="space-y-3">
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
+          <div className="h-4 bg-primary/20 rounded animate-pulse"></div>
+          <div className="h-4 bg-primary/20 rounded animate-pulse w-3/4"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`border border-border rounded-xl bg-card shadow-sm overflow-hidden ${className}`}>
+    <div
+      className={`border border-border rounded-xl bg-card shadow-sm overflow-hidden ${className}`}
+    >
       {/* Header Section */}
       <div className="flex items-center justify-between p-4 bg-muted/30 border-b border-border">
         <div className="flex items-center gap-2">
@@ -210,7 +227,7 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
       <div className="flex items-center justify-between p-4 border-b border-border">
         <span className="text-sm font-medium">Current Plan</span>
         <span className="font-semibold text-lg">
-          {loading ? 'Loading...' : isPremium ? 'Premium' : 'Free'}
+          {loading ? "Loading..." : isPremium ? "Premium" : "Free"}
         </span>
       </div>
 
@@ -221,15 +238,18 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
           <div className="space-y-3">
             {/* Current Status */}
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Current Status</span>
+              <span className="text-sm text-muted-foreground">
+                Current Status
+              </span>
               <span className="font-medium">
-                {subscription.cancelAtPeriodEnd && subscription.status === 'active'
-                  ? 'Cancelling'
-                  : subscription.status === 'active'
-                  ? 'Active'
-                  : subscription.status === 'cancelled'
-                  ? 'Cancelled'
-                  : 'Expired'}
+                {subscription.cancelAtPeriodEnd &&
+                subscription.status === "active"
+                  ? "Cancelling"
+                  : subscription.status === "active"
+                  ? "Active"
+                  : subscription.status === "cancelled"
+                  ? "Cancelled"
+                  : "Expired"}
               </span>
             </div>
 
@@ -237,9 +257,7 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
             {subscription.next_billing_date && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">
-                  {subscription.cancelAtPeriodEnd
-                    ? 'Cancel At'
-                    : 'Renewal At'}
+                  {subscription.cancelAtPeriodEnd ? "Cancel At" : "Renewal At"}
                 </span>
                 <span className="font-medium">
                   {formatExpiryDate(subscription.next_billing_date)}
@@ -270,7 +288,8 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
         {!isPremium ? (
           <UpgradeButton />
         ) : (
-          subscription?.customerId && !subscription?.adminOverride && (
+          subscription?.customerId &&
+          !subscription?.adminOverride && (
             <Button
               onClick={handleManageSubscription}
               disabled={portalLoading}
@@ -278,7 +297,7 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
               className="flex items-center gap-2"
             >
               <Settings className="w-4 h-4" />
-              {portalLoading ? 'Loading...' : 'Manage Subscription'}
+              {portalLoading ? "Loading..." : "Manage Subscription"}
               <ExternalLink className="w-3 h-3" />
             </Button>
           )
@@ -287,5 +306,3 @@ export default function SubscriptionSettings({ className }: SubscriptionSettings
     </div>
   );
 }
-
-

@@ -5,7 +5,7 @@
  * Shows files in a grid with options to view, download, and delete.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "./ui/button";
 import {
   Download,
@@ -19,6 +19,7 @@ import {
   ImageIcon,
   AlertTriangle,
   File,
+  X,
 } from "lucide-react";
 import {
   Dialog,
@@ -28,24 +29,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "./ui/Toast";
 import { format } from "date-fns";
 import { useAuth } from "../contexts/AuthContext";
 
-// Helper function to get file icon and color
+// Helper function to get file icon and theme-aware color
 const getFileIcon = (fileType: string) => {
   switch (fileType) {
-    case 'image':
-      return { icon: FileImage, color: 'text-blue-500' };
-    case 'pdf':
-      return { icon: FileText, color: 'text-red-500' };
-    case 'text':
-      return { icon: FileText, color: 'text-green-500' };
-    case 'document':
-      return { icon: File, color: 'text-purple-500' };
+    case "image":
+      return { icon: FileImage, color: "text-primary" };
+    case "pdf":
+      return { icon: FileText, color: "text-primary" };
+    case "text":
+      return { icon: FileText, color: "text-primary" };
+    case "document":
+      return { icon: File, color: "text-primary" };
     default:
-      return { icon: File, color: 'text-zinc-500' };
+      return { icon: File, color: "text-muted-foreground" };
   }
 };
 
@@ -67,6 +69,8 @@ interface UserFile {
 interface FileManagerProps {
   className?: string;
 }
+
+const FILES_PER_PAGE = 12;
 
 // File Delete Confirmation Dialog Component
 interface FileDeleteDialogProps {
@@ -95,7 +99,7 @@ const FileDeleteDialog = ({
       <DialogContent className="sm:max-w-md border-border shadow-lg bg-background">
         <DialogHeader className="space-y-4 pb-2">
           <div className="flex items-center justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-destructive/20 to-destructive/10 border border-destructive/30">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 border border-destructive/30">
               <Trash2 className="h-5 w-5 text-destructive" />
             </div>
           </div>
@@ -110,11 +114,13 @@ const FileDeleteDialog = ({
           </div>
         </DialogHeader>
 
-        <div className="rounded-lg bg-gradient-to-r from-secondary/80 to-muted/60 border border-border/50 p-4 my-2">
+        <div className="rounded-lg bg-secondary/40 border border-border p-4 my-2">
           <div className="flex items-center gap-2 mb-2">
             <div className="flex items-center gap-2">
               {(() => {
-                const { icon: IconComponent, color } = getFileIcon(file.fileType);
+                const { icon: IconComponent, color } = getFileIcon(
+                  file.fileType
+                );
                 return <IconComponent className={`w-4 h-4 ${color}`} />;
               })()}
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -134,10 +140,10 @@ const FileDeleteDialog = ({
           </div>
         </div>
 
-        <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 p-3">
+        <div className="rounded-lg bg-destructive/5 border border-destructive/30 p-3">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-            <div className="text-xs text-amber-800 dark:text-amber-200">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <div className="text-xs text-destructive">
               <p className="font-medium">This action is permanent</p>
               <p className="mt-1">
                 The file will be completely removed and cannot be recovered.
@@ -159,7 +165,7 @@ const FileDeleteDialog = ({
             variant="destructive"
             onClick={handleConfirm}
             disabled={isDeleting}
-            className="w-full sm:w-auto sm:flex-1 h-10 font-medium bg-gradient-to-r from-destructive to-destructive/90 hover:from-destructive/90 hover:to-destructive/80 shadow-sm transition-all duration-200 gap-2"
+            className="w-full sm:w-auto sm:flex-1 h-10 font-medium bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-sm transition-all duration-200 gap-2"
           >
             <Trash2 className="h-4 w-4" />
             {isDeleting ? "Deleting..." : "Delete File"}
@@ -197,7 +203,7 @@ const BulkDeleteDialog = ({
       <DialogContent className="sm:max-w-md border-border shadow-lg bg-background">
         <DialogHeader className="space-y-4 pb-2">
           <div className="flex items-center justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-destructive/20 to-destructive/10 border border-destructive/30">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 border border-destructive/30">
               <ImageIcon className="h-5 w-5 text-destructive" />
             </div>
           </div>
@@ -212,9 +218,9 @@ const BulkDeleteDialog = ({
           </div>
         </DialogHeader>
 
-        <div className="rounded-lg bg-gradient-to-r from-secondary/80 to-muted/60 border border-border/50 p-4 my-2">
+        <div className="rounded-lg bg-secondary/40 border border-border p-4 my-2">
           <div className="flex items-center gap-2 mb-2">
-            <ImageIcon className="w-4 h-4 text-blue-500" />
+            <ImageIcon className="w-4 h-4 text-primary" />
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Images to Delete
             </span>
@@ -229,10 +235,10 @@ const BulkDeleteDialog = ({
           </div>
         </div>
 
-        <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/30 p-3">
+        <div className="rounded-lg bg-destructive/5 border border-destructive/30 p-3">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-            <div className="text-xs text-red-800 dark:text-red-200">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <div className="text-xs text-destructive">
               <p className="font-medium">
                 This action is permanent and irreversible
               </p>
@@ -257,7 +263,7 @@ const BulkDeleteDialog = ({
             variant="destructive"
             onClick={handleConfirm}
             disabled={isDeleting}
-            className="w-full sm:w-auto sm:flex-1 h-10 font-medium bg-gradient-to-r from-destructive to-destructive/90 hover:from-destructive/90 hover:to-destructive/80 shadow-sm transition-all duration-200 gap-2"
+            className="w-full sm:w-auto sm:flex-1 h-10 font-medium bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-sm transition-all duration-200 gap-2"
           >
             <ImageIcon className="h-4 w-4" />
             {isDeleting ? "Deleting..." : `Delete ${imageCount} Images`}
@@ -274,16 +280,21 @@ export default function FileManager({ className }: FileManagerProps) {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [totalSize, setTotalSize] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<UserFile | null>(null);
+  // Image preview dialog state
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState<UserFile | null>(null);
 
   const { user } = useAuth();
 
   // Load user files
   useEffect(() => {
+    setCurrentPage(1);
     if (user?.$id) {
       loadFiles();
     }
@@ -312,7 +323,23 @@ export default function FileManager({ className }: FileManagerProps) {
       }
 
       const data = await response.json();
-      setFiles(data.files || []);
+      const normalizedFiles: UserFile[] = (data.files || []).map(
+        (file: any) => {
+          const uploadedAtSource = file.uploadedAt ?? file.createdAt;
+          const uploadedAt = uploadedAtSource
+            ? new Date(uploadedAtSource)
+            : new Date();
+          const createdAt = file.createdAt
+            ? new Date(file.createdAt)
+            : uploadedAt;
+          return {
+            ...file,
+            uploadedAt,
+            createdAt,
+          } as UserFile;
+        }
+      );
+      setFiles(normalizedFiles);
       setTotalSize(data.totalSize || 0);
     } catch (error) {
       console.error("Error loading files:", error);
@@ -321,6 +348,48 @@ export default function FileManager({ className }: FileManagerProps) {
       setLoading(false);
     }
   };
+
+  const sortedFiles = useMemo(() => {
+    return [...files].sort((a, b) => {
+      const aTime = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+      const bTime = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
+      return bTime - aTime;
+    });
+  }, [files]);
+
+  const totalPages = Math.ceil(sortedFiles.length / FILES_PER_PAGE);
+
+  useEffect(() => {
+    if (sortedFiles.length === 0) {
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+      }
+      return;
+    }
+
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [sortedFiles.length, totalPages]); // Removed currentPage from dependencies to prevent infinite loops
+
+  const paginatedFiles = useMemo(() => {
+    const startIndex = (currentPage - 1) * FILES_PER_PAGE;
+    const slicedFiles = sortedFiles.slice(
+      startIndex,
+      startIndex + FILES_PER_PAGE
+    );
+
+    // Ensure unique keys by deduplicating based on publicId as a fallback
+    const uniqueFiles = slicedFiles.reduce((acc, file) => {
+      const existingFile = acc.find((f) => f.publicId === file.publicId);
+      if (!existingFile) {
+        acc.push(file);
+      }
+      return acc;
+    }, [] as UserFile[]);
+
+    return uniqueFiles;
+  }, [sortedFiles, currentPage]);
 
   const handleDeleteClick = (file: UserFile) => {
     setFileToDelete(file);
@@ -359,19 +428,13 @@ export default function FileManager({ className }: FileManagerProps) {
       const result = await response.json();
       console.log("✅ File deletion response:", result);
 
-      // Remove from local state and refresh from server to ensure consistency
+      // Remove from local state - trust the successful API response
       setFiles((prev) => prev.filter((f) => f.id !== fileToDelete.id));
       setTotalSize((prev) => prev - fileToDelete.size);
 
       // Close dialog and reset state
       setDeleteDialogOpen(false);
       setFileToDelete(null);
-
-      // Refresh the file list from server to ensure consistency
-      setTimeout(() => {
-        console.log("🔄 Refreshing file list after deletion...");
-        loadFiles();
-      }, 1000); // Increased delay to ensure database updates are complete
 
       toast.success("File deleted successfully");
     } catch (error) {
@@ -381,6 +444,8 @@ export default function FileManager({ className }: FileManagerProps) {
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
+      // Refresh from server only on error to ensure consistency
+      loadFiles();
     } finally {
       setDeleting(null);
     }
@@ -429,11 +494,8 @@ export default function FileManager({ className }: FileManagerProps) {
       // Close dialog
       setBulkDeleteDialogOpen(false);
 
-      // Refresh the file list from server
-      setTimeout(() => {
-        console.log("🔄 Refreshing file list after bulk deletion...");
-        loadFiles();
-      }, 1500); // Longer delay for bulk operations
+      // Refresh the file list from server to get accurate counts after bulk operation
+      loadFiles();
 
       toast.success(
         result.message || `Successfully deleted ${result.deletedCount} images`
@@ -445,6 +507,8 @@ export default function FileManager({ className }: FileManagerProps) {
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
+      // Refresh from server on error to ensure consistency
+      loadFiles();
     } finally {
       setBulkDeleting(false);
     }
@@ -462,7 +526,12 @@ export default function FileManager({ className }: FileManagerProps) {
   };
 
   const handleView = (file: UserFile) => {
-    window.open(file.url, "_blank");
+    if (file.fileType === "image") {
+      setPreviewFile(file);
+      setPreviewOpen(true);
+    } else {
+      window.open(file.url, "_blank", "noopener,noreferrer");
+    }
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -478,6 +547,17 @@ export default function FileManager({ className }: FileManagerProps) {
     (total, file) => total + file.size,
     0
   );
+
+  const showPagination = totalPages > 1;
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    if (totalPages === 0) return;
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
 
   if (!user) {
     return (
@@ -519,7 +599,7 @@ export default function FileManager({ className }: FileManagerProps) {
               variant="outline"
               onClick={handleBulkDeleteClick}
               disabled={bulkDeleting || loading}
-              className="text-xs text-red-600 px-0 hover:text-red-700 border-red-200 hover:border-red-300 hover:bg-red-50 dark:border-red-800 dark:hover:border-red-700 dark:hover:bg-red-950/20"
+              className="text-xs text-destructive px-0 hover:text-destructive border-border hover:bg-destructive/10"
             >
               {bulkDeleting ? (
                 <>
@@ -551,17 +631,19 @@ export default function FileManager({ className }: FileManagerProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {files.map((file) => (
+          {paginatedFiles.map((file) => (
             <div
-              key={file.id}
+              key={file.publicId}
               className="border rounded-lg p-3 bg-card hover:shadow-sm transition-shadow"
             >
               {/* File icon and type */}
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
                   {(() => {
-                    const { icon: IconComponent, color } = getFileIcon(file.fileType);
-                    return <IconComponent className={`w-5 h-5 ${color}`} />;
+                    const { icon: IconComponent, color } = getFileIcon(
+                      file.fileType
+                    );
+                    return <IconComponent className={`w-4 h-4 ${color}`} />;
                   })()}
                   <span className="text-xs font-medium text-muted-foreground uppercase">
                     {file.fileType}
@@ -586,30 +668,47 @@ export default function FileManager({ className }: FileManagerProps) {
                 </div>
               </div>
 
-              {/* Image preview for images */}
-              {file.fileType === "image" && (
-                <div className="mb-3">
-                  <img
-                    src={file.url}
-                    alt={file.originalName}
-                    className="w-full h-20 object-cover rounded border"
-                    loading="lazy"
-                  />
-                </div>
-              )}
+              <div className="flex flex-col gap-2 h-28">
+                {/* Image preview for images */}
+                {file.fileType === "image" && (
+                  <button
+                    type="button"
+                    onClick={() => handleView(file)}
+                    className="mb-3 group cursor-pointer block relative rounded border overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                  >
+                    <img
+                      src={file.url}
+                      alt={file.originalName}
+                      className="w-full h-28 object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                      loading="lazy"
+                    />
+                    <span className="pointer-events-none absolute inset-0 ring-0 group-hover:ring-2 ring-inset ring-ring/40 rounded"></span>
+                  </button>
+                )}
 
+                {file.fileType === "pdf" && (
+                  <div className="flex h-full bg-primary/10  items-center justify-center mb-3 border border-ring/20 rounded-sm">
+                    <FileText className="w-5 h-5 text-red-500" />
+                    <span className="text-xs text-muted-foreground">
+                      PDF File
+                    </span>
+                  </div>
+                )}
+              </div>
               {/* Action buttons */}
               <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleView(file)}
-                  disabled={bulkDeleting}
-                  className="flex-1 h-8 text-xs"
-                >
-                  <Eye className="w-3 h-3 mr-1" />
-                  View
-                </Button>
+                {file.fileType !== "image" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleView(file)}
+                    disabled={bulkDeleting}
+                    className="flex-1 h-8 text-xs"
+                  >
+                    <Eye className="w-3 h-3 mr-1" />
+                    View
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
@@ -625,7 +724,7 @@ export default function FileManager({ className }: FileManagerProps) {
                   variant="outline"
                   onClick={() => handleDeleteClick(file)}
                   disabled={deleting === file.id || bulkDeleting}
-                  className="h-8 text-xs text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 dark:border-red-800 dark:hover:border-red-700 dark:hover:bg-red-950/20"
+                  className="h-8 text-xs text-destructive hover:text-destructive border-border hover:bg-destructive/10"
                 >
                   {deleting === file.id ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -636,6 +735,36 @@ export default function FileManager({ className }: FileManagerProps) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {showPagination && (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pt-2">
+          <span className="text-xs text-muted-foreground" aria-live="polite">
+            Page {currentPage} of {totalPages}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              aria-label="Go to previous page"
+              className="h-8"
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              aria-label="Go to next page"
+              className="h-8"
+            >
+              Next
+            </Button>
+          </div>
         </div>
       )}
 
@@ -657,6 +786,39 @@ export default function FileManager({ className }: FileManagerProps) {
         onConfirm={handleBulkDeleteImages}
         isDeleting={bulkDeleting}
       />
+
+      {/* Image Preview Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent
+          showCloseButton={false}
+          className="sm:max-w-3xl bg-background border-border p-0 overflow-hidden"
+        >
+          <VisuallyHidden>
+            <DialogTitle>
+              {previewFile?.originalName
+                ? `Preview of ${previewFile.originalName}`
+                : "File preview"}
+            </DialogTitle>
+          </VisuallyHidden>
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(false)}
+            className="absolute top-3 right-3 inline-flex items-center justify-center h-8 w-8 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            aria-label="Close preview"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          {previewFile && (
+            <div className="max-h-[85vh] w-full flex items-center justify-center bg-card">
+              <img
+                src={previewFile.url}
+                alt={previewFile.originalName}
+                className="max-h-[85vh] w-auto object-contain"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

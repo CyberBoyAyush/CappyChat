@@ -93,7 +93,7 @@ export default function CompareDemo() {
       <div className="text-center mb-8">
         <p className="text-muted-foreground text-sm max-w-md mx-auto">
           Drag the slider to seamlessly switch between light and dark modes and
-          see how AVChat adapts to your preference
+          see how CappyChat adapts to your preference
         </p>
       </div>
 

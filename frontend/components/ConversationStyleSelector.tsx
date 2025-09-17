@@ -105,14 +105,13 @@ function PureConversationStyleSelector({
                   <div className="flex items-center justify-between">
                     <span
                       className={cn(
-                        "font-medium text-sm truncate",
-                        isSelected ? "text-primary" : "text-foreground"
+                        "font-medium text-sm truncate text-foreground"
                       )}
                     >
                       {style.name}
                     </span>
                     {isSelected && (
-                      <Check className="h-3 w-3 text-white flex-shrink-0 ml-2" />
+                      <Check className="h-3 w-3 text-primary flex-shrink-0 ml-2" />
                     )}
                   </div>
                   {/* <p className="text-xs text-muted-foreground mt-0.5 leading-tight">

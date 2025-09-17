@@ -361,7 +361,7 @@ export default function PricingPage() {
             {/* 26% OFF Badge */}
             {hasDiscount && (
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <div className="bg-neutral-800 dark:bg-neutral-300 dark:text-black text-white px-4 py-2 rounded-full text-sm font-medium">
+                <div className="bg-gradient-to-r from-primary to-ring text-background px-4 py-2 rounded-full text-sm font-medium">
                   {discountPercentage}% OFF
                 </div>
               </div>

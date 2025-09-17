@@ -84,7 +84,7 @@ function PureSearchTypeSelector({ className }: SearchTypeSelectorProps) {
       <DropdownMenuContent
         align="start"
         className={cn(
-          "w-56 max-h-72 p-0",
+          "w-48 max-h-72 p-0",
           "border border-border/50 bg-background/95 backdrop-blur-xl",
           "shadow-xl rounded-xl"
         )}
@@ -119,12 +119,12 @@ function PureSearchTypeSelector({ className }: SearchTypeSelectorProps) {
                       {config.name}
                     </span>
                     {isSelected && (
-                      <Check className="h-3 w-3 text-white flex-shrink-0 ml-2" />
+                      <Check className="h-3 w-3 text-primary flex-shrink-0 ml-2" />
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-tight">
+                  {/* <p className="text-xs text-muted-foreground mt-0.5 leading-tight">
                     {config.description}
-                  </p>
+                  </p> */}
                 </div>
               </button>
             );

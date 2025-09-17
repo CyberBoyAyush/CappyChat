@@ -115,9 +115,9 @@ const ResetPasswordPage: React.FC = () => {
               <span className="sr-only">Back to Home</span>
             </Link>
             <div className="flex items-center">
-              <img src="/logo.png" alt="AVChat Logo" className="h-8 w-8 mr-2" />
+              <img src="/logo.png" alt="CappyChat Logo" className="h-8 w-8 mr-2" />
               <span className="text-lg font-semibold hidden sm:inline-block">
-                AVChat
+                CappyChat
               </span>
             </div>
           </div>

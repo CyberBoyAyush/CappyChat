@@ -53,7 +53,7 @@ Creates a share link for a thread.
 {
   "success": true,
   "shareId": "share_abc123",
-  "shareUrl": "https://avchat.xyz/share/share_abc123"
+  "shareUrl": "https://cappychat.com/share/share_abc123"
 }
 ```
 

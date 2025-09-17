@@ -123,8 +123,8 @@ class AccountCache {
       const ls = window.localStorage;
 
       // If we have recent session info or pending auth, assume not logged out
-      if (ss.getItem('avchat_auth_session')) return false;
-      if (ss.getItem('avchat_auth_pending')) return false;
+      if (ss.getItem('cappychat_auth_session')) return false;
+      if (ss.getItem('cappychat_auth_pending')) return false;
 
       // If we have any persisted user-linked data, assume not logged out
       if (ls.getItem('atchat_user_id')) return false;

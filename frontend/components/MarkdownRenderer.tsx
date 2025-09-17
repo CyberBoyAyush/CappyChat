@@ -6,34 +6,48 @@
  * Optimized with memoization for performance. Supports code blocks, LaTeX math, and GFM features.
  */
 
-import { memo, useMemo, useState, createContext, useContext, useEffect } from 'react';
-import ReactMarkdown, { type Components } from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import { marked } from 'marked';
-import ShikiHighlighter from 'react-shiki';
-import type { ComponentProps } from 'react';
-import type { ExtraProps } from 'react-markdown';
-import { Check, Copy } from 'lucide-react';
+import {
+  memo,
+  useMemo,
+  useState,
+  createContext,
+  useContext,
+  useEffect,
+} from "react";
+import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import { marked } from "marked";
+import ShikiHighlighter from "react-shiki";
+import type { ComponentProps } from "react";
+import type { ExtraProps } from "react-markdown";
+import { Check, Copy } from "lucide-react";
 
-// New: Add theme detection
+// Theme detection that supports both default and Capybara dark themes
 function useThemeDetection() {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
-    // Check initial theme
-    setIsDarkMode(document.documentElement.classList.contains('dark'));
+    const computeIsDark = () => {
+      const root = document.documentElement;
+      return (
+        root.classList.contains("dark") ||
+        root.classList.contains("capybara-dark")
+      );
+    };
 
-    // Set up a mutation observer to watch for theme changes
+    // Initial
+    setIsDarkMode(computeIsDark());
+
+    // Watch for theme class changes
     const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class') {
-          setIsDarkMode(document.documentElement.classList.contains('dark'));
+      for (const mutation of mutations) {
+        if (mutation.attributeName === "class") {
+          setIsDarkMode(computeIsDark());
         }
-      });
+      }
     });
-
     observer.observe(document.documentElement, { attributes: true });
 
     return () => observer.disconnect();
@@ -42,20 +56,20 @@ function useThemeDetection() {
   return isDarkMode;
 }
 
-type CodeComponentProps = ComponentProps<'code'> & ExtraProps;
-type MarkdownSize = 'default' | 'small';
+type CodeComponentProps = ComponentProps<"code"> & ExtraProps;
+type MarkdownSize = "default" | "small";
 
 // Context to pass size down to components
-const MarkdownSizeContext = createContext<MarkdownSize>('default');
+const MarkdownSizeContext = createContext<MarkdownSize>("default");
 
 const components: Components = {
-  code: CodeBlock as Components['code'],
+  code: CodeBlock as Components["code"],
   pre: ({ children }) => <>{children}</>,
 };
 
 function CodeBlock({ children, className, ...props }: CodeComponentProps) {
   const size = useContext(MarkdownSizeContext);
-  const match = /language-(\w+)/.exec(className || '');
+  const match = /language-(\w+)/.exec(className || "");
   const isDarkMode = useThemeDetection();
 
   const codeContent = String(children);
@@ -64,12 +78,12 @@ function CodeBlock({ children, className, ...props }: CodeComponentProps) {
   // Code blocks (from ```) will have a parent <pre> element, which we detect via className or content
   const isCodeBlock =
     match || // Has language specifier
-    (className && className.includes('language-')) || // Has language class
-    codeContent.includes('\n') || // Multi-line content
+    (className && className.includes("language-")) || // Has language class
+    codeContent.includes("\n") || // Multi-line content
     codeContent.length > 80; // Long single line (likely a code block)
 
   if (isCodeBlock) {
-    const lang = match ? match[1] : 'text';
+    const lang = match ? match[1] : "text";
     return (
       <div className="code-block-container rounded-lg overflow-hidden border border-border bg-background shadow-sm my-4 max-w-full">
         <Codebar lang={lang} codeString={codeContent} />
@@ -89,9 +103,9 @@ function CodeBlock({ children, className, ...props }: CodeComponentProps) {
 
   // For single-line inline code
   const inlineCodeClasses =
-    size === 'small'
-      ? 'mx-0.5 overflow-x-auto rounded-md px-1 py-0.5 bg-secondary text-foreground font-mono text-xs border border-border break-all max-w-full'
-      : 'mx-0.5 overflow-x-auto rounded-md px-2 py-1 bg-secondary text-foreground font-mono text-xs sm:text-sm border border-border break-all max-w-full';
+    size === "small"
+      ? "mx-0.5 overflow-x-auto rounded-md px-1 py-0.5 bg-secondary text-foreground font-mono text-xs border border-border break-all max-w-full"
+      : "mx-0.5 overflow-x-auto rounded-md px-2 py-1 bg-secondary text-foreground font-mono text-xs sm:text-sm border border-border break-all max-w-full";
 
   return (
     <code className={inlineCodeClasses} {...props}>
@@ -111,7 +125,7 @@ function Codebar({ lang, codeString }: { lang: string; codeString: string }) {
         setCopied(false);
       }, 2000);
     } catch (error) {
-      console.error('Failed to copy code to clipboard:', error);
+      console.error("Failed to copy code to clipboard:", error);
     }
   };
 
@@ -131,7 +145,7 @@ function Codebar({ lang, codeString }: { lang: string; codeString: string }) {
 
 function preprocessTreeStructures(content: string): string {
   // Detect tree structures and wrap them in code blocks if not already wrapped
-  const lines = content.split('\n');
+  const lines = content.split("\n");
   const processedLines: string[] = [];
   let inCodeBlock = false;
   let inTreeStructure = false;
@@ -141,14 +155,14 @@ function preprocessTreeStructures(content: string): string {
     const line = lines[i];
 
     // Track if we're inside a code block
-    if (line.trim().startsWith('```')) {
+    if (line.trim().startsWith("```")) {
       inCodeBlock = !inCodeBlock;
 
       // If we were collecting tree lines and hit a code block, flush them
       if (treeLines.length > 0) {
-        processedLines.push('```text');
+        processedLines.push("```text");
         processedLines.push(...treeLines);
-        processedLines.push('```');
+        processedLines.push("```");
         treeLines = [];
         inTreeStructure = false;
       }
@@ -174,9 +188,9 @@ function preprocessTreeStructures(content: string): string {
     } else {
       // If we were in a tree structure and hit a non-tree line, wrap the collected lines
       if (inTreeStructure && treeLines.length > 0) {
-        processedLines.push('```text');
+        processedLines.push("```text");
         processedLines.push(...treeLines);
-        processedLines.push('```');
+        processedLines.push("```");
         treeLines = [];
         inTreeStructure = false;
       }
@@ -186,12 +200,12 @@ function preprocessTreeStructures(content: string): string {
 
   // Handle any remaining tree lines at the end
   if (treeLines.length > 0) {
-    processedLines.push('```text');
+    processedLines.push("```text");
     processedLines.push(...treeLines);
-    processedLines.push('```');
+    processedLines.push("```");
   }
 
-  return processedLines.join('\n');
+  return processedLines.join("\n");
 }
 
 function parseMarkdownIntoBlocks(markdown: string): string[] {
@@ -220,13 +234,13 @@ const MarkdownRendererBlock = memo(
   }
 );
 
-MarkdownRendererBlock.displayName = 'MarkdownRendererBlock';
+MarkdownRendererBlock.displayName = "MarkdownRendererBlock";
 
 const MarkdownRenderer = memo(
   ({
     content,
     id,
-    size = 'default',
+    size = "default",
   }: {
     content: string;
     id: string;
@@ -235,13 +249,15 @@ const MarkdownRenderer = memo(
     const blocks = useMemo(() => parseMarkdownIntoBlocks(content), [content]);
 
     const proseClasses =
-      size === 'small'
-        ? 'prose prose-sm dark:prose-invert break-words max-w-none w-full prose-code:before:content-none prose-code:after:content-none overflow-hidden prose-pre:overflow-x-auto prose-pre:max-w-full prose-table:overflow-x-auto prose-ul:break-words prose-ol:break-words prose-li:break-words'
-        : 'prose prose-base dark:prose-invert break-words max-w-none w-full prose-code:before:content-none prose-code:after:content-none overflow-hidden prose-pre:overflow-x-auto prose-pre:max-w-full prose-table:overflow-x-auto prose-ul:break-words prose-ol:break-words prose-li:break-words prose-p:break-words prose-p:overflow-wrap-anywhere';
+      size === "small"
+        ? "prose prose-sm dark:prose-invert break-words max-w-none w-full prose-code:before:content-none prose-code:after:content-none overflow-hidden prose-pre:overflow-x-auto prose-pre:max-w-full prose-table:overflow-x-auto prose-ul:break-words prose-ol:break-words prose-li:break-words prose-strong:text-foreground prose-em:text-foreground prose-headings:text-foreground"
+        : "prose prose-base dark:prose-invert break-words max-w-none w-full prose-code:before:content-none prose-code:after:content-none overflow-hidden prose-pre:overflow-x-auto prose-pre:max-w-full prose-table:overflow-x-auto prose-ul:break-words prose-ol:break-words prose-li:break-words prose-p:break-words prose-p:overflow-wrap-anywhere prose-strong:text-foreground prose-em:text-foreground prose-headings:text-foreground";
 
     return (
       <MarkdownSizeContext.Provider value={size}>
-        <div className={`${proseClasses} mobile-responsive-markdown`}>
+        <div
+          className={`${proseClasses} mobile-responsive-markdown text-foreground`}
+        >
           {blocks.map((block, index) => (
             <MarkdownRendererBlock
               content={block}
@@ -254,6 +270,6 @@ const MarkdownRenderer = memo(
   }
 );
 
-MarkdownRenderer.displayName = 'MarkdownRenderer';
+MarkdownRenderer.displayName = "MarkdownRenderer";
 
 export default MarkdownRenderer;

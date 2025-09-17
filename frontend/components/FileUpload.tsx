@@ -10,7 +10,7 @@ import { FileAttachment } from "@/lib/appwriteDB";
 import { Button } from "./ui/button";
 import { Paperclip, Upload, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "./ui/Toast";
 import { devError } from "@/lib/logger";
 import { LinkIcon } from "./ui/icons/LinkIcon";
 
@@ -256,7 +256,7 @@ export default function FileUpload({
             <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
           </div>
         ) : (
-          <LinkIcon className="w-4 h-4 transition-transform group-hover:rotate-12" />
+          <LinkIcon className="w-4 h-4 text-primary transition-transform group-hover:rotate-12" />
         )}
 
         {/* Upload count indicator */}

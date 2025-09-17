@@ -1,7 +1,7 @@
 /**
  * Version Configuration and Changelog Data
  * 
- * Centralized version management and changelog information for AVChat.
+ * Centralized version management and changelog information for CapyChat.
  * This file contains the current version and detailed changelog entries.
  */
 
@@ -35,8 +35,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: 'improvement',
-        title: 'Domain Migration to avchat.xyz',
-        description: 'Migrated all URLs and references from avchat.ayush-sharma.in to the new avchat.xyz domain for better branding and accessibility.',
+        title: 'Domain Migration to cappychat.com',
+        description: 'Migrated all URLs and references from cappychat.ayush-sharma.in to the new cappychat.com domain for better branding and accessibility.',
         icon: 'Globe',
         color: 'green'
       },

@@ -1,4 +1,4 @@
-# AVChat — Consolidated Project Documentation
+# CappyChat — Consolidated Project Documentation
 
 ## Table of Contents
 1. Introduction
@@ -38,7 +38,7 @@
 
 ## 1) Introduction
 
-Welcome to the comprehensive documentation for AVChat (also referred to as AtChat), a next‑generation AI chat platform built for performance, scalability, and a seamless user experience. AVChat integrates multiple AI models, real‑time synchronization, and a modern, responsive user interface. It is built with a local‑first architecture so it remains fast and reliable, even in offline or flaky‑network scenarios.
+Welcome to the comprehensive documentation for CappyChat (also referred to as AtChat), a next‑generation AI chat platform built for performance, scalability, and a seamless user experience. CappyChat integrates multiple AI models, real‑time synchronization, and a modern, responsive user interface. It is built with a local‑first architecture so it remains fast and reliable, even in offline or flaky‑network scenarios.
 
 ---
 
@@ -97,8 +97,8 @@ Welcome to the comprehensive documentation for AVChat (also referred to as AtCha
 
 ### Install & Run
 ```bash
-git clone https://github.com/cyberboyayush/AVChat.git
-cd AVChat
+git clone https://github.com/cyberboyayush/CappyChat.git
+cd CappyChat
 pnpm install
 cp env.example .env.local # fill in values
 pnpm run setup-appwrite   # optional automated setup
@@ -110,7 +110,7 @@ pnpm dev                  # start dev server at http://localhost:3000
 ## 5) Project Structure
 
 ```
-AVChat/
+CappyChat/
 ├── app/                          # Next.js App Router
 │   ├── api/                      # Backend API routes
 │   │   ├── admin/                # Admin endpoints
@@ -220,7 +220,7 @@ optimizePackageImports: [
   '@radix-ui/react-dropdown-menu',
   '@radix-ui/react-tooltip',
   '@radix-ui/react-scroll-area',
-  'sonner',
+  'react-hot-toast',
   'date-fns',
 ]
 ```
@@ -740,7 +740,7 @@ git checkout -b feature/your-feature
 - **Sub-100ms Local Operations**: Instant local responses with background sync
 
 ### Domain Migration & Metadata
-- **URL Migration**: Complete migration from avchat.ayush-sharma.in to avchat.xyz
+- **URL Migration**: Complete migration from cappychat.ayush-sharma.in to cappychat.com
 - **Enhanced Metadata**: Open Graph and Twitter cards with banner image
 - **SEO Optimization**: Improved sharing experience and social media integration
 

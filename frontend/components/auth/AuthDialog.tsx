@@ -205,12 +205,12 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
                   }}
                   className="w-20 h-20"
                 >
-                  <img src="/logo.png" alt="AVChat" className="w-full h-full" />
+                  <img src="/logo.png" alt="CappyChat" className="w-full h-full" />
                 </motion.div>
               </div>
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                  AVChat
+                  CappyChat
                 </h1>
                 <p className="text-muted-foreground mt-3 leading-relaxed">
                   Your personal AI assistant for seamless conversations

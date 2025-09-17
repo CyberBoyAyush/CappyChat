@@ -1,10 +1,10 @@
-# AVChat Changelog
+# CappyChat Changelog
 
-This document contains the version history and changelog for AVChat. For a more detailed and interactive view, visit the [Changelog Page](./frontend/routes/ChangelogPage.tsx) in the application.
+This document contains the version history and changelog for CappyChat. For a more detailed and interactive view, visit the [Changelog Page](./frontend/routes/ChangelogPage.tsx) in the application.
 
 ## Version Management
 
-AVChat uses semantic versioning (SemVer) for version management:
+CappyChat uses semantic versioning (SemVer) for version management:
 
 - **Major version (X.0.0)**: Breaking changes or major feature releases
 - **Minor version (X.Y.0)**: New features, backwards compatible
@@ -16,7 +16,7 @@ AVChat uses semantic versioning (SemVer) for version management:
 
 **Major Updates:**
 - 🌟 **Gemini 2.5 Flash Lite Default**: Updated default model across the entire application for improved performance
-- 🌐 **Domain Migration**: Migrated to avchat.xyz for better branding and accessibility
+- 🌐 **Domain Migration**: Migrated to cappychat.com for better branding and accessibility
 - 💳 **Subscription Enhancement**: Improved subscription management with better billing date handling
 - 👤 **Guest User Updates**: Enhanced guest user restrictions with new default model
 

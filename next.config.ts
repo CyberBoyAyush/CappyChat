@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
       '@radix-ui/react-dropdown-menu',
       '@radix-ui/react-tooltip',
       '@radix-ui/react-scroll-area',
-      'sonner',
+      'react-hot-toast',
       'date-fns',
     ],
   },

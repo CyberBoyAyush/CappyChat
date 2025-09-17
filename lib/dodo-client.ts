@@ -77,8 +77,8 @@ export const getWebhookConfig = () => {
   return {
     webhookSecret: DODO_CONFIG.webhookSecret,
     webhookUrl: process.env.NODE_ENV === 'production' 
-      ? 'https://avchat.xyz/api/webhooks/dodopayments'
-      : 'https://test.avchat.xyz/api/webhooks/dodopayments',
+      ? 'https://cappychat.com/api/webhooks/dodopayments'
+      : 'https://test.cappychat.com/api/webhooks/dodopayments',
   };
 };
 

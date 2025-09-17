@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import "katex/dist/katex.min.css";
-import { Toaster } from "@/frontend/components/ui/BasicComponents";
+import { ToastViewport } from "@/frontend/components/ui/Toast";
 import { ThemeProvider } from "@/frontend/components/ui/ThemeComponents";
 import { Analytics } from "@vercel/analytics/react";
 import PerformanceOptimizations from "@/frontend/components/PerformanceOptimizations";
@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AVChat - Fastest AI Chat App",
+  title: "CapyChat - Fastest AI Chat App",
   description:
     "Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.",
   icons: {
@@ -28,17 +28,17 @@ export const metadata: Metadata = {
     apple: "/logo.png",
   },
   openGraph: {
-    title: "AVChat - Fastest AI Chat App",
+    title: "CapyChat - Fastest AI Chat App",
     description:
       "Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.",
-    url: "https://avchat.xyz",
-    siteName: "AVChat",
+    url: "https://cappychat.com",
+    siteName: "CapyChat",
     images: [
       {
         url: "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
         width: 1200,
         height: 630,
-        alt: "AVChat - Fastest AI Chat App",
+        alt: "CapyChat - Fastest AI Chat App",
         type: "image/png",
       },
     ],
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "AVChat - Fastest AI Chat App",
+    title: "CapyChat - Fastest AI Chat App",
     description:
       "Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.",
     images: [
@@ -72,15 +72,15 @@ export const metadata: Metadata = {
   },
   other: {
     // Performance optimization meta tags
-    "dns-prefetch": "https://avchatbackend.avchat.xyz",
-    preconnect: "https://avchatbackend.avchat.xyz",
+    "dns-prefetch": "https://cappychatbackend.cappychat.com",
+    preconnect: "https://cappychatbackend.cappychat.com",
     viewport: "width=device-width, initial-scale=1, maximum-scale=1",
     // Additional Open Graph meta tags for better link previews
     "og:image:secure_url":
       "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
     "og:image:width": "1200",
     "og:image:height": "630",
-    "og:image:alt": "AVChat - Fastest AI Chat App",
+    "og:image:alt": "CapyChat - Fastest AI Chat App",
     // LinkedIn specific
     "linkedin:owner": "cyberboyayush",
     // WhatsApp specific
@@ -101,19 +101,20 @@ export default function RootLayout({
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="capybara-dark"
           enableSystem
           disableTransitionOnChange
+          themes={["light", "dark", "capybara-light", "capybara-dark"]}
         >
           <PerformanceOptimizations />
           {children}
-          <Toaster richColors position="top-right" />
+          <ToastViewport />
         </ThemeProvider>
         <Analytics />
 
         {/* Analytics Tracking Script */}
         <Script
-          src="https://stats.avchat.xyz/script.js"
+          src="https://stats.cappychat.com/script.js"
           data-website-id="07137fa5-ef9f-43f3-afca-6700de099829"
           strategy="afterInteractive"
         />
