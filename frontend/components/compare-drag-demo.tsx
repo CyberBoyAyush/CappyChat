@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Compare } from "@/frontend/components/ui/compare";
-import { motion } from "framer-motion";
-import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Badge } from "@/frontend/components/ui/badge";
 
 export default function CompareDemo() {
+  const { theme } = useTheme();
   const [imageDimensions, setImageDimensions] = useState<{
     width: number;
     height: number;
@@ -15,6 +16,26 @@ export default function CompareDemo() {
   } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Determine which images to use based on current theme
+  const getImages = () => {
+    const isCapybaraTheme =
+      theme === "capybara-light" || theme === "capybara-dark";
+
+    if (isCapybaraTheme) {
+      return {
+        lightImage: "/image2.png", // light theme capybara
+        darkImage: "/image1.png", // dark theme capybara
+      };
+    } else {
+      return {
+        lightImage: "/image4.png", // light theme monochromatic
+        darkImage: "/image3.png", // dark theme monochromatic
+      };
+    }
+  };
+
+  const { lightImage, darkImage } = getImages();
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -54,8 +75,7 @@ export default function CompareDemo() {
         height: img.naturalHeight,
       });
     };
-    img.src =
-      "https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPRqkvasWUXBJDNsC5iPZHT482KSbkML3t1VmU";
+    img.src = lightImage;
   }, []);
 
   // Calculate responsive dimensions
@@ -89,21 +109,13 @@ export default function CompareDemo() {
 
   return (
     <div ref={containerRef} className="w-full mx-auto px-4">
-      {/* Theme Demo Header */}
-      <div className="text-center mb-8">
-        <p className="text-muted-foreground text-sm max-w-md mx-auto">
-          Drag the slider to seamlessly switch between light and dark modes and
-          see how CappyChat adapts to your preference
-        </p>
-      </div>
-
       {/* Compare Component - Dynamic Sizing */}
       <div className="flex justify-center items-center">
         {imageDimensions && containerDimensions && (
           <div className="bg-gradient-to-br from-background/50 to-muted/20 backdrop-blur-sm border border-border/50 rounded-lg md:rounded-3xl p-2 md:p-4 shadow-lg">
             <Compare
-              firstImage="https://res.cloudinary.com/dyetf2h9n/image/upload/v1755978622/1st_psomu9.png"
-              secondImage="https://res.cloudinary.com/dyetf2h9n/image/upload/v1755978622/2nd_bqok7b.png"
+              firstImage={lightImage}
+              secondImage={darkImage}
               firstImageClassName="object-contain select-none w-full h-full rounded-lg md:rounded-xl"
               secondImageClassname="object-contain select-none w-full h-full rounded-lg md:rounded-xl"
               className="rounded-lg md:rounded-xl overflow-hidden shadow-md"
