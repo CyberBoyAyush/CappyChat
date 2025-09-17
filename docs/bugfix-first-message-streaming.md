@@ -12,11 +12,11 @@ Core Issue
 Targeted Fix (minimal changes)
 1) First‑input handoff (no premature stream)
    - File: `frontend/components/ChatInputField.tsx`
-   - On a new conversation without `id`, store `{ threadId, input }` in `sessionStorage` under `avchat_pending_input`, navigate to `/chat/:threadId`, and return early (no `append()` / no stream).
+   - On a new conversation without `id`, store `{ threadId, input }` in `sessionStorage` under `cappychat_pending_input`, navigate to `/chat/:threadId`, and return early (no `append()` / no stream).
 
 2) Auto‑submit in the correct instance
    - File: `frontend/components/ChatInterface.tsx`
-   - On mount for a thread, read `avchat_pending_input`. If it matches `threadId` and there are no messages:
+   - On mount for a thread, read `cappychat_pending_input`. If it matches `threadId` and there are no messages:
      - `setInput(pending.input)` and wait until the child `ChatInputField` registers `submitRef` (poll up to ~3s), then call it to start streaming in the mounted component.
 
 3) Ensure empty thread is actionable

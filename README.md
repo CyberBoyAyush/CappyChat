@@ -16,7 +16,7 @@
 
 **🎯 High-Performance • 🔄 Real-Time Sync • 🤖 26+ AI Models • ⚡ Sub-100ms Response**
 
-[**🌐 Live Demo**](https://avchat.xyz) • [**📚 Documentation**](docs/Project.md) • [**🔧 API Reference**](#api-documentation) • [**🤝 Contributing**](#contributing)
+[**🌐 Live Demo**](https://cappychat.com) • [**📚 Documentation**](docs/Project.md) • [**🔧 API Reference**](#api-documentation) • [**🤝 Contributing**](#contributing)
 
 ---
 
@@ -64,7 +64,7 @@
 **🔧 Developer Experience**
 - **Modern Stack** - Next.js 15, React 19, TypeScript, TailwindCSS
 - **Real-time Features** - WebSocket connections with Appwrite
-- **Production Ready** - Deployed at [avchat.xyz](https://avchat.xyz)
+- **Production Ready** - Deployed at [cappychat.com](https://cappychat.com)
 - **99.9% Uptime** - Enterprise-grade reliability
 
 </td>
@@ -970,8 +970,8 @@ CMD ["node", "server.js"]
 
 Build and run:
 ```bash
-docker build -t avchat .
-docker run -p 3000:3000 avchat
+docker build -t cappychat .
+docker run -p 3000:3000 cappychat
 ```
 
 ### VPS Deployment
@@ -1132,7 +1132,7 @@ Create `ecosystem.config.js` for PM2 process management:
 ```javascript
 module.exports = {
   apps: [{
-    name: 'avchat',
+    name: 'cappychat',
     script: 'server.js',
     instances: 'max',
     exec_mode: 'cluster',
@@ -1582,7 +1582,7 @@ For commercial licensing or permission requests, contact the copyright holders.
 
 ## 🚀 **Ready to Experience the Future of AI Chat?**
 
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-avchat.xyz-2563eb?style=for-the-badge&logoColor=white)](https://avchat.xyz)
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-cappychat.com-2563eb?style=for-the-badge&logoColor=white)](https://cappychat.com)
 [![GitHub](https://img.shields.io/badge/⭐_Star_on_GitHub-CyberBoyAyush/CapyChat-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/CyberBoyAyush/CapyChat)
 [![Documentation](https://img.shields.io/badge/📚_Read_Docs-Project.md-10b981?style=for-the-badge&logoColor=white)](docs/Project.md)
 

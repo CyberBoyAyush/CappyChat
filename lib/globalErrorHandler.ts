@@ -11,9 +11,9 @@ import { AppwriteRealtime } from './appwriteRealtime';
 import { devLog, prodError, devError } from './logger';
 
 // Auth cache keys (matching AuthContext)
-const AUTH_CACHE_KEY = 'avchat_auth_cache';
-const AUTH_SESSION_KEY = 'avchat_auth_session';
-const AUTH_PENDING_KEY = 'avchat_auth_pending';
+const AUTH_CACHE_KEY = 'cappychat_auth_cache';
+const AUTH_SESSION_KEY = 'cappychat_auth_session';
+const AUTH_PENDING_KEY = 'cappychat_auth_pending';
 
 // Global error handler instance
 class GlobalErrorHandler {

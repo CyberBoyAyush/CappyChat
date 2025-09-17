@@ -1707,11 +1707,11 @@ export default function SettingsPage() {
                     <div className="p-6 border rounded-xl bg-card/60 shadow-sm">
                       <div className="flex items-center gap-2 mb-4">
                         <Info className="h-5 w-5 text-primary" />
-                        <h3 className="text-lg font-medium">About AVChat</h3>
+                        <h3 className="text-lg font-medium">About CappyChat</h3>
                       </div>
                       <div className="space-y-4">
                         <p className="text-sm text-muted-foreground">
-                          Learn more about AVChat, our team, technology stack,
+                          Learn more about CappyChat, our team, technology stack,
                           and mission to create the fastest AI chat experience.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-2">
@@ -1752,10 +1752,10 @@ export default function SettingsPage() {
                                 Get help with your account or technical issues
                               </p>
                               <a
-                                href="mailto:avchat@aysh.me"
+                                href="mailto:cappychat@aysh.me"
                                 className="text-sm text-primary hover:underline mt-2 inline-block"
                               >
-                                avchat@aysh.me
+                                cappychat@aysh.me
                               </a>
                             </div>
                           </div>
@@ -1805,7 +1805,7 @@ export default function SettingsPage() {
                                 Self Host or Contribute
                               </p>
                               <a
-                                href="https://github.com/CyberBoyAyush/AVChat"
+                                href="https://github.com/CyberBoyAyush/CappyChat"
                                 className="text-sm text-primary hover:underline mt-2 inline-block"
                               >
                                 View on Github

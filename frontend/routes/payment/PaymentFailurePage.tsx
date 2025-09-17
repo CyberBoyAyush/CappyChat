@@ -141,7 +141,7 @@ const PaymentFailurePage: React.FC = () => {
               </Button>
               
               <Button variant="outline" asChild>
-                <a href="mailto:support@avchat.xyz?subject=Payment%20Issue">
+                <a href="mailto:support@cappychat.com?subject=Payment%20Issue">
                   <HelpCircle className="h-4 w-4 mr-1" />
                   Get Help
                 </a>
@@ -165,8 +165,8 @@ const PaymentFailurePage: React.FC = () => {
             </p>
             <p className="text-xs text-muted-foreground">
               Email us at{' '}
-              <a href="mailto:support@avchat.xyz" className="text-primary hover:underline">
-                support@avchat.xyz
+              <a href="mailto:support@cappychat.com" className="text-primary hover:underline">
+                support@cappychat.com
               </a>
               {' '}or try our live chat
             </p>

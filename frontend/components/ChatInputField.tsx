@@ -525,7 +525,7 @@ function PureInputField({
                 : undefined;
 
             sessionStorage.setItem(
-              "avchat_pending_input",
+              "cappychat_pending_input",
               JSON.stringify({
                 threadId,
                 input: finalInput,
@@ -1216,7 +1216,7 @@ function PureInputField({
                       : "Ask me anything..."
                     : isVoiceInputActive
                     ? "Listening... speak now"
-                    : "Ask AVChat anything..."
+                    : "Ask CappyChat anything..."
                 }
                 className={cn(
                   "w-full px-3 sm:px-4 py-3 sm:py-2 md:pt-4 pr-10 sm:pr-12 border-none shadow-none scrollbar-none",

@@ -49,7 +49,7 @@ const PaymentCancelledPage: React.FC = () => {
               <div className="space-y-1">
                 <p className="text-sm font-medium">No worries!</p>
                 <p className="text-sm text-muted-foreground">
-                  You can continue using AVChat with the free plan or upgrade anytime.
+                  You can continue using CappyChat with the free plan or upgrade anytime.
                 </p>
               </div>
             </div>
@@ -122,8 +122,8 @@ const PaymentCancelledPage: React.FC = () => {
             </p>
             <p className="text-xs text-muted-foreground">
               Contact us at{' '}
-              <a href="mailto:support@avchat.xyz" className="text-primary hover:underline">
-                support@avchat.xyz
+              <a href="mailto:support@cappychat.com" className="text-primary hover:underline">
+                support@cappychat.com
               </a>
             </p>
           </div>

@@ -254,7 +254,7 @@ const PanelHeaderComponent = ({
                 <DropdownMenuItem
                   onClick={() =>
                     window.open(
-                      "https://github.com/cyberboyayush/AVChat",
+                      "https://github.com/cyberboyayush/CappyChat",
                       "_blank"
                     )
                   }
@@ -294,7 +294,7 @@ const PanelHeaderComponent = ({
                 {/* Status */}
                 <DropdownMenuItem
                   onClick={() =>
-                    window.open("https://status.avchat.xyz", "_blank")
+                    window.open("https://status.cappychat.com", "_blank")
                   }
                   className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 >

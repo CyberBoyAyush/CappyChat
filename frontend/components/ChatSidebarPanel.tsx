@@ -252,7 +252,7 @@ export default function ChatSidebarPanel() {
             // Guest user interface - simple welcome message
             <div className="px-2 py-4 text-center space-y-3">
               <div className="text-sm text-muted-foreground">
-                Welcome to AVChat! You can send up to 2 free messages to try our
+                Welcome to CappyChat! You can send up to 2 free messages to try our
                 AI assistant.
               </div>
               <div className="text-xs text-muted-foreground">

@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     title: "CapyChat - Fastest AI Chat App",
     description:
       "Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.",
-    url: "https://avchat.xyz",
+    url: "https://cappychat.com",
     siteName: "CapyChat",
     images: [
       {
@@ -72,8 +72,8 @@ export const metadata: Metadata = {
   },
   other: {
     // Performance optimization meta tags
-    "dns-prefetch": "https://avchatbackend.avchat.xyz",
-    preconnect: "https://avchatbackend.avchat.xyz",
+    "dns-prefetch": "https://cappychatbackend.cappychat.com",
+    preconnect: "https://cappychatbackend.cappychat.com",
     viewport: "width=device-width, initial-scale=1, maximum-scale=1",
     // Additional Open Graph meta tags for better link previews
     "og:image:secure_url":
@@ -114,7 +114,7 @@ export default function RootLayout({
 
         {/* Analytics Tracking Script */}
         <Script
-          src="https://stats.avchat.xyz/script.js"
+          src="https://stats.cappychat.com/script.js"
           data-website-id="07137fa5-ef9f-43f3-afca-6700de099829"
           strategy="afterInteractive"
         />

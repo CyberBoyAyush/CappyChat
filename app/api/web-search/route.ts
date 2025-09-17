@@ -275,7 +275,7 @@ export async function POST(req: NextRequest) {
     const openrouter = createOpenRouter({
       apiKey,
       headers: {
-        'HTTP-Referer': 'https://avchat.xyz/',
+        'HTTP-Referer': 'https://cappychat.com/',
         'X-Title': 'CapyChat - AI Chat Application',
         'User-Agent': 'CapyChat/1.0.0'
       }

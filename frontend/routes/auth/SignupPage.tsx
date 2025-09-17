@@ -178,7 +178,7 @@ const SignupPage: React.FC = () => {
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold mb-2">Create account</h1>
               <p className="text-muted-foreground">
-                Join AVChat and start your AI journey
+                Join CappyChat and start your AI journey
               </p>
             </div>
 

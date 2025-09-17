@@ -102,8 +102,8 @@ const getErrorMessage = (error: any): string => {
 };
 
 // Real-time auth keys (no caching, instant sync)
-const AUTH_SESSION_KEY = 'avchat_auth_session';
-const AUTH_PENDING_KEY = 'avchat_auth_pending';
+const AUTH_SESSION_KEY = 'cappychat_auth_session';
+const AUTH_PENDING_KEY = 'cappychat_auth_pending';
 
 // No caching - always fetch fresh auth state for real-time sync
 const getCachedAuthState = (): { user: User | null; timestamp: number } | null => {

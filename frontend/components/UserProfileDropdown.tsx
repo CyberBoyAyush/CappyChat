@@ -365,7 +365,7 @@ const UserProfileDropdown: React.FC = () => {
           </div>
           <DropdownMenuItem
             onClick={() =>
-              window.open("https://github.com/cyberboyayush/AVChat", "_blank")
+              window.open("https://github.com/cyberboyayush/CappyChat", "_blank")
             }
             className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-md text-foreground hover:bg-muted/50 transition-colors"
           >
@@ -394,7 +394,7 @@ const UserProfileDropdown: React.FC = () => {
             <span className="text-sm">Changelog</span>
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => window.open("https://status.avchat.xyz", "_blank")}
+            onClick={() => window.open("https://status.cappychat.com", "_blank")}
             className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-md text-foreground hover:bg-muted/50 transition-colors"
           >
             <Activity className="h-4 w-4 text-muted-foreground" />

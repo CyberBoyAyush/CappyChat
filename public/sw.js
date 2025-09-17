@@ -1,4 +1,4 @@
-// AVChat Service Worker for Performance Optimization
+// CappyChat Service Worker for Performance Optimization
 // This service worker caches static assets and API responses for faster loading
 
 // Use timestamp or build hash for cache versioning to prevent stale cache issues

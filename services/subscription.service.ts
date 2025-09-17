@@ -106,7 +106,7 @@ export const createSubscriptionCheckout = async (
 
     // Construct return URL based on the origin where subscription was created
     const baseUrl = origin || (process.env.NODE_ENV === 'production'
-      ? 'https://avchat.xyz'
+      ? 'https://cappychat.com'
       : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
     const returnUrl = `${baseUrl}/payment/result`;
 
@@ -138,7 +138,7 @@ export const createSubscriptionCheckout = async (
       metadata: {
         userId,
         appwriteUserId: userId,
-        source: 'avchat',
+        source: 'cappychat',
         environment: process.env.NODE_ENV || 'development',
         origin: baseUrl,
       },

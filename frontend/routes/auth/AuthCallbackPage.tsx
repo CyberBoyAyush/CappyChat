@@ -168,7 +168,7 @@ const AuthCallbackPage: React.FC = () => {
 
           console.log('🧹 Clearing pending auth state...');
           // Clear pending auth state immediately
-          sessionStorage.removeItem('avchat_auth_pending');
+          sessionStorage.removeItem('cappychat_auth_pending');
 
           console.log('💾 Updating session cache...');
           // Update both localStorage and sessionStorage for instant future access
@@ -176,8 +176,8 @@ const AuthCallbackPage: React.FC = () => {
             user,
             timestamp: Date.now()
           };
-          sessionStorage.setItem('avchat_auth_session', JSON.stringify(sessionData));
-          localStorage.setItem('avchat_auth_cache', JSON.stringify(sessionData));
+          sessionStorage.setItem('cappychat_auth_session', JSON.stringify(sessionData));
+          localStorage.setItem('cappychat_auth_cache', JSON.stringify(sessionData));
 
           console.log('🔄 Refreshing user state in AuthContext...');
           // Force refresh the user state in AuthContext to ensure immediate UI update
@@ -196,7 +196,7 @@ const AuthCallbackPage: React.FC = () => {
           navigate(redirectPath || '/chat', { replace: true });
         } else {
           // Clear pending auth state on failure
-          sessionStorage.removeItem('avchat_auth_pending');
+          sessionStorage.removeItem('cappychat_auth_pending');
 
           // Authentication failed, redirect to home instead of login to avoid loops
           navigate('/?error=Authentication failed', { replace: true });

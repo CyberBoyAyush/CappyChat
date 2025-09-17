@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the complete implementation of DODO Payments subscription system for AVChat. The implementation provides a production-ready subscription management system with dynamic currency detection, webhook handling, and seamless Appwrite integration.
+This document outlines the complete implementation of DODO Payments subscription system for CappyChat. The implementation provides a production-ready subscription management system with dynamic currency detection, webhook handling, and seamless Appwrite integration.
 
 ## Architecture
 
@@ -204,7 +204,7 @@ The implementation includes comprehensive error handling:
 
 ## Deployment Notes
 
-1. **Webhook URL**: Configure in DODO dashboard as `https://avchat.xyz/api/webhooks/dodo`
+1. **Webhook URL**: Configure in DODO dashboard as `https://cappychat.com/api/webhooks/dodo`
 2. **Environment Variables**: Ensure all DODO configuration is set in production
 3. **SSL Certificate**: Required for webhook signature verification
 4. **Database Backup**: Backup user preferences before deployment

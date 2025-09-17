@@ -149,14 +149,14 @@ export default function ChatInterface({
         "[ChatInterface] 🎉 User detected while pending auth - force clearing pending state"
       );
       setIsPendingAuth(false);
-      sessionStorage.removeItem("avchat_auth_pending");
+      sessionStorage.removeItem("cappychat_auth_pending");
     }
   }, [user, isPendingAuth]);
 
   useEffect(() => {
     const checkPendingAuth = () => {
       try {
-        const pending = sessionStorage.getItem("avchat_auth_pending");
+        const pending = sessionStorage.getItem("cappychat_auth_pending");
         if (pending) {
           const parsed = JSON.parse(pending);
           const age = Date.now() - parsed.timestamp;
@@ -176,7 +176,7 @@ export default function ChatInterface({
               age,
               "ms)"
             );
-            sessionStorage.removeItem("avchat_auth_pending");
+            sessionStorage.removeItem("cappychat_auth_pending");
           }
         } else {
           if (isPendingAuth) {
@@ -199,7 +199,7 @@ export default function ChatInterface({
     const handleAuthStateChanged = () => {
       devLog("[ChatInterface] 🎉 Auth state changed - clearing pending state");
       setIsPendingAuth(false);
-      sessionStorage.removeItem("avchat_auth_pending");
+      sessionStorage.removeItem("cappychat_auth_pending");
     };
 
     // Emergency timeout to force clear pending state after 8 seconds
@@ -209,7 +209,7 @@ export default function ChatInterface({
           "[ChatInterface] 🚨 EMERGENCY: Force clearing pending auth after 8 seconds"
         );
         setIsPendingAuth(false);
-        sessionStorage.removeItem("avchat_auth_pending");
+        sessionStorage.removeItem("cappychat_auth_pending");
       }
     }, 8000);
 
@@ -447,7 +447,7 @@ export default function ChatInterface({
   // Auto-submit pending input handed off during new-chat navigation
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem("avchat_pending_input");
+      const raw = sessionStorage.getItem("cappychat_pending_input");
       if (!raw) return;
       const pending = JSON.parse(raw) as {
         threadId: string;
@@ -458,7 +458,7 @@ export default function ChatInterface({
       };
       if (pending.threadId !== threadId) return;
       if (messages.length > 0) {
-        sessionStorage.removeItem("avchat_pending_input");
+        sessionStorage.removeItem("cappychat_pending_input");
         return;
       }
       const normalizedAttachments = Array.isArray(pending.attachments)
@@ -487,7 +487,7 @@ export default function ChatInterface({
 
       if (hasInput || hasAttachments) {
         setInput(pending.input ?? "");
-        sessionStorage.removeItem("avchat_pending_input");
+        sessionStorage.removeItem("cappychat_pending_input");
 
         // Wait until ChatInputField registers submitRef
         let attempts = 0;

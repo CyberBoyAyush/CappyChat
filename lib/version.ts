@@ -35,8 +35,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: 'improvement',
-        title: 'Domain Migration to avchat.xyz',
-        description: 'Migrated all URLs and references from avchat.ayush-sharma.in to the new avchat.xyz domain for better branding and accessibility.',
+        title: 'Domain Migration to cappychat.com',
+        description: 'Migrated all URLs and references from cappychat.ayush-sharma.in to the new cappychat.com domain for better branding and accessibility.',
         icon: 'Globe',
         color: 'green'
       },
