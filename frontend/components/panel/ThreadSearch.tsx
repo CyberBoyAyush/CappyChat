@@ -204,15 +204,7 @@ export const ThreadSearch = ({
 
   // Generate a consistent color for each tag based on tag name
   const getTagColor = (tag: string) => {
-    const colors = [
-      "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800",
-      "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
-      "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800",
-      "bg-black/10 text-black/90 border-black/10 dark:bg-white/30 dark:text-zinc-300 dark:border-white/20",
-      "bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800",
-      "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800",
-    ];
-
+    const colors = ["bg-primary/20 text-primary border-primary/30"];
     // Simple hash function to get consistent color for same tag
     let hash = 0;
     for (let i = 0; i < tag.length; i++) {

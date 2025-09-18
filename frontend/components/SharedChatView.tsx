@@ -199,7 +199,7 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
                     Shared{" "}
                     {new Date(thread?.sharedAt || "").toLocaleDateString()}
                   </span>
-                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
+                  <span className="px-2 py-1 bg-muted rounded-full text-xs">
                     View Only
                   </span>
                 </div>

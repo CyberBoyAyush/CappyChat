@@ -195,12 +195,12 @@ const PanelHeaderComponent = ({
                           {displayName}
                         </span>
                         {tierInfo?.tier === "premium" && (
-                          <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
+                          <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-full">
                             PRO
                           </span>
                         )}
                         {tierInfo?.tier === "admin" && (
-                          <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-zinc-700 to-zinc-900 dark:from-zinc-300 dark:to-zinc-100 text-white dark:text-black rounded-full">
+                          <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-full">
                             ADMIN
                           </span>
                         )}

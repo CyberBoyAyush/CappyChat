@@ -31,6 +31,7 @@ import ResetPasswordPage from "./routes/auth/ResetPasswordPage";
 import PricingPage from "./routes/PricingPage";
 import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts";
 import ErrorBoundary from "./components/ErrorBoundary";
+import SiteNavigationLayout from "./components/layout/SiteNavigationLayout";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -63,17 +64,40 @@ export default function ChatAppRouter() {
 
 
 
-          {/* About route (always accessible) */}
-          <Route path="/about" element={<AboutPage />} />
+          {/* Layout with marketing/navigation header */}
+          <Route element={<SiteNavigationLayout />}>
+            {/* About route (always accessible) */}
+            <Route path="/about" element={<AboutPage />} />
 
-          {/* Changelog route (always accessible) */}
-          <Route path="/changelog" element={<ChangelogPage />} />
+            {/* Changelog route (always accessible) */}
+            <Route path="/changelog" element={<ChangelogPage />} />
 
-          {/* Pricing route (always accessible) */}
-          <Route path="/pricing" element={<PricingPage />} />
+            {/* Pricing route (always accessible) */}
+            <Route path="/pricing" element={<PricingPage />} />
 
-          {/* Shared chat route (always accessible) */}
-          <Route path="/share/:shareId" element={<SharedChatPage />} />
+            {/* Shared chat route (always accessible) */}
+            <Route path="/share/:shareId" element={<SharedChatPage />} />
+
+            {/* Settings route (require authentication) */}
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin route (require authentication) */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminPage />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
 
           {/* Auth routes (always accessible) */}
           <Route path="/login" element={<LoginPage />} />
@@ -88,26 +112,6 @@ export default function ChatAppRouter() {
           <Route path="/payment/success" element={<PaymentSuccessPage />} />
           <Route path="/payment/failure" element={<PaymentFailurePage />} />
           <Route path="/payment/cancelled" element={<PaymentCancelledPage />} />
-
-          {/* Settings route (require authentication) */}
-          <Route
-            path="settings"
-            element={
-              <ProtectedRoute>
-                <SettingsPage />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Admin route (require authentication) */}
-          <Route
-            path="admin"
-            element={
-              <ProtectedRoute>
-                <AdminPage />
-              </ProtectedRoute>
-            }
-          />
 
 
 

@@ -190,7 +190,7 @@ export default function GuestWelcomeScreen({
             </span>
           </div>
 
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-3 leading-tight">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold my-3 leading-tight">
             <span className="bg-gradient-to-r from-foreground via-foreground dark:via-primary to-foreground bg-clip-text text-transparent">
               CappyChat
             </span>
@@ -241,7 +241,7 @@ export default function GuestWelcomeScreen({
             <h2 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent">
               Why Choose Cappy<span className="text-primary">Chat</span>?
             </h2>
-            <p className="text-muted-foreground max-w-3xl mx-auto text-lg leading-relaxed">
+            <p className="text-muted-foreground max-w-3xl mx-auto text-sm md:text-lg leading-relaxed">
               Discover the cutting-edge features that make CappyChat the
               preferred choice for intelligent conversations and seamless AI
               interactions
@@ -273,7 +273,7 @@ export default function GuestWelcomeScreen({
               <Sparkles className="h-4 w-4" />
               <span className="relative z-10">Theme Customization</span>
             </div>
-            <h3 className="text-2xl  md:text-5xl font-bold mb-4">
+            <h3 className="text-3xl  md:text-5xl font-bold mb-4">
               Light & Dark Theme
             </h3>
             <p className="text-muted-foreground max-w-2xl mx-auto">

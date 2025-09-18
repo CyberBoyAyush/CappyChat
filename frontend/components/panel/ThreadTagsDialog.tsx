@@ -6,8 +6,8 @@
  * Allows users to add, remove, and edit tags for better thread organization.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { X, Plus } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from "react";
+import { X, Plus, Tag } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,25 +15,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/frontend/components/ui/dialog';
-import { Button } from '@/frontend/components/ui/button';
-import { Input } from '@/frontend/components/ui/input';
-import { Label } from '@/frontend/components/ui/BasicComponents';
+} from "@/frontend/components/ui/dialog";
+import { Button } from "@/frontend/components/ui/button";
+import { Input } from "@/frontend/components/ui/input";
+import { Label } from "@/frontend/components/ui/BasicComponents";
 
-// Generate consistent colors for tags based on tag name
+// Generate consistent colors for tags based on tag name using global CSS variables
 const getTagColor = (tag: string) => {
-  const colors = [
-    'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
-    'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
-    'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
-    'bg-black/10 text-black/90 border-black/10 dark:bg-white/30 dark:text-zinc-300 dark:border-white/20',
-    'bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800',
-    'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800',
-    'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800',
-    'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
-    'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800',
-    'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800',
-  ];
+  const colors = ["bg-primary/20 text-primary border-primary/30"];
 
   // Simple hash function to get consistent color for same tag
   let hash = 0;
@@ -57,7 +46,7 @@ export const ThreadTagsDialog = ({
   onConfirm,
 }: ThreadTagsDialogProps) => {
   const [tags, setTags] = useState<string[]>(currentTags);
-  const [newTag, setNewTag] = useState('');
+  const [newTag, setNewTag] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -65,94 +54,134 @@ export const ThreadTagsDialog = ({
   useEffect(() => {
     if (isOpen) {
       setTags([...currentTags]);
-      setNewTag('');
+      setNewTag("");
     }
   }, [isOpen, currentTags]);
 
   const handleAddTag = useCallback(() => {
     const trimmedTag = newTag.trim().toLowerCase();
     if (trimmedTag && !tags.includes(trimmedTag) && tags.length < 10) {
-      setTags(prev => [...prev, trimmedTag]);
-      setNewTag('');
+      setTags((prev) => [...prev, trimmedTag]);
+      setNewTag("");
       inputRef.current?.focus();
     }
   }, [newTag, tags]);
 
   const handleRemoveTag = useCallback((tagToRemove: string) => {
-    setTags(prev => prev.filter(tag => tag !== tagToRemove));
+    setTags((prev) => prev.filter((tag) => tag !== tagToRemove));
   }, []);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddTag();
-    }
-  }, [handleAddTag]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleAddTag();
+      }
+    },
+    [handleAddTag]
+  );
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    setIsSubmitting(true);
-    try {
-      await onConfirm(tags);
-    } catch (error) {
-      console.error('Error updating thread tags:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [tags, onConfirm]);
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+
+      setIsSubmitting(true);
+      try {
+        await onConfirm(tags);
+      } catch (error) {
+        console.error("Error updating thread tags:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [tags, onConfirm]
+  );
 
   const handleCancel = useCallback(() => {
     setTags([...currentTags]);
-    setNewTag('');
+    setNewTag("");
     onOpenChange(false);
   }, [currentTags, onOpenChange]);
 
-  const hasChanges = JSON.stringify(tags.sort()) !== JSON.stringify([...currentTags].sort());
+  const hasChanges =
+    JSON.stringify(tags.sort()) !== JSON.stringify([...currentTags].sort());
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Manage Tags</DialogTitle>
-          <DialogDescription>
-            Add tags to organize and categorize this conversation.
+      <DialogContent className="sm:max-w-lg p-0 max-h-[85vh] overflow-hidden bg-card border-border shadow-2xl">
+        <DialogHeader className="px-6 py-5 border-b border-border/50 bg-gradient-to-r from-primary/5 to-primary/10">
+          <DialogTitle className="text-center text-xl font-semibold text-foreground flex items-center justify-center gap-2">
+            <Tag className="h-5 w-5 text-primary" />
+            Manage Tags
+          </DialogTitle>
+          <DialogDescription className="text-center text-sm text-muted-foreground max-w-sm mx-auto">
+            Add tags to organize and categorize this conversation for better
+            organization.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
+          <div className="px-6 pb-6 space-y-6 overflow-y-auto max-h-[calc(85vh-200px)]">
             {/* Current Tags */}
-            {tags.length > 0 && (
-              <div className="grid gap-2">
-                <Label>Current Tags</Label>
-                <div className="flex flex-wrap gap-2">
-                  {tags.map((tag) => (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30">
+                  <Tag className="h-4 w-4 text-primary" />
+                </div>
+                <Label className="text-base font-semibold text-foreground">
+                  Current Tags ({tags.length})
+                </Label>
+              </div>
+              <div className="flex flex-wrap gap-2 p-4 border border-border/50 rounded-xl bg-gradient-to-br from-card/50 to-muted/20 backdrop-blur-sm shadow-sm min-h-[60px]">
+                {tags.length > 0 ? (
+                  tags.map((tag) => (
                     <div
                       key={tag}
-                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border ${getTagColor(tag)}`}
+                      className={`group inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-all duration-200 hover:shadow-sm ${getTagColor(
+                        tag
+                      )}`}
                     >
-                      {tag}
+                      <span>{tag}</span>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-3 w-3 p-0 hover:bg-black/10 rounded-full"
+                        className="h-4 w-4 p-0 hover:bg-black/20 dark:hover:bg-white/20 rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-200"
                         onClick={() => handleRemoveTag(tag)}
                         disabled={isSubmitting}
+                        title="Remove tag"
                       >
-                        <X className="h-2 w-2" />
+                        <X className="h-3 w-3" />
                       </Button>
                     </div>
-                  ))}
-                </div>
+                  ))
+                ) : (
+                  <div className="flex items-center justify-center w-full py-6 text-muted-foreground">
+                    <div className="text-center space-y-2">
+                      <p className="text-sm font-medium">No tags added yet</p>
+                      <p className="text-xs">
+                        Add tags below to organize this conversation
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
             {/* Add New Tag */}
-            <div className="grid gap-2">
-              <Label htmlFor="new-tag">Add New Tag</Label>
-              <div className="flex gap-2">
+            <div className="space-y-4 p-5 border border-border/50 rounded-xl bg-gradient-to-br from-card/50 to-muted/20 backdrop-blur-sm shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30">
+                  <Plus className="h-4 w-4 text-primary" />
+                </div>
+                <Label
+                  htmlFor="new-tag"
+                  className="text-base font-semibold text-foreground"
+                >
+                  Add New Tag
+                </Label>
+              </div>
+              <div className="flex gap-3">
                 <Input
                   ref={inputRef}
                   id="new-tag"
@@ -162,39 +191,52 @@ export const ThreadTagsDialog = ({
                   placeholder="Enter tag name..."
                   maxLength={20}
                   disabled={isSubmitting || tags.length >= 10}
+                  className="h-11 rounded-lg bg-background border-border/60 focus:border-primary/50 focus:ring-primary/20 transition-all duration-200"
                 />
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
                   onClick={handleAddTag}
-                  disabled={!newTag.trim() || tags.includes(newTag.trim().toLowerCase()) || tags.length >= 10 || isSubmitting}
+                  disabled={
+                    !newTag.trim() ||
+                    tags.includes(newTag.trim().toLowerCase()) ||
+                    tags.length >= 10 ||
+                    isSubmitting
+                  }
+                  className="h-11 w-11 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-all duration-200"
+                  title="Add tag"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
               {tags.length >= 10 && (
-                <p className="text-xs text-muted-foreground">
-                  Maximum of 10 tags allowed.
-                </p>
+                <div className="flex items-center gap-2 p-3 border border-amber-500/30 rounded-lg bg-gradient-to-r from-amber-500/10 to-amber-500/5">
+                  <div className="h-2 w-2 rounded-full bg-amber-500" />
+                  <p className="text-xs font-medium text-amber-700 dark:text-amber-600">
+                    Maximum of 10 tags allowed.
+                  </p>
+                </div>
               )}
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 border-t border-border/50 bg-gradient-to-r from-muted/20 to-muted/10 gap-3">
             <Button
               type="button"
               variant="outline"
               onClick={handleCancel}
               disabled={isSubmitting}
+              className="flex-1 h-11 font-medium border-border hover:bg-accent hover:text-accent-foreground transition-all duration-200"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={!hasChanges || isSubmitting}
+              className="flex-1 h-11 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-sm transition-all duration-200 font-medium"
             >
-              {isSubmitting ? 'Saving...' : 'Save Tags'}
+              {isSubmitting ? "Saving..." : "Save Tags"}
             </Button>
           </DialogFooter>
         </form>

@@ -308,13 +308,15 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
-  --animate-ripple: ripple var(--duration,2s) ease calc(var(--i, 0)*.2s) infinite;
+  --animate-ripple: ripple var(--duration, 2s) ease calc(var(--i, 0) * 0.2s)
+    infinite;
   @keyframes ripple {
-  0%, 100% {
-    transform: translate(-50%, -50%) scale(1);
+    0%,
+    100% {
+      transform: translate(-50%, -50%) scale(1);
     }
-  50% {
-    transform: translate(-50%, -50%) scale(0.9);
+    50% {
+      transform: translate(-50%, -50%) scale(0.9);
     }
   }
 }
@@ -616,6 +618,22 @@
   /* Prevent scrolling when mobile sidebar is open */
   body.sidebar-open {
     overflow: hidden;
+  }
+
+  /* Theme-aware horizontal rules */
+  hr {
+    border: none;
+    height: 1px;
+    background-color: hsl(var(--ring) / 0.3);
+    margin: 1.5rem 0;
+  }
+
+  /* Ensure prose hr elements also use theme colors */
+  .prose hr {
+    border: none !important;
+    height: 1px !important;
+    background-color: hsl(var(--ring) / 0.3) !important;
+    margin: 1.5rem 0 !important;
   }
 }
 

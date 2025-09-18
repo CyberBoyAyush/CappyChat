@@ -244,7 +244,7 @@ const LoginPage: React.FC = () => {
                       placeholder="your.email@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 h-12 bg-background/50 border-border/50"
+                      className="pl-10 rounded-lg placeholder:text-muted-foreground/70 border border-ring/10 h-12 bg-background/50 "
                       disabled={isLoading || oauthLoading !== null}
                     />
                   </div>
@@ -262,7 +262,7 @@ const LoginPage: React.FC = () => {
                       placeholder="••••••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 pr-12 h-12 bg-background/50 border-border/50"
+                      className="pl-10 placeholder:text-muted-foreground/70 rounded-lg pr-12 h-12 bg-background/50 border-ring/10 border"
                       disabled={isLoading || oauthLoading !== null}
                     />
                     <Button

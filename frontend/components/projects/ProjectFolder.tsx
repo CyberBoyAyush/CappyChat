@@ -194,7 +194,12 @@ export const ProjectFolder: React.FC<ProjectFolderProps> = ({
     newDescription?: string
   ) => {
     try {
-      await onProjectUpdate(project.id, newName, newDescription, project.prompt);
+      await onProjectUpdate(
+        project.id,
+        newName,
+        newDescription,
+        project.prompt
+      );
       setIsRenameDialogOpen(false);
     } catch (error) {
       console.error("Error renaming project:", error);

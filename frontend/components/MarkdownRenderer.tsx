@@ -67,6 +67,9 @@ const components: Components = {
   code: CodeBlock as Components["code"],
   pre: ({ children }) => <>{children}</>,
   a: LinkComponent as Components["a"],
+  hr: ({ ...props }) => (
+    <hr className="my-6 border-0 h-px bg-ring/30" {...props} />
+  ),
 };
 
 function CodeBlock({ children, className, ...props }: CodeComponentProps) {
