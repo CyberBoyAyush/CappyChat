@@ -308,6 +308,15 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
+  --animate-ripple: ripple var(--duration,2s) ease calc(var(--i, 0)*.2s) infinite;
+  @keyframes ripple {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    }
+  50% {
+    transform: translate(-50%, -50%) scale(0.9);
+    }
+  }
 }
 
 @layer base {
@@ -1660,6 +1669,32 @@ html {
   left: 0.5em;
   height: 2em;
   animation: moveleg2 1s linear infinite 0.075s;
+}
+
+.capy,
+.capyhead,
+.capyleg,
+.capyleg2,
+.capyleg2:nth-child(3),
+.animate-movebody,
+.animate-moveleg,
+.animate-moveleg2,
+.animate-moveline,
+.loaderline {
+  animation-play-state: var(--capybara-animation-state, running);
+}
+
+[data-capybara-animated="false"] .capy,
+[data-capybara-animated="false"] .capyhead,
+[data-capybara-animated="false"] .capyleg,
+[data-capybara-animated="false"] .capyleg2,
+[data-capybara-animated="false"] .capyleg2:nth-child(3),
+[data-capybara-animated="false"] .animate-movebody,
+[data-capybara-animated="false"] .animate-moveleg,
+[data-capybara-animated="false"] .animate-moveleg2,
+[data-capybara-animated="false"] .animate-moveline,
+[data-capybara-animated="false"] .loaderline {
+  animation: none !important;
 }
 
 @keyframes moveleg {

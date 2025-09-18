@@ -406,7 +406,8 @@ const AIIconsDemo = () => {
           {item.name === "CappyChat" ? (
             <CapybaraIcon
               size="text-lg"
-              animated={isCapyHighlighted}
+              animated={false}
+              showLoader={true}
               className="w-5 h-5"
             />
           ) : (
@@ -506,8 +507,13 @@ const ImageGenDemo = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/20 rounded ring ring-ring/20 flex items-center justify-center"
             >
-              <div className="text-center">
-                <div className="text-3xl mb-2">🌅</div>
+              <div className="text-center flex justify-center items-center gap-1 flex-col">
+                <CapybaraIcon
+                  size="text-lg"
+                  animated={false}
+                  showLoader={true}
+                />
+
                 <div className="text-xs text-muted-foreground">
                   Generated Image
                 </div>
@@ -1090,12 +1096,7 @@ const SearchDemo = () => {
             className="bg-muted/20 rounded p-2 ring ring-ring/20"
           >
             <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  "w-2 h-2 rounded-full",
-                  searchType === "web" ? "bg-blue-500" : "bg-orange-500"
-                )}
-              />
+              <div className={cn("w-2 h-2 rounded-full bg-primary")} />
               <span className="text-xs font-medium">
                 {searchType === "web" ? "Web" : "Reddit"} Result {result}
               </span>
@@ -1144,7 +1145,7 @@ export default function BentoGrid({ className }: BentoGridProps) {
       initial="hidden"
       animate={isInView ? "visible" : "hidden"}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-9 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-9 gap-6">
         {/* Multi AI Models */}
         <motion.div
           variants={itemVariants}
