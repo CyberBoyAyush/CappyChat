@@ -1,12 +1,13 @@
 /**
  * AboutPage Route Component
  *
- * Used in: frontend/ChatAppRouter.tsx (as "/about" route)
- * Purpose: Displays information about CappyChat, the team, tech stack, and contribution options.
- * Shows team member profiles, social links, and technology stack used in the project.
+ * Used in: frontend/ChatAppRouter.tsx ("/about" route)
+ * Purpose: Showcases product vision, team, technology stack, and contribution paths.
+ * Styling conforms to theme tokens defined in app/globals.css so every theme looks cohesive.
  */
 
 import React from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   ExternalLink,
@@ -17,8 +18,9 @@ import {
   Palette,
   Brain,
   Monitor,
+  X,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import type { LucideIcon } from "lucide-react";
 import { Button } from "@/frontend/components/ui/button";
 import {
   Card,
@@ -28,9 +30,8 @@ import {
   CardDescription,
 } from "@/frontend/components/ui/card";
 import { Badge } from "@/frontend/components/ui/BasicComponents";
-import { GitHubIcon, XIcon } from "@/frontend/components/ui/icons";
 import ThemeToggleButton from "@/frontend/components/ui/ThemeComponents";
-import { useNavigate } from "react-router-dom";
+import { FaGithub, FaTwitter, FaXTwitter } from "react-icons/fa6";
 
 interface TeamMember {
   name: string;
@@ -44,14 +45,20 @@ interface TeamMember {
 interface TechStackItem {
   category: string;
   description: string;
-  icon: React.ReactNode;
+  icon: LucideIcon;
+  accent: string;
   technologies: Array<{
     name: string;
     description: string;
     version?: string;
   }>;
-  color: string;
 }
+
+const highlights: Array<{ label: string; icon: LucideIcon }> = [
+  { label: "Lightning Fast", icon: Zap },
+  { label: "Multiple AI Models", icon: Brain },
+  { label: "Open Source", icon: Code },
+];
 
 const teamMembers: TeamMember[] = [
   {
@@ -78,7 +85,8 @@ const techStack: TechStackItem[] = [
   {
     category: "Frontend Framework",
     description: "Modern React-based frontend with cutting-edge features",
-    icon: <Monitor className="h-5 w-5" />,
+    icon: Monitor,
+    accent: "--chart-1",
     technologies: [
       {
         name: "Next.js",
@@ -94,60 +102,60 @@ const techStack: TechStackItem[] = [
       { name: "TailwindCSS", description: "Utility-first CSS framework" },
       { name: "Framer Motion", description: "Production-ready motion library" },
     ],
-    color: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
   },
   {
     category: "Backend & Database",
     description: "Scalable backend with real-time capabilities",
-    icon: <Database className="h-5 w-5" />,
+    icon: Database,
+    accent: "--chart-2",
     technologies: [
       { name: "Appwrite", description: "Open-source backend-as-a-service" },
       { name: "IndexedDB", description: "Client-side database via Dexie.js" },
       { name: "Node.js", description: "JavaScript runtime environment" },
       { name: "Real-time Sync", description: "Live data synchronization" },
     ],
-    color: "bg-green-500/10 text-green-600 dark:text-green-400",
   },
   {
     category: "AI & Machine Learning",
     description: "Multiple AI providers for diverse capabilities",
-    icon: <Brain className="h-5 w-5" />,
+    icon: Brain,
+    accent: "--chart-3",
     technologies: [
       { name: "OpenRouter", description: "Multi-model AI API gateway" },
       { name: "OpenAI", description: "GPT models and Whisper STT" },
       { name: "Runware", description: "High-performance image generation" },
       { name: "Cloudinary", description: "Media management and optimization" },
     ],
-    color: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
   },
   {
     category: "Performance & DevOps",
     description: "Optimized for speed and developer experience",
-    icon: <Zap className="h-5 w-5" />,
+    icon: Zap,
+    accent: "--chart-4",
     technologies: [
       { name: "Zustand", description: "Lightweight state management" },
       { name: "SWR", description: "Data fetching with caching" },
       { name: "Turbopack", description: "Fast Rust-based bundler" },
       { name: "Vercel", description: "Edge deployment platform" },
     ],
-    color: "bg-black/5 text-black dark:bg-white/10 dark:text-white",
   },
   {
     category: "UI & Design System",
     description: "Beautiful, accessible, and responsive design",
-    icon: <Palette className="h-5 w-5" />,
+    icon: Palette,
+    accent: "--chart-5",
     technologies: [
       { name: "Shadcn/ui", description: "Modern component library" },
       { name: "Radix UI", description: "Accessible primitive components" },
       { name: "Lucide React", description: "Beautiful icon library" },
       { name: "Next Themes", description: "Dark/light mode support" },
     ],
-    color: "bg-pink-500/10 text-pink-600 dark:text-pink-400",
   },
   {
     category: "Development Tools",
     description: "Modern toolchain for efficient development",
-    icon: <Code className="h-5 w-5" />,
+    icon: Code,
+    accent: "--primary",
     technologies: [
       {
         name: "pnpm",
@@ -160,243 +168,254 @@ const techStack: TechStackItem[] = [
       },
       { name: "Zod", description: "TypeScript-first schema validation" },
     ],
-    color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400",
   },
 ];
+
+const openLink = (url: string) => {
+  window.open(url, "_blank", "noopener,noreferrer");
+};
 
 export default function AboutPage() {
   const navigate = useNavigate();
 
-  const handleContribute = () => {
-    window.open("https://github.com/cyberboyayush/CappyChat", "_blank");
-  };
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="fixed top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex items-center justify-between pb-2 px-4 max-w-7xl mx-auto mt-4">
-          <Button
-            onClick={() => navigate(-1)}
-            variant="ghost"
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Button>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={handleContribute}
-              size="lg"
-              className="flex items-center gap-2 bg-primary hover:bg-primary/80"
-            >
-              <GitHubIcon className="h-5 w-5" />
-              Contribute
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-            <ThemeToggleButton variant="inline" />
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8 space-y-12">
-        {/* Hero Section */}
-        <div className="text-center space-y-6">
-          <div className="space-y-4">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+    <div className="relative min-h-screen pt-12 bg-background text-foreground">
+      <main className="relative mx-auto w-full max-w-6xl px-4 pb-20   sm:px-6 lg:px-8">
+        <header
+          className="relative overflow-hidden rounded-3xl border border-border/60 bg-card/85 px-6 py-12 shadow-sm sm:px-12"
+          style={{ boxShadow: "var(--shadow-lg)" }}
+        >
+          <div className="relative  space-y-6 text-center">
+            <div className="inline-flex items-center justify-center gap-2 rounded-full border border-border/60 bg-secondary/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-muted-foreground">
+              <Heart className="h-3.5 w-3.5" />
+              Built with passion
+            </div>
+            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
               About CappyChat
             </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              The fastest AI chat application built with cutting-edge technology
-              and a passion for exceptional user experiences.
+            <p className="mx-auto max-w-3xl text-sm text-muted-foreground sm:text-base">
+              CappyChat is the fastest AI chat experience we know how to
+              build—crafted with a deep respect for design, speed, and the
+              developer community powering it.
             </p>
-          </div>
-          <div className="flex flex-wrap justify-center gap-3">
-            <Badge variant="secondary" className="px-3 py-1">
-              <Zap className="h-3 w-3 mr-1" />
-              Lightning Fast
-            </Badge>
-            <Badge variant="secondary" className="px-3 py-1">
-              <Brain className="h-3 w-3 mr-1" />
-              Multiple AI Models
-            </Badge>
-            <Badge variant="secondary" className="px-3 py-1">
-              <Code className="h-3 w-3 mr-1" />
-              Open Source
-            </Badge>
-          </div>
-        </div>
 
-        {/* Team Section */}
-        <section className="space-y-8">
+            <div className="flex flex-wrap justify-center gap-3">
+              {highlights.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Badge
+                    key={item.label}
+                    variant="secondary"
+                    className="px-3 py-1"
+                  >
+                    <Icon className="mr-1 h-3.5 w-3.5" />
+                    {item.label}
+                  </Badge>
+                );
+              })}
+            </div>
+          </div>
+        </header>
+
+        <section className="relative mt-14 space-y-8">
           <div className="text-center space-y-2">
-            <h2 className="text-3xl font-bold text-foreground">
-              Meet Our Team
+            <h2 className="text-3xl font-semibold tracking-tight">
+              Meet the team
             </h2>
             <p className="text-muted-foreground">
-              The passionate individuals behind CappyChat
+              The people shaping AVChat every single day
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {teamMembers.map((member, index) => (
-              <Card
-                key={index}
-                className="group hover:shadow-lg transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm"
-              >
-                <CardContent className="p-6">
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className="relative">
+          <div className="grid gap-8 md:grid-cols-2">
+            {teamMembers.map((member) => {
+              const teamAccent = {
+                "--team-border":
+                  "color-mix(in srgb, var(--primary) 22%, transparent)",
+                "--team-border-hover":
+                  "color-mix(in srgb, var(--primary) 32%, transparent)",
+              } as React.CSSProperties;
+
+              return (
+                <Card
+                  key={member.github}
+                  className="group relative overflow-hidden border border-border/60 bg-card/85 shadow-sm transition-all duration-200 hover:border-border hover:shadow-lg"
+                  style={teamAccent}
+                >
+                  <CardContent className="relative space-y-4 p-6 text-center">
+                    <div className="mx-auto size-24 overflow-hidden rounded-full border-4 border-[var(--team-border)] transition-colors duration-300 group-hover:border-[var(--team-border-hover)]">
                       <img
                         src={member.photo}
                         alt={member.name}
-                        className="w-24 h-24 rounded-full object-cover border-4 border-primary/20 group-hover:border-primary/40 transition-colors"
+                        className="size-full object-cover"
                       />
                     </div>
                     <div className="space-y-2">
-                      <h3 className="text-xl font-semibold text-foreground">
+                      <h3 className="text-lg font-semibold text-foreground">
                         {member.name}
                       </h3>
-                      <p className="text-primary font-medium">{member.role}</p>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
+                      <p className="text-sm font-medium text-primary">
+                        {member.role}
+                      </p>
+                      <p className="text-sm leading-relaxed text-muted-foreground">
                         {member.description}
                       </p>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap justify-center gap-3">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() =>
-                          window.open(
-                            `https://github.com/${member.github}`,
-                            "_blank"
-                          )
+                          openLink(`https://github.com/${member.github}`)
                         }
-                        className="flex items-center gap-2"
+                        className="gap-2"
                       >
-                        <GitHubIcon className="h-4 w-4" />
                         GitHub
+                        <FaGithub className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() =>
-                          window.open(
-                            `https://twitter.com/${member.twitter}`,
-                            "_blank"
-                          )
+                          openLink(`https://twitter.com/${member.twitter}`)
                         }
-                        className="flex items-center gap-2"
+                        className="gap-2"
                       >
-                        <XIcon className="h-4 w-4" />
                         Twitter
+                        <FaXTwitter className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </section>
 
-        {/* Tech Stack Section */}
-        <section className="space-y-8">
+        <section className="relative mt-16 space-y-8">
           <div className="text-center space-y-2">
-            <h2 className="text-3xl font-bold text-foreground">Tech Stack</h2>
+            <h2 className="text-3xl font-semibold tracking-tight">
+              Tech stack
+            </h2>
             <p className="text-muted-foreground">
-              The powerful technologies that make CappyChat possible
+              The tools and services that power our experience
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {techStack.map((stack, index) => (
-              <Card
-                key={index}
-                className="group hover:shadow-lg transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm"
-              >
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-3 text-lg">
-                    <div className={`p-2 rounded-lg ${stack.color}`}>
-                      {stack.icon}
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {techStack.map((stack) => {
+              const Icon = stack.icon;
+              const accentColor = `var(${stack.accent})`;
+              const accentBackground = `color-mix(in srgb, ${accentColor} 16%, transparent)`;
+              const accentBorder = `color-mix(in srgb, ${accentColor} 32%, transparent)`;
+
+              return (
+                <Card
+                  key={stack.category}
+                  className="relative overflow-hidden border border-border/60 bg-card/85 shadow-sm transition-all duration-200 hover:border-border hover:shadow-lg"
+                >
+                  <CardHeader className="relative pb-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="rounded-lg border p-2"
+                        style={{
+                          background: accentBackground,
+                          borderColor: accentBorder,
+                          color: accentColor,
+                        }}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <CardTitle className="text-lg font-semibold text-foreground">
+                        {stack.category}
+                      </CardTitle>
                     </div>
-                    <div className="flex-1">
-                      <div className="font-semibold">{stack.category}</div>
-                    </div>
-                  </CardTitle>
-                  <CardDescription className="text-sm text-muted-foreground mt-2">
-                    {stack.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-3">
-                    {stack.technologies.map((tech, techIndex) => (
-                      <div key={techIndex} className="flex flex-col space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-foreground">
-                            {tech.name}
-                          </span>
+                    <CardDescription className="mt-3 text-sm text-muted-foreground">
+                      {stack.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3 pt-0">
+                    {stack.technologies.map((tech) => (
+                      <div
+                        key={tech.name}
+                        className="rounded-lg border border-border/40 bg-secondary/50 p-3"
+                      >
+                        <div className="flex items-center justify-between text-sm font-medium text-foreground">
+                          <span>{tech.name}</span>
                           {tech.version && (
                             <Badge
                               variant="secondary"
-                              className="text-xs px-2 py-0.5"
+                              className="px-2 py-0.5 text-[11px]"
                             >
                               v{tech.version}
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                           {tech.description}
                         </p>
                       </div>
                     ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </section>
 
-        {/* Contribution Section */}
-        <section className="text-center space-y-6 py-12">
-          <div className="space-y-4">
-            <h2 className="text-3xl font-bold text-foreground">
-              Join Our Mission
+        <section className="relative mt-16 rounded-3xl border border-border/60 bg-card/85 px-6 py-12 text-center shadow-sm sm:px-12">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 opacity-70"
+            style={{
+              background:
+                "radial-gradient(circle at top, color-mix(in srgb, var(--primary) 10%, transparent) 0%, transparent 60%)",
+            }}
+          />
+          <div className="relative space-y-5">
+            <h2 className="text-3xl font-semibold tracking-tight">
+              Join our mission
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              CappyChat is open source and we welcome contributions from developers
-              around the world. Help us make AI chat faster, better, and more
-              accessible for everyone.
+            <p className="mx-auto max-w-2xl text-sm text-muted-foreground sm:text-base">
+              AVChat is open source and community-driven. Contribute code, file
+              issues, or share feedback to make the experience even better for
+              everyone.
+            </p>
+            <div className="flex flex-col justify-center gap-4 sm:flex-row">
+              <Button
+                size="lg"
+                className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={() =>
+                  openLink("https://github.com/cyberboyayush/CappyChat")
+                }
+              >
+                Contribute on GitHub
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="gap-2"
+                onClick={() =>
+                  openLink("https://github.com/cyberboyayush/CappyChat/issues")
+                }
+              >
+                Report an issue
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Prefer chatting?{" "}
+              <Link
+                to="/settings?section=contact"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Reach out to us directly.
+              </Link>
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              onClick={handleContribute}
-              size="lg"
-              className="flex items-center gap-2 bg-primary hover:bg-primary/80"
-            >
-              <GitHubIcon className="h-5 w-5" />
-              Contribute on GitHub
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() =>
-                window.open(
-                  "https://github.com/cyberboyayush/CappyChat/issues",
-                  "_blank"
-                )
-              }
-              className="flex items-center gap-2"
-            >
-              <Code className="h-5 w-5" />
-              Report Issues
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-          </div>
         </section>
-      </div>
+      </main>
     </div>
   );
 }

@@ -219,29 +219,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Floating Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-primary/5 rounded-full blur-xl animate-pulse" />
-        <div className="absolute top-40 right-20 w-24 h-24 bg-primary/10 rounded-full blur-lg animate-pulse delay-1000" />
-        <div className="absolute bottom-40 left-1/4 w-40 h-40 bg-primary/5 rounded-full blur-2xl animate-pulse delay-2000" />
-      </div>
-
-      <div className="mb-8 fixed top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex items-center justify-between pb-2 px-4 max-w-7xl mx-auto mt-4">
-          <Button
-            onClick={() => navigate(-1)}
-            variant="ghost"
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Button>
-
-          <ThemeToggleButton variant="inline" />
-        </div>
-      </div>
-
-      <div className="relative container px-8 mx-auto mb-8 max-w-7xl pt-24">
+      <div className="relative container px-8 mx-auto mb-8 max-w-7xl pt-12">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -259,7 +237,7 @@ export default function PricingPage() {
             Choose Your Perfect Plan
           </motion.div>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent">
-            AV<span className="text-primary">Chat</span> Pricing
+            CappyChat Pricing
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             From free tier to enterprise solutions, find the perfect plan for
@@ -282,7 +260,7 @@ export default function PricingPage() {
             className={cn(
               "relative p-8 rounded-2xl border border-border text-center group hover:border-primary/40 transition-all duration-500",
               "bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-md",
-              "hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2",
+
               "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-primary/5 before:to-transparent before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100"
             )}
           >
@@ -354,7 +332,7 @@ export default function PricingPage() {
             className={cn(
               "relative p-8 rounded-2xl border-2 border-primary/50 text-center group hover:border-primary/60 transition-all duration-500 scale-105",
               "bg-gradient-to-br from-primary/5 via-card/80 to-primary/5 backdrop-blur-md",
-              "hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-2",
+
               "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-primary/10 before:to-transparent before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100"
             )}
           >
@@ -460,7 +438,7 @@ export default function PricingPage() {
             className={cn(
               "relative p-8 rounded-2xl border border-border text-center group hover:border-primary/40 transition-all duration-500",
               "bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-md",
-              "hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2",
+
               "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-primary/5 before:to-transparent before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100"
             )}
           >
