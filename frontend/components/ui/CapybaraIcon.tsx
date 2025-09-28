@@ -108,6 +108,7 @@ export function CapybaraIcon({
     "--color2": colors.secondary,
     "--color3": colors.accent,
     "--color4": colors.dark,
+    "--capybara-animation-state": animated ? "running" : "paused",
   } as React.CSSProperties;
 
   const iconWrapperStyle: React.CSSProperties = {
@@ -128,10 +129,10 @@ export function CapybaraIcon({
     <div
       className={cn(
         "relative z-[1] flex-shrink-0",
-        !animated && "[&_*]:!animation-none",
         className
       )}
       style={rootStyle}
+      data-capybara-animated={animated ? "true" : "false"}
     >
       <div
         className="relative"

@@ -57,7 +57,11 @@
   --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1),
     0 8px 10px -1px hsl(0 0% 0% / 0.1);
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
-  --toast-bg: color-mix(in srgb, var(--popover) 88%, rgba(255, 255, 255, 1) 12%);
+  --toast-bg: color-mix(
+    in srgb,
+    var(--popover) 88%,
+    rgba(255, 255, 255, 1) 12%
+  );
   --toast-foreground: var(--popover-foreground);
   --toast-border: color-mix(in srgb, var(--border) 80%, transparent);
   --toast-shadow: 0 18px 30px -15px rgba(15, 23, 42, 0.25);
@@ -178,7 +182,11 @@
   --shadow-xl: 0 1px 3px 0px hsl(30 45% 30% / 0.1),
     0 8px 10px -1px hsl(30 45% 30% / 0.1);
   --shadow-2xl: 0 1px 3px 0px hsl(30 45% 30% / 0.25);
-  --toast-bg: color-mix(in srgb, var(--popover) 86%, rgba(255, 255, 255, 1) 14%);
+  --toast-bg: color-mix(
+    in srgb,
+    var(--popover) 86%,
+    rgba(255, 255, 255, 1) 14%
+  );
   --toast-foreground: var(--foreground);
   --toast-border: color-mix(in srgb, var(--border) 85%, transparent);
   --toast-shadow: 0 18px 30px -15px rgba(139, 69, 19, 0.35);
@@ -300,6 +308,17 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
+  --animate-ripple: ripple var(--duration, 2s) ease calc(var(--i, 0) * 0.2s)
+    infinite;
+  @keyframes ripple {
+    0%,
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(0.9);
+    }
+  }
 }
 
 @layer base {
@@ -600,6 +619,22 @@
   body.sidebar-open {
     overflow: hidden;
   }
+
+  /* Theme-aware horizontal rules */
+  hr {
+    border: none;
+    height: 1px;
+    background-color: hsl(var(--ring) / 0.3);
+    margin: 1.5rem 0;
+  }
+
+  /* Ensure prose hr elements also use theme colors */
+  .prose hr {
+    border: none !important;
+    height: 1px !important;
+    background-color: hsl(var(--ring) / 0.3) !important;
+    margin: 1.5rem 0 !important;
+  }
 }
 
 @layer components {
@@ -854,6 +889,21 @@ html.dark .shiki span[style*="color:#c9d1d9"]  /* punctuation */ {
   color: var(--foreground) !important;
 }
 
+/* Light mode prose link styles */
+.prose a {
+  color: var(--primary) !important;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  transition: all 0.2s ease;
+}
+
+.prose a:hover {
+  color: var(--primary) !important;
+  opacity: 0.8;
+  text-decoration-thickness: 2px;
+}
+
 .dark .prose blockquote {
   color: var(--muted-foreground) !important;
   border-left-color: var(--border) !important;
@@ -861,11 +911,16 @@ html.dark .shiki span[style*="color:#c9d1d9"]  /* punctuation */ {
 
 .dark .prose a {
   color: var(--primary) !important;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  transition: all 0.2s ease;
 }
 
 .dark .prose a:hover {
   color: var(--primary) !important;
   opacity: 0.8;
+  text-decoration-thickness: 2px;
 }
 
 /* Model Selector Utilities */
@@ -1632,6 +1687,32 @@ html {
   left: 0.5em;
   height: 2em;
   animation: moveleg2 1s linear infinite 0.075s;
+}
+
+.capy,
+.capyhead,
+.capyleg,
+.capyleg2,
+.capyleg2:nth-child(3),
+.animate-movebody,
+.animate-moveleg,
+.animate-moveleg2,
+.animate-moveline,
+.loaderline {
+  animation-play-state: var(--capybara-animation-state, running);
+}
+
+[data-capybara-animated="false"] .capy,
+[data-capybara-animated="false"] .capyhead,
+[data-capybara-animated="false"] .capyleg,
+[data-capybara-animated="false"] .capyleg2,
+[data-capybara-animated="false"] .capyleg2:nth-child(3),
+[data-capybara-animated="false"] .animate-movebody,
+[data-capybara-animated="false"] .animate-moveleg,
+[data-capybara-animated="false"] .animate-moveleg2,
+[data-capybara-animated="false"] .animate-moveline,
+[data-capybara-animated="false"] .loaderline {
+  animation: none !important;
 }
 
 @keyframes moveleg {

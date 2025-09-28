@@ -1,12 +1,10 @@
-
-
 <div align="center">
 
-# 🚀CapyChat
+# 🚀CappyChat
 
-### *Next-Generation AI Chat Platform*
+### _Next-Generation AI Chat Platform_
 
-[![Version](https://img.shields.io/badge/version-3.0.1-2563eb?style=for-the-badge&logo=semver&logoColor=white)](https://github.com/CyberBoyAyush/CapyChat)
+[![Version](https://img.shields.io/badge/version-3.0.1-2563eb?style=for-the-badge&logo=semver&logoColor=white)](https://github.com/CyberBoyAyush/CappyChat)
 [![License](https://img.shields.io/badge/license-GPL%20v3-10b981?style=for-the-badge&logo=gnu&logoColor=white)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-15.3-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -24,7 +22,7 @@
 
 ## 📖 **Overview**
 
-> **CapyChat** is a cutting-edge AI chat platform engineered for **performance**, **scalability**, and **seamless user experience**. Built with a **local-first architecture**, it delivers instant responses while maintaining data consistency across devices through intelligent cloud synchronization.
+> **CappyChat** is a cutting-edge AI chat platform engineered for **performance**, **scalability**, and **seamless user experience**. Built with a **local-first architecture**, it delivers instant responses while maintaining data consistency across devices through intelligent cloud synchronization.
 
 ### ✨ **Key Highlights**
 
@@ -33,6 +31,7 @@
 <td width="50%">
 
 **🤖 AI Excellence**
+
 - **26+ Premium Models** - GPT-5, Gemini 2.5, Claude 4, DeepSeek, Qwen
 - **Intelligent Routing** - Automatic model selection based on query type
 - **BYOK Support** - Enhanced privacy with your own API keys
@@ -42,6 +41,7 @@
 <td width="50%">
 
 **⚡ Performance**
+
 - **Sub-100ms Response** - Local-first operations with optimistic updates
 - **Real-time Sync** - Instant synchronization across all devices
 - **Hybrid Architecture** - IndexedDB + Appwrite cloud integration
@@ -53,6 +53,7 @@
 <td width="50%">
 
 **🎨 Advanced Features**
+
 - **Image Generation** - FLUX.1, Stable Diffusion with aspect ratios
 - **Voice Input** - OpenAI Whisper speech-to-text integration
 - **Web Search** - Tavily API with rich citations and Reddit search
@@ -62,6 +63,7 @@
 <td width="50%">
 
 **🔧 Developer Experience**
+
 - **Modern Stack** - Next.js 15, React 19, TypeScript, TailwindCSS
 - **Real-time Features** - WebSocket connections with Appwrite
 - **Production Ready** - Deployed at [cappychat.com](https://cappychat.com)
@@ -77,12 +79,12 @@
 
 <div align="center">
 
-| **Ayush Sharma** | **Vranda Garg** |
-|:---:|:---:|
-| *Lead Developer & Architect* | *UI/UX Designer & Frontend Developer* |
-| Full-stack development and system architecture | User interface design and user experience |
-| AI integration and performance optimization | Frontend development and responsive design |
-| Database design and real-time synchronization | Design system and component architecture |
+|                **Ayush Sharma**                |              **Vranda Garg**               |
+| :--------------------------------------------: | :----------------------------------------: |
+|          _Lead Developer & Architect_          |   _UI/UX Designer & Frontend Developer_    |
+| Full-stack development and system architecture | User interface design and user experience  |
+|  AI integration and performance optimization   | Frontend development and responsive design |
+| Database design and real-time synchronization  |  Design system and component architecture  |
 
 </div>
 
@@ -92,7 +94,7 @@
 
 <div align="center">
 
-### *Comprehensive AI Platform with Enterprise-Grade Performance*
+### _Comprehensive AI Platform with Enterprise-Grade Performance_
 
 </div>
 
@@ -101,14 +103,15 @@
 
 <br>
 
-| Feature | Description | Models |
-|---------|-------------|---------|
-| **Premium Models** | Latest AI models with advanced capabilities | GPT-5, Gemini 2.5 Pro, Claude 4 |
-| **Fast Models** | Optimized for speed and efficiency | Gemini 2.5 Flash Lite, OpenAI 5 Mini |
-| **Specialized Models** | Task-specific AI models | DeepSeek R1, Qwen3, Grok 3 |
-| **Image Models** | Advanced image generation | FLUX.1, Stable Diffusion, Juggernaut Pro |
+| Feature                | Description                                 | Models                                   |
+| ---------------------- | ------------------------------------------- | ---------------------------------------- |
+| **Premium Models**     | Latest AI models with advanced capabilities | GPT-5, Gemini 2.5 Pro, Claude 4          |
+| **Fast Models**        | Optimized for speed and efficiency          | Gemini 2.5 Flash Lite, OpenAI 5 Mini     |
+| **Specialized Models** | Task-specific AI models                     | DeepSeek R1, Qwen3, Grok 3               |
+| **Image Models**       | Advanced image generation                   | FLUX.1, Stable Diffusion, Juggernaut Pro |
 
 **Key Benefits:**
+
 - 🎯 **Intelligent Routing** - Automatic model selection based on query complexity
 - 🔐 **BYOK Support** - Enhanced privacy with your own API keys
 - 💳 **Flexible Pricing** - Tiered access with free, premium, and super-premium models
@@ -132,12 +135,14 @@ graph LR
 ```
 
 **Performance Metrics:**
+
 - ⚡ **Sub-100ms** local operations
 - 📦 **106kB** optimized bundle size
 - 🔄 **99.9%** sync reliability
 - 📱 **Mobile-first** responsive design
 
 **Architecture Highlights:**
+
 - 🏠 **Local-First Design** - IndexedDB for instant responses
 - ☁️ **Hybrid Database** - Appwrite cloud synchronization
 - 🔄 **Optimistic Updates** - Immediate UI feedback
@@ -150,15 +155,16 @@ graph LR
 
 <br>
 
-| Capability | Technology | Features |
-|------------|------------|----------|
-| **Image Generation** | FLUX.1, Stable Diffusion | Text-to-image, Image-to-image, Custom ratios |
-| **Voice Input** | OpenAI Whisper | Multi-language, Real-time transcription |
-| **Web Search** | Tavily API | Live search, Rich citations, Reddit integration |
-| **File Upload** | Cloudinary | Images, PDFs, Documents with AI analysis |
-| **Collaboration** | Real-time sync | Team workspaces, Member management |
+| Capability           | Technology               | Features                                        |
+| -------------------- | ------------------------ | ----------------------------------------------- |
+| **Image Generation** | FLUX.1, Stable Diffusion | Text-to-image, Image-to-image, Custom ratios    |
+| **Voice Input**      | OpenAI Whisper           | Multi-language, Real-time transcription         |
+| **Web Search**       | Tavily API               | Live search, Rich citations, Reddit integration |
+| **File Upload**      | Cloudinary               | Images, PDFs, Documents with AI analysis        |
+| **Collaboration**    | Real-time sync           | Team workspaces, Member management              |
 
 **Advanced Features:**
+
 - 🎭 **Conversation Styles** - Balanced, creative, precise modes
 - 🧠 **Global Memory** - Persistent context across conversations
 - 📊 **Analytics** - Usage tracking and insights
@@ -172,17 +178,19 @@ graph LR
 <br>
 
 **Modern Technology Stack:**
+
 ```typescript
 const techStack = {
-  frontend: ['Next.js 15', 'React 19', 'TypeScript 5.8', 'TailwindCSS 4.1'],
-  backend: ['Node.js', 'Appwrite', 'API Routes'],
-  database: ['IndexedDB', 'Appwrite Cloud', 'Real-time Sync'],
-  deployment: ['Vercel', 'Docker', 'CDN'],
-  monitoring: ['Analytics', 'Error Tracking', 'Performance Metrics']
+  frontend: ["Next.js 15", "React 19", "TypeScript 5.8", "TailwindCSS 4.1"],
+  backend: ["Node.js", "Appwrite", "API Routes"],
+  database: ["IndexedDB", "Appwrite Cloud", "Real-time Sync"],
+  deployment: ["Vercel", "Docker", "CDN"],
+  monitoring: ["Analytics", "Error Tracking", "Performance Metrics"],
 };
 ```
 
 **Developer Tools:**
+
 - 🛠️ **TypeScript** - Full type safety with strict mode
 - 🎨 **Component Library** - Shadcn/ui + Radix UI primitives
 - 📦 **State Management** - Zustand for efficient state handling
@@ -197,7 +205,7 @@ const techStack = {
 
 <div align="center">
 
-### *Built with Modern, Production-Ready Technologies*
+### _Built with Modern, Production-Ready Technologies_
 
 </div>
 
@@ -206,6 +214,7 @@ const techStack = {
 <td width="50%">
 
 ### **🎨 Frontend**
+
 ```typescript
 {
   "framework": "Next.js 15.3",
@@ -220,6 +229,7 @@ const techStack = {
 ```
 
 ### **🔧 Development**
+
 ```json
 {
   "packageManager": "pnpm",
@@ -234,6 +244,7 @@ const techStack = {
 <td width="50%">
 
 ### **⚙️ Backend & APIs**
+
 ```typescript
 {
   "runtime": "Node.js",
@@ -248,6 +259,7 @@ const techStack = {
 ```
 
 ### **💾 Data & Sync**
+
 ```json
 {
   "local": "IndexedDB + Dexie.js",
@@ -300,7 +312,7 @@ graph TB
 
 <div align="center">
 
-### *Get CapyChat running in under 5 minutes*
+### _Get CappyChat running in under 5 minutes_
 
 </div>
 
@@ -332,8 +344,8 @@ graph TB
 
 ```bash
 # Clone the repository
-git clone https://github.com/CyberBoyAyush/CapyChat.git
-cd CapyChat
+git clone https://github.com/CyberBoyAyush/CappyChat.git
+cd CappyChat
 
 # Install dependencies
 pnpm install
@@ -379,7 +391,7 @@ open http://localhost:3000
 
 </details>
 
-> **🎉 Success!** Your CapyChat instance should now be running at [http://localhost:3000](http://localhost:3000)
+> **🎉 Success!** Your CappyChat instance should now be running at [http://localhost:3000](http://localhost:3000)
 
 ### Environment Configuration
 
@@ -449,7 +461,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
 
 ### Database Setup
 
-CapyChat uses Appwrite as the primary database with local IndexedDB for performance. Follow these steps to set up your database:
+CappyChat uses Appwrite as the primary database with local IndexedDB for performance. Follow these steps to set up your database:
 
 #### 1. Create Appwrite Project
 
@@ -462,6 +474,7 @@ CapyChat uses Appwrite as the primary database with local IndexedDB for performa
 Create the following collections with exact names and attributes:
 
 **Threads Collection** (`threads`)
+
 ```typescript
 {
   threadId: string,        // required, unique
@@ -480,6 +493,7 @@ Create the following collections with exact names and attributes:
 ```
 
 **Messages Collection** (`messages`)
+
 ```typescript
 {
   messageId: string,       // required, unique
@@ -496,6 +510,7 @@ Create the following collections with exact names and attributes:
 ```
 
 **Projects Collection** (`projects`)
+
 ```typescript
 {
   projectId: string,       // required, unique
@@ -511,6 +526,7 @@ Create the following collections with exact names and attributes:
 ```
 
 **Message Summaries Collection** (`message_summaries`)
+
 ```typescript
 {
   summaryId: string,       // required, unique
@@ -523,6 +539,7 @@ Create the following collections with exact names and attributes:
 ```
 
 **Global Memory Collection** (`global_memory`)
+
 ```typescript
 {
   userId: string,          // required
@@ -536,6 +553,7 @@ Create the following collections with exact names and attributes:
 #### 3. Configure Authentication
 
 1. **Enable Authentication Methods**
+
    - Email/Password authentication
    - OAuth providers (Google, GitHub) - optional
 
@@ -618,7 +636,7 @@ pnpm build:analyze    # Analyze bundle size
 
 <div align="center">
 
-### *Hybrid Local-First Architecture for Maximum Performance*
+### _Hybrid Local-First Architecture for Maximum Performance_
 
 </div>
 
@@ -662,14 +680,15 @@ graph TB
 
 <br>
 
-| Component | Technology | Performance | Features |
-|-----------|------------|-------------|----------|
-| **Primary Storage** | IndexedDB + Dexie.js | Sub-100ms | Structured data, transactions |
-| **Optimistic Updates** | React State + Zustand | Instant | Immediate UI feedback |
-| **Offline Support** | Service Worker | 100% | Full functionality offline |
-| **Smart Caching** | Custom TTL System | Intelligent | Auto-invalidation, compression |
+| Component              | Technology            | Performance | Features                       |
+| ---------------------- | --------------------- | ----------- | ------------------------------ |
+| **Primary Storage**    | IndexedDB + Dexie.js  | Sub-100ms   | Structured data, transactions  |
+| **Optimistic Updates** | React State + Zustand | Instant     | Immediate UI feedback          |
+| **Offline Support**    | Service Worker        | 100%        | Full functionality offline     |
+| **Smart Caching**      | Custom TTL System     | Intelligent | Auto-invalidation, compression |
 
 **Benefits:**
+
 - 🚀 **Instant Response** - No waiting for network requests
 - 📱 **Offline First** - Works without internet connection
 - 🔄 **Conflict Resolution** - Automatic data conflict handling
@@ -685,14 +704,15 @@ graph TB
 ```typescript
 // Sync Strategy Implementation
 const syncStrategy = {
-  immediate: ['user_actions', 'critical_data'],
-  batched: ['analytics', 'preferences'],
-  background: ['cache_updates', 'cleanup'],
-  realtime: ['messages', 'collaboration']
+  immediate: ["user_actions", "critical_data"],
+  batched: ["analytics", "preferences"],
+  background: ["cache_updates", "cleanup"],
+  realtime: ["messages", "collaboration"],
 };
 ```
 
 **Key Features:**
+
 - 🔄 **Background Sync** - Non-blocking synchronization with retry logic
 - 🌐 **Cross-Device Sync** - Real-time updates across all user devices
 - ⚡ **WebSocket Events** - Persistent connections for instant updates
@@ -707,18 +727,18 @@ const syncStrategy = {
 
 <br>
 
-| Optimization | Result | Technique |
-|--------------|--------|-----------|
-| **Bundle Size** | 106kB | Dynamic imports, code splitting |
-| **Initial Load** | <1.2s | Critical path optimization |
-| **Tree Shaking** | 40% reduction | Unused code elimination |
-| **Compression** | 70% smaller | Gzip + Brotli compression |
+| Optimization     | Result        | Technique                       |
+| ---------------- | ------------- | ------------------------------- |
+| **Bundle Size**  | 106kB         | Dynamic imports, code splitting |
+| **Initial Load** | <1.2s         | Critical path optimization      |
+| **Tree Shaking** | 40% reduction | Unused code elimination         |
+| **Compression**  | 70% smaller   | Gzip + Brotli compression       |
 
 ```typescript
 // Dynamic Import Example
 const LazyComponent = lazy(() =>
-  import('./HeavyComponent').then(module => ({
-    default: module.HeavyComponent
+  import("./HeavyComponent").then((module) => ({
+    default: module.HeavyComponent,
   }))
 );
 ```
@@ -731,6 +751,7 @@ const LazyComponent = lazy(() =>
 <br>
 
 **Performance Metrics:**
+
 - 🎯 **First Contentful Paint**: <1.2s
 - 📊 **Largest Contentful Paint**: <2.5s
 - 🔄 **Cumulative Layout Shift**: <0.1
@@ -738,6 +759,7 @@ const LazyComponent = lazy(() =>
 - 🚀 **Time to Interactive**: <3.0s
 
 **Optimization Techniques:**
+
 - 🔄 **Optimistic Updates** - Immediate UI feedback
 - 📜 **Virtual Scrolling** - Efficient large list rendering
 - 🧠 **Memoization** - Strategic React.memo and useMemo
@@ -750,26 +772,31 @@ const LazyComponent = lazy(() =>
 ### Core Endpoints
 
 #### Chat & Messaging
+
 - `POST /api/chat-messaging` - Main chat endpoint with streaming support
 - `POST /api/ai-text-generation` - Title generation and text enhancement
 - `POST /api/speech-to-text` - Voice input transcription using Whisper
 
 #### Image Generation
+
 - `POST /api/image-generation` - Image generation using Runware API
   - Supports text-to-image and image-to-image generation
   - Multiple models: FLUX.1, Stable Diffusion, Juggernaut Pro
   - Aspect ratio selection and custom dimensions
 
 #### Search & Information
+
 - `POST /api/web-search` - Web search with Tavily integration
 - `POST /api/reddit-search` - Reddit-specific search functionality
 
 #### File Management
+
 - `POST /api/upload` - File upload to Cloudinary
 - `POST /api/files` - List user files
 - `DELETE /api/files` - Delete user files
 
 #### Admin Operations
+
 - `POST /api/admin/stats` - System statistics and metrics
 - `POST /api/admin/manage-user` - User management operations
 - `POST /api/admin/reset-limits` - Reset user credit limits
@@ -779,6 +806,7 @@ const LazyComponent = lazy(() =>
 ### Request/Response Examples
 
 #### Chat Messaging
+
 ```typescript
 // Request
 POST /api/chat-messaging
@@ -801,6 +829,7 @@ data: {"type":"finish","usage":{"promptTokens":10,"completionTokens":12}}
 ```
 
 #### Image Generation
+
 ```typescript
 // Request
 POST /api/image-generation
@@ -824,9 +853,10 @@ POST /api/image-generation
 ### Database Schema
 
 #### User Preferences
+
 ```typescript
 interface UserPreferences {
-  tier: 'free' | 'premium' | 'admin';
+  tier: "free" | "premium" | "admin";
   freeCredits: number;
   premiumCredits: number;
   superPremiumCredits: number;
@@ -836,8 +866,8 @@ interface UserPreferences {
     aboutUser?: string;
   };
   subscription?: {
-    tier: 'FREE' | 'PREMIUM';
-    status: 'active' | 'cancelled' | 'expired';
+    tier: "FREE" | "PREMIUM";
+    status: "active" | "cancelled" | "expired";
     customerId?: string;
     subscriptionId?: string;
     currentPeriodEnd?: string;
@@ -847,6 +877,7 @@ interface UserPreferences {
 ```
 
 #### Thread Interface
+
 ```typescript
 interface Thread {
   id: string;
@@ -866,12 +897,13 @@ interface Thread {
 ```
 
 #### Message Interface
+
 ```typescript
 interface DBMessage {
   id: string;
   threadId: string;
   content: string;
-  role: 'user' | 'assistant' | 'system' | 'data';
+  role: "user" | "assistant" | "system" | "data";
   createdAt: Date;
   webSearchResults?: string[];
   attachments?: FileAttachment[];
@@ -881,6 +913,7 @@ interface DBMessage {
 ```
 
 #### Project Interface
+
 ```typescript
 interface Project {
   id: string;
@@ -898,21 +931,24 @@ interface Project {
 
 ### Vercel (Recommended)
 
-CapyChat is optimized for deployment on Vercel with automatic builds and deployments.
+CappyChat is optimized for deployment on Vercel with automatic builds and deployments.
 
 1. **Fork the repository** to your GitHub account
 
 2. **Connect to Vercel**
+
    - Visit [vercel.com](https://vercel.com) and sign in
    - Import your forked repository
    - Vercel will automatically detect the Next.js configuration
 
 3. **Configure Environment Variables**
+
    - Add all environment variables from your `.env.local`
    - Ensure production URLs are used (not localhost)
    - Set `NODE_ENV=production`
 
 4. **Deploy**
+
    ```bash
    # Manual deployment
    vercel --prod
@@ -969,6 +1005,7 @@ CMD ["node", "server.js"]
 ```
 
 Build and run:
+
 ```bash
 docker build -t cappychat .
 docker run -p 3000:3000 cappychat
@@ -981,16 +1018,19 @@ docker run -p 3000:3000 cappychat
 [Dokploy](https://dokploy.com/) is a modern deployment platform for VPS servers.
 
 1. **Install Dokploy on your VPS**
+
    ```bash
    curl -sSL https://dokploy.com/install.sh | sh
    ```
 
 2. **Create New Application**
+
    - Access Dokploy dashboard at `https://your-vps-ip:3000`
    - Create new application from GitHub repository
    - Select Node.js/Next.js template
 
 3. **Configure Environment**
+
    - Add all environment variables from `.env.local`
    - Set build command: `pnpm build`
    - Set start command: `pnpm start`
@@ -1005,16 +1045,19 @@ docker run -p 3000:3000 cappychat
 [Coolify](https://coolify.io/) is an open-source alternative to Heroku for VPS.
 
 1. **Install Coolify**
+
    ```bash
    curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash
    ```
 
 2. **Setup Application**
+
    - Access Coolify at `https://your-vps-ip:8000`
    - Connect GitHub repository
    - Configure as Node.js application
 
 3. **Environment Configuration**
+
    ```bash
    # Add environment variables in Coolify dashboard
    NODE_ENV=production
@@ -1038,8 +1081,8 @@ sudo apt-get install -y nodejs
 npm install -g pnpm pm2
 
 # Clone and setup
-git clone https://github.com/CyberBoyAyush/CapyChat.git
-cd CapyChat
+git clone https://github.com/CyberBoyAyush/CappyChat.git
+cd CappyChat
 pnpm install
 pnpm build
 
@@ -1052,16 +1095,19 @@ pm2 save
 ### Other Platforms
 
 **Netlify**
+
 - Set build command: `pnpm build`
 - Set publish directory: `.next`
 - Add environment variables in Netlify dashboard
 
 **Railway**
+
 - Connect GitHub repository
 - Railway auto-detects Next.js configuration
 - Add environment variables in Railway dashboard
 
 **DigitalOcean App Platform**
+
 - One-click deployment from GitHub
 - Automatic scaling and SSL
 - Built-in monitoring and alerts
@@ -1131,20 +1177,22 @@ Create `ecosystem.config.js` for PM2 process management:
 
 ```javascript
 module.exports = {
-  apps: [{
-    name: 'cappychat',
-    script: 'server.js',
-    instances: 'max',
-    exec_mode: 'cluster',
-    env: {
-      NODE_ENV: 'production',
-      PORT: 3000
+  apps: [
+    {
+      name: "cappychat",
+      script: "server.js",
+      instances: "max",
+      exec_mode: "cluster",
+      env: {
+        NODE_ENV: "production",
+        PORT: 3000,
+      },
+      error_file: "./logs/err.log",
+      out_file: "./logs/out.log",
+      log_file: "./logs/combined.log",
+      time: true,
     },
-    error_file: './logs/err.log',
-    out_file: './logs/out.log',
-    log_file: './logs/combined.log',
-    time: true
-  }]
+  ],
 };
 ```
 
@@ -1153,7 +1201,7 @@ module.exports = {
 ### Project Structure
 
 ```
-CapyChat/
+CappyChat/
 ├── app/                          # Next.js App Router
 │   ├── api/                      # Backend API routes
 │   │   ├── admin/                # Admin endpoints
@@ -1184,12 +1232,14 @@ CapyChat/
 ### Code Standards
 
 #### TypeScript Configuration
+
 - **Strict Mode**: Full TypeScript strict mode enabled
 - **Type Safety**: Comprehensive type definitions for all APIs
 - **Interface Design**: Clear interfaces for all data structures
 - **Generic Types**: Reusable generic types for common patterns
 
 #### Component Architecture
+
 ```typescript
 // Functional components with TypeScript
 interface ChatMessageProps {
@@ -1201,13 +1251,14 @@ interface ChatMessageProps {
 const ChatMessage: React.FC<ChatMessageProps> = ({
   message,
   onEdit,
-  onDelete
+  onDelete,
 }) => {
   // Component implementation
 };
 ```
 
 #### State Management Patterns
+
 ```typescript
 // Zustand store pattern
 interface ChatStore {
@@ -1220,16 +1271,18 @@ interface ChatStore {
 const useChatStore = create<ChatStore>((set) => ({
   messages: [],
   activeThread: null,
-  addMessage: (message) => set((state) => ({
-    messages: [...state.messages, message]
-  })),
-  setActiveThread: (threadId) => set({ activeThread: threadId })
+  addMessage: (message) =>
+    set((state) => ({
+      messages: [...state.messages, message],
+    })),
+  setActiveThread: (threadId) => set({ activeThread: threadId }),
 }));
 ```
 
 ### Performance Guidelines
 
 #### Local-First Operations
+
 ```typescript
 // Always prioritize local operations
 const optimisticUpdate = async (data: any) => {
@@ -1246,12 +1299,14 @@ const optimisticUpdate = async (data: any) => {
 ```
 
 #### Bundle Optimization
+
 - **Dynamic Imports**: Use for heavy components
 - **Code Splitting**: Automatic route-based splitting
 - **Tree Shaking**: Eliminate unused code
 - **Package Optimization**: Selective imports from large libraries
 
 #### Caching Strategy
+
 - **Multi-level Caching**: Browser, service worker, application
 - **Smart Invalidation**: Automatic cache invalidation
 - **Progressive Loading**: Critical data first
@@ -1259,26 +1314,28 @@ const optimisticUpdate = async (data: any) => {
 ### Testing
 
 #### Unit Testing
-```typescript
-import { render, screen } from '@testing-library/react';
-import { ChatMessage } from './ChatMessage';
 
-describe('ChatMessage', () => {
-  it('renders message content correctly', () => {
+```typescript
+import { render, screen } from "@testing-library/react";
+import { ChatMessage } from "./ChatMessage";
+
+describe("ChatMessage", () => {
+  it("renders message content correctly", () => {
     const message = {
-      id: '1',
-      content: 'Hello world',
-      role: 'user' as const,
-      createdAt: new Date()
+      id: "1",
+      content: "Hello world",
+      role: "user" as const,
+      createdAt: new Date(),
     };
 
     render(<ChatMessage message={message} />);
-    expect(screen.getByText('Hello world')).toBeInTheDocument();
+    expect(screen.getByText("Hello world")).toBeInTheDocument();
   });
 });
 ```
 
 #### Integration Testing
+
 - **API Testing**: Test all API endpoints
 - **Database Testing**: Test database operations
 - **Real-time Testing**: Test WebSocket connections
@@ -1286,15 +1343,15 @@ describe('ChatMessage', () => {
 
 ## Contributing
 
-We welcome contributions from developers of all skill levels! Whether you're fixing bugs, adding features, or improving documentation, every contribution helps make CapyChat better.
+We welcome contributions from developers of all skill levels! Whether you're fixing bugs, adding features, or improving documentation, every contribution helps make CappyChat better.
 
 ### Getting Started
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally
    ```bash
-   git clone https://github.com/your-username/CapyChat.git
-   cd CapyChat
+   git clone https://github.com/your-username/CappyChat.git
+   cd CappyChat
    ```
 3. **Create a feature branch**
    ```bash
@@ -1309,6 +1366,7 @@ We welcome contributions from developers of all skill levels! Whether you're fix
 ### Development Workflow
 
 #### Branch Naming Convention
+
 - `feature/description` - New features
 - `bugfix/description` - Bug fixes
 - `docs/description` - Documentation updates
@@ -1316,6 +1374,7 @@ We welcome contributions from developers of all skill levels! Whether you're fix
 - `test/description` - Test improvements
 
 #### Commit Message Format
+
 Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```bash
@@ -1327,6 +1386,7 @@ test: add unit tests for chat message component
 ```
 
 #### Code Quality
+
 - **TypeScript**: All code must be properly typed
 - **ESLint**: Follow the project's linting rules
 - **Prettier**: Use consistent code formatting
@@ -1335,6 +1395,7 @@ test: add unit tests for chat message component
 ### Pull Request Process
 
 1. **Ensure your code follows the project standards**
+
    ```bash
    pnpm lint
    pnpm build
@@ -1355,6 +1416,7 @@ test: add unit tests for chat message component
 ### Areas for Contribution
 
 #### High Priority
+
 - **Testing**: Expand test coverage for components and APIs
 - **Performance**: Optimize bundle size and runtime performance
 - **Accessibility**: Improve WCAG compliance and keyboard navigation
@@ -1362,6 +1424,7 @@ test: add unit tests for chat message component
 - **Documentation**: Improve API documentation and guides
 
 #### Feature Requests
+
 - **Internationalization**: Multi-language support
 - **Themes**: Additional theme options and customization
 - **Integrations**: New AI model integrations
@@ -1382,7 +1445,7 @@ test: add unit tests for chat message component
 
 <div align="center">
 
-### *Quick Solutions for Common Issues*
+### _Quick Solutions for Common Issues_
 
 </div>
 
@@ -1406,6 +1469,7 @@ cat .env.local | grep -v "^#"
 ```
 
 **✅ Solutions:**
+
 - ✔️ Verify all required environment variables are set
 - ✔️ Check Appwrite project configuration
 - ✔️ Ensure Node.js version is 18 or higher
@@ -1424,15 +1488,16 @@ cat .env.local | grep -v "^#"
 // Debug database connection
 const testConnection = async () => {
   try {
-    const result = await databases.listDocuments('main', 'threads');
-    console.log('✅ Database connected:', result);
+    const result = await databases.listDocuments("main", "threads");
+    console.log("✅ Database connected:", result);
   } catch (error) {
-    console.error('❌ Database error:', error);
+    console.error("❌ Database error:", error);
   }
 };
 ```
 
 **✅ Solutions:**
+
 - ✔️ Verify Appwrite endpoint and project ID
 - ✔️ Check API key permissions (databases.read, databases.write, users.read)
 - ✔️ Ensure collections exist with correct names and schemas
@@ -1450,14 +1515,16 @@ const testConnection = async () => {
 ```javascript
 // Debug WebSocket connection
 const debugRealtime = () => {
-  console.log('WebSocket state:', client.realtime.connection.state);
-  client.realtime.subscribe('databases.main.collections.messages.documents',
-    response => console.log('Realtime event:', response)
+  console.log("WebSocket state:", client.realtime.connection.state);
+  client.realtime.subscribe(
+    "databases.main.collections.messages.documents",
+    (response) => console.log("Realtime event:", response)
   );
 };
 ```
 
 **✅ Solutions:**
+
 - ✔️ Check Appwrite Realtime is enabled
 - ✔️ Verify WebSocket connections in browser dev tools
 - ✔️ Check user permissions for collections
@@ -1484,6 +1551,7 @@ pnpm lighthouse
 ```
 
 **✅ Solutions:**
+
 - ✔️ Check bundle size and optimize imports
 - ✔️ Verify CDN and caching configuration
 - ✔️ Monitor database query performance
@@ -1496,11 +1564,11 @@ pnpm lighthouse
 <table>
 <tr>
 <td width="25%"><strong>🐛 Bug Reports</strong></td>
-<td width="75%"><a href="https://github.com/CyberBoyAyush/CapyChat/issues">GitHub Issues</a></td>
+<td width="75%"><a href="https://github.com/CyberBoyAyush/CappyChat/issues">GitHub Issues</a></td>
 </tr>
 <tr>
 <td width="25%"><strong>💬 Discussions</strong></td>
-<td width="75%"><a href="https://github.com/CyberBoyAyush/CapyChat/discussions">Community Q&A</a></td>
+<td width="75%"><a href="https://github.com/CyberBoyAyush/CappyChat/discussions">Community Q&A</a></td>
 </tr>
 <tr>
 <td width="25%"><strong>📚 Documentation</strong></td>
@@ -1520,7 +1588,7 @@ pnpm lighthouse
 
 **GNU General Public License v3.0** - See the [LICENSE](LICENSE) file for details
 
-*This project is licensed under GPL v3 with additional restrictions for commercial use*
+_This project is licensed under GPL v3 with additional restrictions for commercial use_
 
 </div>
 
@@ -1530,7 +1598,7 @@ pnpm lighthouse
 
 <div align="center">
 
-### *Special Thanks to Our Technology Partners*
+### _Special Thanks to Our Technology Partners_
 
 </div>
 
@@ -1560,14 +1628,16 @@ pnpm lighthouse
 </table>
 
 **🌟 Special Recognition:**
+
 - **Open Source Community** for the incredible tools and libraries
 - **Beta Testers** who provided valuable feedback and bug reports
-- **Contributors** who help make CapyChat better every day
-- **Users** who trust CapyChat for their AI conversations
+- **Contributors** who help make CappyChat better every day
+- **Users** who trust CappyChat for their AI conversations
 
 ### 📋 **License Notice**
 
 This project is licensed under **GPL v3** with additional restrictions:
+
 - ✅ **Personal Use**: Free to use, modify, and distribute
 - ✅ **Open Source Projects**: Compatible with GPL-compatible licenses
 - ⚠️ **Commercial Use**: Requires explicit permission from copyright holders
@@ -1583,17 +1653,17 @@ For commercial licensing or permission requests, contact the copyright holders.
 ## 🚀 **Ready to Experience the Future of AI Chat?**
 
 [![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-cappychat.com-2563eb?style=for-the-badge&logoColor=white)](https://cappychat.com)
-[![GitHub](https://img.shields.io/badge/⭐_Star_on_GitHub-CyberBoyAyush/CapyChat-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/CyberBoyAyush/CapyChat)
+[![GitHub](https://img.shields.io/badge/⭐_Star_on_GitHub-CyberBoyAyush/CappyChat-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/CyberBoyAyush/CappyChat)
 [![Documentation](https://img.shields.io/badge/📚_Read_Docs-Project.md-10b981?style=for-the-badge&logoColor=white)](docs/Project.md)
 
 ---
 
-### *Built with ❤️ by the CapyChat Team*
+### _Built with ❤️ by the CappyChat Team_
 
 **Making AI conversations accessible, fast, and delightful for everyone**
 
 ---
 
-<sub>© 2024 CapyChat (AtChat). All rights reserved. | Made with passion for the AI community</sub>
+<sub>© 2024 CappyChat (AtChat). All rights reserved. | Made with passion for the AI community</sub>
 
 </div>

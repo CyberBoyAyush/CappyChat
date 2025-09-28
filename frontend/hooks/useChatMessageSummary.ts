@@ -1,9 +1,8 @@
-import { useCompletion } from "@ai-sdk/react";
 import { toast } from "@/frontend/components/ui/Toast";
-import { AppwriteDB } from "@/lib/appwriteDB";
 import { HybridDB } from "@/lib/hybridDB";
 import { useBYOKStore } from "@/frontend/stores/BYOKStore";
 import { useAuth } from "@/frontend/contexts/AuthContext";
+import { useCallback, useRef, useState } from "react";
 
 interface MessageSummaryPayload {
   title: string;
@@ -15,35 +14,69 @@ interface MessageSummaryPayload {
 export const useChatMessageSummary = () => {
   const { openRouterApiKey } = useBYOKStore();
   const { user, isGuest } = useAuth();
+  const processedMessagesRef = useRef<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { complete, isLoading } = useCompletion({
-    api: "/api/ai-text-generation",
-    body: {
-      userApiKey: openRouterApiKey,
-      userId: user?.$id,
-      isGuest: isGuest,
-    },
-    onResponse: async (response) => {
+  const complete = useCallback(
+    async (
+      prompt: string,
+      options?: {
+        body?: Record<string, unknown>;
+        headers?: Record<string, string>;
+      }
+    ) => {
+      if (!prompt?.trim()) {
+        return;
+      }
+
+      const baseBody = {
+        prompt,
+        userApiKey: openRouterApiKey,
+        userId: user?.$id,
+        isGuest,
+      };
+
+      setIsLoading(true);
+
       try {
-        // Check if response is ok before trying to parse JSON
+        const response = await fetch("/api/ai-text-generation", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(options?.headers ?? {}),
+          },
+          body: JSON.stringify({ ...baseBody, ...(options?.body ?? {}) }),
+        });
+
         if (!response.ok) {
-          console.error(
-            "[useChatMessageSummary] API response not ok:",
-            response.status,
-            response.statusText
-          );
-          toast.error("Failed to generate a summary for the message");
+          const errorPayload = await response.json().catch(() => null);
+          const errorMessage =
+            (errorPayload as { error?: string } | null)?.error ??
+            "Failed to generate a summary for the message";
+          toast.error(errorMessage);
           return;
         }
 
-        const payload: MessageSummaryPayload = await response.json();
+        const payload = (await response.json()) as MessageSummaryPayload & {
+          error?: string;
+        };
+
+        if (payload.error) {
+          toast.error(payload.error);
+          return;
+        }
+
         const { title, isTitle, messageId, threadId } = payload;
 
-        // Validate that we have the required fields
         if (!title || !messageId || !threadId) {
           console.error("[useChatMessageSummary] Invalid payload:", payload);
           return;
         }
+
+        if (processedMessagesRef.current.has(messageId)) {
+          return;
+        }
+        processedMessagesRef.current.add(messageId);
 
         console.log("[useChatMessageSummary] Received response:", {
           title,
@@ -66,16 +99,13 @@ export const useChatMessageSummary = () => {
           "[useChatMessageSummary] Error processing message summary:",
           error
         );
-        // Don't show user-facing error for title generation failures
-        // The fallback mechanism in ChatInputField will handle it
+        toast.error("Failed to generate a summary for the message");
+      } finally {
+        setIsLoading(false);
       }
     },
-    onError: (error) => {
-      console.error("[useChatMessageSummary] Completion error:", error);
-      // Don't show error toast for title generation failures to avoid user confusion
-      // The thread will keep the "New Chat" title, which is acceptable fallback behavior
-    },
-  });
+    [openRouterApiKey, user?.$id, isGuest]
+  );
 
   return {
     complete,

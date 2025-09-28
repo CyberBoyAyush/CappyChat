@@ -212,7 +212,7 @@ export const createCustomerPortalSession = async (
 export const isPremium = async (): Promise<boolean> => {
   try {
     const subscription = await getUserSubscription();
-    
+
     if (!subscription) {
       return false;
     }
@@ -223,7 +223,8 @@ export const isPremium = async (): Promise<boolean> => {
     }
 
     // Check subscription status and expiry
-    if (subscription.status === 'active' && subscription.tier === 'PREMIUM') {
+    // Include 'cancelled' or transient 'failed' status if still within period (cancelled but active until period end)
+    if ((subscription.status === 'active' || subscription.status === 'cancelled' || subscription.status === 'failed') && subscription.tier === 'PREMIUM') {
       // Check if subscription is still valid
       if (subscription.currentPeriodEnd) {
         const expiryDate = new Date(subscription.currentPeriodEnd);
@@ -331,7 +332,7 @@ const mapDodoStatusToInternal = (dodoStatus: string): UserSubscription['status']
 /**
  * Cancel subscription (server-side only)
  */
-export const cancelSubscription = async (subscriptionId: string): Promise<void> => {
+export const cancelSubscription = async (userId: string, subscriptionId: string): Promise<void> => {
   // Ensure this function is only called server-side
   if (typeof window !== 'undefined') {
     throw new Error('cancelSubscription can only be called server-side');
@@ -349,10 +350,25 @@ export const cancelSubscription = async (subscriptionId: string): Promise<void> 
       cancel_at_next_billing_date: true,
     });
 
-    await updateUserSubscription({
-      status: 'cancelled',
-      cancelAtPeriodEnd: true,
-    });
+    // Use server-side Appwrite client instead of user session
+    const { Client, Users } = await import('node-appwrite');
+    const client = new Client()
+      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
+      .setKey(process.env.APPWRITE_API_KEY!);
+
+    const users = new Users(client);
+    const user = await users.get(userId);
+    const currentPrefs = (user.prefs as Record<string, unknown>) || {};
+
+    const updatedPrefs = {
+      ...currentPrefs,
+      subscriptionStatus: 'cancelled',
+      subscriptionCancelAtEnd: true,
+      subscriptionUpdatedAt: new Date().toISOString(),
+    };
+
+    await users.updatePrefs(userId, updatedPrefs);
   } catch (error) {
     console.error('Error cancelling subscription:', error);
     throw new Error('Failed to cancel subscription');

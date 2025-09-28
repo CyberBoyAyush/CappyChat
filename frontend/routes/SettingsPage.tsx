@@ -459,28 +459,8 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="fixed top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="w-full px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              to={chatId ? `/chat/${chatId}` : "/chat"}
-              className="flex items-center justify-center h-9 w-9 rounded-full border border-border bg-background hover:bg-muted transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="sr-only">Back</span>
-            </Link>
-            <div className="flex items-center gap-2">
-              <SettingsIcon className="w-5 h-5 text-primary" />
-              <h1 className="text-lg font-semibold">Settings</h1>
-            </div>
-          </div>
-          <ThemeToggleButton variant="inline" />
-        </div>
-      </header>
-
       {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-7xl mx-auto">
           {/* Notification */}
           {notification && (
@@ -1507,9 +1487,9 @@ export default function SettingsPage() {
                                     setOpenAIKeyInput(e.target.value);
                                     setOpenAIKeyError("");
                                   }}
-                                  className={
+                                  className={`border-ring/15 bg-border/10 rounded-lg border ${
                                     openAIKeyError ? "border-destructive" : ""
-                                  }
+                                  }`}
                                 />
                                 <Button
                                   type="button"
@@ -1652,9 +1632,9 @@ export default function SettingsPage() {
                                     setTavilyKeyInput(e.target.value);
                                     setTavilyKeyError("");
                                   }}
-                                  className={
+                                  className={`border-ring/15 bg-border/10 rounded-lg border ${
                                     tavilyKeyError ? "border-destructive" : ""
-                                  }
+                                  }`}
                                 />
                                 <Button
                                   type="button"
@@ -1711,8 +1691,9 @@ export default function SettingsPage() {
                       </div>
                       <div className="space-y-4">
                         <p className="text-sm text-muted-foreground">
-                          Learn more about CappyChat, our team, technology stack,
-                          and mission to create the fastest AI chat experience.
+                          Learn more about CappyChat, our team, technology
+                          stack, and mission to create the fastest AI chat
+                          experience.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-2">
                           <Link to="/about">
@@ -1772,7 +1753,7 @@ export default function SettingsPage() {
                                 href="mailto:connect@vrandagarg.in"
                                 className="text-sm text-primary hover:underline mt-2 inline-block"
                               >
-                                connect@vrandagarg.in
+                                cappychat@vrandagarg.in
                               </a>
                             </div>
                           </div>

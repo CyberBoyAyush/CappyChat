@@ -251,7 +251,7 @@ const SignupPage: React.FC = () => {
                       placeholder="Enter your full name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="pl-10 h-12 bg-background/50 border-border/50"
+                      className="pl-10 rounded-lg placeholder:text-muted-foreground/70 border h-12 bg-background/50 border-border/50"
                       disabled={isLoading || oauthLoading !== null}
                     />
                   </div>
@@ -269,7 +269,7 @@ const SignupPage: React.FC = () => {
                       placeholder="your.email@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 h-12 bg-background/50 border-border/50"
+                      className="pl-10 h-12 bg-background/50 border-border/50 border placeholder:text-muted-foreground/70 rounded-lg"
                       disabled={isLoading || oauthLoading !== null}
                     />
                   </div>
@@ -287,7 +287,7 @@ const SignupPage: React.FC = () => {
                       placeholder="••••••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 pr-12 h-12 bg-background/50 border-border/50"
+                      className="pl-10 pr-12 h-12 bg-background/50 border-border/50 border placeholder:text-muted-foreground/70 rounded-lg"
                       disabled={isLoading || oauthLoading !== null}
                     />
                     <Button

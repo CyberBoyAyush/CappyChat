@@ -31,12 +31,12 @@ import CapybaraIcon from "@/frontend/components/ui/CapybaraIcon";
 
 ## Props
 
-| Prop         | Type                                                                                | Default | Description                             |
-| ------------ | ----------------------------------------------------------------------------------- | ------- | --------------------------------------- |
+| Prop         | Type                                                                                                | Default | Description                             |
+| ------------ | --------------------------------------------------------------------------------------------------- | ------- | --------------------------------------- |
 | `size`       | `"text-xs" \| "text-sm" \| "text-md" \| "text-lg" \| "xs" \| "sm" \| "md" \| "lg" \| "xl" \| "2xl"` | `"2xl"` | Controls the size of the icon           |
-| `animated`   | `boolean`                                                                           | `true`  | Whether to show walking animation       |
-| `showLoader` | `boolean`                                                                           | `false` | Whether to show the walking line loader |
-| `className`  | `string`                                                                            | `""`    | Additional CSS classes                  |
+| `animated`   | `boolean`                                                                                           | `true`  | Whether to show walking animation       |
+| `showLoader` | `boolean`                                                                                           | `false` | Whether to show the walking line loader |
+| `className`  | `string`                                                                                            | `""`    | Additional CSS classes                  |
 
 ## Size Reference
 
@@ -61,7 +61,7 @@ The component automatically adjusts its height based on whether the loader is sh
 
 ```tsx
 <span className="flex items-center gap-1">
-  Welcome to <CapybaraIcon size="text-sm" animated={false} /> CapyChat!
+  Welcome to <CapybaraIcon size="text-sm" animated={false} /> CappyChat!
 </span>
 ```
 
@@ -103,7 +103,7 @@ The component automatically adjusts its height based on whether the loader is sh
 ```tsx
 <div className="text-center">
   <CapybaraIcon size="2xl" animated={true} showLoader={true} className="mb-6" />
-  <h1>Welcome to CapyChat!</h1>
+  <h1>Welcome to CappyChat!</h1>
 </div>
 ```
 

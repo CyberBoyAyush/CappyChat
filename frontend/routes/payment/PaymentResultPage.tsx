@@ -25,7 +25,7 @@ const PaymentResultPage: React.FC = () => {
   const attemptsRef = useRef(0);
   const isPollingRef = useRef(false);
 
-  const maxAttempts = 8; // Check for up to 24 seconds (3s intervals)
+  const maxAttempts = 12; // Check for up to 36 seconds (3s intervals) - longer than cache TTL
   const sessionId = searchParams.get('session_id');
 
   useEffect(() => {

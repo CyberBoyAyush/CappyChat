@@ -34,17 +34,17 @@ const updateUserSubscriptionAndTierServer = async (
     const updatedPrefs = {
       ...currentPrefs,
       // Subscription fields as separate preferences
-      subscriptionTier: subscriptionData.tier || currentPrefs.subscriptionTier || 'FREE',
-      subscriptionStatus: subscriptionData.status || currentPrefs.subscriptionStatus || 'expired',
-      subscriptionCustomerId: subscriptionData.customerId || currentPrefs.subscriptionCustomerId,
-      subscriptionId: subscriptionData.subscriptionId || currentPrefs.subscriptionId,
-      subscriptionPeriodEnd: subscriptionData.currentPeriodEnd || currentPrefs.subscriptionPeriodEnd,
-      subscriptionCancelAtEnd: subscriptionData.cancelAtPeriodEnd !== undefined ? subscriptionData.cancelAtPeriodEnd : currentPrefs.subscriptionCancelAtEnd,
-      subscriptionNextBillingDate: subscriptionData.next_billing_date || subscriptionData.currentPeriodEnd || currentPrefs.subscriptionNextBillingDate,
-      subscriptionCurrency: subscriptionData.currency || currentPrefs.subscriptionCurrency,
-      subscriptionAmount: subscriptionData.amount || currentPrefs.subscriptionAmount,
-      subscriptionLastPayment: subscriptionData.lastPaymentId || currentPrefs.subscriptionLastPayment,
-      subscriptionRetryCount: subscriptionData.retryCount !== undefined ? subscriptionData.retryCount : currentPrefs.subscriptionRetryCount,
+      subscriptionTier: subscriptionData.tier ?? currentPrefs.subscriptionTier ?? 'FREE',
+      subscriptionStatus: subscriptionData.status ?? currentPrefs.subscriptionStatus ?? 'expired',
+      subscriptionCustomerId: subscriptionData.customerId ?? currentPrefs.subscriptionCustomerId,
+      subscriptionId: subscriptionData.subscriptionId ?? currentPrefs.subscriptionId,
+      subscriptionPeriodEnd: subscriptionData.currentPeriodEnd ?? currentPrefs.subscriptionPeriodEnd,
+      subscriptionCancelAtEnd: subscriptionData.cancelAtPeriodEnd ?? currentPrefs.subscriptionCancelAtEnd,
+      subscriptionNextBillingDate: subscriptionData.next_billing_date ?? subscriptionData.currentPeriodEnd ?? currentPrefs.subscriptionNextBillingDate,
+      subscriptionCurrency: subscriptionData.currency ?? currentPrefs.subscriptionCurrency,
+      subscriptionAmount: subscriptionData.amount ?? currentPrefs.subscriptionAmount,
+      subscriptionLastPayment: subscriptionData.lastPaymentId ?? currentPrefs.subscriptionLastPayment,
+      subscriptionRetryCount: subscriptionData.retryCount ?? currentPrefs.subscriptionRetryCount,
       subscriptionUpdatedAt: new Date().toISOString(),
       // Tier system fields (if provided)
       ...(tierData && {
@@ -279,6 +279,17 @@ export const POST = Webhooks({
       console.log('📝 Captured customer ID from payment:', updateData.customerId);
     }
 
+    // Log subscription payments for monitoring (no automatic activation)
+    if (paymentData.subscription_id) {
+      console.log('🔍 MONITOR: Payment for subscription detected', {
+        userId,
+        subscriptionId: paymentData.subscription_id,
+        paymentId: paymentData.payment_id || paymentData.id,
+        timestamp: new Date().toISOString(),
+        note: 'Expecting subscription.active webhook to follow'
+      });
+    }
+
     await updateUserSubscriptionServer(userId!, updateData);
 
     console.log('🎊 Payment success processed for user:', userId);
@@ -298,5 +309,19 @@ export const POST = Webhooks({
     });
 
     console.log('🔄 Payment failed, retry count updated:', newRetryCount);
+  }),
+
+  // Subscription on hold (paused by DODO)
+  onSubscriptionOnHold: createSafeWebhookHandler('SubscriptionOnHold', async (payload) => {
+    console.log('⏸️ Subscription on hold webhook received');
+
+    const userId = extractUserId(payload);
+    console.log('📝 Processing subscription on hold for user:', userId);
+
+    await updateUserSubscriptionServer(userId!, {
+      status: 'on_hold',
+    });
+
+    console.log('⏸️ Subscription put on hold for user:', userId);
   }),
 });

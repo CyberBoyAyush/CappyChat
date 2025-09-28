@@ -107,7 +107,7 @@ export const processWebhookSafely = async <T>(
   }
 
   // Check if already processing (concurrency protection)
-  const lockKey = `${userId}_${webhookId.split('_')[0]}`; // Lock by user + webhook type
+  const lockKey = userId; // Lock by user only to prevent all concurrent webhooks for same user
   if (processingLocks.has(lockKey)) {
     console.log('⚠️ Concurrent webhook processing detected, waiting...', lockKey);
     try {

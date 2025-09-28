@@ -71,7 +71,7 @@ export const MODEL_CONFIGS = {
     description: 'Fast and efficient model from Google',
   },
   'OpenAI 5': {
-    modelId: 'openai/gpt-5',
+    modelId: 'openai/gpt-5-chat',
     provider: 'openrouter',
     displayName: 'OpenAI 5',
     iconType: 'openai',

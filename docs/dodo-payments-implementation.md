@@ -43,11 +43,11 @@ This document outlines the complete implementation of DODO Payments subscription
 
 ```env
 # DODO Payments Configuration
-DODO_PAYMENTS_API_KEY=gcbaon79nS5GMQ-X.USXebfOfFFoFaNt0BegWGXohSgwwlPZVBBIND31k-MGpqvs8
-DODO_PAYMENTS_WEBHOOK_SECRET=whsec_Dhd0qFb9GMQ7XFFPvCV/ymjnauuIVGR1
-DODO_PAYMENTS_ENVIRONMENT=test
-DODO_PAYMENTS_TEST_PRODUCT_ID=pdt_hYSj2ZsKnz9PYPPLclDqr
-DODO_PAYMENTS_LIVE_PRODUCT_ID=pdt_yeVZ4uNp4xT6wS6M3aXNV
+DODO_PAYMENTS_API_KEY=
+DODO_PAYMENTS_WEBHOOK_SECRET=
+DODO_PAYMENTS_ENVIRONMENT=
+DODO_PAYMENTS_TEST_PRODUCT_ID=
+DODO_PAYMENTS_LIVE_PRODUCT_ID=
 ```
 
 ### Pricing Structure
@@ -148,7 +148,7 @@ export const hasSubscriptionPremium = async (userId?: string): Promise<boolean> 
   if (subscription?.adminOverride) return true;
   
   // Check subscription status and expiry
-  if (subscription?.status === 'active' && subscription?.tier === 'PREMIUM') {
+  if (subscription?.status === 'active' || subscription?.status === 'failed' && subscription?.tier === 'PREMIUM') {
     if (subscription.currentPeriodEnd) {
       const expiryDate = new Date(subscription.currentPeriodEnd);
       return expiryDate > new Date();

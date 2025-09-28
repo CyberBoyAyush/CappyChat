@@ -4,6 +4,8 @@ import { SparklesCore } from "@/frontend/components/ui/sparkles";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { UnfoldHorizontal } from "lucide-react";
+import { useMemo } from "react";
+import CapybaraIcon from "./CapybaraIcon";
 
 interface CompareProps {
   firstImage?: string;
@@ -18,7 +20,7 @@ interface CompareProps {
   autoplayDuration?: number;
   style?: React.CSSProperties;
 }
-export const Compare = ({
+const CompareComponent = ({
   firstImage = "",
   secondImage = "",
   className,
@@ -35,10 +37,8 @@ export const Compare = ({
   const [isDragging, setIsDragging] = useState(false);
 
   const sliderRef = useRef<HTMLDivElement>(null);
-
-  const [isMouseOver, setIsMouseOver] = useState(false);
-
-  const autoplayRef = useRef<NodeJS.Timeout | null>(null);
+  const autoplayRef = useRef<number | null>(null);
+  const pendingFrameRef = useRef<number | null>(null);
 
   const startAutoplay = useCallback(() => {
     if (!autoplay) return;
@@ -51,7 +51,7 @@ export const Compare = ({
       const percentage = progress <= 1 ? progress * 100 : (2 - progress) * 100;
 
       setSliderXPercent(percentage);
-      autoplayRef.current = setTimeout(animate, 16); // ~60fps
+      autoplayRef.current = requestAnimationFrame(animate);
     };
 
     animate();
@@ -59,23 +59,28 @@ export const Compare = ({
 
   const stopAutoplay = useCallback(() => {
     if (autoplayRef.current) {
-      clearTimeout(autoplayRef.current);
+      cancelAnimationFrame(autoplayRef.current);
       autoplayRef.current = null;
     }
   }, []);
 
   useEffect(() => {
     startAutoplay();
-    return () => stopAutoplay();
+    return () => {
+      stopAutoplay();
+      // Cleanup pending animation frames
+      if (pendingFrameRef.current) {
+        cancelAnimationFrame(pendingFrameRef.current);
+        pendingFrameRef.current = null;
+      }
+    };
   }, [startAutoplay, stopAutoplay]);
 
   function mouseEnterHandler() {
-    setIsMouseOver(true);
     stopAutoplay();
   }
 
   function mouseLeaveHandler() {
-    setIsMouseOver(false);
     if (slideMode === "hover") {
       setSliderXPercent(initialSliderPercentage);
     }
@@ -85,14 +90,11 @@ export const Compare = ({
     startAutoplay();
   }
 
-  const handleStart = useCallback(
-    (clientX: number) => {
-      if (slideMode === "drag") {
-        setIsDragging(true);
-      }
-    },
-    [slideMode]
-  );
+  const handleStart = useCallback(() => {
+    if (slideMode === "drag") {
+      setIsDragging(true);
+    }
+  }, [slideMode]);
 
   const handleEnd = useCallback(() => {
     if (slideMode === "drag") {
@@ -104,35 +106,36 @@ export const Compare = ({
     (clientX: number) => {
       if (!sliderRef.current) return;
       if (slideMode === "hover" || (slideMode === "drag" && isDragging)) {
+        // Cancel any pending frame to prevent stacking
+        if (pendingFrameRef.current) {
+          cancelAnimationFrame(pendingFrameRef.current);
+        }
+
         const rect = sliderRef.current.getBoundingClientRect();
         const x = clientX - rect.left;
         const percent = (x / rect.width) * 100;
-        requestAnimationFrame(() => {
+
+        pendingFrameRef.current = requestAnimationFrame(() => {
           setSliderXPercent(Math.max(0, Math.min(100, percent)));
+          pendingFrameRef.current = null;
         });
       }
     },
     [slideMode, isDragging]
   );
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => handleStart(e.clientX),
-    [handleStart]
-  );
+  const handleMouseDown = useCallback(() => handleStart(), [handleStart]);
   const handleMouseUp = useCallback(() => handleEnd(), [handleEnd]);
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => handleMove(e.clientX),
     [handleMove]
   );
 
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent) => {
-      if (!autoplay) {
-        handleStart(e.touches[0].clientX);
-      }
-    },
-    [handleStart, autoplay]
-  );
+  const handleTouchStart = useCallback(() => {
+    if (!autoplay) {
+      handleStart();
+    }
+  }, [handleStart, autoplay]);
 
   const handleTouchEnd = useCallback(() => {
     if (!autoplay) {
@@ -149,15 +152,52 @@ export const Compare = ({
     [handleMove, autoplay]
   );
 
+  // Memoize container style to prevent re-renders
+  const containerStyle = useMemo(
+    () => ({
+      position: "relative" as const,
+      cursor: slideMode === "drag" ? "grab" : "col-resize",
+      ...style,
+    }),
+    [slideMode, style]
+  );
+
+  // Memoize slider line style
+  const sliderLineStyle = useMemo(
+    () => ({
+      left: `${sliderXPercent}%`,
+      top: "0",
+      zIndex: 40,
+    }),
+    [sliderXPercent]
+  );
+
+  // Memoize clip path style for first image
+  const firstImageClipStyle = useMemo(
+    () => ({
+      clipPath: `inset(0 ${100 - sliderXPercent}% 0 0)`,
+    }),
+    [sliderXPercent]
+  );
+
+  // Memoize image styles to prevent re-renders
+  const imageStyle = useMemo(
+    () => ({
+      userSelect: "none" as const,
+      WebkitUserSelect: "none" as const,
+      MozUserSelect: "none" as const,
+      width: "100%",
+      height: "100%",
+      objectFit: "cover" as const,
+    }),
+    []
+  );
+
   return (
     <div
       ref={sliderRef}
       className={cn("w-[400px] h-[400px] overflow-hidden", className)}
-      style={{
-        position: "relative",
-        cursor: slideMode === "drag" ? "grab" : "col-resize",
-        ...style,
-      }}
+      style={containerStyle}
       onMouseMove={handleMouseMove}
       onMouseLeave={mouseLeaveHandler}
       onMouseEnter={mouseEnterHandler}
@@ -170,11 +210,7 @@ export const Compare = ({
       <AnimatePresence initial={false}>
         <motion.div
           className="h-full w-px absolute top-0 m-auto z-30 bg-gradient-to-b from-transparent from-[5%] to-[95%] via-primary to-transparent"
-          style={{
-            left: `${sliderXPercent}%`,
-            top: "0",
-            zIndex: 40,
-          }}
+          style={sliderLineStyle}
           transition={{ duration: 0 }}
         >
           <div className="w-36 h-full [mask-image:radial-gradient(100px_at_left,white,transparent)] absolute top-1/2 -translate-y-1/2 left-0 bg-gradient-to-r from-primary/60 via-transparent to-transparent z-20 opacity-50" />
@@ -190,8 +226,9 @@ export const Compare = ({
             />
           </div>
           {showHandlebar && (
-            <div className="h-6 w-6 rounded-md top-1/2 -translate-y-1/2 bg-background border border-border z-30 -right-2.5 absolute flex items-center justify-center shadow-md">
-              <UnfoldHorizontal className="h-4 w-4 text-primary" />
+            <div className="h-8 w-8 rounded-md top-1/2 -translate-y-1/2 bg-background border border-border z-30 -right-2.5 absolute flex items-center justify-center shadow-md">
+              {/* <UnfoldHorizontal className="h-4 w-4 text-primary" /> */}
+              <CapybaraIcon size="text-sm" animated={false} showLoader={true} />
             </div>
           )}
         </motion.div>
@@ -204,13 +241,11 @@ export const Compare = ({
                 "absolute inset-0 z-20 rounded-2xl shrink-0 w-full h-full select-none overflow-hidden",
                 firstImageClassName
               )}
-              style={{
-                clipPath: `inset(0 ${100 - sliderXPercent}% 0 0)`,
-              }}
+              style={firstImageClipStyle}
               transition={{ duration: 0 }}
             >
               <img
-                alt="first image"
+                alt="Light theme"
                 src={firstImage}
                 className={cn(
                   "absolute inset-0 z-20 rounded-2xl shrink-0 w-full h-full select-none pointer-events-none object-cover",
@@ -218,14 +253,7 @@ export const Compare = ({
                 )}
                 draggable={false}
                 onDragStart={(e) => e.preventDefault()}
-                style={{
-                  userSelect: "none",
-                  WebkitUserSelect: "none",
-                  MozUserSelect: "none",
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
+                style={imageStyle}
               />
             </motion.div>
           ) : null}
@@ -239,18 +267,11 @@ export const Compare = ({
               "absolute top-0 left-0 z-[19] rounded-2xl w-full h-full select-none pointer-events-none object-cover",
               secondImageClassname
             )}
-            alt="second image"
+            alt="Dark theme"
             src={secondImage}
             draggable={false}
             onDragStart={(e) => e.preventDefault()}
-            style={{
-              userSelect: "none",
-              WebkitUserSelect: "none",
-              MozUserSelect: "none",
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
+            style={imageStyle}
           />
         ) : null}
       </AnimatePresence>
@@ -259,3 +280,6 @@ export const Compare = ({
 };
 
 const MemoizedSparklesCore = React.memo(SparklesCore);
+
+// Memoize the Compare component to prevent unnecessary re-renders
+export const Compare = React.memo(CompareComponent);

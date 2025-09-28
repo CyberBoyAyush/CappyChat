@@ -216,7 +216,8 @@ export const hasSubscriptionPremium = async (userId?: string): Promise<boolean> 
         const currentPeriodEnd = prefs.subscriptionPeriodEnd as string;
 
         // Check subscription status and expiry
-        if (subscriptionStatus === 'active' && subscriptionTier === 'PREMIUM') {
+        // Include 'cancelled' status if still within period (cancelled but active until period end)
+        if ((subscriptionStatus === 'active' || subscriptionStatus === 'cancelled' || subscriptionStatus === 'failed') && subscriptionTier === 'PREMIUM') {
           // Check if subscription is still valid
           if (currentPeriodEnd) {
             const expiryDate = new Date(currentPeriodEnd);
@@ -240,7 +241,8 @@ export const hasSubscriptionPremium = async (userId?: string): Promise<boolean> 
       }
 
       // Check subscription status and expiry
-      if (subscription.status === 'active' && subscription.tier === 'PREMIUM') {
+      // Include 'cancelled' status if still within period (cancelled but active until period end)
+      if ((subscription.status === 'active' || subscription.status === 'cancelled' || subscription.status === 'failed') && subscription.tier === 'PREMIUM') {
         // Check if subscription is still valid
         if (subscription.currentPeriodEnd) {
           const expiryDate = new Date(subscription.currentPeriodEnd);

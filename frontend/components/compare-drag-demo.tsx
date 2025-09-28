@@ -1,9 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { Compare } from "@/frontend/components/ui/compare";
-import { motion } from "framer-motion";
-import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Badge } from "@/frontend/components/ui/badge";
 
-export default function CompareDemo() {
+function CompareDemo() {
+  const { theme } = useTheme();
   const [imageDimensions, setImageDimensions] = useState<{
     width: number;
     height: number;
@@ -15,19 +22,43 @@ export default function CompareDemo() {
   } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageLoadRef = useRef<HTMLImageElement | null>(null);
+
+  // Memoize images based on theme to prevent unnecessary recalculations
+  const { lightImage, darkImage } = useMemo(() => {
+    const isCapybaraTheme =
+      theme === "capybara-light" || theme === "capybara-dark";
+
+    if (isCapybaraTheme) {
+      return {
+        lightImage:
+          "https://res.cloudinary.com/dyetf2h9n/image/upload/v1758194374/image2_ospigx.png", // light theme capybara
+        darkImage:
+          "https://res.cloudinary.com/dyetf2h9n/image/upload/v1758194374/image1_r8heb4.png", // dark theme capybara
+      };
+    } else {
+      return {
+        lightImage:
+          "https://res.cloudinary.com/dyetf2h9n/image/upload/v1758194374/image4_v6bsyd.png", // light theme monochromatic
+        darkImage:
+          "https://res.cloudinary.com/dyetf2h9n/image/upload/v1758194374/image3_jbdmr4.png", // dark theme monochromatic
+      };
+    }
+  }, [theme]);
+
+  // Memoize the container dimensions update function
+  const updateContainerDimensions = useCallback(() => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setContainerDimensions({
+        width: rect.width,
+        height: window.innerHeight - 200, // Keep some margin for header
+      });
+    }
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
-
-    const updateContainerDimensions = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setContainerDimensions({
-          width: rect.width,
-          height: window.innerHeight - 200, // Keep some margin for header
-        });
-      }
-    };
 
     // Initial measurement
     updateContainerDimensions();
@@ -43,23 +74,51 @@ export default function CompareDemo() {
       resizeObserver.disconnect();
       window.removeEventListener("resize", updateContainerDimensions);
     };
-  }, []);
+  }, [updateContainerDimensions]);
 
   useEffect(() => {
+    // Cleanup previous image loading if any
+    if (imageLoadRef.current) {
+      imageLoadRef.current.onload = null;
+      imageLoadRef.current.onerror = null;
+    }
+
     // Load the first image to get its dimensions
     const img = new Image();
-    img.onload = () => {
-      setImageDimensions({
-        width: img.naturalWidth,
-        height: img.naturalHeight,
-      });
-    };
-    img.src =
-      "https://1kf0b6y5pd.ufs.sh/f/whL3sWlbNOAPRqkvasWUXBJDNsC5iPZHT482KSbkML3t1VmU";
-  }, []);
+    imageLoadRef.current = img;
 
-  // Calculate responsive dimensions
-  const getResponsiveDimensions = () => {
+    img.onload = () => {
+      // Check if this is still the current image loading operation
+      if (imageLoadRef.current === img) {
+        setImageDimensions({
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+        });
+      }
+    };
+
+    img.onerror = () => {
+      // Handle error case
+      if (imageLoadRef.current === img) {
+        console.warn(`Failed to load image: ${lightImage}`);
+        setImageDimensions(null);
+      }
+    };
+
+    img.src = lightImage;
+
+    // Cleanup function
+    return () => {
+      if (imageLoadRef.current === img) {
+        img.onload = null;
+        img.onerror = null;
+        imageLoadRef.current = null;
+      }
+    };
+  }, [lightImage]); // Depend on lightImage to reload when theme changes
+
+  // Memoize responsive dimensions calculation
+  const responsiveDimensions = useMemo(() => {
     if (!imageDimensions || !containerDimensions) return {};
 
     const maxWidth = containerDimensions.width - 80; // Account for padding
@@ -83,27 +142,17 @@ export default function CompareDemo() {
     }
 
     return { width, height };
-  };
-
-  const responsiveDimensions = getResponsiveDimensions();
+  }, [imageDimensions, containerDimensions]);
 
   return (
     <div ref={containerRef} className="w-full mx-auto px-4">
-      {/* Theme Demo Header */}
-      <div className="text-center mb-8">
-        <p className="text-muted-foreground text-sm max-w-md mx-auto">
-          Drag the slider to seamlessly switch between light and dark modes and
-          see how CappyChat adapts to your preference
-        </p>
-      </div>
-
       {/* Compare Component - Dynamic Sizing */}
       <div className="flex justify-center items-center">
         {imageDimensions && containerDimensions && (
           <div className="bg-gradient-to-br from-background/50 to-muted/20 backdrop-blur-sm border border-border/50 rounded-lg md:rounded-3xl p-2 md:p-4 shadow-lg">
             <Compare
-              firstImage="https://res.cloudinary.com/dyetf2h9n/image/upload/v1755978622/1st_psomu9.png"
-              secondImage="https://res.cloudinary.com/dyetf2h9n/image/upload/v1755978622/2nd_bqok7b.png"
+              firstImage={lightImage}
+              secondImage={darkImage}
               firstImageClassName="object-contain select-none w-full h-full rounded-lg md:rounded-xl"
               secondImageClassname="object-contain select-none w-full h-full rounded-lg md:rounded-xl"
               className="rounded-lg md:rounded-xl overflow-hidden shadow-md"
@@ -124,3 +173,6 @@ export default function CompareDemo() {
     </div>
   );
 }
+
+// Memoize the component to prevent unnecessary re-renders
+export default React.memo(CompareDemo);

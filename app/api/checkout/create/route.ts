@@ -56,10 +56,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Get the origin from the request to construct return URL
-    const origin = req.headers.get('origin') ||
-                   req.headers.get('referer')?.split('/').slice(0, 3).join('/') ||
-                   req.headers.get('host') ? `https://${req.headers.get('host')}` :
-                   'http://localhost:3000';
+    const origin = req.headers.get('origin') || // Prefer origin header
+               process.env.NEXT_PUBLIC_APP_URL || // Fallback to app URL
+               'http://localhost:3000'; // Fallback to localhost
 
     console.log('Creating checkout for user:', {
       userId,
