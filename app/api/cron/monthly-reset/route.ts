@@ -40,7 +40,14 @@ async function resetUsersDaily(maxTimeMs = 50000): Promise<{
   resetCount: number;
   checkedCount: number;
   errorCount: number;
-  resetUsers: string[];
+  resetUsers: Array<{
+    email: string;
+    userId: string;
+    tier: string;
+    reason: string;
+    credits: string;
+    subscriptionStatus: string;
+  }>;
   timeoutReached: boolean;
   duration: number;
 }> {
@@ -50,7 +57,14 @@ async function resetUsersDaily(maxTimeMs = 50000): Promise<{
   let errorCount = 0;
   let offset = 0;
   const limit = 50; // Smaller batches for better performance
-  const resetUsers: string[] = [];
+  const resetUsers: Array<{
+    email: string;
+    userId: string;
+    tier: string;
+    reason: string;
+    credits: string;
+    subscriptionStatus: string;
+  }> = [];
   let timeoutReached = false;
 
   // Reset progress tracking
@@ -164,18 +178,37 @@ async function resetUsersDaily(maxTimeMs = 50000): Promise<{
             await users.updatePrefs(user.$id, updatedPrefs);
             resetCount++;
             currentProgress.reset = resetCount;
-            resetUsers.push(user.$id);
-
             const daysSinceReset = lastResetDate
               ? Math.floor((Date.now() - new Date(lastResetDate).getTime()) / (1000 * 60 * 60 * 24))
               : 'never';
 
-            console.log(`[CronReset] ✅ Reset user ${user.$id} (${tier}) - ${daysSinceReset} days since last reset`);
+            // Detailed logging for each user
+            const userEmail = user.email || 'no-email';
+
+            resetUsers.push({
+              email: userEmail,
+              userId: user.$id,
+              tier: tier,
+              reason: shouldDowngrade ? downgradeReason : 'credits_reset',
+              credits: `${limits.freeCredits}/${limits.premiumCredits}/${limits.superPremiumCredits}`,
+              subscriptionStatus: subscriptionStatus || 'none'
+            });
+            const resetReason = shouldDowngrade ? `DOWNGRADED: ${downgradeReason}` : 'CREDITS_RESET';
+            const subscriptionInfo = subscriptionStatus ?
+              `[Sub: ${subscriptionStatus}${cancelAtEnd !== undefined ? `, cancelAtEnd: ${cancelAtEnd}` : ''}${nextBillingDate ? `, billing: ${nextBillingDate.split('T')[0]}` : ''}]` :
+              '[No subscription]';
+
+            console.log(`[CronReset] ✅ ${userEmail} [${user.$id}] - Last reset: ${daysSinceReset === 'never' ? 'NEVER' : `${daysSinceReset} days ago`} | Tier: ${tier} | Reason: ${resetReason} | Credits: ${limits.freeCredits}/${limits.premiumCredits}/${limits.superPremiumCredits} ${subscriptionInfo}`);
+          } else {
+            // User doesn't need reset - skip silently (only log if needed for debugging)
+            // Uncomment below line for debugging skipped users:
+            // console.log(`[CronReset] ⏭️ ${user.email || 'no-email'} - SKIPPED: ${lastResetDate ? Math.floor((Date.now() - new Date(lastResetDate).getTime()) / (1000 * 60 * 60 * 24)) : 'never'} days`);
           }
         } catch (error) {
           errorCount++;
           currentProgress.errors = errorCount;
-          console.error(`[CronReset] ❌ Failed to process user ${user.$id}:`, error);
+          const userEmail = user.email || 'no-email';
+          console.error(`[CronReset] ❌ ${userEmail} [${user.$id}] - ERROR: ${error instanceof Error ? error.message : 'Unknown error'}`);
           // Continue with other users
         }
       });
@@ -256,21 +289,34 @@ export async function GET(req: NextRequest) {
         message: result.timeoutReached
           ? `Daily reset partially completed (timeout reached)`
           : `Daily reset completed successfully`,
-        data: {
+        summary: {
           resetCount: result.resetCount,
           checkedCount: result.checkedCount,
           errorCount: result.errorCount,
+          skippedCount: result.checkedCount - result.resetCount - result.errorCount,
           duration: `${result.duration}ms`,
           timeoutReached: result.timeoutReached,
           timestamp: new Date().toISOString(),
-          resetUsers: result.resetUsers.slice(0, 20), // Show first 20 reset users
-          summary: {
-            successRate: result.checkedCount > 0
-              ? `${((result.checkedCount - result.errorCount) / result.checkedCount * 100).toFixed(1)}%`
-              : '100%',
-            resetRate: result.checkedCount > 0
-              ? `${(result.resetCount / result.checkedCount * 100).toFixed(1)}%`
-              : '0%'
+          successRate: result.checkedCount > 0
+            ? `${((result.checkedCount - result.errorCount) / result.checkedCount * 100).toFixed(1)}%`
+            : '100%',
+          resetRate: result.checkedCount > 0
+            ? `${(result.resetCount / result.checkedCount * 100).toFixed(1)}%`
+            : '0%'
+        },
+        details: {
+          resetUsers: result.resetUsers.slice(0, 10).map(user => ({
+            email: user.email,
+            tier: user.tier,
+            reason: user.reason,
+            credits: user.credits,
+            subscription: user.subscriptionStatus
+          })), // Show first 10 reset users with details
+          totalProcessed: result.checkedCount,
+          breakdown: {
+            usersReset: result.resetCount,
+            usersSkipped: result.checkedCount - result.resetCount - result.errorCount,
+            usersErrored: result.errorCount
           }
         }
       };
