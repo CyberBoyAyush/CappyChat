@@ -6,8 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { Client, Users, Databases, Query } from 'node-appwrite';
-import { isUserAdmin } from '@/lib/adminUtils';
+import { Client, Users } from 'node-appwrite';
 
 // Initialize Appwrite client
 const client = new Client()
@@ -16,19 +15,15 @@ const client = new Client()
   .setKey(process.env.APPWRITE_API_KEY!);
 
 const users = new Users(client);
-const databases = new Databases(client);
-
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-const USER_PREFERENCES_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_USER_PREFERENCES_COLLECTION_ID || 'user_preferences';
 
 // GET - Fetch all premium subscriptions
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const adminKey = searchParams.get('adminKey');
 
-    // Verify admin access
-    if (!userId || !(await isUserAdmin(userId))) {
+    // Verify admin access using admin key
+    if (!adminKey || adminKey !== process.env.ADMIN_SECRET_KEY) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 403 }
@@ -115,10 +110,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { adminUserId, targetUserId, action, data } = body;
+    const { adminKey, targetUserId, action, data } = body;
 
-    // Verify admin access
-    if (!adminUserId || !(await isUserAdmin(adminUserId))) {
+    // Verify admin access using admin key
+    if (!adminKey || adminKey !== process.env.ADMIN_SECRET_KEY) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 403 }

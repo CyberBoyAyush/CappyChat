@@ -94,16 +94,71 @@ async function resetUsersDaily(maxTimeMs = 50000): Promise<{
 
           // Check if user needs reset
           if (shouldResetDaily(lastResetDate)) {
-            const tier = (prefs.tier as string) || 'free';
+            let tier = (prefs.tier as string) || 'free';
+
+            // Check subscription expiry logic
+            const subscriptionStatus = prefs.subscriptionStatus as string;
+            const nextBillingDate = prefs.subscriptionNextBillingDate as string;
+            const cancelAtEnd = prefs.subscriptionCancelAtEnd as boolean;
+
+            // Determine if user should be downgraded to free tier
+            let shouldDowngrade = false;
+            let downgradeReason = '';
+
+            if (subscriptionStatus === 'cancelled') {
+              if (cancelAtEnd === false) {
+                // Immediate cancellation - downgrade right away
+                shouldDowngrade = true;
+                downgradeReason = 'immediate cancellation (cancelAtEnd=false)';
+              } else if (cancelAtEnd === true) {
+                if (nextBillingDate) {
+                  // Cancel at end - check if past billing date
+                  const billingDate = new Date(nextBillingDate);
+                  const now = new Date();
+                  if (now > billingDate) {
+                    shouldDowngrade = true;
+                    downgradeReason = 'cancelled subscription past billing date';
+                  }
+                  // If still before billing date, keep premium
+                } else {
+                  // Edge case: cancelled with cancelAtEnd=true but no billing date
+                  shouldDowngrade = true;
+                  downgradeReason = 'cancelled with cancelAtEnd=true but no billing date';
+                }
+              }
+            } else if (subscriptionStatus === 'expired') {
+              // Already expired - ensure it's free tier
+              if (tier !== 'free') {
+                shouldDowngrade = true;
+                downgradeReason = 'subscription already expired';
+              }
+            } else if (!subscriptionStatus && tier !== 'free') {
+              // No subscription status - should be free if not already
+              shouldDowngrade = true;
+              downgradeReason = 'no subscription status';
+            }
+
+            // Apply tier change if needed
+            if (shouldDowngrade) {
+              console.log(`[CronReset] Downgrading user ${user.$id} from ${tier} to free: ${downgradeReason}`);
+              tier = 'free';
+            }
+
             const limits = TIER_LIMITS[tier as keyof typeof TIER_LIMITS];
 
             // Update user preferences with reset limits
             const updatedPrefs = {
               ...prefs,
+              tier,
               freeCredits: limits.freeCredits,
               premiumCredits: limits.premiumCredits,
               superPremiumCredits: limits.superPremiumCredits,
               lastResetDate: new Date().toISOString(),
+              // Update subscription fields if expired
+              ...(tier === 'free' && subscriptionStatus === 'cancelled' ? {
+                subscriptionTier: 'FREE',
+                subscriptionStatus: 'expired'
+              } : {})
             };
 
             await users.updatePrefs(user.$id, updatedPrefs);
