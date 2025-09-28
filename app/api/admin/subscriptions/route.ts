@@ -166,16 +166,16 @@ export async function POST(req: NextRequest) {
           // Update flattened subscription fields
           const updatedPrefs = {
             ...currentPrefs,
-            subscriptionTier: data.tier || currentPrefs.subscriptionTier,
-            subscriptionStatus: data.status || currentPrefs.subscriptionStatus,
-            subscriptionCustomerId: data.customerId || currentPrefs.subscriptionCustomerId,
-            subscriptionId: data.subscriptionId || currentPrefs.subscriptionId,
-            subscriptionPeriodEnd: data.currentPeriodEnd || currentPrefs.subscriptionPeriodEnd,
-            subscriptionCancelAtEnd: data.cancelAtPeriodEnd || currentPrefs.subscriptionCancelAtEnd,
-            subscriptionCurrency: data.currency || currentPrefs.subscriptionCurrency,
-            subscriptionAmount: data.amount || currentPrefs.subscriptionAmount,
-            subscriptionLastPayment: data.lastPaymentId || currentPrefs.subscriptionLastPayment,
-            subscriptionRetryCount: data.retryCount !== undefined ? data.retryCount : currentPrefs.subscriptionRetryCount,
+            subscriptionTier: data.tier ?? currentPrefs.subscriptionTier,
+            subscriptionStatus: data.status ?? currentPrefs.subscriptionStatus,
+            subscriptionCustomerId: data.customerId ?? currentPrefs.subscriptionCustomerId,
+            subscriptionId: data.subscriptionId ?? currentPrefs.subscriptionId,
+            subscriptionPeriodEnd: data.currentPeriodEnd ?? currentPrefs.subscriptionPeriodEnd,
+            subscriptionCancelAtEnd: data.cancelAtPeriodEnd ?? currentPrefs.subscriptionCancelAtEnd,
+            subscriptionCurrency: data.currency ?? currentPrefs.subscriptionCurrency,
+            subscriptionAmount: data.amount ?? currentPrefs.subscriptionAmount,
+            subscriptionLastPayment: data.lastPaymentId ?? currentPrefs.subscriptionLastPayment,
+            subscriptionRetryCount: data.retryCount ?? currentPrefs.subscriptionRetryCount,
             subscriptionUpdatedAt: new Date().toISOString(),
           };
 
@@ -195,19 +195,27 @@ export async function POST(req: NextRequest) {
         try {
           const user = await users.get(targetUserId);
           const currentPrefs = (user.prefs as Record<string, unknown>) || {};
+          const subscriptionId = String((currentPrefs as any).subscriptionId || '');
 
-          // Update flattened subscription fields for cancellation
-          const updatedPrefs = {
-            ...currentPrefs,
-            tier: 'free',
-            subscriptionStatus: 'cancelled',
-            subscriptionCancelAtEnd: true,
-            subscriptionUpdatedAt: new Date().toISOString(),
-          };
-
-          await users.updatePrefs(targetUserId, updatedPrefs);
-
-          result = { success: true, subscription: { status: 'cancelled', cancelAtPeriodEnd: true } };
+          if (subscriptionId) {
+            // DODO-backed subscription: cancel at provider (keeps premium until period end)
+            const { cancelSubscription } = await import('@/services/subscription.service');
+            await cancelSubscription(targetUserId, subscriptionId);
+            result = { success: true, subscription: { status: 'cancelled', cancelAtPeriodEnd: true } };
+          } else {
+            // Manual/override premium: downgrade instantly
+            const updatedPrefs = {
+              ...currentPrefs,
+              tier: 'free',
+              subscriptionTier: 'FREE',
+              subscriptionStatus: 'expired',
+              subscriptionCancelAtEnd: false,
+              adminOverride: false,
+              subscriptionUpdatedAt: new Date().toISOString(),
+            };
+            await users.updatePrefs(targetUserId, updatedPrefs);
+            result = { success: true, subscription: { status: 'expired', cancelAtPeriodEnd: false } };
+          }
         } catch (error) {
           return NextResponse.json(
             { error: 'Failed to cancel subscription' },
