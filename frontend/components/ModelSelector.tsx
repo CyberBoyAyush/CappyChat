@@ -414,7 +414,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
           className={cn(
             "w-[320px] sm:w-[420px] lg:w-[400px] max-w-[90vw] p-0",
             "border border-border/50 bg-background/95 backdrop-blur-xl",
-            "max-h-[45vh] md:max-h-[55vh] overflow-hidden flex flex-col",
+            "max-h-[55vh] md:max-h-[55vh] overflow-hidden flex flex-col",
             "shadow-2xl shadow-black/10 dark:shadow-black/30",
             "rounded-2xl"
           )}

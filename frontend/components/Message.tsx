@@ -6,7 +6,7 @@
  * Handles message controls, markdown rendering, and message editing functionality.
  */
 
-import { memo, useState, useEffect } from "react";
+import { memo, useState, useEffect, useRef, useCallback } from "react";
 import MarkdownRenderer from "@/frontend/components/MarkdownRenderer";
 import { cn } from "@/lib/utils";
 import { UIMessage } from "ai";
@@ -88,16 +88,16 @@ function SuggestedQuestions({
   };
 
   return (
-    <div className="pt-2">
+    <div className="">
       <Button
         onClick={handleToggle}
         variant="ghost"
         size="sm"
         aria-expanded={open}
-        className="group flex items-center w-full h-9 px-3 rounded-md border border-border/50 bg-card text-foreground/90 hover:bg-accent/30"
+        className="group flex items-center w-full h-12 px-3 rounded-lg border border-border/50 bg-card/60 text-foreground/90 hover:bg-accent/30"
       >
         <List className="w-4 h-4 text-muted-foreground mr-2" />
-        <span className="text-[13px] font-semibold tracking-wide">
+        <span className="text-base font-semibold tracking-wide">
           Suggested questions
         </span>
         <div className="ml-auto">
@@ -256,6 +256,78 @@ function PureMessage({
   // Image preview state for web search images
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
   const [visibleCount, setVisibleCount] = useState<number>(4);
+
+  // Mobile swipe state for image gallery
+  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+  const touchStartX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const previewTouchStartX = useRef<number>(0);
+  const previewTouchStartY = useRef<number>(0);
+
+  // Touch handling for mobile swipe navigation
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartX.current = touch.clientX;
+    touchStartY.current = touch.clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent, imgs: string[]) => {
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartX.current;
+    const deltaY = touch.clientY - touchStartY.current;
+
+    // Only trigger swipe if horizontal movement is greater than vertical
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+      if (deltaX > 0) {
+        // Swipe right - go to previous image
+        setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : imgs.length - 1));
+      } else {
+        // Swipe left - go to next image
+        setCurrentImageIndex((prev) => (prev < imgs.length - 1 ? prev + 1 : 0));
+      }
+    }
+  }, []);
+
+  // Touch handling for preview overlay
+  const handlePreviewTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    previewTouchStartX.current = touch.clientX;
+    previewTouchStartY.current = touch.clientY;
+  }, []);
+
+  const handlePreviewTouchEnd = useCallback(
+    (e: React.TouchEvent, goPrev: () => void, goNext: () => void) => {
+      const touch = e.changedTouches[0];
+      const deltaX = touch.clientX - previewTouchStartX.current;
+      const deltaY = touch.clientY - previewTouchStartY.current;
+
+      // Only trigger swipe if horizontal movement is greater than vertical
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+        e.stopPropagation();
+        if (deltaX > 0) {
+          // Swipe right - go to previous image
+          goPrev();
+        } else {
+          // Swipe left - go to next image
+          goNext();
+        }
+      }
+    },
+    []
+  );
+
+  // Reset current image index when images change
+  useEffect(() => {
+    const imgs =
+      ((message as any).webSearchImgs as string[] | undefined) ||
+      (isStreaming ? (streamingWebImgs as string[] | undefined) : undefined) ||
+      [];
+    if (imgs.length > 0 && currentImageIndex >= imgs.length) {
+      setCurrentImageIndex(0);
+    }
+  }, [(message as any).webSearchImgs, streamingWebImgs, isStreaming]);
+
   // Keyboard navigation for preview
   useEffect(() => {
     if (previewIdx === null) return;
@@ -520,10 +592,39 @@ function PureMessage({
 
                   return (
                     <div className="mb-3">
-                      <div className="text-sm text-muted-foreground mb-2">
-                        Images from the web ({imgs.length})
+                      <div className="text-sm text-muted-foreground mb-2 flex items-center justify-between">
+                        <span>Images from the web ({imgs.length})</span>
+                        {/* Mobile navigation indicators */}
+                        <div className="flex md:hidden items-center gap-1">
+                          {imgs.length > 1 && (
+                            <>
+                              <span className="text-xs">
+                                {currentImageIndex + 1} / {imgs.length}
+                              </span>
+                              <div className="flex gap-1 ml-2">
+                                {imgs
+                                  .slice(0, Math.min(5, imgs.length))
+                                  .map((_, i) => (
+                                    <div
+                                      key={i}
+                                      className={cn(
+                                        "w-1.5 h-1.5 rounded-full transition-colors",
+                                        i ===
+                                          currentImageIndex %
+                                            Math.min(5, imgs.length)
+                                          ? "bg-primary"
+                                          : "bg-muted-foreground/30"
+                                      )}
+                                    />
+                                  ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+
+                      {/* Desktop grid layout */}
+                      <div className="hidden md:grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         {imgs.slice(0, showCount).map((src, i) => {
                           const isLastVisible =
                             i === showCount - 1 && remaining > 0;
@@ -559,6 +660,74 @@ function PureMessage({
                             </button>
                           );
                         })}
+                      </div>
+
+                      {/* Mobile horizontal scroll layout */}
+                      <div
+                        className="md:hidden relative"
+                        ref={containerRef}
+                        onTouchStart={handleTouchStart}
+                        onTouchEnd={(e) => handleTouchEnd(e, imgs)}
+                      >
+                        <div className="overflow-hidden rounded-lg">
+                          <div
+                            className="flex transition-transform duration-300 ease-out"
+                            style={{
+                              transform: `translateX(-${
+                                currentImageIndex * 100
+                              }%)`,
+                              width: `${imgs.length * 100}%`,
+                            }}
+                          >
+                            {imgs.map((src, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => setPreviewIdx(i)}
+                                className="relative block focus:outline-none flex-shrink-0"
+                                style={{ width: `${100 / imgs.length}%` }}
+                                title="Preview image"
+                              >
+                                <img
+                                  src={src}
+                                  alt=""
+                                  className="h-48 w-full object-cover border"
+                                  loading="lazy"
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Mobile navigation buttons */}
+                        {imgs.length > 1 && (
+                          <>
+                            <button
+                              type="button"
+                              className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                              onClick={() =>
+                                setCurrentImageIndex((prev) =>
+                                  prev > 0 ? prev - 1 : imgs.length - 1
+                                )
+                              }
+                              aria-label="Previous image"
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                              onClick={() =>
+                                setCurrentImageIndex((prev) =>
+                                  prev < imgs.length - 1 ? prev + 1 : 0
+                                )
+                              }
+                              aria-label="Next image"
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                       {remaining > 0 && (
                         <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
@@ -723,6 +892,10 @@ function PureMessage({
                             <div
                               className="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
                               onClick={() => setPreviewIdx(null)}
+                              onTouchStart={handlePreviewTouchStart}
+                              onTouchEnd={(e) =>
+                                handlePreviewTouchEnd(e, goPrev, goNext)
+                              }
                               role="dialog"
                               aria-modal="true"
                             >
