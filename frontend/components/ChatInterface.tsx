@@ -275,7 +275,7 @@ export default function ChatInterface({
     closeNavigator,
     registerRef,
     scrollToMessage,
-  } = useChatMessageNavigator();
+  } = useChatMessageNavigator(mainRef);
 
   const {
     messages,
@@ -1312,7 +1312,36 @@ export default function ChatInterface({
     }
   }, [messages.length, status, threadId]);
 
+  const hasMessages = messages.length > 0;
+
+  useEffect(() => {
+    if (!hasMessages && mainRef.current) {
+      isAutoScrollingRef.current = true;
+      mainRef.current.scrollTop = 0;
+
+      requestAnimationFrame(() => {
+        isAutoScrollingRef.current = false;
+      });
+
+      setShowScrollToBottom(false);
+      setUserHasScrolledUp(false);
+    }
+  }, [hasMessages]);
+
   const scrollToBottom = () => {
+    if (!hasMessages) {
+      if (mainRef.current) {
+        isAutoScrollingRef.current = true;
+        mainRef.current.scrollTop = 0;
+        requestAnimationFrame(() => {
+          isAutoScrollingRef.current = false;
+        });
+      }
+      setShowScrollToBottom(false);
+      setUserHasScrolledUp(false);
+      return;
+    }
+
     if (mainRef.current) {
       // Set flag to prevent scroll event from triggering during auto-scroll
       isAutoScrollingRef.current = true;
