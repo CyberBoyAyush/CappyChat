@@ -90,12 +90,7 @@ export const getDimensionsForModel = (
   aspectRatio: AspectRatio,
   modelId: string
 ): { width: number; height: number } => {
-  // FLUX.1 Kontext [dev] has specific dimension requirements
-  if (modelId === "runware:106@1" && aspectRatio.fluxKontextDimensions) {
-    return aspectRatio.fluxKontextDimensions;
-  }
-
-  // For other models, use standard dimensions or fallback to default
+  // Gemini image models use standard dimensions
   if (aspectRatio.standardDimensions) {
     return aspectRatio.standardDimensions;
   }

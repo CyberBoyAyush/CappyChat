@@ -19,20 +19,16 @@ export const AI_MODELS = [
   'Grok 4',
   'Grok 4 Fast',
   'Grok Code Fast 1',
-  'FLUX.1 [schnell]',
-  'FLUX.1 Dev',
-  'FLUX.1 Kontext [dev]',
-  'Stable Defusion 3',
-  'Juggernaut Pro',
+  'Gemini Nano Banana',
 ] as const;
 
 export type AIModel = (typeof AI_MODELS)[number];
 
 export type ModelConfig = {
   modelId: string;
-  provider: 'openrouter' | 'runware';
+  provider: 'openrouter';
   displayName: string;
-  iconType: 'google' | 'openai' | 'anthropic' | 'deepseek' | 'huggingface' | 'qwen' | 'meta' | 'x-ai' | 'runware';
+  iconType: 'google' | 'openai' | 'anthropic' | 'deepseek' | 'huggingface' | 'qwen' | 'meta' | 'x-ai';
   company: string;
   isPremium: boolean;
   isSuperPremium: boolean;
@@ -306,76 +302,20 @@ export const MODEL_CONFIGS = {
     isFast: true,
     description: 'Fastest model from XAI with advanced reasoning.',
   },
-  'FLUX.1 [schnell]': {
-    modelId: 'runware:100@1',
-    provider: 'runware',
-    displayName: 'Flux Model Classic',
-    iconType: 'runware',
-    company: 'Runware',
-    isPremium: true,
+  'Gemini Nano Banana': {
+    modelId: 'google/gemini-2.5-flash-image-preview',
+    provider: 'openrouter',
+    displayName: 'Gemini Nano Banana',
+    iconType: 'google',
+    company: 'Google',
+    isPremium: false,
     isSuperPremium: false,
-    hasReasoning: false,
-    isFileSupported: false,
-    isFast: true,
-    isImageGeneration: true,
-    description: 'For Ultra-fast Image Generation. FHD',
-  },
-  'FLUX.1 Dev': {
-    modelId: 'runware:101@1',
-    provider: 'runware',
-    displayName: 'Flux Dev',
-    iconType: 'runware',
-    company: 'Runware',
-    isPremium: true,
-    isSuperPremium: false,
-    hasReasoning: false,
-    isFileSupported: false,
-    isFast: true,
-    isImageGeneration: true,
-    description: 'Image Generation for Developers. FHD',
-  },
-  'Stable Defusion 3': {
-    modelId: 'runware:5@1',
-    provider: 'runware',
-    displayName: 'Stable Diffusion 3',
-    iconType: 'runware',
-    company: 'Runware',
-    isPremium: false,
-    isSuperPremium: true,
-    hasReasoning: false,
-    isFileSupported: false,
-    isFast: false,
-    isImageGeneration: true,
-    description: 'For Realistic Image Generation. FHD',
-  },
-  'Juggernaut Pro': {
-    modelId: 'rundiffusion:130@100',
-    provider: 'runware',
-    displayName: 'Juggernaut Pro (FHD)',
-    iconType: 'runware',
-    company: 'Runware',
-    isPremium: false,
-    isSuperPremium: true,
-    hasReasoning: false,
-    isFileSupported: false,
-    isFast: false,
-    isImageGeneration: true,
-    description: 'For Ultra Realistic Image Generation. FHD',
-  },
-  'FLUX.1 Kontext [dev]': {
-    modelId: 'runware:106@1',
-    provider: 'runware',
-    displayName: 'Flux Image to Image',
-    iconType: 'runware',
-    company: 'Runware',
-    isPremium: false,
-    isSuperPremium: true,
     hasReasoning: false,
     isFileSupported: true,
-    isFast: false,
+    isFast: true,
     isImageGeneration: true,
     image2imageGen: true,
-    description: 'Image-to-Image generation with Context, FHD',
+    description: 'Fast AI image generation with Gemini 2.5 Flash via OpenRouter',
   },
 } as const satisfies Record<AIModel, ModelConfig>;
 

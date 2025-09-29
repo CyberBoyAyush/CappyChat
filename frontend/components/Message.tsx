@@ -963,8 +963,8 @@ function PureMessage({
                   );
                 })()}
 
-                {/* Suggested Questions */}
-                {!isStreaming && isLast && message.role === "assistant" && (
+                {/* Suggested Questions - Hide for image generation responses */}
+                {!isStreaming && isLast && message.role === "assistant" && !(message as any).imgurl && (
                   <SuggestedQuestions
                     suggestions={(message as any).suggestedQuestions}
                     loading={(message as any).suggestedQuestionsLoading}

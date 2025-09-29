@@ -121,9 +121,8 @@ const techStack: TechStackItem[] = [
     icon: Brain,
     accent: "--chart-3",
     technologies: [
-      { name: "OpenRouter", description: "Multi-model AI API gateway" },
+      { name: "OpenRouter", description: "Multi-model AI API gateway & image generation" },
       { name: "OpenAI", description: "GPT models and Whisper STT" },
-      { name: "Runware", description: "High-performance image generation" },
       { name: "Cloudinary", description: "Media management and optimization" },
     ],
   },

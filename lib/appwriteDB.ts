@@ -1457,6 +1457,15 @@ export class AppwriteDB {
 
       // Add imgurl if present (for image generation messages)
       if (message.imgurl) {
+        const imgUrlLength = message.imgurl.length;
+        const imgUrlType = message.imgurl.startsWith('data:') ? 'base64' : 'url';
+        console.log('💾 [createMessage] Storing imgurl to Appwrite. Length:', imgUrlLength, 'Type:', imgUrlType);
+
+        // Check if the image URL is too large (Appwrite string fields have limits)
+        if (imgUrlLength > 1000000) { // 1MB limit
+          console.warn('⚠️ imgurl is very large:', imgUrlLength, 'bytes. This might exceed Appwrite field limits.');
+        }
+
         messageData.imgurl = message.imgurl;
       }
 
@@ -1476,8 +1485,15 @@ export class AppwriteDB {
 
       // Execute both operations in parallel
       await Promise.all([messagePromise, updateThreadPromise]);
+
+      if (message.imgurl) {
+        console.log('✅ [createMessage] Message with imgurl successfully saved to Appwrite');
+      }
     } catch (error) {
       devError('Error creating message:', error);
+      if (message.imgurl) {
+        console.error('❌ [createMessage] Failed to save message with imgurl to Appwrite:', error);
+      }
       throw error;
     }
   }

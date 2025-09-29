@@ -726,6 +726,16 @@ function PureInputField({
 
       // Call image generation API
       try {
+        // Get conversation history for context (last 6 messages)
+        const conversationHistory = messages
+          ?.slice(-6)
+          .filter((m) => m.role === "user" || m.role === "assistant")
+          .map((m) => ({
+            role: m.role,
+            content: m.content,
+            imgurl: (m as any).imgurl, // Include previous image URL if exists
+          })) || [];
+
         const response = await fetch("/api/image-generation", {
           method: "POST",
           headers: {
@@ -739,6 +749,7 @@ function PureInputField({
             width: dimensions.width,
             height: dimensions.height,
             attachments: finalAttachments,
+            conversationHistory, // Include conversation context
           }),
         });
 
@@ -1395,9 +1406,9 @@ function PureInputField({
                           const currentConfig = getModelConfig(selectedModel);
                           if (!currentConfig.isImageGeneration) {
                             console.log(
-                              "🎨 Switching to image generation model: FLUX.1 [schnell]"
+                              "🎨 Switching to image generation model: Gemini Nano Banana"
                             );
-                            setModel("FLUX.1 [schnell]");
+                            setModel("Gemini Nano Banana");
                           }
                         } else {
                           // Exiting image generation mode - switch back to default model
