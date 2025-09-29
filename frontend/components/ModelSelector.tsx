@@ -54,7 +54,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
         isDisabled
           ? "cursor-not-allowed opacity-40"
           : isSelected
-          ? "bg-primary/5"
+          ? "bg-primary/15"
           : "hover:bg-accent/30"
       )}
       title={isDisabled ? tierValidation?.message : modelConfig.description}
@@ -75,8 +75,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
           <div className="flex items-center gap-2">
             <h3
               className={cn(
-                "font-semibold text-[13px] md:text-sm truncate",
-                isSelected ? "text-primary" : "text-foreground"
+                "font-semibold text-[13px] md:text-sm truncate text-primary"
               )}
             >
               {modelConfig.displayName}
@@ -185,8 +184,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
     | "anthropic"
     | "x-ai"
     | "deepseek"
-    | "qwen"
-    | "runware";
+    | "qwen";
   const [selectedProvider, setSelectedProvider] = useState<ProviderId>("all");
 
   // Definitions for provider UI chips - filtered based on mode
@@ -199,7 +197,6 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
         { id: "openai" as ProviderId, label: "OpenAI" },
         { id: "deepseek" as ProviderId, label: "DeepSeek" },
         { id: "qwen" as ProviderId, label: "Qwen" },
-        { id: "runware" as ProviderId, label: "Runware" },
       ];
 
       // Filter providers based on current mode
@@ -241,9 +238,9 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
       const currentConfig = getModelConfig(selectedModel);
       if (!currentConfig.isImageGeneration) {
         console.log(
-          "[ModelSelector] Image generation mode detected, switching to FLUX.1 [schnell]"
+          "[ModelSelector] Image generation mode detected, switching to Gemini Nano Banana"
         );
-        setModel("FLUX.1 [schnell]");
+        setModel("Gemini Nano Banana");
       }
     } else {
       const currentConfig = getModelConfig(selectedModel);
@@ -382,7 +379,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
             variant="ghost"
             className={cn(
               "flex items-center gap-1 sm:gap-2 h-10 sm:h-9 md:h-8 pl-2 pr-1.5 sm:pr-2 text-xs rounded-md min-w-0",
-              "text-foreground hover:bg-accent hover:text-accent-foreground",
+              "text-primary hover:bg-accent hover:text-accent-foreground",
               "transition-all duration-200 mobile-touch",
               isLocked && "opacity-75 cursor-not-allowed hover:bg-transparent"
             )}
@@ -402,7 +399,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
               {!isLocked && (
                 <ChevronDown
                   className={cn(
-                    "h-3 w-3 transition-transform duration-200 hidden sm:block",
+                    "h-3 w-3 textt-primary transition-transform duration-200 hidden sm:block",
                     isOpen && "rotate-180"
                   )}
                 />
@@ -414,7 +411,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
           className={cn(
             "w-[320px] sm:w-[420px] lg:w-[400px] max-w-[90vw] p-0",
             "border border-border/50 bg-background/95 backdrop-blur-xl",
-            "max-h-[45vh] md:max-h-[55vh] overflow-hidden flex flex-col",
+            "max-h-[55vh] md:max-h-[55vh] overflow-hidden flex flex-col",
             "shadow-2xl shadow-black/10 dark:shadow-black/30",
             "rounded-2xl"
           )}
@@ -448,13 +445,11 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
           {/* Providers Filter */}
           <div className="p-3 sm:px-4 sm:py-3 border-b border-border/50 flex-shrink-0">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-foreground">
-                Providers
-              </h3>
+              <h3 className="text-sm font-semibold text-primary">Providers</h3>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-3 text-xs text-muted-foreground hover:text-foreground rounded-lg"
+                className="h-7 px-3 text-xs text-primary hover:text-foreground rounded-lg"
                 onClick={() => setSelectedProvider("all")}
               >
                 Show all

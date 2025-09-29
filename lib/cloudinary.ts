@@ -206,6 +206,31 @@ export class CloudinaryService {
   }
 
   /**
+   * Upload base64 image to Cloudinary (for AI-generated images)
+   */
+  static async uploadBase64Image(base64Data: string, filename?: string): Promise<{ success: boolean; url?: string; error?: string }> {
+    try {
+      const cloudinary = await getCloudinary();
+
+      // Upload to Cloudinary
+      const uploadResult = await cloudinary.uploader.upload(base64Data, {
+        resource_type: 'image',
+        folder: 'atchat/generated-images',
+        public_id: filename || `generated_${Date.now()}`,
+        overwrite: false,
+        unique_filename: true,
+        access_mode: 'public',
+        type: 'upload',
+      });
+
+      return { success: true, url: uploadResult.secure_url };
+    } catch (error) {
+      console.error('Cloudinary base64 upload error:', error);
+      return { success: false, error: 'Failed to upload image to Cloudinary' };
+    }
+  }
+
+  /**
    * Get optimized image URL
    */
   static async getOptimizedImageUrl(publicId: string, options?: {

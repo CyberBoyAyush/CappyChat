@@ -204,6 +204,14 @@ function PureInputField({
   // Model selection state
   const { selectedModel, setModel } = useModelStore();
 
+  // Sync isImageGenMode with selected model on mount and when model changes
+  useEffect(() => {
+    const modelConfig = getModelConfig(selectedModel);
+    if (modelConfig.isImageGeneration && !isImageGenMode) {
+      setIsImageGenMode(true);
+    }
+  }, [selectedModel, isImageGenMode]); // Run when selectedModel changes
+
   // Aspect ratio state for image generation
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<AspectRatio>(
     ASPECT_RATIOS[0]
@@ -480,8 +488,8 @@ function PureInputField({
     }
 
     // Use the input as-is without automatic file conversion
-    let finalInput = currentInput.trim();
-    let finalAttachments = [...attachments];
+    const finalInput = currentInput.trim();
+    const finalAttachments = [...attachments];
 
     console.log("=== PROCESSING SUBMIT ===");
     console.log("Final input:", finalInput);
@@ -726,6 +734,16 @@ function PureInputField({
 
       // Call image generation API
       try {
+        // Get conversation history for context (last 6 messages)
+        const conversationHistory = messages
+          ?.slice(-6)
+          .filter((m) => m.role === "user" || m.role === "assistant")
+          .map((m) => ({
+            role: m.role,
+            content: m.content,
+            imgurl: (m as any).imgurl, // Include previous image URL if exists
+          })) || [];
+
         const response = await fetch("/api/image-generation", {
           method: "POST",
           headers: {
@@ -739,6 +757,7 @@ function PureInputField({
             width: dimensions.width,
             height: dimensions.height,
             attachments: finalAttachments,
+            conversationHistory, // Include conversation context
           }),
         });
 
@@ -902,6 +921,8 @@ function PureInputField({
     selectedModel,
     user,
     setMessages,
+    onMessageAppended,
+    selectedAspectRatio,
   ]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -1380,7 +1401,11 @@ function PureInputField({
                     <Button
                       variant={isImageGenMode ? "default" : "outline"}
                       size="icon"
-                      className="h-10 w-10 sm:h-9 sm:w-9 mobile-touch relative"
+                      className={`h-10 w-10  shadow-none border-0 sm:h-9 sm:w-9 mobile-touch relative ${
+                        isImageGenMode
+                          ? "bg-primary"
+                          : "text-primary bg-transparent"
+                      }`}
                       onClick={() => {
                         const newImageGenMode = !isImageGenMode;
                         setIsImageGenMode(newImageGenMode);
@@ -1391,9 +1416,9 @@ function PureInputField({
                           const currentConfig = getModelConfig(selectedModel);
                           if (!currentConfig.isImageGeneration) {
                             console.log(
-                              "🎨 Switching to image generation model: FLUX.1 [schnell]"
+                              "🎨 Switching to image generation model: Gemini Nano Banana"
                             );
-                            setModel("FLUX.1 [schnell]");
+                            setModel("Gemini Nano Banana");
                           }
                         } else {
                           // Exiting image generation mode - switch back to default model
@@ -1421,7 +1446,7 @@ function PureInputField({
                       }
                     >
                       <RiImageAiFill
-                        size={20}
+                        size={22}
                         className={cn(
                           isImageGenMode ? "text-background" : "text-primary"
                         )}

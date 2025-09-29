@@ -60,8 +60,8 @@ function PureSearchTypeSelector({ className }: SearchTypeSelectorProps) {
           size="sm"
           title={`Select mode - Current: ${currentConfig.name}`}
           className={cn(
-            "flex items-center gap-1.5 text-xs font-medium transition-all duration-200",
-            "hover:bg-accent/20 h-8",
+            "flex items-center text-primary h-10 sm:h-9 md:h-8 gap-1.5 text-xs font-medium transition-all duration-200",
+            "hover:bg-accent hover:text-primary ",
             "sm:min-w-[100px] sm:justify-between",
             "justify-center min-w-[32px]",
             className
@@ -102,18 +102,19 @@ function PureSearchTypeSelector({ className }: SearchTypeSelectorProps) {
                 className={cn(
                   "w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-all duration-200",
                   "hover:bg-accent/30",
-                  isSelected && "bg-primary/5"
+                  isSelected && "bg-primary/15"
                 )}
                 aria-label={`Select ${config.name} mode`}
               >
-                <ConfigIcon className={cn("h-3.5 w-3.5 flex-shrink-0")} />
+                <ConfigIcon
+                  className={cn("h-3.5 text-primary w-3.5 flex-shrink-0")}
+                />
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <span
                       className={cn(
-                        "font-medium text-sm truncate",
-                        isSelected ? "text-primary" : "text-foreground"
+                        "font-medium text-sm truncate text-primary"
                       )}
                     >
                       {config.name}

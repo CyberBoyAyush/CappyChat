@@ -403,8 +403,6 @@ export const getModelIcon = (
       return <MetaIcon {...props} />;
     case "x-ai":
       return <XAIIcon {...props} />;
-    case "runware":
-      return <RunwareIcon {...props} />;
     default:
       return null;
   }

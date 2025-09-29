@@ -144,15 +144,8 @@ const SignupPage: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <div className="min-h-screen bg-background">
-        {/* Floating Background Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-32 h-32 bg-primary/5 rounded-full blur-xl animate-pulse" />
-          <div className="absolute top-40 right-20 w-24 h-24 bg-primary/10 rounded-full blur-lg animate-pulse delay-1000" />
-          <div className="absolute bottom-40 left-1/4 w-40 h-40 bg-primary/5 rounded-full blur-2xl animate-pulse delay-2000" />
-        </div>
-
-        <div className="mb-8 border-b border-border">
+      <div className="min-h-screen py-20 bg-background">
+        <div className="mb-8 fixed backdrop-blur-lg z-20 top-0 left-0 right-0 border-b border-border">
           <div className="flex items-center justify-between pb-2 px-4 max-w-7xl mx-auto mt-4">
             <Button
               onClick={() => navigate(-1)}
@@ -175,7 +168,7 @@ const SignupPage: React.FC = () => {
             className="w-full max-w-md relative z-10"
           >
             {/* Header */}
-            <div className="text-center mb-8">
+            <div className="text-center text-primary mb-8">
               <h1 className="text-3xl font-bold mb-2">Create account</h1>
               <p className="text-muted-foreground">
                 Join CappyChat and start your AI journey

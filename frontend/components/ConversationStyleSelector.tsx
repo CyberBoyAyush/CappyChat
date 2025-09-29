@@ -53,8 +53,8 @@ function PureConversationStyleSelector({
           size="sm"
           title="Select conversation style"
           className={cn(
-            "flex items-center gap-1.5 text-xs font-medium transition-all duration-200",
-            "hover:bg-accent/20 h-8",
+            "flex items-center gap-1.5 text-primary text-xs font-medium transition-all duration-200",
+            "hover:bg-accent hover:text-primary h-8",
             "sm:min-w-[90px] sm:justify-between",
             "justify-center min-w-[32px]",
             className
@@ -67,7 +67,7 @@ function PureConversationStyleSelector({
           </span>
           <ChevronDown
             className={cn(
-              "h-3 w-3 transition-transform duration-200 hidden sm:block",
+              "h-3 w-3 text-primary transition-transform duration-200 hidden sm:block",
               isOpen && "rotate-180"
             )}
           />
@@ -95,17 +95,19 @@ function PureConversationStyleSelector({
                 className={cn(
                   "w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-all duration-200",
                   "hover:bg-accent/30",
-                  isSelected && "bg-primary/5"
+                  isSelected && "bg-primary/15"
                 )}
                 aria-label={`Select ${style.name} conversation style`}
               >
-                <StyleIcon className={cn("h-3.5 w-3.5 flex-shrink-0")} />
+                <StyleIcon
+                  className={cn("h-3.5 w-3.5 text-primary flex-shrink-0")}
+                />
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <span
                       className={cn(
-                        "font-medium text-sm truncate text-foreground"
+                        "font-medium text-sm truncate text-primary"
                       )}
                     >
                       {style.name}

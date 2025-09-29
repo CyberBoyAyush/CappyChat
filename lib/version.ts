@@ -5,7 +5,7 @@
  * This file contains the current version and detailed changelog entries.
  */
 
-export const CURRENT_VERSION = "3.3.0";
+export const CURRENT_VERSION = "4.0.0";
 
 export interface ChangelogEntry {
   version: string;
@@ -22,9 +22,96 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "4.0.0",
+    date: "2025-09-29",
+    isLatest: true,
+    features: [
+      {
+        type: "new",
+        title: "Complete Rebranding to CappyChat",
+        description:
+          "Full application rebrand from AVChat to CappyChat with new domain (cappychat.com), updated branding across all components, and enhanced visual identity with animated CapybaraIcon component.",
+        icon: "Sparkles",
+        color: "purple",
+      },
+      {
+        type: "new",
+        title: "OpenRouter Image Generation",
+        description:
+          "Migrated image generation from Runware to OpenRouter using Google's Gemini 2.5 Flash Image Preview (nano banana models) for better quality, reliability, and context-aware image creation with conversation history support.",
+        icon: "ImageIcon",
+        color: "blue",
+      },
+      {
+        type: "new",
+        title: "Advanced AI Models",
+        description:
+          "Added cutting-edge AI models including Grok 4, Grok 4 Fast, Qwen3 Max, Claude Sonnet 3.7, and Qwen3 30B A3B Thinking 2507 for enhanced reasoning and coding capabilities.",
+        icon: "Cpu",
+        color: "green",
+      },
+      {
+        type: "new",
+        title: "File Storage Pagination",
+        description:
+          "Implemented pagination system for file management in settings with image popup on click, better PDF handling, and improved performance for users with many files.",
+        icon: "FolderOpen",
+        color: "orange",
+      },
+      {
+        type: "new",
+        title: "Suggested Questions Feature",
+        description:
+          "AI-powered suggested questions displayed below responses, dynamically generated using Gemini 2.5 Flash Lite with free credits for enhanced conversation flow.",
+        icon: "MessageSquare",
+        color: "yellow",
+      },
+      {
+        type: "improvement",
+        title: "Enhanced Web Search Experience",
+        description:
+          "Improved web search with collapsible image galleries, better mobile navigation, enhanced citations, and optimized image prefetching for faster loading.",
+        icon: "Search",
+        color: "blue",
+      },
+      {
+        type: "improvement",
+        title: "Updated Subscription System",
+        description:
+          "Increased credit limits (Free: 1200, Premium: 600, Super Premium: 50) and updated pricing to $12/month or ₹999 for better value and flexibility.",
+        icon: "CreditCard",
+        color: "purple",
+      },
+      {
+        type: "improvement",
+        title: "Admin Panel Enhancements",
+        description:
+          "Enhanced admin panel with detailed user reset tracking, improved subscription management, better webhook concurrency handling, and structured user data display.",
+        icon: "Shield",
+        color: "red",
+      },
+      {
+        type: "improvement",
+        title: "UI/UX Refinements",
+        description:
+          "Improved chat message scrolling behavior, theme-aware progress bars, better loading states with memoization, external link support in markdown, and consistent styling across all themes.",
+        icon: "Palette",
+        color: "pink",
+      },
+      {
+        type: "fix",
+        title: "Critical Bug Fixes",
+        description:
+          "Fixed first-message streaming bug in new chats, resolved DodoPayment webhook issues and edge cases, corrected session limit progress bar styling, and improved file upload sync on first message.",
+        icon: "Bug",
+        color: "red",
+      },
+    ],
+  },
+  {
     version: "3.3.0",
     date: "2025-08-31",
-    isLatest: true,
+    isLatest: false,
     features: [
       {
         type: "new",
@@ -394,6 +481,234 @@ export const CHANGELOG: ChangelogEntry[] = [
           "Updated guest user model restrictions to Gemini 2.5 Flash Lite for better resource management.",
         icon: "UserX",
         color: "yellow",
+      },
+    ],
+  },
+  {
+    version: "1.0.0",
+    date: "2025-06-17",
+    features: [
+      {
+        type: "new",
+        title: "Voice Input with OpenAI Whisper",
+        description:
+          "Integrated OpenAI Whisper for speech-to-text functionality with audio level monitoring and dynamic sizing for enhanced voice input experience.",
+        icon: "Mic",
+        color: "blue",
+      },
+      {
+        type: "new",
+        title: "File Upload Support",
+        description:
+          "Complete file upload functionality with paste and drag-and-drop support, animations, and upload status indicators for seamless file sharing.",
+        icon: "Upload",
+        color: "green",
+      },
+      {
+        type: "new",
+        title: "Project Folder Management",
+        description:
+          "Introduced ProjectFolder component for managing project threads with organized actions and better thread organization.",
+        icon: "FolderOpen",
+        color: "purple",
+      },
+      {
+        type: "improvement",
+        title: "Production-Ready Features",
+        description:
+          "Completed core feature set with enhanced code structure, improved readability, and maintainability for production deployment.",
+        icon: "CheckCircle",
+        color: "green",
+      },
+    ],
+  },
+  {
+    version: "0.5.0",
+    date: "2025-06-15",
+    features: [
+      {
+        type: "new",
+        title: "Conversation Styles",
+        description:
+          "Implemented conversation styles feature with UI selector and API integration for customizable chat experiences.",
+        icon: "MessageSquare",
+        color: "purple",
+      },
+      {
+        type: "new",
+        title: "GitHub OAuth Login",
+        description:
+          "Added GitHub OAuth authentication with corresponding UI components for seamless third-party login.",
+        icon: "Github",
+        color: "gray",
+      },
+      {
+        type: "new",
+        title: "Thread Branching",
+        description:
+          "Implemented thread branching functionality with UI integration and database support for exploring alternative conversation paths.",
+        icon: "GitBranch",
+        color: "blue",
+      },
+      {
+        type: "new",
+        title: "BYOK Functionality",
+        description:
+          "Bring Your Own Key (BYOK) feature with API key management, validation, and secure storage for user-provided API keys.",
+        icon: "Key",
+        color: "yellow",
+      },
+    ],
+  },
+  {
+    version: "0.4.0",
+    date: "2025-06-14",
+    features: [
+      {
+        type: "new",
+        title: "Thread Management",
+        description:
+          "Comprehensive thread management with deletion, pinning, renaming, and tagging features for better organization.",
+        icon: "List",
+        color: "blue",
+      },
+      {
+        type: "new",
+        title: "Web Search Integration",
+        description:
+          "Integrated web search functionality with WebSearchToggle and WebSearchCitations components for enhanced information retrieval.",
+        icon: "Search",
+        color: "green",
+      },
+      {
+        type: "improvement",
+        title: "Real-time Sync Optimizations",
+        description:
+          "Optimized real-time synchronization for better performance and reduced latency in data updates.",
+        icon: "RefreshCw",
+        color: "orange",
+      },
+      {
+        type: "improvement",
+        title: "Enhanced UI/UX",
+        description:
+          "Improved login and signup pages with better UI consistency and enhanced user experience.",
+        icon: "Palette",
+        color: "purple",
+      },
+    ],
+  },
+  {
+    version: "0.3.0",
+    date: "2025-06-13",
+    features: [
+      {
+        type: "new",
+        title: "Appwrite Realtime Service",
+        description:
+          "Implemented Appwrite Realtime Service for instant data synchronization across all connected clients.",
+        icon: "Zap",
+        color: "yellow",
+      },
+      {
+        type: "new",
+        title: "Performance Optimizations",
+        description:
+          "Comprehensive performance improvements including service worker, caching strategies, and hybrid database enhancements.",
+        icon: "Gauge",
+        color: "green",
+      },
+      {
+        type: "new",
+        title: "Qwen Model Support",
+        description:
+          "Added Qwen AI model support with corresponding icon and updated model configurations.",
+        icon: "Cpu",
+        color: "blue",
+      },
+      {
+        type: "improvement",
+        title: "Component Structure",
+        description:
+          "Refactored chat components for improved structure, performance, and maintainability.",
+        icon: "Code",
+        color: "purple",
+      },
+    ],
+  },
+  {
+    version: "0.2.0",
+    date: "2025-06-12",
+    features: [
+      {
+        type: "new",
+        title: "Appwrite Authentication",
+        description:
+          "Implemented complete authentication flow with Appwrite including login, signup, and session management.",
+        icon: "Lock",
+        color: "red",
+      },
+      {
+        type: "new",
+        title: "User Profile Management",
+        description:
+          "Added Privacy and Profile pages with comprehensive user data management capabilities.",
+        icon: "User",
+        color: "blue",
+      },
+      {
+        type: "new",
+        title: "Super-Premium Models",
+        description:
+          "Enhanced model selection with super-premium badge and updated model configurations for premium features.",
+        icon: "Crown",
+        color: "purple",
+      },
+      {
+        type: "improvement",
+        title: "Enhanced UI Components",
+        description:
+          "Updated layout and styles with improved ModelSelector component and enhanced ChatInputField.",
+        icon: "Palette",
+        color: "green",
+      },
+    ],
+  },
+  {
+    version: "0.1.0",
+    date: "2025-06-10",
+    features: [
+      {
+        type: "new",
+        title: "Initial Release",
+        description:
+          "First release of CappyChat with basic chat functionality, theme system, and UI components.",
+        icon: "Rocket",
+        color: "blue",
+      },
+      {
+        type: "new",
+        title: "Database Functionality",
+        description:
+          "Implemented core database functionality for storing and retrieving chat messages and user data.",
+        icon: "Database",
+        color: "green",
+      },
+      {
+        type: "new",
+        title: "API Key Management",
+        description:
+          "Added API key management system with OpenRouter integration for AI model access.",
+        icon: "Key",
+        color: "yellow",
+      },
+      {
+        type: "new",
+        title: "Theme System",
+        description:
+          "Implemented comprehensive theme system with light and dark mode support for better user experience.",
+        icon: "Palette",
+        color: "purple",
       },
     ],
   },

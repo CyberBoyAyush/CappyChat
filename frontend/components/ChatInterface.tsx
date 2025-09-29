@@ -275,7 +275,7 @@ export default function ChatInterface({
     closeNavigator,
     registerRef,
     scrollToMessage,
-  } = useChatMessageNavigator();
+  } = useChatMessageNavigator(mainRef);
 
   const {
     messages,
@@ -1312,7 +1312,36 @@ export default function ChatInterface({
     }
   }, [messages.length, status, threadId]);
 
+  const hasMessages = messages.length > 0;
+
+  useEffect(() => {
+    if (!hasMessages && mainRef.current) {
+      isAutoScrollingRef.current = true;
+      mainRef.current.scrollTop = 0;
+
+      requestAnimationFrame(() => {
+        isAutoScrollingRef.current = false;
+      });
+
+      setShowScrollToBottom(false);
+      setUserHasScrolledUp(false);
+    }
+  }, [hasMessages]);
+
   const scrollToBottom = () => {
+    if (!hasMessages) {
+      if (mainRef.current) {
+        isAutoScrollingRef.current = true;
+        mainRef.current.scrollTop = 0;
+        requestAnimationFrame(() => {
+          isAutoScrollingRef.current = false;
+        });
+      }
+      setShowScrollToBottom(false);
+      setUserHasScrolledUp(false);
+      return;
+    }
+
     if (mainRef.current) {
       // Set flag to prevent scroll event from triggering during auto-scroll
       isAutoScrollingRef.current = true;
@@ -1731,7 +1760,7 @@ const AppPanelTrigger = () => {
           variant={isDarkTheme ? "outline" : "secondary"}
           className={` ${state === "collapsed" ? "ml-2" : "hidden"}`}
         >
-          <PlusIcon className="h-5 w-5" />
+          <PlusIcon className="h-5 w-5 text-primary" />
         </Button>
       </div>
     </div>
@@ -1993,7 +2022,7 @@ const WelcomeScreen = ({
               className="md:hidden"
             />
           </div>
-          <h2 className="text-xl md:text-4xl font-medium mb-3">
+          <h2 className="text-xl md:text-4xl text-primary font-medium mb-3">
             Welcome Back, {user?.name || "User"}!
             <p className="text-muted-foreground/60 mt-2.5 text-lg max-w-2xl mx-auto leading-relaxed">
               Let's get started! What would you like to chat about today?

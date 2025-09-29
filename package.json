@@ -1,6 +1,6 @@
 {
   "name": "CappyChat",
-  "version": "3.0.1",
+  "version": "4.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -28,7 +28,6 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tooltip": "^1.2.7",
     "@radix-ui/react-visually-hidden": "^1.2.3",
-    "@runware/sdk-js": "^1.1.40",
     "@tavily/core": "^0.5.9",
     "@tsparticles/engine": "^3.8.1",
     "@tsparticles/react": "^3.0.0",

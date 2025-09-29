@@ -390,18 +390,25 @@ const BrowsingDemo = React.memo(() => {
   const handleChatClick = useCallback((messageIndex: number) => {
     setSelectedMessage(messageIndex);
 
-    if (chatContainerRef.current) {
-      const messageElement = chatContainerRef.current.children[
-        messageIndex
-      ] as HTMLElement;
-      if (messageElement) {
-        messageElement.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-          inline: "nearest",
-        });
-      }
-    }
+    const container = chatContainerRef.current;
+    if (!container) return;
+
+    const messageElement = container.children[messageIndex] as
+      | HTMLElement
+      | undefined;
+
+    if (!messageElement) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const messageRect = messageElement.getBoundingClientRect();
+    const messageOffset = messageRect.top - containerRect.top;
+    const centeredOffset =
+      messageOffset - container.clientHeight / 2 + messageElement.clientHeight / 2;
+
+    container.scrollTo({
+      top: Math.max(0, container.scrollTop + centeredOffset),
+      behavior: "smooth",
+    });
   }, []);
 
   return (

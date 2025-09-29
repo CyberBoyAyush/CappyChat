@@ -605,7 +605,11 @@ const DemoChatComponent = () => {
             >
               {message.type === "ai" && (
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 mt-1 border border-primary/20">
-                  <Bot className="h-4 w-4 text-primary" />
+                  <CapybaraIcon
+                    size="text-xs"
+                    animated={false}
+                    showLoader={false}
+                  />
                 </div>
               )}
               <div
@@ -658,7 +662,11 @@ const DemoChatComponent = () => {
             className="flex gap-3 justify-start"
           >
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 mt-1 border border-primary/20">
-              <Bot className="h-4 w-4 text-primary" />
+              <CapybaraIcon
+                size="text-xs"
+                animated={false}
+                showLoader={false}
+              />
             </div>
             <div className="bg-muted/50 border border-border/30 rounded-2xl rounded-bl-md px-4 py-3 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">

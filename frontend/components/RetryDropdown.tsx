@@ -110,10 +110,7 @@ export default function RetryDropdown({
     if (isImageGenerationContext) {
       // Recommended image generation models
       return [
-        "FLUX.1 [schnell]",
-        "FLUX.1 Dev",
-        "Stable Defusion 3",
-        "Juggernaut Pro",
+        "Gemini Nano Banana",
       ];
     } else {
       // Recommended text generation models

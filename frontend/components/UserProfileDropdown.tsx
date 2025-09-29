@@ -319,13 +319,7 @@ const UserProfileDropdown: React.FC = () => {
             <User className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm">Profile</span>
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => navigate("/settings#customization")}
-            className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-md text-foreground hover:bg-muted/50 transition-colors"
-          >
-            <Sparkles className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Customization</span>
-          </DropdownMenuItem>
+
           <DropdownMenuItem
             onClick={() => navigate("/settings#storage")}
             className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-md text-foreground hover:bg-muted/50 transition-colors"
@@ -363,15 +357,7 @@ const UserProfileDropdown: React.FC = () => {
           <div className="text-xs font-medium text-muted-foreground px-2 py-1 uppercase tracking-wider">
             Resources
           </div>
-          <DropdownMenuItem
-            onClick={() =>
-              window.open("https://github.com/cyberboyayush/CappyChat", "_blank")
-            }
-            className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-md text-foreground hover:bg-muted/50 transition-colors"
-          >
-            <Github className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Github</span>
-          </DropdownMenuItem>
+
           <DropdownMenuItem
             onClick={() => navigate("/about")}
             className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-md text-foreground hover:bg-muted/50 transition-colors"
@@ -386,15 +372,11 @@ const UserProfileDropdown: React.FC = () => {
             <Coins className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm">Pricing</span>
           </DropdownMenuItem>
+
           <DropdownMenuItem
-            onClick={() => navigate("/changelog")}
-            className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-md text-foreground hover:bg-muted/50 transition-colors"
-          >
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Changelog</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => window.open("https://status.cappychat.com", "_blank")}
+            onClick={() =>
+              window.open("https://status.cappychat.com", "_blank")
+            }
             className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-md text-foreground hover:bg-muted/50 transition-colors"
           >
             <Activity className="h-4 w-4 text-muted-foreground" />
@@ -406,13 +388,6 @@ const UserProfileDropdown: React.FC = () => {
 
         {/* Settings and Logout */}
         <div className="px-1 py-1">
-          <DropdownMenuItem
-            onClick={handleSettings}
-            className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-md text-foreground hover:bg-muted/50 transition-colors"
-          >
-            <Settings className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Settings</span>
-          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={handleLogout}
             disabled={isLoggingOut}

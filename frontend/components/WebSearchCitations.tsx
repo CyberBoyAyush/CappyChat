@@ -96,13 +96,11 @@ export function WebSearchCitations({
   if (!results || results.length === 0) return null;
 
   return (
-    <div
-      className={cn("pt-6 pb-4 px-2 md:px-2 border-t border-border", className)}
-    >
+    <div className={cn("pt-6 pb-4  border-t border-border", className)}>
       {/* Collapsible Header */}
       <div
         className={cn(
-          "flex items-center gap-3 p-4 sm:p-5 md:p-4 mx-1 sm:mx-2 rounded-xl border border-border bg-card/60 cursor-pointer",
+          "flex items-center gap-3 p-4 sm:p-5 md:p-4 rounded-xl border border-border bg-card/60 cursor-pointer",
           "hover:bg-card/80 hover:border-border/80 hover:shadow-lg transition-all duration-300 ease-in-out",
           "focus:outline-none ",
           "shadow-sm min-h-[60px] sm:min-h-[56px]", // Add minimum height for mobile
@@ -123,7 +121,7 @@ export function WebSearchCitations({
           <Search className="h-4 w-4 text-primary" />
         </div>
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 md:flex justify-between min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-base sm:text-base font-semibold text-foreground">
               Web Sources
@@ -132,35 +130,35 @@ export function WebSearchCitations({
               {results.length}
             </span>
           </div>
-        </div>
 
-        {/* Favicons Preview */}
-        <div className="flex items-center gap-1 sm:gap-1 mr-2 sm:mr-3">
-          {citations.slice(0, 4).map((citation, index) => (
-            <div key={index} className="relative">
-              {citation.favicon ? (
-                <img
-                  src={citation.favicon}
-                  alt=""
-                  className="w-6 h-6 sm:w-5 sm:h-5 rounded-sm border border-border/30 shadow-sm"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-              ) : (
-                <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-sm bg-primary/20 border border-border/30 flex items-center justify-center shadow-sm">
-                  <Globe className="h-3.5 w-3.5 sm:h-3 sm:w-3 text-primary/70" />
-                </div>
-              )}
-            </div>
-          ))}
-          {results.length > 4 && (
-            <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-sm bg-secondary/80 border border-border/30 flex items-center justify-center shadow-sm">
-              <span className="text-[11px] sm:text-[10px] font-medium text-muted-foreground">
-                +{results.length - 4}
-              </span>
-            </div>
-          )}
+          {/* Favicons Preview */}
+          <div className="flex items-center gap-1 sm:gap-1 mr-2 sm:mr-3">
+            {citations.slice(0, 6).map((citation, index) => (
+              <div key={index} className="relative">
+                {citation.favicon ? (
+                  <img
+                    src={citation.favicon}
+                    alt=""
+                    className="w-6 h-6 sm:w-5 sm:h-5 rounded-sm border border-border/30 shadow-sm"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-sm bg-primary/20 border border-border/30 flex items-center justify-center shadow-sm">
+                    <Globe className="h-3.5 w-3.5 sm:h-3 sm:w-3 text-primary/70" />
+                  </div>
+                )}
+              </div>
+            ))}
+            {results.length > 6 && (
+              <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-sm bg-secondary/80 border border-border/30 flex items-center justify-center shadow-sm">
+                <span className="text-[11px] sm:text-[10px] font-medium text-muted-foreground">
+                  +{results.length - 6}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Loading Indicator */}
@@ -197,14 +195,14 @@ export function WebSearchCitations({
               mass: 0.6,
               opacity: { duration: 0.2 },
             }}
-            className="overflow-hidden shadow-lg rounded-b-xl mx-1 sm:mx-2"
+            className="overflow-hidden shadow-lg rounded-b-xl"
           >
             <motion.div
               initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: -10, opacity: 0 }}
               transition={{ delay: 0.1, duration: 0.3 }}
-              className="border-l border-r border-b border-border/50 rounded-b-xl bg-card/40 p-4 sm:p-6 shadow-md"
+              className="border border-primary/20 rounded-b-xl bg-card/40 p-4 sm:p-6 shadow-md"
             >
               {/* Citations Grid */}
               <div className="grid gap-4 sm:gap-4 grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 p-1 sm:p-2">
@@ -457,7 +455,10 @@ export function cleanMessageContent(content: string): string {
   // Remove the search URLs and images markers from the content
   const searchUrlsMarker = /<!-- SEARCH_URLS: .*? -->/g;
   const searchImagesMarker = /<!-- SEARCH_IMAGES: .*? -->/g;
-  return content.replace(searchUrlsMarker, "").replace(searchImagesMarker, "").trim();
+  return content
+    .replace(searchUrlsMarker, "")
+    .replace(searchImagesMarker, "")
+    .trim();
 }
 
 export default WebSearchCitations;

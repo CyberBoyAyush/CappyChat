@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     siteName: "CappyChat",
     images: [
       {
-        url: "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
+        url: "https://res.cloudinary.com/dyetf2h9n/image/upload/v1759138327/AV_1_zztl3w.png",
         width: 1200,
         height: 630,
         alt: "CappyChat - Fastest AI Chat App",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     description:
       "Experience the fastest AI chat application with real-time responses, multiple AI models, and seamless conversations.",
     images: [
-      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1759138327/AV_1_zztl3w.png",
     ],
     creator: "@cyberboyayush",
     site: "@cyberboyayush",
@@ -77,7 +77,7 @@ export const metadata: Metadata = {
     viewport: "width=device-width, initial-scale=1, maximum-scale=1",
     // Additional Open Graph meta tags for better link previews
     "og:image:secure_url":
-      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1759138327/AV_1_zztl3w.png",
     "og:image:width": "1200",
     "og:image:height": "630",
     "og:image:alt": "CappyChat - Fastest AI Chat App",
@@ -85,7 +85,7 @@ export const metadata: Metadata = {
     "linkedin:owner": "cyberboyayush",
     // WhatsApp specific
     "whatsapp:image":
-      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1757602177/AV_hcgoqg.png",
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1759138327/AV_1_zztl3w.png",
   },
 };
 

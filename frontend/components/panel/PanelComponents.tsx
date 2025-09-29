@@ -222,13 +222,7 @@ const PanelHeaderComponent = ({
                   <User className="h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => navigate("/settings#customization")}
-                  className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  <span>Customization</span>
-                </DropdownMenuItem>
+
                 <DropdownMenuItem
                   onClick={() => navigate("/settings#storage")}
                   className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -250,20 +244,6 @@ const PanelHeaderComponent = ({
 
                 <DropdownMenuSeparator />
 
-                {/* Github */}
-                <DropdownMenuItem
-                  onClick={() =>
-                    window.open(
-                      "https://github.com/cyberboyayush/CappyChat",
-                      "_blank"
-                    )
-                  }
-                  className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                >
-                  <Github className="h-4 w-4" />
-                  <span>Github</span>
-                </DropdownMenuItem>
-
                 {/* About */}
                 <DropdownMenuItem
                   onClick={() => navigate("/about")}
@@ -282,15 +262,6 @@ const PanelHeaderComponent = ({
                   <span>Pricing</span>
                 </DropdownMenuItem>
 
-                {/* Changelog */}
-                <DropdownMenuItem
-                  onClick={() => navigate("/changelog")}
-                  className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                >
-                  <Calendar className="h-4 w-4" />
-                  <span>Changelog</span>
-                </DropdownMenuItem>
-
                 {/* Status */}
                 <DropdownMenuItem
                   onClick={() =>
@@ -300,15 +271,6 @@ const PanelHeaderComponent = ({
                 >
                   <Activity className="h-4 w-4" />
                   <span>Status</span>
-                </DropdownMenuItem>
-
-                {/* Settings */}
-                <DropdownMenuItem
-                  onClick={handleSettings}
-                  className="flex items-center space-x-2 cursor-pointer px-3 py-2 text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                >
-                  <Settings className="h-4 w-4" />
-                  <span>Settings</span>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
