@@ -1380,7 +1380,11 @@ function PureInputField({
                     <Button
                       variant={isImageGenMode ? "default" : "outline"}
                       size="icon"
-                      className="h-10 w-10 sm:h-9 sm:w-9 mobile-touch relative"
+                      className={`h-10 w-10  shadow-none border-0 sm:h-9 sm:w-9 mobile-touch relative ${
+                        isImageGenMode
+                          ? "bg-primary"
+                          : "text-primary bg-transparent"
+                      }`}
                       onClick={() => {
                         const newImageGenMode = !isImageGenMode;
                         setIsImageGenMode(newImageGenMode);
@@ -1421,7 +1425,7 @@ function PureInputField({
                       }
                     >
                       <RiImageAiFill
-                        size={20}
+                        size={22}
                         className={cn(
                           isImageGenMode ? "text-background" : "text-primary"
                         )}

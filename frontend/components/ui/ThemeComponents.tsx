@@ -120,7 +120,7 @@ export function ThemeToggleButton({
     (event: React.MouseEvent<HTMLDivElement>) => {
       if (!supportsHover) return;
 
-      const relatedTarget = event.relatedTarget as Element | null;
+      const relatedTarget = event.relatedTarget as Node | null;
       if (
         relatedTarget &&
         dropdownRef.current &&

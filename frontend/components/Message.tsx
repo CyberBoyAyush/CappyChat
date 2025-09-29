@@ -377,7 +377,7 @@ function PureMessage({
           return message.role === "user" ? (
             <div
               key={key}
-              className="flex gap-2 max-w-[95%] sm:max-w-[85%] md:max-w-[75%] lg:max-w-[65%] xl:max-w-[55%] pl-4"
+              className="flex gap-2 max-w-[95%] sm:max-w-[85%] md:max-w-[75%]  pl-4"
               ref={(el) => registerRef?.(message.id, el)}
             >
               {/* User Avatar */}
