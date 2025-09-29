@@ -308,7 +308,7 @@ export const MODEL_CONFIGS = {
     displayName: 'Gemini Nano Banana',
     iconType: 'google',
     company: 'Google',
-    isPremium: false,
+    isPremium: true,
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: true,
