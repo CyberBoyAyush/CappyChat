@@ -204,6 +204,14 @@ function PureInputField({
   // Model selection state
   const { selectedModel, setModel } = useModelStore();
 
+  // Sync isImageGenMode with selected model on mount and when model changes
+  useEffect(() => {
+    const modelConfig = getModelConfig(selectedModel);
+    if (modelConfig.isImageGeneration && !isImageGenMode) {
+      setIsImageGenMode(true);
+    }
+  }, [selectedModel, isImageGenMode]); // Run when selectedModel changes
+
   // Aspect ratio state for image generation
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<AspectRatio>(
     ASPECT_RATIOS[0]
@@ -480,8 +488,8 @@ function PureInputField({
     }
 
     // Use the input as-is without automatic file conversion
-    let finalInput = currentInput.trim();
-    let finalAttachments = [...attachments];
+    const finalInput = currentInput.trim();
+    const finalAttachments = [...attachments];
 
     console.log("=== PROCESSING SUBMIT ===");
     console.log("Final input:", finalInput);
@@ -913,6 +921,8 @@ function PureInputField({
     selectedModel,
     user,
     setMessages,
+    onMessageAppended,
+    selectedAspectRatio,
   ]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
