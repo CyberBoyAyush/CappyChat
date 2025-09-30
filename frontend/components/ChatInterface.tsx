@@ -292,6 +292,8 @@ export default function ChatInterface({
       !isGuest && selectedSearchType !== "chat"
         ? selectedSearchType === "reddit"
           ? "/api/reddit-search"
+          : selectedSearchType === "study"
+          ? "/api/study-mode"
           : "/api/web-search"
         : "/api/chat-messaging",
     id: threadId,
@@ -1027,9 +1029,10 @@ export default function ChatInterface({
         })();
         setWebSearchQuery(q || "search query");
 
-        // Prefetch images only for standard Web Search (not for Reddit)
-        if (selectedSearchType === "web" && !isGuest && q && q.length > 0) {
-          fetch(`/api/web-search?q=${encodeURIComponent(q)}`)
+        // Prefetch images for Web Search and Study Mode (not for Reddit)
+        if ((selectedSearchType === "web" || selectedSearchType === "study") && !isGuest && q && q.length > 0) {
+          const endpoint = selectedSearchType === "study" ? "/api/study-mode" : "/api/web-search";
+          fetch(`${endpoint}?q=${encodeURIComponent(q)}`)
             .then((r) => (r.ok ? r.json() : Promise.resolve({ images: [] })))
             .then((data) => {
               const imgs = Array.isArray(data?.images)

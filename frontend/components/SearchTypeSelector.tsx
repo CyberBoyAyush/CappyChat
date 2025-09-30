@@ -2,11 +2,11 @@
  * SearchTypeSelector Component
  *
  * Used in: frontend/components/ChatInputField.tsx
- * Purpose: Dropdown selector for choosing between Web Search and Reddit Search.
+ * Purpose: Dropdown selector for choosing between Web Search, Reddit Search, and Study Mode.
  * Mobile-friendly with icon-only display on small screens.
  */
 
-import { ChevronDown, Check, Globe, MessageCircle } from "lucide-react";
+import { ChevronDown, Check, Globe, MessageCircle, GraduationCap } from "lucide-react";
 import { FaRedditAlien } from "react-icons/fa6";
 import { memo, useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -32,6 +32,7 @@ const IconMap = {
   Globe,
   MessageCircle,
   FaRedditAlien,
+  GraduationCap,
 };
 
 function PureSearchTypeSelector({ className }: SearchTypeSelectorProps) {

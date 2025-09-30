@@ -44,6 +44,14 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "new",
+        title: "Added Study Mode",
+        description:
+          "Implemented Study Mode with Tavily integration, educational system prompt, and specialized AI responses for interactive learning and tutoring.",
+        icon: "BookOpen",
+        color: "orange",
+      },
+      {
+        type: "new",
         title: "Advanced AI Models",
         description:
           "Added cutting-edge AI models including Grok 4, Grok 4 Fast, Qwen3 Max, Claude Sonnet 3.7, and Qwen3 30B A3B Thinking 2507 for enhanced reasoning and coding capabilities.",
