@@ -312,6 +312,10 @@ export const canUserUseModel = async (model: AIModel, usingBYOK: boolean = false
     const hasSubscriptionAccess = await hasSubscriptionPremium(userId);
     console.log('[TierSystem] Subscription premium access:', hasSubscriptionAccess);
 
+    const modelConfig = getModelConfig(model);
+    const creditsRequired = modelConfig.isImageGeneration ? 10 : 1;
+    console.log(`[TierSystem] Model requires ${creditsRequired} credit(s) (Image Gen: ${modelConfig.isImageGeneration})`);
+
     const modelType = getModelType(model);
     let remainingCredits = 0;
     let canUse = false;
@@ -325,17 +329,17 @@ export const canUserUseModel = async (model: AIModel, usingBYOK: boolean = false
     switch (modelType) {
       case 'free':
         remainingCredits = preferences.freeCredits;
-        canUse = effectiveTier === 'admin' || remainingCredits > 0;
+        canUse = effectiveTier === 'admin' || remainingCredits >= creditsRequired;
         break;
       case 'premium':
         remainingCredits = preferences.premiumCredits;
         // Premium models: admin, premium tier, or subscription premium
-        canUse = effectiveTier === 'admin' || effectiveTier === 'premium' || remainingCredits > 0;
+        canUse = effectiveTier === 'admin' || effectiveTier === 'premium' || remainingCredits >= creditsRequired;
         break;
       case 'superPremium':
         remainingCredits = preferences.superPremiumCredits;
         // Super premium models: admin, premium tier, or subscription premium
-        canUse = effectiveTier === 'admin' || effectiveTier === 'premium' || remainingCredits > 0;
+        canUse = effectiveTier === 'admin' || effectiveTier === 'premium' || remainingCredits >= creditsRequired;
         break;
     }
 
@@ -389,27 +393,31 @@ export const consumeCredits = async (model: AIModel, usingBYOK: boolean = false,
       return true;
     }
 
+    const modelConfig = getModelConfig(model);
+    const creditsToConsume = modelConfig.isImageGeneration ? 10 : 1;
+    console.log(`[TierSystem] Consuming ${creditsToConsume} credit(s) for model: ${model} (Image Gen: ${modelConfig.isImageGeneration})`);
+
     const modelType = getModelType(model);
     const updates: Partial<UserTierPreferences> = {};
 
     switch (modelType) {
       case 'free':
-        if (preferences.freeCredits <= 0) {
+        if (preferences.freeCredits < creditsToConsume) {
           return false;
         }
-        updates.freeCredits = preferences.freeCredits - 1;
+        updates.freeCredits = preferences.freeCredits - creditsToConsume;
         break;
       case 'premium':
-        if (preferences.premiumCredits <= 0) {
+        if (preferences.premiumCredits < creditsToConsume) {
           return false;
         }
-        updates.premiumCredits = preferences.premiumCredits - 1;
+        updates.premiumCredits = preferences.premiumCredits - creditsToConsume;
         break;
       case 'superPremium':
-        if (preferences.superPremiumCredits <= 0) {
+        if (preferences.superPremiumCredits < creditsToConsume) {
           return false;
         }
-        updates.superPremiumCredits = preferences.superPremiumCredits - 1;
+        updates.superPremiumCredits = preferences.superPremiumCredits - creditsToConsume;
         break;
     }
 

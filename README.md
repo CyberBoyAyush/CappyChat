@@ -1634,7 +1634,8 @@ For power users and professionals
 **💡 Credit Usage:**
 - **Free Models** (1 credit): Gemini 2.5 Flash Lite, OpenAI 5 Mini
 - **Premium Models** (1 credit): GPT-5, Gemini 2.5 Pro, Claude 4, Grok 4
-- **Super Premium Models** (1 credit): DeepSeek R1, Qwen3 Max, Image Generation
+- **Super Premium Models** (1 credit): DeepSeek R1, Qwen3 Max
+- **Image Generation Models** (10 credits): Gemini Nano Banana
 
 [**🚀 Upgrade to Premium**](https://cappychat.com/pricing) • [**📊 View All Models**](docs/Project.md)
 
