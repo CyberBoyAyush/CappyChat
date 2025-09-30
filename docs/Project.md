@@ -632,7 +632,7 @@ interface UserTier {
 Credit usage highlights:
 - AI text: free
 - Web search: 1 super premium credit
-- Image gen: 1 premium credit
+- Image gen: 10 premium credits
 
 ---
 

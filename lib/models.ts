@@ -1,24 +1,26 @@
 export const AI_MODELS = [
   'Gemini 2.5 Flash',
+  'Gemini 2.5 Flash (New)',
   'Gemini 2.5 Flash Lite',
   'OpenAI 5 Mini',
   "OpenAI 5",
   'OpenAI o4-mini',
   'Open AI OSS 120B',
   'Claude Haiku 3.5',
-  'Claude Sonnet 3.7',
   'DeepSeek R1 Fast',
   'DeepSeek V3.1',
   'Qwen3 Max',
   'Qwen3 235B A22B',
   'Qwen3 30B A3B Thinking 2507',
   'Claude Sonnet 4',
+  'Claude Sonnet 4.5',
   'Gemini 2.5 Pro',
   'OpenAI 5 Nano',
   'Grok 3 Mini',
   'Grok 4',
   'Grok 4 Fast',
   'Grok Code Fast 1',
+  'Kimi K2',
   'Gemini Nano Banana',
 ] as const;
 
@@ -28,7 +30,7 @@ export type ModelConfig = {
   modelId: string;
   provider: 'openrouter';
   displayName: string;
-  iconType: 'google' | 'openai' | 'anthropic' | 'deepseek' | 'huggingface' | 'qwen' | 'meta' | 'x-ai';
+  iconType: 'google' | 'openai' | 'anthropic' | 'deepseek' | 'huggingface' | 'qwen' | 'meta' | 'x-ai' | 'kimi';
   company: string;
   isPremium: boolean;
   isSuperPremium: boolean;
@@ -45,6 +47,19 @@ export const MODEL_CONFIGS = {
     modelId: 'google/gemini-2.5-flash',
     provider: 'openrouter',
     displayName: 'Gemini 2.5 Flash',
+    iconType: 'google',
+    company: 'Google',
+    isPremium: false,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: true,
+    isFast: true,
+    description: 'Fast and efficient model from Google',
+  },
+  'Gemini 2.5 Flash (New)': {
+    modelId: 'google/gemini-2.5-flash-preview-09-2025',
+    provider: 'openrouter',
+    displayName: 'Gemini 2.5 Flash (New)',
     iconType: 'google',
     company: 'Google',
     isPremium: false,
@@ -120,10 +135,10 @@ export const MODEL_CONFIGS = {
     isFast: true,
     description: 'Anthropic\'s model for fast responses',
   },
-  'Claude Sonnet 3.7': {
-    modelId: 'anthropic/claude-3.7-sonnet',
+  'Claude Sonnet 4': {
+    modelId: 'anthropic/claude-4-sonnet',
     provider: 'openrouter',
-    displayName: 'Claude Sonnet 3.7',
+    displayName: 'Claude Sonnet 4',
     iconType: 'anthropic',
     company: 'Anthropic',
     isPremium: false,
@@ -211,10 +226,10 @@ export const MODEL_CONFIGS = {
     isFast: true,
     description: 'Qwen3 30B A3B Thinking 2507 is a powerful model with advanced reasoning capabilities',
   },
-  'Claude Sonnet 4': {
-    modelId: 'anthropic/claude-sonnet-4',
+  'Claude Sonnet 4.5': {
+    modelId: 'anthropic/claude-sonnet-4.5',
     provider: 'openrouter',
-    displayName: 'Claude Sonnet 4',
+    displayName: 'Claude Sonnet 4.5',
     iconType: 'anthropic',
     company: 'Anthropic',
     isPremium: false,
@@ -301,6 +316,19 @@ export const MODEL_CONFIGS = {
     isFileSupported: true,
     isFast: true,
     description: 'Fastest model from XAI with advanced reasoning.',
+  },
+  'Kimi K2': {
+    modelId: 'moonshotai/kimi-k2-0905',
+    provider: 'openrouter',
+    displayName: 'Kimi K2',
+    iconType: 'kimi',
+    company: 'Moonshot',
+    isPremium: true,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: true,
+    isFast: true,
+    description: 'Fastest model from Moonshot.',
   },
   'Gemini Nano Banana': {
     modelId: 'google/gemini-2.5-flash-image-preview',

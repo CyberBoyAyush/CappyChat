@@ -4,21 +4,37 @@
 
 ### _Next-Generation AI Chat Platform_
 
-[![Version](https://img.shields.io/badge/version-3.0.1-2563eb?style=for-the-badge&logo=semver&logoColor=white)](https://github.com/CyberBoyAyush/CappyChat)
+[![Version](https://img.shields.io/badge/version-4.0.0-2563eb?style=for-the-badge&logo=semver&logoColor=white)](https://github.com/CyberBoyAyush/CappyChat)
 [![License](https://img.shields.io/badge/license-GPL%20v3-10b981?style=for-the-badge&logo=gnu&logoColor=white)](LICENSE)
-[![Next.js](https://img.shields.io/badge/Next.js-15.3-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Appwrite](https://img.shields.io/badge/Appwrite-Database-f02e65?style=for-the-badge&logo=appwrite&logoColor=white)](https://appwrite.io/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.3.4-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-3178c6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Appwrite](https://img.shields.io/badge/Appwrite-18.1.1-f02e65?style=for-the-badge&logo=appwrite&logoColor=white)](https://appwrite.io/)
 
 ---
 
-**🎯 High-Performance • 🔄 Real-Time Sync • 🤖 26+ AI Models • ⚡ Sub-100ms Response**
+**🎯 High-Performance • 🔄 Real-Time Sync • 🤖 30+ AI Models • ⚡ Sub-100ms Response**
 
 [**🌐 Live Demo**](https://cappychat.com) • [**📚 Documentation**](docs/Project.md) • [**🔧 API Reference**](#api-documentation) • [**🤝 Contributing**](#contributing)
 
 ---
 
 </div>
+
+## 🎉 **What's New in v4.0.0**
+
+> **Major Release** - Complete rebranding and architecture updates! CappyChat v4.0.0 brings significant improvements including OpenRouter-based image generation, 30+ AI models, enhanced web search, and much more.
+
+**🌟 Highlights:**
+- 🎨 **Complete Rebranding** - New CappyChat identity with animated CapybaraIcon
+- 🖼️ **OpenRouter Image Generation** - Context-aware image creation with Gemini 2.5 Flash Image Preview
+- 🤖 **New AI Models** - Grok 4, Grok 4 Fast, Qwen3 Max, Claude Sonnet 3.7
+- 💬 **Suggested Questions** - AI-powered conversation suggestions
+- 📁 **File Pagination** - Better file management in settings
+- 💳 **Updated Subscriptions** - New credit limits and pricing ($12/month or ₹999)
+
+[**📋 View Full Changelog**](CHANGELOG.md) • [**🚀 Upgrade Guide**](docs/Project.md)
+
+---
 
 ## 📖 **Overview**
 
@@ -32,7 +48,7 @@
 
 **🤖 AI Excellence**
 
-- **26+ Premium Models** - GPT-5, Gemini 2.5, Claude 4, DeepSeek, Qwen
+- **30+ Premium Models** - GPT-5, Gemini 2.5, Claude 4, Grok 4, DeepSeek, Qwen
 - **Intelligent Routing** - Automatic model selection based on query type
 - **BYOK Support** - Enhanced privacy with your own API keys
 - **Tiered Access** - Free, premium, and super-premium model tiers
@@ -54,10 +70,10 @@
 
 **🎨 Advanced Features**
 
-- **Image Generation** - FLUX.1, Stable Diffusion with aspect ratios
+- **Image Generation** - Google Gemini 2.5 Flash Image Preview (nano banana)
 - **Voice Input** - OpenAI Whisper speech-to-text integration
 - **Web Search** - Tavily API with rich citations and Reddit search
-- **File Upload** - Multi-format support with AI analysis
+- **File Upload** - Multi-format support with AI analysis and pagination
 
 </td>
 <td width="50%">
@@ -103,12 +119,12 @@
 
 <br>
 
-| Feature                | Description                                 | Models                                   |
-| ---------------------- | ------------------------------------------- | ---------------------------------------- |
-| **Premium Models**     | Latest AI models with advanced capabilities | GPT-5, Gemini 2.5 Pro, Claude 4          |
-| **Fast Models**        | Optimized for speed and efficiency          | Gemini 2.5 Flash Lite, OpenAI 5 Mini     |
-| **Specialized Models** | Task-specific AI models                     | DeepSeek R1, Qwen3, Grok 3               |
-| **Image Models**       | Advanced image generation                   | FLUX.1, Stable Diffusion, Juggernaut Pro |
+| Feature                | Description                                 | Models                                        |
+| ---------------------- | ------------------------------------------- | --------------------------------------------- |
+| **Premium Models**     | Latest AI models with advanced capabilities | GPT-5, Gemini 2.5 Pro, Claude 4, Grok 4       |
+| **Fast Models**        | Optimized for speed and efficiency          | Gemini 2.5 Flash Lite, OpenAI 5 Mini, Grok 4 Fast |
+| **Specialized Models** | Task-specific AI models                     | DeepSeek R1, Qwen3 Max, Claude Sonnet 3.7     |
+| **Image Models**       | Advanced image generation                   | Gemini 2.5 Flash Image Preview (nano banana)  |
 
 **Key Benefits:**
 
@@ -155,18 +171,19 @@ graph LR
 
 <br>
 
-| Capability           | Technology               | Features                                        |
-| -------------------- | ------------------------ | ----------------------------------------------- |
-| **Image Generation** | FLUX.1, Stable Diffusion | Text-to-image, Image-to-image, Custom ratios    |
-| **Voice Input**      | OpenAI Whisper           | Multi-language, Real-time transcription         |
-| **Web Search**       | Tavily API               | Live search, Rich citations, Reddit integration |
-| **File Upload**      | Cloudinary               | Images, PDFs, Documents with AI analysis        |
-| **Collaboration**    | Real-time sync           | Team workspaces, Member management              |
+| Capability           | Technology                          | Features                                        |
+| -------------------- | ----------------------------------- | ----------------------------------------------- |
+| **Image Generation** | Gemini 2.5 Flash Image Preview      | Text-to-image, Context-aware generation         |
+| **Voice Input**      | OpenAI Whisper                      | Multi-language, Real-time transcription         |
+| **Web Search**       | Tavily API                          | Live search, Rich citations, Reddit integration |
+| **File Upload**      | Cloudinary                          | Images, PDFs, Documents with AI analysis        |
+| **Collaboration**    | Real-time sync                      | Team workspaces, Member management              |
 
 **Advanced Features:**
 
 - 🎭 **Conversation Styles** - Balanced, creative, precise modes
 - 🧠 **Global Memory** - Persistent context across conversations
+- 💬 **Suggested Questions** - AI-powered conversation suggestions
 - 📊 **Analytics** - Usage tracking and insights
 - 🔗 **Share & Export** - Public sharing and data export
 
@@ -252,7 +269,7 @@ const techStack = {
   "database": "Appwrite Cloud",
   "auth": "Appwrite + OAuth",
   "storage": "Cloudinary",
-  "ai": ["OpenRouter", "OpenAI", "Runware"],
+  "ai": ["OpenRouter", "OpenAI", "Google Gemini"],
   "search": "Tavily API",
   "payments": "DODO Payments"
 }
@@ -292,7 +309,7 @@ graph TB
 
     subgraph "Service Layer"
         G[OpenRouter AI Models]
-        H[Runware Image Generation]
+        H[Google Gemini Image Generation]
         I[Tavily Web Search]
         J[Cloudinary File Storage]
     end
@@ -434,10 +451,6 @@ OPENROUTER_API_KEY=your-openrouter-key
 # OpenAI (for Whisper voice transcription)
 OPENAI_API_KEY=your-openai-key
 # Get from: https://platform.openai.com/api-keys
-
-# Runware (for image generation)
-RUNWARE_API_KEY=your-runware-key
-# Get from: https://runware.ai/
 
 # Tavily (for web search)
 TAVILY_API_KEY=your-tavily-key
@@ -779,10 +792,10 @@ const LazyComponent = lazy(() =>
 
 #### Image Generation
 
-- `POST /api/image-generation` - Image generation using Runware API
-  - Supports text-to-image and image-to-image generation
-  - Multiple models: FLUX.1, Stable Diffusion, Juggernaut Pro
-  - Aspect ratio selection and custom dimensions
+- `POST /api/image-generation` - Image generation using OpenRouter with Google Gemini
+  - Context-aware image generation with conversation history
+  - Model: Gemini 2.5 Flash Image Preview (nano banana)
+  - Automatic upload to Cloudinary for storage
 
 #### Search & Information
 
@@ -835,18 +848,15 @@ data: {"type":"finish","usage":{"promptTokens":10,"completionTokens":12}}
 POST /api/image-generation
 {
   "prompt": "A beautiful sunset over mountains",
-  "model": "FLUX.1 [schnell]",
-  "width": 1024,
-  "height": 1024,
+  "conversationHistory": [...], // Optional: for context-aware generation
   "userId": "user123"
 }
 
 // Response
 {
   "success": true,
-  "imageUrl": "https://example.com/generated-image.jpg",
-  "model": "FLUX.1 [schnell]",
-  "dimensions": { "width": 1024, "height": 1024 }
+  "imageUrl": "https://res.cloudinary.com/...",
+  "model": "Gemini 2.5 Flash Image Preview"
 }
 ```
 
@@ -857,9 +867,9 @@ POST /api/image-generation
 ```typescript
 interface UserPreferences {
   tier: "free" | "premium" | "admin";
-  freeCredits: number;
-  premiumCredits: number;
-  superPremiumCredits: number;
+  freeCredits: number; // Free tier: 80, Premium: 1200
+  premiumCredits: number; // Free tier: 10, Premium: 600
+  superPremiumCredits: number; // Free tier: 2, Premium: 50
   lastResetDate?: string;
   customProfile?: {
     customName?: string;
@@ -1582,6 +1592,55 @@ pnpm lighthouse
 
 ---
 
+## 💳 **Pricing & Subscription**
+
+<div align="center">
+
+### _Flexible Plans for Every User_
+
+</div>
+
+<table>
+<tr>
+<td width="50%">
+
+### **🆓 Free Tier**
+
+Perfect for trying out CappyChat
+
+- ✅ **80 Free Credits** - Basic AI models
+- ✅ **10 Premium Credits** - Advanced models
+- ✅ **2 Super Premium Credits** - Top-tier models
+- ✅ **All Core Features** - Full functionality
+- ✅ **Monthly Reset** - Credits refresh every month
+
+</td>
+<td width="50%">
+
+### **👑 Premium Tier**
+
+For power users and professionals
+
+- ⭐ **1200 Free Credits** - 15x more basic credits
+- ⭐ **600 Premium Credits** - 60x more advanced credits
+- ⭐ **50 Super Premium Credits** - 25x more top-tier credits
+- ⭐ **Priority Support** - Faster response times
+- ⭐ **$12/month or ₹999** - Affordable pricing
+
+</td>
+</tr>
+</table>
+
+**💡 Credit Usage:**
+- **Free Models** (1 credit): Gemini 2.5 Flash Lite, OpenAI 5 Mini
+- **Premium Models** (1 credit): GPT-5, Gemini 2.5 Pro, Claude 4, Grok 4
+- **Super Premium Models** (1 credit): DeepSeek R1, Qwen3 Max
+- **Image Generation Models** (10 credits): Gemini Nano Banana
+
+[**🚀 Upgrade to Premium**](https://cappychat.com/pricing) • [**📊 View All Models**](docs/Project.md)
+
+---
+
 ## 📄 **License**
 
 <div align="center">
@@ -1664,6 +1723,6 @@ For commercial licensing or permission requests, contact the copyright holders.
 
 ---
 
-<sub>© 2024 CappyChat (AtChat). All rights reserved. | Made with passion for the AI community</sub>
+<sub>© 2025 CappyChat. All rights reserved. | Version 4.0.0 | Made with ❤️ for the AI community</sub>
 
 </div>
