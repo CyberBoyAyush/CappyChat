@@ -13,7 +13,8 @@ interface LLMItem {
     | "huggingface"
     | "qwen"
     | "meta"
-    | "x-ai";
+    | "x-ai"
+    | "kimi";
   description: string;
 }
 

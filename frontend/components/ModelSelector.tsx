@@ -184,7 +184,8 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
     | "anthropic"
     | "x-ai"
     | "deepseek"
-    | "qwen";
+    | "qwen"
+    | "kimi";
   const [selectedProvider, setSelectedProvider] = useState<ProviderId>("all");
 
   // Definitions for provider UI chips - filtered based on mode
@@ -197,6 +198,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
         { id: "openai" as ProviderId, label: "OpenAI" },
         { id: "deepseek" as ProviderId, label: "DeepSeek" },
         { id: "qwen" as ProviderId, label: "Qwen" },
+        { id: "kimi" as ProviderId, label: "Kimi" },
       ];
 
       // Filter providers based on current mode
