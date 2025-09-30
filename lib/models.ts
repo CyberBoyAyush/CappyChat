@@ -62,12 +62,12 @@ export const MODEL_CONFIGS = {
     displayName: 'Gemini 2.5 Flash (New)',
     iconType: 'google',
     company: 'Google',
-    isPremium: false,
+    isPremium: true,
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: true,
     isFast: true,
-    description: 'Fast and efficient model from Google',
+    description: 'Fast and efficient model from Google (New Flash Model)',
   },
   'Gemini 2.5 Flash Lite': {
     modelId: 'google/gemini-2.5-flash-lite',
@@ -292,7 +292,7 @@ export const MODEL_CONFIGS = {
     description: 'Last Gen model from XAI with advanced reasoning and coding capabilities.',
   },
   'Grok 4 Fast': {
-    modelId: 'x-ai/grok-4-fast',
+    modelId: 'x-ai/grok-4-fast:free',
     provider: 'openrouter',
     displayName: 'Grok 4 Fast',
     iconType: 'x-ai',
