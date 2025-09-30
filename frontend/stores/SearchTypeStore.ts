@@ -2,14 +2,14 @@
  * Search Type Store
  *
  * Used in: frontend/components/ChatInputField.tsx
- * Purpose: Manages search type selection between Web Search and Reddit Search.
- * Integrates with Tavily API for both general web search and Reddit-specific searches.
+ * Purpose: Manages search type selection between Web Search, Reddit Search, and Study Mode.
+ * Integrates with Tavily API for web search, Reddit-specific searches, and educational study mode.
  */
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type SearchType = "chat" | "web" | "reddit";
+export type SearchType = "chat" | "web" | "reddit" | "study";
 
 export interface SearchTypeConfig {
   id: SearchType;
@@ -40,6 +40,13 @@ export const SEARCH_TYPE_CONFIGS: Record<SearchType, SearchTypeConfig> = {
     description: "Search Reddit communities and discussions",
     icon: "FaRedditAlien",
     color: "text-black dark:text-white",
+  },
+  study: {
+    id: "study",
+    name: "Study Mode",
+    description: "Interactive learning with web-enhanced AI tutoring",
+    icon: "GraduationCap",
+    color: "text-purple-500",
   },
 };
 

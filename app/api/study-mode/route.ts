@@ -1,0 +1,565 @@
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { streamText, smoothStream } from "ai";
+import { getModelConfig, AIModel } from "@/lib/models";
+import {
+  getConversationStyleConfig,
+  ConversationStyle,
+  DEFAULT_CONVERSATION_STYLE,
+} from "@/lib/conversationStyles";
+import { NextRequest, NextResponse } from "next/server";
+import { canUserUseModel, consumeCredits } from "@/lib/tierSystem";
+import { tavily } from "@tavily/core";
+import { devLog, devWarn, devError, prodError } from "@/lib/logger";
+
+export const maxDuration = 60;
+
+// GET endpoint for prefetching images
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const q = searchParams.get("q");
+    const userTavilyApiKey = searchParams.get("userTavilyApiKey") || undefined;
+
+    if (!q || q.trim().length === 0) {
+      return NextResponse.json({ images: [] }, { status: 200 });
+    }
+
+    const tavilyApiKey = userTavilyApiKey || process.env.TAVILY_API_KEY;
+    if (!tavilyApiKey) {
+      return NextResponse.json({ images: [] }, { status: 200 });
+    }
+
+    const tvly = tavily({ apiKey: tavilyApiKey });
+
+    // Study mode: 5 results max for focused learning
+    const tavilyResponse: any = await tvly.search(q, {
+      search_depth: "basic",
+      max_results: 5,
+      include_answer: false,
+      include_raw_content: false,
+      include_images: true,
+    });
+
+    let imageUrls: string[] = [];
+    try {
+      const rawImages = tavilyResponse?.images || [];
+      imageUrls = (
+        Array.from(
+          new Set(
+            rawImages
+              .map((img: any) => (typeof img === "string" ? img : img?.url))
+              .filter(
+                (u: any) => typeof u === "string" && /^https?:\/\//.test(u)
+              )
+          )
+        ) as string[]
+      ).slice(0, 15);
+    } catch {
+      imageUrls = [];
+    }
+
+    return NextResponse.json({ images: imageUrls }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ images: [] }, { status: 200 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const {
+      messages,
+      conversationStyle,
+      userApiKey,
+      userTavilyApiKey,
+      model,
+      userId,
+      isGuest,
+    } = body;
+
+    // Validate required fields
+    if (!messages || !Array.isArray(messages)) {
+      return new Response(
+        JSON.stringify({ error: "Messages array is required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Use the provided model or default to Gemini 2.5 Flash Lite
+    const selectedModel = model || "Gemini 2.5 Flash Lite";
+    const modelConfig = getModelConfig(selectedModel);
+
+    if (!modelConfig) {
+      return new Response(
+        JSON.stringify({ error: "Selected model not available" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Guest users cannot use study mode - block access
+    if (isGuest) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Study Mode is not available for guest users. Please sign up to use this feature.",
+          code: "GUEST_STUDY_MODE_RESTRICTED",
+        }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Check if user can use this model (tier validation)
+    const usingBYOK = !!userApiKey;
+
+    const tierValidation = await canUserUseModel(
+      selectedModel as AIModel,
+      usingBYOK,
+      userId,
+      isGuest
+    );
+
+    if (!tierValidation.canUseModel) {
+      return new Response(
+        JSON.stringify({
+          error: tierValidation.message || "Model access denied",
+          code: "TIER_LIMIT_EXCEEDED",
+        }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Extract search query from the last user message
+    const lastUserMessage = messages
+      .filter((msg: any) => msg.role === "user")
+      .pop();
+    if (!lastUserMessage) {
+      return new Response(
+        JSON.stringify({ error: "No user message found for search" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const searchQuery = lastUserMessage.content;
+    devLog(`📚 Study Mode: Extracted search query: "${searchQuery}"`);
+
+    // Use user's Tavily API key if provided, otherwise fall back to system key
+    const tavilyApiKey = userTavilyApiKey || process.env.TAVILY_API_KEY;
+    const usingUserTavilyKey = !!userTavilyApiKey;
+
+    devLog(
+      `📚 Tavily API key source: ${usingUserTavilyKey ? "User BYOK" : "System"}`
+    );
+
+    if (!tavilyApiKey) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Tavily API key not configured. Please add your Tavily API key in Settings → Application or configure TAVILY_API_KEY environment variable.",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Perform Tavily search with timeout protection
+    let searchResults;
+    let imageUrls: string[] = [];
+
+    try {
+      const tvly = tavily({ apiKey: tavilyApiKey });
+      devLog(`📚 Performing Tavily search for study mode: "${searchQuery}"`);
+
+      // Add timeout wrapper to prevent hanging on Tavily search
+      const searchTimeout = new Promise<never>(
+        (_, reject) =>
+          setTimeout(() => reject(new Error("Tavily search timeout")), 15000)
+      );
+
+      // Study mode: limit to 5 results for focused learning
+      const searchPromise = tvly.search(searchQuery, {
+        search_depth: "basic",
+        max_results: 5,
+        include_answer: false,
+        include_raw_content: false,
+        include_images: true,
+      });
+
+      const tavilyResponse = await Promise.race([searchPromise, searchTimeout]);
+
+      // Extract image URLs from Tavily response
+      try {
+        const rawImages = (tavilyResponse as any)?.images || [];
+        imageUrls = (
+          Array.from(
+            new Set(
+              rawImages
+                .map((img: any) => (typeof img === "string" ? img : img?.url))
+                .filter(
+                  (u: any) => typeof u === "string" && /^https?:\/\//.test(u)
+                )
+            )
+          ) as string[]
+        ).slice(0, 15);
+        devLog(`🖼️ Study Mode: Images extracted: ${imageUrls.length}`);
+      } catch (e) {
+        devWarn("Failed to parse Tavily images array", e);
+        imageUrls = [];
+      }
+
+      searchResults = tavilyResponse.results || [];
+      devLog(
+        `✅ Study Mode: Tavily search completed. Found ${searchResults.length} results`
+      );
+    } catch (error) {
+      prodError("Study Mode: Tavily search error", error, "StudyModeAPI");
+
+      let errorMessage = "Study Mode search failed. Please try again later.";
+      if (error instanceof Error && error.message.includes("timeout")) {
+        errorMessage =
+          "Study Mode search timed out. Please try again with a more specific query.";
+      }
+
+      return new Response(
+        JSON.stringify({
+          error: errorMessage,
+          details: error instanceof Error ? error.message : "Unknown error",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Consume credits for the LLM model with timeout protection
+    try {
+      const creditTimeout = new Promise<boolean>(
+        (_, reject) =>
+          setTimeout(
+            () => reject(new Error("Credit consumption timeout")),
+            10000
+          )
+      );
+
+      const creditConsumption = consumeCredits(
+        selectedModel as AIModel,
+        usingBYOK,
+        userId,
+        isGuest
+      );
+
+      const creditsConsumed = await Promise.race([
+        creditConsumption,
+        creditTimeout,
+      ]);
+
+      if (!creditsConsumed && !usingBYOK) {
+        return new Response(
+          JSON.stringify({
+            error: "Insufficient credits for Study Mode",
+            code: "INSUFFICIENT_CREDITS",
+          }),
+          {
+            status: 403,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+    } catch (error) {
+      devError("Failed to consume credits:", error);
+
+      if (error instanceof Error && error.message.includes("timeout")) {
+        devWarn("Credit consumption timed out, continuing with Study Mode...");
+      } else {
+        return new Response(
+          JSON.stringify({
+            error: "Failed to process request. Please try again.",
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+    }
+
+    devLog(
+      `📚 Study Mode credits consumed for user ${userId} using model ${selectedModel}`
+    );
+
+    // Use user's API key if provided, otherwise fall back to system key
+    const apiKey = userApiKey || process.env.OPENROUTER_API_KEY;
+
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "OpenRouter API key not configured. Please add your API key in Settings → Application.",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Create OpenRouter client
+    const openrouter = createOpenRouter({
+      apiKey,
+      headers: {
+        "HTTP-Referer": "https://cappychat.com/",
+        "X-Title": "CappyChat - AI Chat Application",
+        "User-Agent": "CappyChat/1.0.0",
+      },
+    });
+    const aiModel = openrouter(modelConfig.modelId);
+
+    // Get conversation style configuration
+    const styleConfig = getConversationStyleConfig(
+      (conversationStyle as ConversationStyle) || DEFAULT_CONVERSATION_STYLE
+    );
+
+    // Format search results for the LLM
+    const searchContext =
+      searchResults.length > 0
+        ? searchResults
+            .map(
+              (result: any, index: number) =>
+                `[${index + 1}] ${result.title}\nURL: ${result.url}\nContent: ${
+                  result.content
+                }\n`
+            )
+            .join("\n")
+        : "No search results found.";
+
+    // Extract URLs for citation purposes
+    const searchUrls = searchResults.map((result: any) => result.url);
+
+    devLog("🔗 Study Mode: Search URLs for citations:", searchUrls);
+
+    const result = streamText({
+      model: aiModel,
+      messages,
+      onError: (error) => {
+        devLog("error", error);
+      },
+      onFinish: (result) => {
+        devLog(
+          "📚 Study Mode response finished. Text length:",
+          result.text.length
+        );
+      },
+      system: `
+      ${styleConfig.systemPrompt}
+
+      You are CappyChat in STUDY MODE - an expert AI tutor designed to help students learn effectively and retain knowledge.
+      You have access to real-time web search results to provide accurate, up-to-date educational content.
+
+      SEARCH RESULTS FOR: "${searchQuery}"
+      ${searchContext}
+
+      ═══════════════════════════════════════════════════════════════════════════
+      YOUR ROLE AS AN EXPERT EDUCATIONAL TUTOR
+      ═══════════════════════════════════════════════════════════════════════════
+
+      You are a master educator who:
+      ✓ Synthesizes web search results with deep subject knowledge
+      ✓ Adapts explanations to different learning styles
+      ✓ Uses proven pedagogical techniques for maximum retention
+      ✓ Makes complex topics accessible and engaging
+      ✓ Provides practical study strategies and memory aids
+
+      ═══════════════════════════════════════════════════════════════════════════
+      COMPREHENSIVE TEACHING FRAMEWORK
+      ═══════════════════════════════════════════════════════════════════════════
+
+      📚 **1. STRUCTURED EXPLANATION**
+      - Start with a clear, concise definition or overview
+      - Explain WHY this topic matters (real-world relevance)
+      - Break down into logical, digestible sections
+      - Build from fundamentals to advanced concepts progressively
+      - Use clear headings and organization
+
+      🎯 **2. MULTIPLE LEARNING STYLES**
+      Support different learners by including:
+      - **Visual**: Describe diagrams, charts, or visual patterns
+      - **Verbal**: Use clear explanations and definitions
+      - **Practical**: Provide hands-on examples and applications
+      - **Logical**: Show step-by-step reasoning and connections
+
+      💡 **3. POWERFUL EXAMPLES & ANALOGIES**
+      - Provide 2-3 concrete, relatable examples
+      - Use analogies that connect to everyday experiences
+      - Include real-world applications and case studies
+      - Show both simple and complex examples
+      - Reference examples from the search results when available
+
+      🧠 **4. MEMORY TECHNIQUES & STUDY AIDS**
+      Help students remember by providing:
+      - **Mnemonics**: Create memorable acronyms or phrases
+      - **Chunking**: Break information into manageable pieces
+      - **Patterns**: Highlight patterns and relationships
+      - **Key Points**: Summarize essential takeaways in bullet points
+      - **Visual Cues**: Describe mental images or memory palaces
+
+      ⚠️ **5. COMMON MISTAKES & MISCONCEPTIONS**
+      - Identify typical errors students make
+      - Explain WHY these misconceptions occur
+      - Provide clear corrections with explanations
+      - Offer tips to avoid these pitfalls
+
+      🔢 **6. STEP-BY-STEP PROBLEM SOLVING**
+      When applicable:
+      - Show worked examples with detailed steps
+      - Explain the reasoning behind each step
+      - Provide practice problems at different difficulty levels
+      - Include tips for approaching similar problems
+
+      🔗 **7. CONCEPT CONNECTIONS**
+      - Link to prerequisite knowledge
+      - Show how this connects to related topics
+      - Explain broader implications and applications
+      - Suggest logical next topics to study
+
+      ❓ **8. ACTIVE LEARNING QUESTIONS**
+      Throughout your response:
+      - Ask thought-provoking questions to check understanding
+      - Encourage critical thinking and deeper analysis
+      - Suggest self-testing questions for practice
+      - Provide questions at different cognitive levels (recall, application, analysis)
+
+      📖 **9. STUDY STRATEGIES**
+      Recommend effective study techniques:
+      - Active recall methods
+      - Spaced repetition schedules
+      - Practice test strategies
+      - Note-taking approaches
+      - Review and consolidation tips
+
+      🎓 **10. SUMMARY & NEXT STEPS**
+      End with:
+      - **Key Takeaways**: 3-5 bullet points of essential information
+      - **Quick Review**: One-sentence summary
+      - **Practice Suggestions**: Specific exercises or activities
+      - **Further Exploration**: Related topics to study next
+      - **Self-Assessment**: Questions to test their understanding
+
+      ═══════════════════════════════════════════════════════════════════════════
+      FORMATTING GUIDELINES
+      ═══════════════════════════════════════════════════════════════════════════
+
+      📐 **Mathematical Expressions** (use LaTeX):
+      - Inline math: $E = mc^2$ (wrapped in single $)
+      - Display math: $$\\frac{d}{dx}\\sin(x) = \\cos(x)$$ (wrapped in double $$, on its own line)
+      - Never nest delimiters or mix styles
+
+      📝 **Text Formatting**:
+      - Use **bold** for key terms and important concepts
+      - Use *italics* for emphasis
+      - Use bullet points and numbered lists for clarity
+      - Use emojis sparingly for visual organization (✓, ⚠️, 💡, etc.)
+      - Use clear section headings
+
+      🔗 **Citations**:
+      - Reference sources naturally in your explanation
+      - Include clickable URLs when citing information
+      - Cross-reference multiple sources for balanced perspectives
+      - Available sources: ${searchUrls.join(", ")}
+
+      ═══════════════════════════════════════════════════════════════════════════
+      EXAMPLE RESPONSE STRUCTURE
+      ═══════════════════════════════════════════════════════════════════════════
+
+      ## [Topic Name]
+
+      ### 📖 What is it?
+      [Clear definition and overview]
+
+      ### 🎯 Why does it matter?
+      [Real-world relevance and applications]
+
+      ### 🔍 Deep Dive
+      [Detailed explanation with subsections]
+
+      ### 💡 Examples
+      [2-3 concrete examples with explanations]
+
+      ### 🧠 Memory Aid
+      [Mnemonic, acronym, or memory technique]
+
+      ### ⚠️ Common Mistakes
+      [Typical errors and how to avoid them]
+
+      ### 🔢 Practice Problem (if applicable)
+      [Worked example with step-by-step solution]
+
+      ### 🔗 Connections
+      [How this relates to other concepts]
+
+      ### ✅ Key Takeaways
+      - [Essential point 1]
+      - [Essential point 2]
+      - [Essential point 3]
+
+      ### 🎓 Study Tips
+      [Specific strategies for mastering this topic]
+
+      ### 🚀 Next Steps
+      [Suggested topics to explore next]
+
+      ### ❓ Test Your Understanding
+      [2-3 questions for self-assessment]
+
+      ═══════════════════════════════════════════════════════════════════════════
+
+      CRITICAL REQUIREMENTS:
+      1. Synthesize information from search results with your knowledge
+      2. Make content engaging, clear, and student-friendly
+      3. Include practical study aids and memory techniques
+      4. Provide examples that students can relate to
+      5. End with actionable next steps and self-assessment questions
+
+      You MUST end your response with exactly these two lines:
+      "<!-- SEARCH_URLS: ${searchUrls.join("|")} -->"
+      "<!-- SEARCH_IMAGES: ${imageUrls.join("|")} -->"
+      These markers are required for proper citation and image preview functionality and will be hidden from the user.
+      `,
+      experimental_transform: [smoothStream({ chunking: "word" })],
+      abortSignal: req.signal,
+    });
+
+    return result.toDataStreamResponse({
+      sendReasoning: true,
+      getErrorMessage: (error) => {
+        return (error as { message: string }).message;
+      },
+    });
+  } catch (error) {
+    devLog("error", error);
+    return new NextResponse(
+      JSON.stringify({ error: "Internal Server Error" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+}
+

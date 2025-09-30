@@ -603,9 +603,9 @@ function PureInputField({
       // Store the user message in ref so it can be persisted in ChatInterface's onFinish callback
       pendingUserMessageRef.current = userMessage;
 
-      // Track if this message was sent with search enabled (web or reddit)
+      // Track if this message was sent with search enabled (web, reddit, or study)
       if (
-        (selectedSearchType === "web" || selectedSearchType === "reddit") &&
+        (selectedSearchType === "web" || selectedSearchType === "reddit" || selectedSearchType === "study") &&
         onWebSearchMessage
       ) {
         onWebSearchMessage(messageId, finalInput);
