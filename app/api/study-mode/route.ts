@@ -156,19 +156,7 @@ export async function POST(req: NextRequest) {
 
     // Build search query: combine user message with PDF/document content if present
     let searchQuery = lastUserMessage.content;
-
-    // Debug: Log the last user message structure
-    devLog(`📚 Study Mode: Last user message:`, JSON.stringify({
-      content: lastUserMessage.content,
-      hasAttachments: !!lastUserMessage.experimental_attachments,
-      attachmentCount: lastUserMessage.experimental_attachments?.length || 0,
-      attachments: lastUserMessage.experimental_attachments?.map((att: any) => ({
-        fileType: att.fileType,
-        hasTextContent: !!att.textContent,
-        textContentLength: att.textContent?.length || 0,
-        originalName: att.originalName
-      }))
-    }, null, 2));
+    let fullDocumentContent = ""; // Store full content for LLM
 
     // Check if last message has text/document attachments with content
     if (lastUserMessage.experimental_attachments && Array.isArray(lastUserMessage.experimental_attachments)) {
@@ -177,16 +165,57 @@ export async function POST(req: NextRequest) {
       );
 
       if (textAttachments.length > 0) {
-        // Combine user message with document content for search
-        const documentContent = textAttachments
+        // Get full document content
+        fullDocumentContent = textAttachments
           .map((att: any) => att.textContent)
           .join("\n\n");
-        searchQuery = `${lastUserMessage.content}\n\nDocument content:\n${documentContent}`;
-        devLog(`📚 Study Mode: Combined query with ${textAttachments.length} document(s), total length: ${searchQuery.length}`);
+
+        devLog(`📚 Study Mode: Found ${textAttachments.length} document(s) with ${fullDocumentContent.length} chars`);
+
+        // Use ai-text-generation endpoint to optimize search query for better images
+        try {
+          devLog(`📚 Study Mode: Generating optimized search query...`);
+
+          const summaryPrompt = `Create a concise search query (max 300 chars) for finding relevant images.
+
+User Question: ${lastUserMessage.content}
+
+Document: ${fullDocumentContent.substring(0, 2000)}
+
+Focus on: main topic, key visual concepts, important keywords.
+Return ONLY the search query.`;
+
+          const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/ai-text-generation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: summaryPrompt,
+              isQueryOptimization: true,
+              userApiKey,
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const optimizedQuery = data.text?.trim() || "";
+
+            if (optimizedQuery && optimizedQuery.length > 0) {
+              searchQuery = optimizedQuery;
+              devLog(`📚 Study Mode: Optimized query: "${searchQuery}"`);
+            } else {
+              searchQuery = `${lastUserMessage.content}\n\n${fullDocumentContent}`;
+            }
+          } else {
+            searchQuery = `${lastUserMessage.content}\n\n${fullDocumentContent}`;
+          }
+        } catch (error) {
+          devError(`📚 Study Mode: Query optimization error:`, error);
+          searchQuery = `${lastUserMessage.content}\n\n${fullDocumentContent}`;
+        }
       }
     }
 
-    devLog(`📚 Study Mode: Full search query length: ${searchQuery.length} chars`);
+    devLog(`📚 Study Mode: Final search query length: ${searchQuery.length} chars`);
 
     // Use user's Tavily API key if provided, otherwise fall back to system key
     const tavilyApiKey = userTavilyApiKey || process.env.TAVILY_API_KEY;

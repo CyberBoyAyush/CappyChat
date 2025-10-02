@@ -16,6 +16,7 @@ export async function POST(req: Request) {
     userQuestion,
     aiAnswer,
     suggestionCount,
+    isQueryOptimization,
   } = body;
 
   // AI text generation is completely free - no tier validation or credit consumption
@@ -45,8 +46,8 @@ export async function POST(req: Request) {
     },
   });
 
-  // Validate required fields (skip for suggestions)
-  if (!isEnhancement && !isSuggestions) {
+  // Validate required fields (skip for suggestions and query optimization)
+  if (!isEnhancement && !isSuggestions && !isQueryOptimization) {
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json(
         { error: "Prompt is required" },
@@ -55,8 +56,8 @@ export async function POST(req: Request) {
     }
   }
 
-  // For enhancement or suggestions, we don't need messageId and threadId
-  if (!isEnhancement && !isSuggestions) {
+  // For enhancement, suggestions, or query optimization, we don't need messageId and threadId
+  if (!isEnhancement && !isSuggestions && !isQueryOptimization) {
     if (!messageId || typeof messageId !== "string") {
       return NextResponse.json(
         { error: "Message ID is required" },
@@ -201,6 +202,17 @@ OUTPUT THE ENHANCED PROMPT ONLY. NO EXPLANATIONS. NO ANSWERS.`,
         .slice(0, count);
 
       return NextResponse.json({ suggestions, isSuggestions: true });
+    } else if (isQueryOptimization) {
+      // Query optimization for study mode image search
+      const { text } = await generateText({
+        model: openrouter("google/gemini-2.5-flash-lite"),
+        system: `You are a search query optimizer. Extract key topics and visual concepts from the document to create a focused search query for finding relevant images. Keep it under 300 characters. Return ONLY the search query, nothing else.`,
+        prompt,
+        maxTokens: 100,
+        temperature: 0.3,
+      });
+
+      return NextResponse.json({ text, isQueryOptimization: true });
     } else {
       // Title generation (existing functionality) - handles both isTitle=true and undefined
       const { text: title } = await generateText({
