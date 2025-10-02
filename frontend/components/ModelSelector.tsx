@@ -236,24 +236,22 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
 
   // Force image generation mode to use image generation models
   useEffect(() => {
-    if (isImageGenMode) {
-      const currentConfig = getModelConfig(selectedModel);
-      if (!currentConfig.isImageGeneration) {
-        console.log(
-          "[ModelSelector] Image generation mode detected, switching to Gemini Nano Banana"
-        );
-        setModel("Gemini Nano Banana");
-      }
-    } else {
-      const currentConfig = getModelConfig(selectedModel);
-      if (currentConfig.isImageGeneration) {
-        console.log(
-          "[ModelSelector] Not in image generation mode, switching to Gemini 2.5 Flash Lite"
-        );
-        setModel("Gemini 2.5 Flash Lite");
-      }
+    const currentConfig = getModelConfig(selectedModel);
+
+    // Only switch models if there's a mode mismatch
+    if (isImageGenMode && !currentConfig.isImageGeneration) {
+      console.log(
+        "[ModelSelector] Image generation mode detected, switching to Gemini Nano Banana"
+      );
+      setModel("Gemini Nano Banana");
+    } else if (!isImageGenMode && currentConfig.isImageGeneration) {
+      console.log(
+        "[ModelSelector] Not in image generation mode, switching to Gemini 2.5 Flash Lite"
+      );
+      setModel("Gemini 2.5 Flash Lite");
     }
-  }, [isImageGenMode, selectedModel, setModel]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isImageGenMode]); // Only respond to mode changes to prevent circular dependency
 
   // Reset provider filter when switching modes if current provider has no models in new mode
   useEffect(() => {
