@@ -364,137 +364,18 @@ export async function POST(req: NextRequest) {
     // Log search URLs for debugging
     devLog("🔗 Search URLs to be used for citations:", searchUrls);
 
-    // Collect text/document files from conversation history
-    const conversationFiles: Array<{
-      fileName: string;
-      fileType: string;
-      textContent: string;
-      messageRole: string;
-    }> = [];
+    // Process messages - web search does not support file attachments
+    const processedMessages = messages as Parameters<typeof streamText>[0]["messages"];
 
-    messages.forEach((message: Record<string, unknown>) => {
-      if (
-        message.experimental_attachments &&
-        Array.isArray(message.experimental_attachments)
-      ) {
-        message.experimental_attachments.forEach(
-          (attachment: Record<string, unknown>) => {
-            const fileType = attachment.fileType as string;
-            if (
-              (fileType === "text" || fileType === "document") &&
-              attachment.textContent
-            ) {
-              conversationFiles.push({
-                fileName: attachment.originalName as string,
-                fileType: fileType,
-                textContent: attachment.textContent as string,
-                messageRole: message.role as string,
-              });
-            }
-          }
-        );
-      }
-    });
-
-    devLog(
-      `📂 Web Search: Collected ${conversationFiles.length} files from conversation`
-    );
-
-    // Process messages to handle attachments (same as chat-messaging)
-    const processedMessages = messages.map(
-      (message: Record<string, unknown>) => {
-        if (
-          message.experimental_attachments &&
-          Array.isArray(message.experimental_attachments) &&
-          message.experimental_attachments.length > 0
-        ) {
-          // Separate text/document attachments from other attachments
-          const textAttachments: any[] = [];
-          const otherAttachments: any[] = [];
-
-          message.experimental_attachments.forEach(
-            (attachment: Record<string, unknown>) => {
-              const fileType = attachment.fileType as string;
-
-              if (fileType === "text" || fileType === "document") {
-                textAttachments.push(attachment);
-              } else {
-                otherAttachments.push(attachment);
-              }
-            }
-          );
-
-          // Build message content with text attachments included
-          let messageContent = message.content as string;
-
-          if (textAttachments.length > 0) {
-            const fileNames = textAttachments.map(
-              (attachment: Record<string, unknown>) => {
-                const fileName = attachment.originalName as string;
-                const fileType = attachment.fileType as string;
-                const fileTypeLabel =
-                  fileType === "text" ? "text file" : "document";
-                return `${fileTypeLabel} "${fileName}"`;
-              }
-            );
-
-            messageContent =
-              messageContent + `\n\n[User uploaded: ${fileNames.join(", ")}]`;
-          }
-
-          // Convert remaining attachments to AI SDK format (only non-text files)
-          const aiSdkAttachments = otherAttachments.map(
-            (attachment: Record<string, unknown>) => ({
-              name: (attachment.originalName || attachment.filename) as string,
-              contentType: (attachment.mimeType ||
-                attachment.contentType) as string,
-              url: attachment.url as string,
-            })
-          );
-
-          return {
-            ...message,
-            content: messageContent,
-            // Only pass non-text attachments to the AI model
-            experimental_attachments:
-              aiSdkAttachments.length > 0 ? aiSdkAttachments : undefined,
-          };
-        }
-        return message;
-      }
-    ) as Parameters<typeof streamText>[0]["messages"];
-
-    // Build system prompt with file context
-    let systemPrompt = `
+    // Build system prompt
+    const systemPrompt = `
       ${styleConfig.systemPrompt}
 
       You are CappyChat, an ai assistant that can answer questions and help with tasks.
       You have access to real-time web search capabilities through Tavily Search.
 
       SEARCH RESULTS FOR QUERY: "${searchQuery}"
-      ${searchContext}`;
-
-    // Add conversation file context if there are uploaded files
-    if (conversationFiles.length > 0) {
-      devLog(
-        `📁 Web Search: Adding ${conversationFiles.length} files to context`
-      );
-
-      systemPrompt += `\n\n--- UPLOADED FILES IN THIS CONVERSATION ---`;
-      systemPrompt += `\nThe user has uploaded the following files in this conversation:`;
-
-      conversationFiles.forEach((file, index) => {
-        const fileTypeLabel =
-          file.fileType === "text" ? "text file" : "document";
-        systemPrompt += `\n\n${index + 1}. ${fileTypeLabel}: "${file.fileName}"`;
-        systemPrompt += `\nContent:\n${file.textContent}`;
-      });
-
-      systemPrompt += `\n\nWhen the user refers to "this file", "the file", "uploaded file", or mentions a specific filename, they are referring to one of these uploaded files. You can directly reference and work with the content shown above.`;
-      systemPrompt += `\n--- END UPLOADED FILES ---\n`;
-    }
-
-    systemPrompt += `
+      ${searchContext}
 
       Instructions:
       - Use the search results above to provide accurate, up-to-date information from trusted sources

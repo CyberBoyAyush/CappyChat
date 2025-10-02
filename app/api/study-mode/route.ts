@@ -154,8 +154,39 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const searchQuery = lastUserMessage.content;
-    devLog(`📚 Study Mode: Extracted search query: "${searchQuery}"`);
+    // Build search query: combine user message with PDF/document content if present
+    let searchQuery = lastUserMessage.content;
+
+    // Debug: Log the last user message structure
+    devLog(`📚 Study Mode: Last user message:`, JSON.stringify({
+      content: lastUserMessage.content,
+      hasAttachments: !!lastUserMessage.experimental_attachments,
+      attachmentCount: lastUserMessage.experimental_attachments?.length || 0,
+      attachments: lastUserMessage.experimental_attachments?.map((att: any) => ({
+        fileType: att.fileType,
+        hasTextContent: !!att.textContent,
+        textContentLength: att.textContent?.length || 0,
+        originalName: att.originalName
+      }))
+    }, null, 2));
+
+    // Check if last message has text/document attachments with content
+    if (lastUserMessage.experimental_attachments && Array.isArray(lastUserMessage.experimental_attachments)) {
+      const textAttachments = lastUserMessage.experimental_attachments.filter(
+        (att: any) => (att.fileType === "text" || att.fileType === "document" || att.fileType === "pdf") && att.textContent
+      );
+
+      if (textAttachments.length > 0) {
+        // Combine user message with document content for search
+        const documentContent = textAttachments
+          .map((att: any) => att.textContent)
+          .join("\n\n");
+        searchQuery = `${lastUserMessage.content}\n\nDocument content:\n${documentContent}`;
+        devLog(`📚 Study Mode: Combined query with ${textAttachments.length} document(s), total length: ${searchQuery.length}`);
+      }
+    }
+
+    devLog(`📚 Study Mode: Full search query length: ${searchQuery.length} chars`);
 
     // Use user's Tavily API key if provided, otherwise fall back to system key
     const tavilyApiKey = userTavilyApiKey || process.env.TAVILY_API_KEY;
@@ -186,6 +217,10 @@ export async function POST(req: NextRequest) {
       const tvly = tavily({ apiKey: tavilyApiKey });
       devLog(`📚 Performing Tavily search for study mode: "${searchQuery}"`);
 
+      // Truncate query for Tavily (400 char limit) while keeping full query for LLM
+      const truncatedQuery = searchQuery.length > 400 ? searchQuery.substring(0, 400) : searchQuery;
+      devLog(`📚 Truncated query for Tavily: "${truncatedQuery}"`);
+
       // Add timeout wrapper to prevent hanging on Tavily search
       const searchTimeout = new Promise<never>(
         (_, reject) =>
@@ -193,7 +228,7 @@ export async function POST(req: NextRequest) {
       );
 
       // Study mode: limit to 5 results for focused learning
-      const searchPromise = tvly.search(searchQuery, {
+      const searchPromise = tvly.search(truncatedQuery, {
         search_depth: "basic",
         max_results: 5,
         include_answer: false,

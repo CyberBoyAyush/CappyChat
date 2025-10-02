@@ -103,9 +103,9 @@ export class CloudinaryService {
         type: 'upload', // Ensure it's an upload type
       });
 
-      // Extract text content for text/docx files
+      // Extract text content for text/docx/pdf files
       let textContent: string | undefined;
-      if (isText) {
+      if (isText || isPdf) {
         textContent = await this.extractTextContent(file);
       }
 
@@ -177,7 +177,7 @@ export class CloudinaryService {
   }
 
   /**
-   * Extract text content from text/docx files
+   * Extract text content from text/docx/pdf files
    */
   private static async extractTextContent(file: File): Promise<string> {
     try {
@@ -186,6 +186,14 @@ export class CloudinaryService {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         return buffer.toString('utf-8');
+      } else if (file.type === 'application/pdf') {
+        // For PDF files, use pdf-parse-fork to extract text
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        // @ts-ignore - pdf-parse-fork doesn't have types
+        const pdfParse = (await import('pdf-parse-fork')).default;
+        const data = await pdfParse(buffer);
+        return data.text || '';
       } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
         // For .docx files, use mammoth to extract text
         const arrayBuffer = await file.arrayBuffer();
