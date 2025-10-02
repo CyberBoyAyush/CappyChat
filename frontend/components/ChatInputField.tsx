@@ -1452,8 +1452,8 @@ function PureInputField({
                         )}
                       />
                     </Button>
-                    {/* Hide file upload for Reddit search */}
-                    {selectedSearchType !== "reddit" && (
+                    {/* Hide file upload for Reddit and Web search */}
+                    {selectedSearchType !== "reddit" && selectedSearchType !== "web" && (
                       <FileUpload
                         onFilesUploaded={handleFilesUploaded}
                         onUploadStatusChange={handleUploadStatusChange}

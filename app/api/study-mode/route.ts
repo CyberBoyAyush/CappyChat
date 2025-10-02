@@ -154,8 +154,68 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const searchQuery = lastUserMessage.content;
-    devLog(`📚 Study Mode: Extracted search query: "${searchQuery}"`);
+    // Build search query: combine user message with PDF/document content if present
+    let searchQuery = lastUserMessage.content;
+    let fullDocumentContent = ""; // Store full content for LLM
+
+    // Check if last message has text/document attachments with content
+    if (lastUserMessage.experimental_attachments && Array.isArray(lastUserMessage.experimental_attachments)) {
+      const textAttachments = lastUserMessage.experimental_attachments.filter(
+        (att: any) => (att.fileType === "text" || att.fileType === "document" || att.fileType === "pdf") && att.textContent
+      );
+
+      if (textAttachments.length > 0) {
+        // Get full document content
+        fullDocumentContent = textAttachments
+          .map((att: any) => att.textContent)
+          .join("\n\n");
+
+        devLog(`📚 Study Mode: Found ${textAttachments.length} document(s) with ${fullDocumentContent.length} chars`);
+
+        // Use ai-text-generation endpoint to optimize search query for better images
+        try {
+          devLog(`📚 Study Mode: Generating optimized search query...`);
+
+          const summaryPrompt = `Create a concise search query (max 300 chars) for finding relevant images.
+
+User Question: ${lastUserMessage.content}
+
+Document: ${fullDocumentContent.substring(0, 2000)}
+
+Focus on: main topic, key visual concepts, important keywords.
+Return ONLY the search query.`;
+
+          const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/ai-text-generation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: summaryPrompt,
+              isQueryOptimization: true,
+              userApiKey,
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const optimizedQuery = data.text?.trim() || "";
+
+            if (optimizedQuery && optimizedQuery.length > 0) {
+              searchQuery = optimizedQuery;
+              devLog(`📚 Study Mode: Optimized query: "${searchQuery}"`);
+            } else {
+              searchQuery = `${lastUserMessage.content}\n\n${fullDocumentContent}`;
+            }
+          } else {
+            searchQuery = `${lastUserMessage.content}\n\n${fullDocumentContent}`;
+          }
+        } catch (error) {
+          devError(`📚 Study Mode: Query optimization error:`, error);
+          searchQuery = `${lastUserMessage.content}\n\n${fullDocumentContent}`;
+        }
+      }
+    }
+
+    devLog(`📚 Study Mode: Final search query length: ${searchQuery.length} chars`);
 
     // Use user's Tavily API key if provided, otherwise fall back to system key
     const tavilyApiKey = userTavilyApiKey || process.env.TAVILY_API_KEY;
@@ -186,6 +246,10 @@ export async function POST(req: NextRequest) {
       const tvly = tavily({ apiKey: tavilyApiKey });
       devLog(`📚 Performing Tavily search for study mode: "${searchQuery}"`);
 
+      // Truncate query for Tavily (400 char limit) while keeping full query for LLM
+      const truncatedQuery = searchQuery.length > 400 ? searchQuery.substring(0, 400) : searchQuery;
+      devLog(`📚 Truncated query for Tavily: "${truncatedQuery}"`);
+
       // Add timeout wrapper to prevent hanging on Tavily search
       const searchTimeout = new Promise<never>(
         (_, reject) =>
@@ -193,7 +257,7 @@ export async function POST(req: NextRequest) {
       );
 
       // Study mode: limit to 5 results for focused learning
-      const searchPromise = tvly.search(searchQuery, {
+      const searchPromise = tvly.search(truncatedQuery, {
         search_depth: "basic",
         max_results: 5,
         include_answer: false,
