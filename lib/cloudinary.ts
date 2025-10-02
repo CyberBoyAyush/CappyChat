@@ -190,7 +190,7 @@ export class CloudinaryService {
         // For PDF files, use pdf-parse-fork to extract text
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        // @ts-ignore - pdf-parse-fork doesn't have types
+        // @ts-expect-error - pdf-parse-fork doesn't have types
         const pdfParse = (await import('pdf-parse-fork')).default;
         const data = await pdfParse(buffer);
         return data.text || '';
