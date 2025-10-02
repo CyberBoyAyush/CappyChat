@@ -354,26 +354,137 @@ export async function POST(req: NextRequest) {
 
     devLog("🔗 Study Mode: Search URLs for citations:", searchUrls);
 
-    const result = streamText({
-      model: aiModel,
-      messages,
-      onError: (error) => {
-        devLog("error", error);
-      },
-      onFinish: (result) => {
-        devLog(
-          "📚 Study Mode response finished. Text length:",
-          result.text.length
+    // Collect text/document files from conversation history
+    const conversationFiles: Array<{
+      fileName: string;
+      fileType: string;
+      textContent: string;
+      messageRole: string;
+    }> = [];
+
+    messages.forEach((message: Record<string, unknown>) => {
+      if (
+        message.experimental_attachments &&
+        Array.isArray(message.experimental_attachments)
+      ) {
+        message.experimental_attachments.forEach(
+          (attachment: Record<string, unknown>) => {
+            const fileType = attachment.fileType as string;
+            if (
+              (fileType === "text" || fileType === "document") &&
+              attachment.textContent
+            ) {
+              conversationFiles.push({
+                fileName: attachment.originalName as string,
+                fileType: fileType,
+                textContent: attachment.textContent as string,
+                messageRole: message.role as string,
+              });
+            }
+          }
         );
-      },
-      system: `
+      }
+    });
+
+    devLog(
+      `📂 Study Mode: Collected ${conversationFiles.length} files from conversation`
+    );
+
+    // Process messages to handle attachments (same as chat-messaging)
+    const processedMessages = messages.map(
+      (message: Record<string, unknown>) => {
+        if (
+          message.experimental_attachments &&
+          Array.isArray(message.experimental_attachments) &&
+          message.experimental_attachments.length > 0
+        ) {
+          // Separate text/document attachments from other attachments
+          const textAttachments: any[] = [];
+          const otherAttachments: any[] = [];
+
+          message.experimental_attachments.forEach(
+            (attachment: Record<string, unknown>) => {
+              const fileType = attachment.fileType as string;
+
+              if (fileType === "text" || fileType === "document") {
+                textAttachments.push(attachment);
+              } else {
+                otherAttachments.push(attachment);
+              }
+            }
+          );
+
+          // Build message content with text attachments included
+          let messageContent = message.content as string;
+
+          if (textAttachments.length > 0) {
+            const fileNames = textAttachments.map(
+              (attachment: Record<string, unknown>) => {
+                const fileName = attachment.originalName as string;
+                const fileType = attachment.fileType as string;
+                const fileTypeLabel =
+                  fileType === "text" ? "text file" : "document";
+                return `${fileTypeLabel} "${fileName}"`;
+              }
+            );
+
+            messageContent =
+              messageContent + `\n\n[User uploaded: ${fileNames.join(", ")}]`;
+          }
+
+          // Convert remaining attachments to AI SDK format (only non-text files)
+          const aiSdkAttachments = otherAttachments.map(
+            (attachment: Record<string, unknown>) => ({
+              name: (attachment.originalName || attachment.filename) as string,
+              contentType: (attachment.mimeType ||
+                attachment.contentType) as string,
+              url: attachment.url as string,
+            })
+          );
+
+          return {
+            ...message,
+            content: messageContent,
+            // Only pass non-text attachments to the AI model
+            experimental_attachments:
+              aiSdkAttachments.length > 0 ? aiSdkAttachments : undefined,
+          };
+        }
+        return message;
+      }
+    ) as Parameters<typeof streamText>[0]["messages"];
+
+    // Build system prompt with file context
+    let systemPrompt = `
       ${styleConfig.systemPrompt}
 
       You are CappyChat in STUDY MODE - an expert AI tutor designed to help students learn effectively and retain knowledge.
       You have access to real-time web search results to provide accurate, up-to-date educational content.
 
       SEARCH RESULTS FOR: "${searchQuery}"
-      ${searchContext}
+      ${searchContext}`;
+
+    // Add conversation file context if there are uploaded files
+    if (conversationFiles.length > 0) {
+      devLog(
+        `📁 Study Mode: Adding ${conversationFiles.length} files to context`
+      );
+
+      systemPrompt += `\n\n--- UPLOADED FILES IN THIS CONVERSATION ---`;
+      systemPrompt += `\nThe user has uploaded the following files in this conversation:`;
+
+      conversationFiles.forEach((file, index) => {
+        const fileTypeLabel =
+          file.fileType === "text" ? "text file" : "document";
+        systemPrompt += `\n\n${index + 1}. ${fileTypeLabel}: "${file.fileName}"`;
+        systemPrompt += `\nContent:\n${file.textContent}`;
+      });
+
+      systemPrompt += `\n\nWhen the user refers to "this file", "the file", "uploaded file", or mentions a specific filename, they are referring to one of these uploaded files. You can directly reference and work with the content shown above.`;
+      systemPrompt += `\n--- END UPLOADED FILES ---\n`;
+    }
+
+    systemPrompt += `
 
       ═══════════════════════════════════════════════════════════════════════════
       YOUR ROLE AS AN EXPERT EDUCATIONAL TUTOR
@@ -540,7 +651,21 @@ export async function POST(req: NextRequest) {
       "<!-- SEARCH_URLS: ${searchUrls.join("|")} -->"
       "<!-- SEARCH_IMAGES: ${imageUrls.join("|")} -->"
       These markers are required for proper citation and image preview functionality and will be hidden from the user.
-      `,
+      `;
+
+    const result = streamText({
+      model: aiModel,
+      messages: processedMessages,
+      onError: (error) => {
+        devLog("error", error);
+      },
+      onFinish: (result) => {
+        devLog(
+          "📚 Study Mode response finished. Text length:",
+          result.text.length
+        );
+      },
+      system: systemPrompt,
       experimental_transform: [smoothStream({ chunking: "word" })],
       abortSignal: req.signal,
     });
