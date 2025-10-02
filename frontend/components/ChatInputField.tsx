@@ -207,10 +207,14 @@ function PureInputField({
   // Sync isImageGenMode with selected model on mount and when model changes
   useEffect(() => {
     const modelConfig = getModelConfig(selectedModel);
-    if (modelConfig.isImageGeneration && !isImageGenMode) {
-      setIsImageGenMode(true);
+    const shouldBeImageGenMode = !!modelConfig.isImageGeneration;
+
+    // Only update if there's a mismatch to avoid unnecessary re-renders
+    if (shouldBeImageGenMode !== isImageGenMode) {
+      setIsImageGenMode(shouldBeImageGenMode);
     }
-  }, [selectedModel, isImageGenMode]); // Run when selectedModel changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedModel]); // Only track selectedModel to prevent circular dependency
 
   // Aspect ratio state for image generation
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<AspectRatio>(
