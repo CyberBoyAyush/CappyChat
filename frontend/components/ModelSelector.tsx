@@ -6,7 +6,7 @@
  */
 
 import { ChevronDown, Check, Search, Lock, Key } from "lucide-react";
-import { memo, useCallback, useState, useMemo, useEffect } from "react";
+import { memo, useCallback, useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
@@ -224,6 +224,10 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
   const isLocked = isGuest;
   const usingBYOK = hasOpenRouterKey();
 
+  // Track previous mode to prevent infinite loops
+  const previousModeRef = useRef(isImageGenMode);
+  const isInitialMount = useRef(true);
+
   // Force guest users to use Gemini 2.5 Flash Lite
   useEffect(() => {
     if (isGuest && selectedModel !== "Gemini 2.5 Flash Lite") {
@@ -236,6 +240,18 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
 
   // Force image generation mode to use image generation models
   useEffect(() => {
+    // Skip on initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      previousModeRef.current = isImageGenMode;
+      return;
+    }
+
+    // Only run if mode actually changed
+    if (previousModeRef.current === isImageGenMode) {
+      return;
+    }
+
     const currentConfig = getModelConfig(selectedModel);
 
     // Only switch models if there's a mode mismatch
@@ -250,8 +266,10 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
       );
       setModel("Gemini 2.5 Flash Lite");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isImageGenMode]); // Only respond to mode changes to prevent circular dependency
+
+    // Update previous mode ref
+    previousModeRef.current = isImageGenMode;
+  }, [isImageGenMode, selectedModel, setModel]);
 
   // Reset provider filter when switching modes if current provider has no models in new mode
   useEffect(() => {
@@ -338,7 +356,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
 
   // Get filtered models based on provider and search
   const filteredModels = useMemo(() => {
-    let models = AI_MODELS.filter((model) => {
+    const models = AI_MODELS.filter((model) => {
       const config = getModelConfig(model);
 
       // Provider filter
