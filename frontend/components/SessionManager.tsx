@@ -311,7 +311,7 @@ const SessionManager: React.FC = () => {
                     </div>
                     {session.ip && (
                       <div className="mt-2 text-xs text-muted-foreground  py-1 rounded">
-                        <span className="font-mono bg-muted/50 p-1 px-1.5">
+                        <span className="font-mono bg-muted/50 break-all p-1 px-1.5">
                           IP: {session.ip}
                         </span>
                       </div>
@@ -322,13 +322,13 @@ const SessionManager: React.FC = () => {
                   <button
                     onClick={() => handleDeleteSession(session.$id)}
                     disabled={deletingSessionId === session.$id}
-                    className="flex-shrink-0 inline-flex items-center px-3 py-2 text-xs font-medium bg-destructive/10 text-destructive rounded-lg hover:bg-destructive/20 transition-all duration-200 disabled:opacity-50 border border-destructive/20 hover:border-destructive/30"
+                    className="flex-shrink-0 inline-flex items-center px-1.5 md:px-3 py-2 text-xs font-medium bg-destructive/10 text-destructive rounded-lg hover:bg-destructive/20 transition-all duration-200 disabled:opacity-50 border border-destructive/20 hover:border-destructive/30"
                   >
                     {deletingSessionId === session.$id ? (
                       <RefreshCw className="w-3 h-3 animate-spin" />
                     ) : (
                       <>
-                        <X className="w-3 h-3 mr-1.5" />
+                        <X className="w-3 h-3 mr-1" />
                         Sign Out
                       </>
                     )}

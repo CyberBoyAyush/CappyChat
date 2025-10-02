@@ -62,24 +62,27 @@ export function Error({ message, type = "error", className }: ErrorProps) {
     switch (type) {
       case "warning":
         return {
-          container: "border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20",
-          text: "text-amber-700 dark:text-amber-300",
+          container:
+            "border-[color:var(--toast-warning)]/30 bg-[color:var(--toast-warning)]/10",
+          text: "text-[color:var(--toast-warning)]",
           icon: AlertTriangle,
-          iconColor: "text-amber-600 dark:text-amber-400",
+          iconColor: "text-[color:var(--toast-warning)]",
         };
       case "info":
         return {
-          container: "border-blue-500/30 bg-blue-50/50 dark:bg-blue-950/20",
-          text: "text-blue-700 dark:text-blue-300",
+          container:
+            "border-[color:var(--toast-info)]/30 bg-[color:var(--toast-info)]/10",
+          text: "text-[color:var(--toast-info)]",
           icon: CircleAlert,
-          iconColor: "text-blue-600 dark:text-blue-400",
+          iconColor: "text-[color:var(--toast-info)]",
         };
       default:
         return {
-          container: "border-red-500/30 bg-red-50/50 dark:bg-red-950/20",
-          text: "text-red-700 dark:text-red-300",
+          container:
+            "border-[color:var(--toast-error)]/30 bg-[color:var(--toast-error)]/10",
+          text: "text-[color:var(--toast-error)]",
           icon: CircleAlert,
-          iconColor: "text-red-600 dark:text-red-400",
+          iconColor: "text-[color:var(--toast-error)]",
         };
     }
   };
@@ -90,7 +93,7 @@ export function Error({ message, type = "error", className }: ErrorProps) {
   return (
     <div
       className={cn(
-        "rounded-lg border px-3 py-2.5 sm:px-4 sm:py-3 flex items-start gap-2.5 sm:gap-3 transition-all duration-200",
+        "rounded-lg border px-3 py-2.5 sm:px-4 sm:py-3 mb-8 flex items-start gap-2.5 sm:gap-3 transition-all duration-200",
         styles.container,
         className
       )}
@@ -154,26 +157,25 @@ export function TierLimitError({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border border-primary/30",
-        "bg-gradient-to-br from-primary/10 via-primary/20 to-primary/30",
-        "dark:from-white/10 dark:via-primary/10 dark:to-primary/5",
-        "shadow-lg backdrop-blur-sm max-w-full",
+        "relative overflow-hidden rounded-xl border border-[color:var(--border)]",
+        "bg-gradient-to-br from-[color:var(--destructive)]/10 via-[color:var(--destructive)]/20 to-[color:var(--destructive)]/30",
+        "shadow-lg backdrop-blur-sm max-w-full mb-8",
         className
       )}
       role="alert"
       aria-live="assertive"
     >
       {/* Animated background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/5 via-primary/15 to-primary/5 dark:from-white/5 animate-pulse" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--muted)]/5 via-[color:var(--destructive)]/15 to-[color:var(--muted)]/5 animate-pulse" />
 
       {/* Content */}
       <div className="relative p-4 sm:p-6">
         <div className="flex items-start gap-3 sm:gap-4">
           {/* Icon with animated glow - smaller on mobile */}
           <div className="relative flex-shrink-0">
-            <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
-            <div className="relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30">
-              <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-primary" />
+            <div className="absolute inset-0 rounded-full bg-[color:var(--destructive)]/20 animate-ping" />
+            <div className="relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-[color:var(--destructive)]/20 to-[color:var(--destructive)]/10 border border-[color:var(--destructive)]/30">
+              <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-[color:var(--destructive)]" />
             </div>
           </div>
 
@@ -197,8 +199,8 @@ export function TierLimitError({
                     "mailto:hi@aysh.me?subject=Upgrade%20Plan%20in%20CappyChat";
                 }}
                 className={cn(
-                  "bg-primary",
-                  "text-white border-0 shadow-md hover:shadow-lg transition-all duration-200",
+                  "bg-[color:var(--primary)]",
+                  "text-[color:var(--primary-foreground)] border-0 shadow-md hover:shadow-lg transition-all duration-200",
                   "flex items-center justify-center gap-2 font-medium text-sm w-full sm:w-auto"
                 )}
                 size="sm"
@@ -211,7 +213,7 @@ export function TierLimitError({
               <Button
                 variant="outline"
                 size="sm"
-                className="border-red-500/30 text-red-700 dark:text-red-300 hover:bg-primary/10 dark:hover:bg-red-950/30 text-sm w-full sm:w-auto"
+                className="border-[color:var(--destructive)]/30 text-[color:var(--destructive)] hover:bg-[color:var(--destructive)]/10 text-sm w-full sm:w-auto"
                 onClick={() => window.location.reload()}
               >
                 Refresh Page
@@ -221,21 +223,21 @@ export function TierLimitError({
         </div>
 
         {/* Progress indicator - better mobile spacing */}
-        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-red-500/20">
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-[color:var(--destructive)]/20">
           <div className="flex items-center justify-between text-xs text-foreground/90 mb-2">
             <span className="font-medium">Monthly Usage</span>
             <span className="font-medium">100% Used</span>
           </div>
-          <div className="w-full h-1.5 sm:h-2 bg-red-100 dark:bg-red-950/50 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full animate-pulse" />
+          <div className="w-full h-1.5 sm:h-2 bg-[color:var(--destructive)]/10 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-[color:var(--destructive)] to-[color:var(--destructive)]/80 rounded-full animate-pulse" />
           </div>
         </div>
       </div>
 
       {/* Decorative elements - smaller on mobile */}
-      <div className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-primary rounded-full animate-pulse" />
+      <div className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[color:var(--destructive)] rounded-full animate-pulse" />
       <div
-        className="absolute bottom-1.5 sm:bottom-2 left-1.5 sm:left-2 w-1 h-1 bg-black dark:bg-white rounded-full animate-pulse"
+        className="absolute bottom-1.5 sm:bottom-2 left-1.5 sm:left-2 w-1 h-1 bg-[color:var(--foreground)] rounded-full animate-pulse"
         style={{ animationDelay: "0.5s" }}
       />
     </div>

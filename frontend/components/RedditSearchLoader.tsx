@@ -5,35 +5,37 @@
  * Displays a Reddit-themed search toolkit interface.
  */
 
-import React from 'react';
-import { Search, MessageSquare, Clock, Users } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { Search, MessageSquare, Clock, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface RedditSearchLoaderProps {
   searchQuery?: string;
   className?: string;
 }
 
-export function RedditSearchLoader({ 
-  searchQuery = "search query", 
-  className 
+export function RedditSearchLoader({
+  searchQuery = "search query",
+  className,
 }: RedditSearchLoaderProps) {
   return (
-    <div className={cn(
-      "flex flex-col gap-4 p-6 bg-card/40 border border-border/50 rounded-xl",
-      "animate-pulse",
-      className
-    )}>
+    <div
+      className={cn(
+        "flex flex-col gap-4 p-6 bg-card/40 border border-border/50 rounded-xl",
+        "animate-pulse",
+        className
+      )}
+    >
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-black/5 dark:bg-white/10 border border-black/10 dark:border-white/20">
-          <Search className="h-4 w-4 text-black dark:text-white animate-pulse" />
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-secondary/50 border border-border/50">
+          <Search className="h-4 w-4 text-foreground animate-pulse" />
         </div>
         <div className="flex-1">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-black dark:text-white" />
+            <MessageSquare className="h-4 w-4 text-foreground" />
             Reddit Search Toolkit
-            <div className="w-2 h-2 rounded-full bg-black dark:bg-white animate-ping" />
+            <div className="w-2 h-2 rounded-full bg-primary animate-ping" />
           </h3>
         </div>
       </div>
@@ -60,10 +62,12 @@ export function RedditSearchLoader({
       </div>
 
       {/* Reddit-themed info */}
-      <div className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3">
-        <div className="flex items-center gap-2 text-xs text-black dark:text-white">
+      <div className="bg-secondary/30 border border-border/50 rounded-lg p-3">
+        <div className="flex items-center gap-2 text-xs text-foreground">
           <MessageSquare className="h-3 w-3" />
-          <span className="font-medium">Searching across Reddit communities</span>
+          <span className="font-medium">
+            Searching across Reddit communities
+          </span>
         </div>
         <p className="text-xs text-muted-foreground mt-1">
           Finding discussions, user experiences, and community opinions
@@ -72,9 +76,18 @@ export function RedditSearchLoader({
 
       {/* Progress Dots */}
       <div className="flex items-center gap-1">
-        <div className="w-2 h-2 rounded-full bg-black dark:bg-white animate-bounce" style={{ animationDelay: '0ms' }} />
-        <div className="w-2 h-2 rounded-full bg-black dark:bg-white animate-bounce" style={{ animationDelay: '150ms' }} />
-        <div className="w-2 h-2 rounded-full bg-black dark:bg-white animate-bounce" style={{ animationDelay: '300ms' }} />
+        <div
+          className="w-2 h-2 rounded-full bg-primary animate-bounce"
+          style={{ animationDelay: "0ms" }}
+        />
+        <div
+          className="w-2 h-2 rounded-full bg-primary animate-bounce"
+          style={{ animationDelay: "150ms" }}
+        />
+        <div
+          className="w-2 h-2 rounded-full bg-primary animate-bounce"
+          style={{ animationDelay: "300ms" }}
+        />
       </div>
     </div>
   );
