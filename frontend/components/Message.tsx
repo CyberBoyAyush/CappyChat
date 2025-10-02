@@ -264,12 +264,14 @@ function PureMessage({
   const containerRef = useRef<HTMLDivElement>(null);
   const previewTouchStartX = useRef<number>(0);
   const previewTouchStartY = useRef<number>(0);
+  const [isSwipeInProgress, setIsSwipeInProgress] = useState<boolean>(false);
 
   // Touch handling for mobile swipe navigation
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
     touchStartX.current = touch.clientX;
     touchStartY.current = touch.clientY;
+    setIsSwipeInProgress(false);
   }, []);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent, imgs: string[]) => {
@@ -279,6 +281,8 @@ function PureMessage({
 
     // Only trigger swipe if horizontal movement is greater than vertical
     if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+      setIsSwipeInProgress(true);
+      e.preventDefault(); // Prevent click event when swiping
       if (deltaX > 0) {
         // Swipe right - go to previous image
         setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : imgs.length - 1));
@@ -664,37 +668,83 @@ function PureMessage({
 
                       {/* Mobile horizontal scroll layout */}
                       <div
-                        className="md:hidden relative"
+                        className="md:hidden relative min-h-[12rem]"
                         ref={containerRef}
                         onTouchStart={handleTouchStart}
                         onTouchEnd={(e) => handleTouchEnd(e, imgs)}
                       >
-                        <div className="overflow-hidden rounded-lg">
+                        <div
+                          className="overflow-hidden rounded-lg cursor-pointer"
+                          onClick={() => {
+                            if (!isSwipeInProgress) {
+                              setPreviewIdx(currentImageIndex);
+                            }
+                            // Reset swipe state after a short delay
+                            setTimeout(() => setIsSwipeInProgress(false), 100);
+                          }}
+                          title="Preview image"
+                        >
                           <div
                             className="flex transition-transform duration-300 ease-out"
                             style={{
                               transform: `translateX(-${
                                 currentImageIndex * 100
                               }%)`,
-                              width: `${imgs.length * 100}%`,
                             }}
                           >
                             {imgs.map((src, i) => (
-                              <button
+                              <div
                                 key={i}
-                                type="button"
-                                onClick={() => setPreviewIdx(i)}
-                                className="relative block focus:outline-none flex-shrink-0"
-                                style={{ width: `${100 / imgs.length}%` }}
-                                title="Preview image"
+                                className="relative flex-shrink-0 w-full bg-muted/20"
                               >
                                 <img
                                   src={src}
                                   alt=""
-                                  className="h-48 w-full object-cover border"
+                                  className="h-48 rounded-lg w-full object-cover border relative z-10"
                                   loading="lazy"
+                                  onError={(e) => {
+                                    console.error("Failed to load image:", src);
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.backgroundColor =
+                                      "var(--muted)";
+                                    target.style.display = "flex";
+                                    target.style.alignItems = "center";
+                                    target.style.justifyContent = "center";
+                                    target.style.color =
+                                      "var(--muted-foreground)";
+                                    target.alt = "Failed to load image";
+                                    // Hide loading placeholder
+                                    const placeholder =
+                                      target.parentElement?.querySelector(
+                                        ".loading-placeholder"
+                                      ) as HTMLElement;
+                                    if (placeholder) {
+                                      placeholder.style.display = "none";
+                                    }
+                                  }}
+                                  onLoad={(e) => {
+                                    console.log(
+                                      "Image loaded successfully:",
+                                      src
+                                    );
+                                    // Hide loading placeholder
+                                    const target = e.target as HTMLImageElement;
+                                    const placeholder =
+                                      target.parentElement?.querySelector(
+                                        ".loading-placeholder"
+                                      ) as HTMLElement;
+                                    if (placeholder) {
+                                      placeholder.style.display = "none";
+                                    }
+                                  }}
                                 />
-                              </button>
+                                {/* Loading placeholder */}
+                                <div className="loading-placeholder absolute inset-0 bg-muted/20 animate-pulse flex items-center justify-center">
+                                  <div className="text-xs text-muted-foreground">
+                                    Loading...
+                                  </div>
+                                </div>
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -704,24 +754,30 @@ function PureMessage({
                           <>
                             <button
                               type="button"
-                              className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-                              onClick={() =>
-                                setCurrentImageIndex((prev) =>
-                                  prev > 0 ? prev - 1 : imgs.length - 1
-                                )
-                              }
+                              className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors z-10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCurrentImageIndex((prev) => {
+                                  const newIndex =
+                                    prev > 0 ? prev - 1 : imgs.length - 1;
+                                  return newIndex;
+                                });
+                              }}
                               aria-label="Previous image"
                             >
                               <ChevronLeft className="h-4 w-4" />
                             </button>
                             <button
                               type="button"
-                              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-                              onClick={() =>
-                                setCurrentImageIndex((prev) =>
-                                  prev < imgs.length - 1 ? prev + 1 : 0
-                                )
-                              }
+                              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors z-10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCurrentImageIndex((prev) => {
+                                  const newIndex =
+                                    prev < imgs.length - 1 ? prev + 1 : 0;
+                                  return newIndex;
+                                });
+                              }}
                               aria-label="Next image"
                             >
                               <ChevronRight className="h-4 w-4" />
@@ -964,14 +1020,17 @@ function PureMessage({
                 })()}
 
                 {/* Suggested Questions - Hide for image generation responses */}
-                {!isStreaming && isLast && message.role === "assistant" && !(message as any).imgurl && (
-                  <SuggestedQuestions
-                    suggestions={(message as any).suggestedQuestions}
-                    loading={(message as any).suggestedQuestionsLoading}
-                    onClick={(q) => onSuggestedQuestionClick?.(q)}
-                    onGenerate={handleGenerateSuggestions}
-                  />
-                )}
+                {!isStreaming &&
+                  isLast &&
+                  message.role === "assistant" &&
+                  !(message as any).imgurl && (
+                    <SuggestedQuestions
+                      suggestions={(message as any).suggestedQuestions}
+                      loading={(message as any).suggestedQuestionsLoading}
+                      onClick={(q) => onSuggestedQuestionClick?.(q)}
+                      onGenerate={handleGenerateSuggestions}
+                    />
+                  )}
 
                 {/* Controls - placed after citations and suggestions */}
                 {!isStreaming && (
