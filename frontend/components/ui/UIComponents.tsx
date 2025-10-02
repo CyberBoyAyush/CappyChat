@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import CapybaraIcon from "./CapybaraIcon";
 
 // ===============================================
@@ -135,6 +136,8 @@ export function TierLimitError({
 
   className,
 }: TierLimitErrorProps) {
+  const navigate = useNavigate();
+
   // Parse error message if it contains JSON structure
   const parseErrorMessage = (msg: string): string => {
     try {
@@ -195,8 +198,7 @@ export function TierLimitError({
             <div className="flex flex-col gap-2 sm:flex-row sm:gap-3 pt-1 sm:pt-2">
               <Button
                 onClick={() => {
-                  window.location.href =
-                    "mailto:hi@aysh.me?subject=Upgrade%20Plan%20in%20CappyChat";
+                  navigate('/pricing');
                 }}
                 className={cn(
                   "bg-[color:var(--primary)]",
