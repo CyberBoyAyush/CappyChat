@@ -1452,22 +1452,25 @@ function PureInputField({
                         )}
                       />
                     </Button>
-                    <FileUpload
-                      onFilesUploaded={handleFilesUploaded}
-                      onUploadStatusChange={handleUploadStatusChange}
-                      disabled={
-                        status === "streaming" ||
-                        status === "submitted" ||
-                        (isImageGenMode &&
-                          !getModelConfig(selectedModel).image2imageGen)
-                      }
-                      acceptedFileTypes={
-                        isImageGenMode &&
-                        getModelConfig(selectedModel).image2imageGen
-                          ? "image/png,image/jpeg,image/jpg"
-                          : "image/*,.pdf,.txt,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                      }
-                    />
+                    {/* Hide file upload for Reddit search */}
+                    {selectedSearchType !== "reddit" && (
+                      <FileUpload
+                        onFilesUploaded={handleFilesUploaded}
+                        onUploadStatusChange={handleUploadStatusChange}
+                        disabled={
+                          status === "streaming" ||
+                          status === "submitted" ||
+                          (isImageGenMode &&
+                            !getModelConfig(selectedModel).image2imageGen)
+                        }
+                        acceptedFileTypes={
+                          isImageGenMode &&
+                          getModelConfig(selectedModel).image2imageGen
+                            ? "image/png,image/jpeg,image/jpg"
+                            : "image/*,.pdf,.txt,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        }
+                      />
+                    )}
                   </>
                 )}
                 {status === "submitted" || status === "streaming" ? (
