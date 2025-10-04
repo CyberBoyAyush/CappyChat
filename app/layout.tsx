@@ -114,7 +114,7 @@ export default function RootLayout({
 
         {/* Analytics Tracking Script */}
         <Script
-          src="https://stats.cappychat.com/script.js"
+          src="https://stats.ayush-sharma.in/script.js"
           data-website-id="07137fa5-ef9f-43f3-afca-6700de099829"
           strategy="afterInteractive"
         />
