@@ -5,7 +5,7 @@
  * This file contains the current version and detailed changelog entries.
  */
 
-export const CURRENT_VERSION = "4.0.0";
+export const CURRENT_VERSION = "4.0.5";
 
 export interface ChangelogEntry {
   version: string;
@@ -22,9 +22,88 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "4.0.5",
+    date: "2025-10-05",
+    isLatest: true,
+    features: [
+      {
+        type: "new",
+        title: "Intelligent Tool Calling System",
+        description:
+          "Implemented model-driven tool calling system where AI automatically selects appropriate tools (Web Search, Retrieval, Weather, Greeting) based on query intent, replacing pattern matching with intelligent decision making.",
+        icon: "Wrench",
+        color: "blue",
+      },
+      {
+        type: "new",
+        title: "Retrieval Cards with Website Metadata",
+        description:
+          "Beautiful website preview cards for retrieval tool results displaying favicon, banner image (og:image), title, AI-generated summary, and clickable source links for enhanced visual presentation.",
+        icon: "Globe",
+        color: "purple",
+      },
+      {
+        type: "new",
+        title: "Parallel AI Integration",
+        description:
+          "Integrated Parallel AI as default web search provider with multi-query search (3-5 queries) for better coverage and more comprehensive results, with Tavily as optional alternative.",
+        icon: "Search",
+        color: "green",
+      },
+      {
+        type: "new",
+        title: "Weather Tool Integration",
+        description:
+          "Added OpenWeather API integration for real-time weather data including temperature, humidity, wind speed, UV index, and atmospheric conditions for any location worldwide.",
+        icon: "CloudRain",
+        color: "blue",
+      },
+      {
+        type: "new",
+        title: "Exa API for Website Retrieval",
+        description:
+          "Integrated Exa API for live website crawling with AI-powered content extraction, providing comprehensive website information with metadata and summaries.",
+        icon: "Link2",
+        color: "orange",
+      },
+      {
+        type: "improvement",
+        title: "Enhanced Web Search Loader",
+        description:
+          "Improved loading indicators with heuristic tool detection showing which tool is being called (Web Search, Retrieval, Weather, Greeting) with appropriate icons and colors for better UX.",
+        icon: "Loader2",
+        color: "yellow",
+      },
+      {
+        type: "improvement",
+        title: "Image Persistence from Tool Results",
+        description:
+          "Web search images now come directly from tool results and persist in database, removing confusing prefetch behavior that showed images for non-image queries.",
+        icon: "Image",
+        color: "pink",
+      },
+      {
+        type: "improvement",
+        title: "Enhanced Citations System",
+        description:
+          "Improved citation system with HTML comment markers for metadata embedding, supporting both search URLs and retrieval card data for better source attribution.",
+        icon: "Quote",
+        color: "purple",
+      },
+      {
+        type: "improvement",
+        title: "Comprehensive Documentation",
+        description:
+          "Added detailed documentation for tool calling system (docs/toolCalling.md), updated Project.md with web search architecture, and enhanced README with tool system information.",
+        icon: "BookOpen",
+        color: "blue",
+      },
+    ],
+  },
+  {
     version: "4.0.0",
     date: "2025-09-29",
-    isLatest: true,
+    isLatest: false,
     features: [
       {
         type: "new",
