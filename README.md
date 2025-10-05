@@ -175,7 +175,7 @@ graph LR
 | -------------------- | ----------------------------------- | ----------------------------------------------- |
 | **Image Generation** | Gemini 2.5 Flash Image Preview      | Text-to-image, Context-aware generation         |
 | **Voice Input**      | OpenAI Whisper                      | Multi-language, Real-time transcription         |
-| **Web Search**       | Tavily API                          | Live search, Rich citations, Reddit integration |
+| **Web Search**       | Parallel AI + Tavily + Exa          | Intelligent tool calling, Rich citations, Website retrieval |
 | **File Upload**      | Cloudinary                          | Images, PDFs, Documents with AI analysis        |
 | **Collaboration**    | Real-time sync                      | Team workspaces, Member management              |
 
@@ -799,8 +799,14 @@ const LazyComponent = lazy(() =>
 
 #### Search & Information
 
-- `POST /api/web-search` - Web search with Tavily integration
+- `POST /api/web-search` - Intelligent web search with model-driven tool calling
+  - **Tool System**: AI model automatically selects appropriate tools
+  - **Web Search**: Parallel AI multi-query search with Tavily image support
+  - **Retrieval**: Exa live website crawling with AI-powered summaries
+  - **Weather**: OpenWeather API with comprehensive weather data
+  - **Greeting**: Lightweight responses for casual greetings
 - `POST /api/reddit-search` - Reddit-specific search functionality
+- `POST /api/study-mode` - Enhanced study mode with PDF parsing and web search
 
 #### File Management
 
