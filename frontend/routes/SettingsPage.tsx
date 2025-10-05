@@ -146,6 +146,11 @@ export default function SettingsPage() {
   const [tierInfo, setTierInfo] = useState<any>(null);
   const [loadingTier, setLoadingTier] = useState(true);
 
+  // Web tool preference state
+  const [webTool, setWebTool] = useState<'parallels' | 'tavily'>('parallels');
+  const [webToolSaving, setWebToolSaving] = useState(false);
+  const [webToolSaved, setWebToolSaved] = useState(false);
+
   // Session info for provider detection
   const [sessionInfo, setSessionInfo] = useState<any>(null);
 
@@ -208,6 +213,11 @@ export default function SettingsPage() {
         // Just get current tier info without any modifications
         const info = await getUserTierInfo();
         setTierInfo(info);
+
+        // Load web tool preference
+        if (info?.webTool) {
+          setWebTool(info.webTool);
+        }
       } catch (error) {
         console.error("Error loading tier info:", error);
       } finally {
@@ -450,6 +460,28 @@ export default function SettingsPage() {
     setTavilyApiKey(null);
     setTavilyKeyInput("");
     setTavilyKeyError("");
+  };
+
+  const handleSaveWebTool = async (newWebTool: 'parallels' | 'tavily') => {
+    try {
+      setWebToolSaving(true);
+
+      // Import updateUserPreferences dynamically
+      const { updateUserPreferences } = await import('@/lib/appwrite');
+      await updateUserPreferences({ webTool: newWebTool });
+
+      setWebTool(newWebTool);
+      setWebToolSaved(true);
+      setTimeout(() => setWebToolSaved(false), 3000);
+    } catch (error) {
+      console.error('Failed to save web tool preference:', error);
+      setNotification({
+        type: 'error',
+        message: 'Failed to save web search provider preference',
+      });
+    } finally {
+      setWebToolSaving(false);
+    }
   };
 
   const maskKey = (key: string) => {
@@ -1531,6 +1563,108 @@ export default function SettingsPage() {
                           </div>
                         </div>
                       )}
+                    </div>
+
+                    {/* Web Search Provider Selector Card */}
+                    <div className="p-6 border rounded-xl bg-card/60 shadow-sm">
+                      <div className="space-y-1 mb-4">
+                        <div className="flex items-center gap-2">
+                          <Settings className="h-5 w-5 text-primary" />
+                          <h3 className="text-lg font-medium">
+                            Web Search Provider
+                          </h3>
+                          <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
+                            Customization
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Choose your preferred web search provider for real-time information
+                        </p>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* Parallel AI Option */}
+                          <button
+                            onClick={() => handleSaveWebTool('parallels')}
+                            disabled={webToolSaving}
+                            className={`p-4 border-2 rounded-lg transition-all ${
+                              webTool === 'parallels'
+                                ? 'border-primary bg-primary/10'
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`p-2 rounded-full ${
+                                webTool === 'parallels' ? 'bg-primary/20' : 'bg-muted'
+                              }`}>
+                                <Sparkles className={`h-4 w-4 ${
+                                  webTool === 'parallels' ? 'text-primary' : 'text-muted-foreground'
+                                }`} />
+                              </div>
+                              <div className="flex-1 text-left">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium">Parallel AI</p>
+                                  {webTool === 'parallels' && (
+                                    <Check className="h-4 w-4 text-primary" />
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Advanced multi-query search with better results
+                                </p>
+                                <span className="inline-block mt-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                                  Default
+                                </span>
+                              </div>
+                            </div>
+                          </button>
+
+                          {/* Tavily Option */}
+                          <button
+                            onClick={() => handleSaveWebTool('tavily')}
+                            disabled={webToolSaving}
+                            className={`p-4 border-2 rounded-lg transition-all ${
+                              webTool === 'tavily'
+                                ? 'border-primary bg-primary/10'
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`p-2 rounded-full ${
+                                webTool === 'tavily' ? 'bg-primary/20' : 'bg-muted'
+                              }`}>
+                                <Server className={`h-4 w-4 ${
+                                  webTool === 'tavily' ? 'text-primary' : 'text-muted-foreground'
+                                }`} />
+                              </div>
+                              <div className="flex-1 text-left">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium">Tavily</p>
+                                  {webTool === 'tavily' && (
+                                    <Check className="h-4 w-4 text-primary" />
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Fast and reliable web search with images
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        </div>
+
+                        {webToolSaved && (
+                          <p className="text-sm text-accent flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4" />
+                            Web search provider updated successfully!
+                          </p>
+                        )}
+
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <p>✓ Parallel AI: Uses advanced multi-query search for comprehensive results</p>
+                          <p>✓ Tavily: Traditional search with built-in image support</p>
+                          <p>✓ Both providers deliver high-quality, real-time information</p>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Tavily API Key (for Web Search) Card */}

@@ -17,6 +17,7 @@ export async function POST(req: Request) {
     aiAnswer,
     suggestionCount,
     isQueryOptimization,
+    isMultiQuery, // For generating multiple search queries
   } = body;
 
   // AI text generation is completely free - no tier validation or credit consumption
@@ -46,8 +47,8 @@ export async function POST(req: Request) {
     },
   });
 
-  // Validate required fields (skip for suggestions and query optimization)
-  if (!isEnhancement && !isSuggestions && !isQueryOptimization) {
+  // Validate required fields (skip for suggestions, query optimization, and multi-query)
+  if (!isEnhancement && !isSuggestions && !isQueryOptimization && !isMultiQuery) {
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json(
         { error: "Prompt is required" },
@@ -56,8 +57,8 @@ export async function POST(req: Request) {
     }
   }
 
-  // For enhancement, suggestions, or query optimization, we don't need messageId and threadId
-  if (!isEnhancement && !isSuggestions && !isQueryOptimization) {
+  // For enhancement, suggestions, query optimization, or multi-query, we don't need messageId and threadId
+  if (!isEnhancement && !isSuggestions && !isQueryOptimization && !isMultiQuery) {
     if (!messageId || typeof messageId !== "string") {
       return NextResponse.json(
         { error: "Message ID is required" },
@@ -213,6 +214,66 @@ OUTPUT THE ENHANCED PROMPT ONLY. NO EXPLANATIONS. NO ANSWERS.`,
       });
 
       return NextResponse.json({ text, isQueryOptimization: true });
+    } else if (isMultiQuery) {
+      // Multi-query generation for web search
+      const { text } = await generateText({
+        model: openrouter("google/gemini-2.5-flash-lite"),
+        system: `You are a search query generator. Generate 3-5 diverse search queries based on the user's question.
+
+RULES:
+- Generate between 3 to 5 queries (minimum 3, maximum 5)
+- First query should be the main objective/question
+- Other queries should explore different aspects or related topics
+- Keep each query under 200 characters
+- Use the same language as the user's question
+- Include year or "latest" for time-sensitive queries
+- Return ONLY a JSON array of strings, nothing else
+
+Example:
+User: "What is the latest news about AI?"
+Output: ["Latest AI news 2025", "Recent artificial intelligence developments", "AI breakthroughs this year", "Current AI technology trends"]`,
+        prompt,
+        maxTokens: 300,
+        temperature: 0.4,
+      });
+
+      // Parse the queries
+      let queries: string[] = [];
+      const cleanItem = (s: string) => s.replace(/^["'\s]+|["'\s,]+$/g, "").trim();
+
+      // Remove code fences
+      const candidate = text.replace(/```[a-zA-Z]+/g, "```").replace(/```/g, "").trim();
+
+      // Try to extract JSON array
+      const start = candidate.indexOf("[");
+      const end = candidate.lastIndexOf("]");
+      if (start !== -1 && end !== -1 && end > start) {
+        const slice = candidate.slice(start, end + 1);
+        try {
+          const parsed = JSON.parse(slice);
+          if (Array.isArray(parsed)) {
+            queries = parsed
+              .filter((q: any) => typeof q === "string")
+              .map((q: string) => cleanItem(q))
+              .slice(0, 5); // Max 5 queries
+          }
+        } catch {}
+      }
+
+      // Fallback: extract quoted strings
+      if (queries.length === 0) {
+        const quoted = candidate.match(/"([^"]{1,200}?)"/g);
+        if (quoted && quoted.length > 0) {
+          queries = quoted.map((q) => cleanItem(q)).slice(0, 5);
+        }
+      }
+
+      // Ensure minimum 3 queries
+      if (queries.length < 3) {
+        queries = [prompt, prompt, prompt]; // Fallback to original prompt
+      }
+
+      return NextResponse.json({ queries, isMultiQuery: true });
     } else {
       // Title generation (existing functionality) - handles both isTitle=true and undefined
       const { text: title } = await generateText({
