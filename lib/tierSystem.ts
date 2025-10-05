@@ -51,6 +51,7 @@ export const getUserPreferencesServer = async (userId: string): Promise<UserTier
         premiumCredits: (prefs.premiumCredits as number) || 0,
         superPremiumCredits: (prefs.superPremiumCredits as number) || 0,
         lastResetDate: prefs.lastResetDate as string | undefined,
+        webTool: (prefs.webTool as 'parallels' | 'tavily') || 'parallels', // Default to parallels
       };
 
       console.log('[Server] Parsed tier preferences:', tierPrefs);
@@ -479,8 +480,13 @@ export const ensureUserTierInitialized = async (): Promise<void> => {
       console.log('[TierSystem] New user detected, initializing with free tier');
       await initializeUserTier('free');
     } else {
-      // Existing user - just log their current status, NO MODIFICATIONS
-      console.log(`[TierSystem] Existing user with ${preferences.tier} tier - no changes made`);
+      // Existing user - check if webTool is set, if not set it to parallels for backward compatibility
+      if (!preferences.webTool) {
+        console.log('[TierSystem] Existing user without webTool, setting to parallels for backward compatibility');
+        await updateUserPreferences({ webTool: 'parallels' });
+      } else {
+        console.log(`[TierSystem] Existing user with ${preferences.tier} tier - no changes made`);
+      }
     }
   } catch (error) {
     console.error('Error ensuring user tier initialized:', error);

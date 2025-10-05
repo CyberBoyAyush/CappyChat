@@ -10,7 +10,21 @@ CappyChat uses semantic versioning (SemVer) for version management:
 - **Minor version (X.Y.0)**: New features, backwards compatible
 - **Patch version (X.Y.Z)**: Bug fixes, small improvements
 
-## Current Version: 4.0.0
+## Current Version: 4.0.5
+
+### Version 4.0.5 - October 5, 2025
+
+**Intelligent Tool Calling & Enhanced Web Search:**
+
+- 🔧 **Intelligent Tool Calling System**: Implemented model-driven tool calling where AI automatically selects appropriate tools (Web Search, Retrieval, Weather, Greeting) based on query intent, replacing pattern matching with intelligent decision making using Vercel AI SDK
+- 🌐 **Retrieval Cards with Website Metadata**: Beautiful website preview cards for retrieval tool results displaying favicon, banner image (og:image), title, AI-generated summary, and clickable source links for enhanced visual presentation
+- 🔍 **Parallel AI Integration**: Integrated Parallel AI as default web search provider with multi-query search (3-5 queries) for better coverage and more comprehensive results, with Tavily as optional alternative
+- 🌧️ **Weather Tool Integration**: Added OpenWeather API integration for real-time weather data including temperature, humidity, wind speed, UV index, and atmospheric conditions for any location worldwide
+- 🔗 **Exa API for Website Retrieval**: Integrated Exa API for live website crawling with AI-powered content extraction, providing comprehensive website information with metadata and summaries
+- ⚡ **Enhanced Web Search Loader**: Improved loading indicators with heuristic tool detection showing which tool is being called with appropriate icons and colors for better user experience
+- 🖼️ **Image Persistence from Tool Results**: Web search images now come directly from tool results and persist in database, removing confusing prefetch behavior that showed images for non-image queries
+- 📝 **Enhanced Citations System**: Improved citation system with HTML comment markers for metadata embedding, supporting both search URLs and retrieval card data for better source attribution
+- 📚 **Comprehensive Documentation**: Added detailed documentation for tool calling system (docs/toolCalling.md), updated Project.md with web search architecture, and enhanced README with tool system information
 
 ### Version 4.0.0 - September 29, 2025
 

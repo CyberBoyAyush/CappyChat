@@ -1,5 +1,5 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { streamText, smoothStream } from "ai";
+import { streamText, smoothStream, tool } from "ai";
 import { getModelConfig, AIModel } from "@/lib/models";
 import {
   getConversationStyleConfig,
@@ -7,11 +7,64 @@ import {
   DEFAULT_CONVERSATION_STYLE,
 } from "@/lib/conversationStyles";
 import { NextRequest, NextResponse } from "next/server";
-import { canUserUseModel, consumeCredits } from "@/lib/tierSystem";
-import { tavily } from "@tavily/core";
+import { canUserUseModel, consumeCredits, getUserPreferencesServer } from "@/lib/tierSystem";
 import { devLog, devWarn, devError, prodError } from "@/lib/logger";
+import { z } from "zod";
+import { tavily } from "@tavily/core";
+import {
+  executeWebsearch,
+  executeRetrieval,
+  executeWeather,
+  executeGreeting
+} from "@/lib/tools/actions";
+
+/**
+ * Create user-specific tools with preferences baked in
+ * This allows the model to call tools without needing to know user preferences
+ */
+const createUserTools = (webTool: 'parallels' | 'tavily', tavilyApiKey?: string) => ({
+  websearch: tool({
+    description: 'Search the web for current information, news, articles, and general queries. Use this for broad web searches when the user asks about current events, news, or general information.',
+    parameters: z.object({
+      query: z.string().describe('The search query to look up on the web'),
+    }),
+    execute: async ({ query }) => {
+      return executeWebsearch({ query, webTool, tavilyApiKey });
+    },
+  }),
+  retrieval: tool({
+    description: 'Retrieve full content from a URL. Returns text, title, summary, and images. Use this when the user asks "what is [domain]", "tell me about [website]", or wants detailed information about a specific URL.',
+    parameters: z.object({
+      url: z.string().describe('The URL to retrieve content from (e.g., "https://github.com", "openai.com")'),
+      include_summary: z.boolean().optional().describe('Include AI-generated summary (default: true)'),
+      live_crawl: z.enum(['never', 'auto', 'preferred']).optional().describe('Crawl mode (default: preferred)'),
+    }),
+    execute: async ({ url, include_summary, live_crawl }) => {
+      return executeRetrieval({ url, include_summary, live_crawl });
+    },
+  }),
+  weather: tool({
+    description: 'Get current weather information for a specific location. Use this when the user asks about weather conditions, temperature, forecast, or climate in a specific place.',
+    parameters: z.object({
+      location: z.string().describe('The city name or location to get weather for (e.g., "New York", "London, UK", "Tokyo")'),
+    }),
+    execute: async ({ location }) => {
+      return executeWeather({ location });
+    },
+  }),
+  greeting: tool({
+    description: 'Respond to simple greetings like "hello", "hi", "hey", "good morning", etc. Use this ONLY for casual greetings that don\'t require web search or other tools.',
+    parameters: z.object({
+      greeting: z.string().describe('The greeting message from the user'),
+    }),
+    execute: async ({ greeting }) => {
+      return executeGreeting({ greeting });
+    },
+  }),
+});
 
 export const maxDuration = 60;
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -161,6 +214,18 @@ export async function POST(req: NextRequest) {
       `🔍 BYOK Status - OpenRouter: ${!!userApiKey}, Tavily: ${!!userTavilyApiKey}`
     );
 
+    // Get user's web tool preference (parallels or tavily)
+    let webTool: 'parallels' | 'tavily' = 'parallels'; // Default to parallels
+    if (userId && !isGuest) {
+      try {
+        const userPrefs = await getUserPreferencesServer(userId);
+        webTool = userPrefs?.webTool || 'parallels';
+        devLog(`🔍 User's web tool preference: ${webTool}`);
+      } catch (error) {
+        devWarn('Failed to get user preferences, using default (parallels):', error);
+      }
+    }
+
     // Use user's Tavily API key if provided, otherwise fall back to system key
     const tavilyApiKey = userTavilyApiKey || process.env.TAVILY_API_KEY;
     const usingUserTavilyKey = !!userTavilyApiKey;
@@ -170,11 +235,14 @@ export async function POST(req: NextRequest) {
     );
     devLog(`🔍 User Tavily key provided: ${!!userTavilyApiKey}`);
 
-    if (!tavilyApiKey) {
+    // Use user's API key if provided, otherwise fall back to system key
+    const apiKey = userApiKey || process.env.OPENROUTER_API_KEY;
+
+    if (!apiKey) {
       return new Response(
         JSON.stringify({
           error:
-            "Tavily API key not configured. Please add your Tavily API key in Settings → Application or configure TAVILY_API_KEY environment variable.",
+            "OpenRouter API key not configured. Please add your API key in Settings → Application.",
         }),
         {
           status: 500,
@@ -183,75 +251,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Perform Tavily search with timeout protection
-    let searchResults;
-    let imageUrls: string[] = [];
+    // Create OpenRouter client
+    const openrouter = createOpenRouter({
+      apiKey,
+      headers: {
+        "HTTP-Referer": "https://cappychat.com/",
+        "X-Title": "CappyChat - AI Chat Application",
+        "User-Agent": "CappyChat/1.0.0",
+      },
+    });
+    const aiModel = openrouter(modelConfig.modelId);
 
-    try {
-      const tvly = tavily({ apiKey: tavilyApiKey });
-      devLog(`🔍 Performing Tavily search for: "${searchQuery}"`);
+    // Get conversation style configuration
+    const styleConfig = getConversationStyleConfig(
+      (conversationStyle as ConversationStyle) || DEFAULT_CONVERSATION_STYLE
+    );
 
-      // Add timeout wrapper to prevent hanging on Tavily search
-      const searchTimeout = new Promise<never>(
-        (_, reject) =>
-          setTimeout(() => reject(new Error("Tavily search timeout")), 15000) // 15 second timeout
-      );
+    // Process messages - web search does not support file attachments
+    const processedMessages = messages as Parameters<typeof streamText>[0]["messages"];
 
-      const searchPromise = tvly.search(searchQuery, {
-        search_depth: "basic",
-        max_results: 15,
-        include_answer: false,
-        include_raw_content: false,
-        include_images: true,
-      });
+    // Create user-specific tools with preferences
+    const userTools = createUserTools(webTool as 'parallels' | 'tavily', tavilyApiKey);
 
-      const tavilyResponse = await Promise.race([searchPromise, searchTimeout]);
-
-      // Extract image URLs from Tavily response (top-level images array)
-      try {
-        const rawImages = (tavilyResponse as any)?.images || [];
-        imageUrls = (
-          Array.from(
-            new Set(
-              rawImages
-                .map((img: any) => (typeof img === "string" ? img : img?.url))
-                .filter(
-                  (u: any) => typeof u === "string" && /^https?:\/\//.test(u)
-                )
-            )
-          ) as string[]
-        ).slice(0, 15);
-        devLog(`🖼️ Tavily images extracted: ${imageUrls.length}`);
-      } catch (e) {
-        devWarn("Failed to parse Tavily images array", e);
-        imageUrls = [];
-      }
-
-      searchResults = tavilyResponse.results || [];
-      devLog(
-        `✅ Tavily search completed. Found ${searchResults.length} results`
-      );
-    } catch (error) {
-      prodError("Tavily search error", error, "WebSearchAPI");
-
-      // Provide more specific error messages
-      let errorMessage = "Web search failed. Please try again later.";
-      if (error instanceof Error && error.message.includes("timeout")) {
-        errorMessage =
-          "Web search timed out. Please try again with a more specific query.";
-      }
-
-      return new Response(
-        JSON.stringify({
-          error: errorMessage,
-          details: error instanceof Error ? error.message : "Unknown error",
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
+    devLog(`🤖 [tool-calling] Initiating AI-driven tool selection for query: "${searchQuery}"`);
 
     // Consume credits for the LLM model (not for search) with timeout protection
     // If user has their own Tavily key, they don't consume web search credits
@@ -313,122 +335,104 @@ export async function POST(req: NextRequest) {
       `🔍 Web search credits consumed for user ${userId} using model ${selectedModel}`
     );
 
-    // Use user's API key if provided, otherwise fall back to system key
-    const apiKey = userApiKey || process.env.OPENROUTER_API_KEY;
-
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "OpenRouter API key not configured. Please add your API key in Settings → Application.",
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Create OpenRouter client
-    const openrouter = createOpenRouter({
-      apiKey,
-      headers: {
-        "HTTP-Referer": "https://cappychat.com/",
-        "X-Title": "CappyChat - AI Chat Application",
-        "User-Agent": "CappyChat/1.0.0",
-      },
-    });
-    const aiModel = openrouter(modelConfig.modelId);
-
-    // Get conversation style configuration
-    const styleConfig = getConversationStyleConfig(
-      (conversationStyle as ConversationStyle) || DEFAULT_CONVERSATION_STYLE
-    );
-
-    // Format search results for the LLM
-    const searchContext =
-      searchResults.length > 0
-        ? searchResults
-            .map(
-              (result: any, index: number) =>
-                `[${index + 1}] ${result.title}\nURL: ${result.url}\nContent: ${
-                  result.content
-                }\n`
-            )
-            .join("\n")
-        : "No search results found.";
-
-    // Extract URLs for citation purposes
-    const searchUrls = searchResults.map((result: any) => result.url);
-
-    // Log search URLs for debugging
-    devLog("🔗 Search URLs to be used for citations:", searchUrls);
-
-    // Process messages - web search does not support file attachments
-    const processedMessages = messages as Parameters<typeof streamText>[0]["messages"];
-
-    // Build system prompt
+    // Build system prompt for model-driven tool calling
     const systemPrompt = `
       ${styleConfig.systemPrompt}
 
-      You are CappyChat, an ai assistant that can answer questions and help with tasks.
-      You have access to real-time web search capabilities through Tavily Search.
+      You are CappyChat, an AI assistant with access to multiple specialized tools for web search, weather information, website content retrieval, and greetings.
 
-      SEARCH RESULTS FOR QUERY: "${searchQuery}"
-      ${searchContext}
+      **Available Tools:**
+      - websearch: Search the web for current information, news, articles. Returns search results with URLs and image URLs.
+      - weather: Get current weather information for a location. Returns temperature, conditions, etc.
+      - retrieval: Retrieve full content from a specific URL/website using Exa crawl. Returns full text, summary, and metadata.
+      - greeting: Respond to simple greetings without external API calls.
 
-      Instructions:
-      - Use the search results above to provide accurate, up-to-date information from trusted sources
-      - Always cite your sources by including the URLs from the search results as clickable links
-      - Provide comprehensive, well-structured answers with proper citations and context
-      - Be helpful, accurate, and provide relevant information with detailed explanations
-      - Be respectful and polite in all interactions
-      - If the search results don't contain relevant information, acknowledge this and suggest alternative approaches
-      - When possible, cross-reference multiple sources to provide balanced perspectives
-      - Include relevant details, statistics, and examples from the search results
-      - IMPORTANT: End your response with these exact markers on separate lines:
-        "<!-- SEARCH_URLS: ${searchUrls.join("|")} -->"
-        "<!-- SEARCH_IMAGES: ${imageUrls.join("|")} -->"
+      **Instructions:**
+      1. Analyze the user's query and intelligently select the appropriate tool(s) to use
+      2. Call the tool(s) to gather information
+      3. Use the tool results to provide a comprehensive, well-structured answer
+      4. For websearch and retrieval results: ALWAYS cite sources inline using [Number](URL) format
+      5. For weather queries: Present information clearly with temperature, conditions, humidity, etc.
+      6. For greetings: Respond warmly and naturally
+      7. **CRITICAL**: If the websearch tool returns image URLs, you MUST include them at the end of your response in this exact format:
+         <!-- SEARCH_IMAGES: url1|url2|url3 -->
+         (Replace url1, url2, url3 with the actual image URLs from the tool results, separated by | pipes)
+      8. **CRITICAL**: If the retrieval tool returns data, you MUST include this metadata at the START of your response:
+         <!-- RETRIEVAL_CARD: {"url":"https://example.com","title":"Site Title","favicon":"https://example.com/favicon.ico","image":"https://example.com/og-image.jpg","summary":"Brief summary"} -->
+         (Use actual data from the retrieval tool results)
 
-      Always use LaTeX for mathematical expressions:
-      - Inline math must be wrapped in single dollar signs: $content$
-      - Display math must be wrapped in double dollar signs: $$content$$
-      - Display math should be placed on its own line, with nothing else on that line
-      - Do not nest math delimiters or mix styles
+      ### 🚨 CRITICAL CITATION RULES (for websearch and retrieval results) 🚨
 
-      Examples:
-      - Inline: The equation $E = mc^2$ shows mass-energy equivalence.
-      - Display:
-      $$\\frac{d}{dx}\\sin(x) = \\cos(x)$$
+      ⚠️ EVERY CITATION MUST BE A CLICKABLE NUMBERED LINK ⚠️
 
-      IMPORTANT: When referencing information from the search results, include the source URLs in your response.
-      Available source URLs: ${searchUrls.join(", ")}
+      📌 MANDATORY FORMAT: [1](Full URL), [2](Full URL), [3](Full URL)
 
-      CRITICAL: You MUST end your response with exactly these two lines:
-      "<!-- SEARCH_URLS: ${searchUrls.join("|")} -->"
-      "<!-- SEARCH_IMAGES: ${imageUrls.join("|")} -->"
-      These markers are required for proper citation and image preview functionality and will be hidden from the user.
+      ✅ USE NUMBERS AS LINK TEXT - THIS IS THE ONLY ALLOWED FORMAT!
+
+      RULES:
+      1. Use sequential numbers [1], [2], [3], etc. as the link text
+      2. Put the full URL in parentheses () immediately after the number
+      3. Place citations immediately after the fact they support
+      4. Use actual URLs from tool results
+      5. Start numbering from [1] for each response
+      6. Each citation must be clickable: [Number](URL)
+
+      ✅ CORRECT FORMAT:
+      "GitHub is a platform for version control [1](https://github.com)."
+
+      ❌ WRONG FORMAT:
+      ✗ "GitHub is a platform [1]."  ← MISSING (URL)!
+      ✗ "GitHub is a platform [GitHub]."  ← DON'T USE TITLES, USE NUMBERS!
+
+      ⚠️ ABSOLUTELY FORBIDDEN:
+      - Writing [Number] without (URL) immediately after
+      - Using descriptive titles instead of numbers
+      - Creating "References" or "Sources" sections at the end
+      - Using plain URLs without markdown format
+
+      💡 REMEMBER: The format is ALWAYS [Number](Full URL) - both parts together!
+
+      ⚠️ MANDATORY: Use '$' for ALL inline equations without exception
+      ⚠️ MANDATORY: Use '$$' for ALL block equations without exception
+      ⚠️ NEVER use '$' symbol for currency - Always use "USD", "EUR", etc.
+
+      ### RESPONSE GUIDELINES:
+      - Always respond with markdown format
+      - Use tool results to provide accurate, up-to-date information
+      - Cite sources inline using [Number](URL) format
+      - Provide comprehensive, well-structured answers
+      - If tool results don't contain relevant information, acknowledge this
+      - Include relevant details, statistics, and examples
       `;
 
     const result = streamText({
       model: aiModel,
       messages: processedMessages,
+      tools: userTools, // Add tools for model-driven tool calling
+      maxSteps: 5, // Allow up to 5 tool calls
       onError: (error) => {
         devLog("error", error);
       },
-      onFinish: (result) => {
+      onFinish: async (result) => {
         devLog(
           "🔍 Web search response finished. Text length:",
           result.text.length
         );
-        devLog("🔍 Checking if search URLs marker is present in response...");
-        const hasMarker = result.text.includes("<!-- SEARCH_URLS:");
-        devLog("🔍 Search URLs marker present:", hasMarker);
-        if (hasMarker) {
-          const markerMatch = result.text.match(/<!-- SEARCH_URLS: (.*?) -->/);
-          if (markerMatch) {
-            devLog("🔍 Extracted URLs from marker:", markerMatch[1].split("|"));
-          }
+
+        // Log tool usage
+        if (result.steps && result.steps.length > 0) {
+          const toolsUsed = result.steps
+            .flatMap(step => step.toolCalls?.map(tc => tc.toolName) || [])
+            .filter((v, i, a) => a.indexOf(v) === i); // unique
+          devLog(`🔧 Tools used: ${toolsUsed.join(', ')}`);
+        }
+
+        // Check for broken citations
+        const brokenCitationRegex = /\[([^\]]+)\](?!\()/g;
+        const brokenMatches = [...result.text.matchAll(brokenCitationRegex)];
+        if (brokenMatches.length > 0) {
+          devWarn(`⚠️ Found ${brokenMatches.length} broken citations (missing URLs):`,
+            brokenMatches.map(m => m[0]));
         }
       },
       system: systemPrompt,

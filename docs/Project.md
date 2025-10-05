@@ -17,22 +17,23 @@
    - Image-to-Image & Aspect Ratio Implementation Summary
    - Dimension Testing for Models
    - Aspect Ratio Persistence Fix
-9. Session Management & Authentication Improvements
-10. Real-Time Sync Optimization
-11. Automatic Data Refresh
-12. API Routes
-13. Frontend Components
-14. State Management
-15. Database Schema
-16. Authentication & Security
-17. File Management
-18. AI Integration
-19. Development Workflow
-20. Deployment
-21. Contributing
-22. Troubleshooting
-23. Recent Updates & New Features
-24. Additional Resources
+9. Web Search & Tool Calling System
+10. Session Management & Authentication Improvements
+11. Real-Time Sync Optimization
+12. Automatic Data Refresh
+13. API Routes
+14. Frontend Components
+15. State Management
+16. Database Schema
+17. Authentication & Security
+18. File Management
+19. AI Integration
+20. Development Workflow
+21. Deployment
+22. Contributing
+23. Troubleshooting
+24. Recent Updates & New Features
+25. Additional Resources
 
 ---
 
@@ -52,7 +53,12 @@ Welcome to the comprehensive documentation for CappyChat (also referred to as At
 - **Mobile‑First Design**: Fully responsive UI
 - **Project Management**: Organize chats into projects with custom prompts
 - **File Uploads**: Attach files; AI can analyze content
-- **Web Search**: Live search context with citations (Tavily)
+- **Web Search**: Intelligent tool calling system with Parallel AI, Tavily, and Exa
+  - **Model-Driven**: AI automatically selects appropriate tools
+  - **Web Search**: Multi-query search with image support
+  - **Retrieval**: Live website crawling with AI summaries
+  - **Weather**: Real-time weather data for any location
+  - **Citations**: Rich, clickable citations with source links
 - **Markdown & Code**: Rich Markdown, syntax highlight, math via KaTeX
 - **Guest Mode**: Try without an account
 - **Authentication**: Email/password + OAuth (Google, GitHub)
@@ -391,7 +397,182 @@ Benefits: No DB schema change; backward compatible; persistent and clean UI.
 
 ---
 
-## 9) Session Management & Authentication Improvements
+## 9) Web Search & Tool Calling System
+
+### Overview
+CappyChat features an intelligent, model-driven tool calling system where the AI automatically selects the most appropriate tool based on user queries. This replaces traditional pattern matching with AI-powered decision making.
+
+### Architecture
+
+```mermaid
+graph LR
+    A[User Query] --> B[AI Model]
+    B --> C{Analyze Query}
+    C -->|Web Info| D[Web Search Tool]
+    C -->|Website| E[Retrieval Tool]
+    C -->|Weather| F[Weather Tool]
+    C -->|Greeting| G[Greeting Tool]
+    D --> H[Format Response]
+    E --> H
+    F --> H
+    G --> H
+    H --> I[Stream to User]
+```
+
+### Available Tools
+
+#### 1. Web Search Tool
+- **Provider**: Parallel AI (default) + Tavily (images)
+- **Features**:
+  - Multi-query generation (3-5 queries for better coverage)
+  - Image search integration
+  - Rich citations with clickable links
+  - Up to 15 images per search
+- **Use Cases**: General queries, news, current events, articles
+
+#### 2. Retrieval Tool
+- **Provider**: Exa API
+- **Features**:
+  - Live website crawling
+  - AI-powered content extraction
+  - Retrieval cards with favicon and banner
+  - Comprehensive summaries
+- **Use Cases**: "What is [domain]?", website information queries
+
+#### 3. Weather Tool
+- **Provider**: OpenWeather API
+- **Features**:
+  - Geocoding for location resolution
+  - Temperature (Celsius & Fahrenheit)
+  - Humidity, wind speed, UV index
+  - Atmospheric pressure, visibility
+- **Use Cases**: Weather queries for any location
+
+#### 4. Greeting Tool
+- **Features**:
+  - Lightweight, no external API calls
+  - Fast response time
+- **Use Cases**: Simple greetings (hi, hello, good morning)
+
+### Implementation Details
+
+#### Tool Definitions (`lib/tools/actions.ts`)
+Each tool is defined using Vercel AI SDK's `tool()` function with:
+- Description (helps AI decide when to use it)
+- Parameters (Zod schema for validation)
+- Execute function (actual tool logic)
+
+Example:
+```typescript
+export const weatherTool = tool({
+  description: 'Get current weather information for a specific location',
+  parameters: z.object({
+    location: z.string().describe('The city name or location'),
+  }),
+  execute: async ({ location }) => {
+    // Fetch weather data from OpenWeather API
+    return { temperature, humidity, conditions, ... };
+  },
+});
+```
+
+#### AI Model Integration (`app/api/web-search/route.ts`)
+The AI model receives all tools and decides which to call:
+
+```typescript
+const result = streamText({
+  model: aiModel,
+  messages: userMessages,
+  tools: {
+    websearch: websearchTool,
+    retrieval: retrievalTool,
+    weather: weatherTool,
+    greeting: greetingTool,
+  },
+  maxSteps: 5, // Allow up to 5 tool calls
+});
+```
+
+#### Response Formatting
+Tools return data that the AI model formats into natural language responses. Special markers are used for metadata:
+
+- **Citations**: `<!-- SEARCH_URLS: url1|url2|url3 -->`
+- **Images**: `<!-- SEARCH_IMAGES: img1|img2|img3 -->`
+- **Retrieval Cards**: `<!-- RETRIEVAL_CARD: {...json...} -->`
+
+### User Experience Features
+
+#### 1. Loading Indicators
+Users see which tool is being called with appropriate icons and messages:
+- 🌐 Web Search Tool - "Searching the web..."
+- 🔗 Retrieval Tool - "Crawling website content..."
+- 🌧️ Weather Tool - "Fetching current weather data..."
+- 👋 Greeting Tool - "Preparing response..."
+
+#### 2. Retrieval Cards
+Beautiful cards for website information with:
+- Favicon (site icon)
+- Banner image (og:image)
+- Title
+- AI-generated summary
+- Link to source with domain
+
+#### 3. Citations
+Rich citation system:
+- Inline citations: `[1](url)`, `[2](url)`
+- Collapsible source list
+- Clickable links to sources
+- Proper formatting and organization
+
+#### 4. Image Gallery
+- Up to 15 images per search
+- Collapsible gallery view
+- Full-screen preview on click
+- Mobile-optimized swipe navigation
+
+### Configuration
+
+#### Environment Variables
+```bash
+# Web Search
+PARALLELS_API_KEY=your_parallel_ai_key
+TAVILY_API_KEY=your_tavily_key
+
+# Retrieval
+EXA_API_KEY=your_exa_key
+
+# Weather
+OPENWEATHER_API_KEY=your_openweather_key
+
+# AI Model
+OPENROUTER_API_KEY=your_openrouter_key
+```
+
+#### User Preferences
+- **Web Tool**: Choose between Parallel AI (default) or Tavily
+- **BYOK**: Bring Your Own Tavily API Key
+- Stored in user preferences as `webTool` field
+
+### Benefits
+
+1. **Intelligent**: AI decides the best tool automatically
+2. **Flexible**: Easy to add new tools without changing routing logic
+3. **User-Friendly**: Clear feedback and beautiful UI
+4. **Developer-Friendly**: Minimal code, centralized tool definitions
+5. **Extensible**: Add new tools by just defining them
+
+### Adding New Tools
+
+To add a new tool:
+1. Define tool in `lib/tools/actions.ts`
+2. Add to tool registry in `app/api/web-search/route.ts`
+3. (Optional) Update system prompt with tool description
+
+The AI will automatically learn to use the new tool!
+
+---
+
+## 10) Session Management & Authentication Improvements
 
 Issues addressed:
 - Multi‑device session conflicts and unexpected logouts
@@ -447,7 +628,7 @@ const performCleanLogout = useCallback(async () => {
 
 ---
 
-## 10) Real‑Time Sync Optimization
+## 11) Real‑Time Sync Optimization
 
 Problems:
 - Long‑lived caches delaying realtime (24h auth cache, 5m local cache)
@@ -489,7 +670,7 @@ Results:
 
 ---
 
-## 11) Automatic Data Refresh
+## 12) Automatic Data Refresh
 
 Goal: Recover automatically if local data is missing (e.g., user cleared localStorage) without forcing logout/login.
 
@@ -508,7 +689,7 @@ Benefits:
 
 ---
 
-## 12) API Routes
+## 13) API Routes
 
 Core endpoints (POST unless noted):
 - `/api/chat-messaging` — main chat; streaming, credits, attachments, styles
@@ -517,15 +698,23 @@ Core endpoints (POST unless noted):
 - `/api/speech-to-text` — Whisper transcription
 - `/api/upload` — Cloudinary upload
 - `/api/files` — list/delete files (POST/DELETE)
-- `/api/web-search` — Tavily search with citations
+- `/api/web-search` — Intelligent web search with model-driven tool calling
+  - **Tool System**: AI model automatically selects tools (websearch, retrieval, weather, greeting)
+  - **Web Search**: Parallel AI multi-query + Tavily images
+  - **Retrieval**: Exa live website crawling with AI summaries
+  - **Weather**: OpenWeather API with comprehensive data
+  - **Citations**: Rich citations with clickable links
+  - **Images**: Up to 15 images per search with gallery view
+  - **Retrieval Cards**: Beautiful cards with favicon, banner, and summary
 - `/api/reddit-search` — Reddit-specific search via Tavily
+- `/api/study-mode` — Enhanced study mode with PDF parsing and web search
 
 Admin:
 - `/api/admin/stats`, `/api/admin/manage-user`, `/api/admin/reset-limits`, `/api/admin/delete-data`, `/api/admin/bulk-operations`
 
 ---
 
-## 13) Frontend Components
+## 14) Frontend Components
 
 Key components:
 - `ChatInterface.tsx` — main chat UI (streaming, attachments, voice, model)
@@ -542,7 +731,7 @@ Key components:
 
 ---
 
-## 14) State Management
+## 15) State Management
 
 - React Context for global state (e.g., `AuthContext.tsx`)
 - Zustand stores for dynamic/feature state:
@@ -554,7 +743,7 @@ Key components:
 
 ---
 
-## 15) Database Schema (Appwrite)
+## 16) Database Schema (Appwrite)
 
 Threads:
 ```typescript
@@ -609,7 +798,7 @@ Indexes (typical):
 
 ---
 
-## 16) Authentication & Security
+## 17) Authentication & Security
 
 - Email/password + OAuth (Google, GitHub)
 - Guest mode with limited capabilities
@@ -636,7 +825,7 @@ Credit usage highlights:
 
 ---
 
-## 17) File Management
+## 18) File Management
 
 - Cloudinary integration (`lib/cloudinary*.ts`)
 - Supported: Images (JPG/PNG/GIF/WebP/SVG), Documents (PDF/DOC/DOCX/TXT/MD)
@@ -650,7 +839,7 @@ Upload → Validation → Cloudinary → Database → AI Processing → Display
 
 ---
 
-## 18) AI Integration
+## 19) AI Integration
 
 - OpenRouter: multi‑model hub (`lib/models.ts`)
 - Conversation styles (`lib/conversationStyles.ts`)
@@ -666,7 +855,7 @@ interface ModelCategory {
 
 ---
 
-## 19) Development Workflow
+## 20) Development Workflow
 
 Scripts:
 ```bash
@@ -682,7 +871,7 @@ Conventions:
 
 ---
 
-## 20) Deployment
+## 21) Deployment
 
 Recommended: Vercel
 ```bash
@@ -695,7 +884,7 @@ vercel
 
 ---
 
-## 21) Contributing
+## 22) Contributing
 
 - TypeScript strict, ESLint, Prettier, Husky hooks
 - Conventional Commits
@@ -709,7 +898,7 @@ git checkout -b feature/your-feature
 
 ---
 
-## 22) Troubleshooting
+## 23) Troubleshooting
 
 - Check console for errors
 - Verify env vars and Appwrite permissions
@@ -718,18 +907,22 @@ git checkout -b feature/your-feature
 
 ---
 
-## 23) Recent Updates & New Features
+## 24) Recent Updates & New Features
 
 ### Version Management System (v3.0.0)
 - **Automated Changelog**: Semantic versioning with detailed changelog entries and categorization
 - **Version Tagging**: Automated git tagging and version management scripts
 - **Interactive Changelog Page**: User-friendly changelog display with filtering and search
 
-### Enhanced Web Search & Reddit Integration
-- **Tavily API Integration**: Universal web search support across all AI models
+### Enhanced Web Search & Intelligent Tool Calling
+- **Model-Driven Tool Calling**: AI automatically selects appropriate tools based on query intent
+- **Multi-Provider Integration**: Parallel AI (web search), Tavily (images), Exa (retrieval), OpenWeather (weather)
+- **Intelligent Routing**: Automatic tool selection without pattern matching
+- **Retrieval Cards**: Beautiful website preview cards with favicon, banner, and AI summaries
+- **Rich Citations**: Clickable citations with improved organization and collapsible sources
+- **Image Gallery**: Up to 15 images per search with full-screen preview
 - **Reddit Search**: Dedicated Reddit community search with domain filtering
 - **BYOK Support**: Bring Your Own Key functionality for Tavily API with validation
-- **Rich Citations**: Clickable citations with improved organization and collapsible sources
 - **Guest Restrictions**: Controlled access for guest users with proper limitations
 
 ### Performance Optimizations (Major Update)
@@ -766,7 +959,7 @@ git checkout -b feature/your-feature
 
 ---
 
-## 24) Additional Resources
+## 25) Additional Resources
 
 - README.md: quick start
 - API docs (endpoints)

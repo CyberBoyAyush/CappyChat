@@ -135,7 +135,7 @@ function PureMessageDisplay({
           />
         );
       })}
-      {status === "submitted" && (
+      {(status === "submitted" || (status === "streaming" && isWebSearching)) && (
         <div className="flex gap-2 w-full max-w-full pr-4 pb-6">
           {/* Assistant Avatar */}
           <div className="flex-shrink-0 mt-1">

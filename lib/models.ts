@@ -292,7 +292,7 @@ export const MODEL_CONFIGS = {
     description: 'Last Gen model from XAI with advanced reasoning and coding capabilities.',
   },
   'Grok 4 Fast': {
-    modelId: 'x-ai/grok-4-fast:free',
+    modelId: 'x-ai/grok-4-fast',
     provider: 'openrouter',
     displayName: 'Grok 4 Fast',
     iconType: 'x-ai',

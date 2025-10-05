@@ -128,11 +128,11 @@ function LinkComponent({ href, children, ...props }: LinkComponentProps) {
       href={href}
       target={isExternal ? "_blank" : undefined}
       rel={isExternal ? "noopener noreferrer" : undefined}
-      className="text-primary hover:text-primary/90 font-light underline underline-offset-2 decoration-1 hover:decoration-2 transition-all duration-200 inline-flex items-center gap-1 break-all"
+      className="text-primary hover:text-primary/80 font-medium underline underline-offset-2 decoration-primary/60 hover:decoration-primary transition-all duration-200 inline-flex items-center gap-0.5 break-all cursor-pointer"
       {...props}
     >
       {children}
-      {isExternal && <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />}
+      {isExternal && <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-70 hover:opacity-100" />}
     </a>
   );
 }

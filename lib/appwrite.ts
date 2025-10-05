@@ -42,6 +42,7 @@ export interface UserTierPreferences {
   superPremiumCredits: number;
   lastResetDate?: string;
   tier_cache?: string;
+  webTool?: 'parallels' | 'tavily'; // Web search provider preference (default: parallels)
 }
 
 // Custom Profile Interface
@@ -110,6 +111,7 @@ export const getUserPreferences = async (): Promise<UserTierPreferences | null> 
         premiumCredits: (prefs.premiumCredits as number) || 0,
         superPremiumCredits: (prefs.superPremiumCredits as number) || 0,
         lastResetDate: prefs.lastResetDate as string | undefined,
+        webTool: (prefs.webTool as 'parallels' | 'tavily') || 'parallels', // Default to parallels
       };
 
       console.log('Parsed tier preferences:', tierPrefs);
@@ -220,6 +222,7 @@ export const initializeUserTier = async (tier: 'free' | 'premium' | 'admin' = 'f
       premiumCredits: limits.premiumCredits,
       superPremiumCredits: limits.superPremiumCredits,
       lastResetDate: now,
+      webTool: 'parallels', // Default to Parallel AI for new users
     });
   } catch (error) {
     console.error('Failed to initialize user tier:', error);
