@@ -1005,13 +1005,40 @@ export default function ChatInterface({
     null
   );
 
-  // Effect to stop web search loading when streaming starts
+  // Track when streaming actually starts with content
+  const streamingStartTimeRef = useRef<number | null>(null);
+
+  // Effect to stop web search loading when actual content starts streaming
+  // Keep loader visible during tool execution (minimum 1 second, or until content appears)
   useEffect(() => {
     if (status === "streaming" && isWebSearching) {
-      devLog("🔍 Stopping web search loading - streaming started");
-      setIsWebSearching(false);
+      // Record when streaming started
+      if (streamingStartTimeRef.current === null) {
+        streamingStartTimeRef.current = Date.now();
+        devLog("🔍 Streaming started, keeping loader visible during tool execution");
+      }
+
+      // Check if the last message has actual content (not just empty or tool calls)
+      const lastMessage = messages[messages.length - 1];
+      const hasContent = lastMessage &&
+                        lastMessage.role === "assistant" &&
+                        lastMessage.content &&
+                        lastMessage.content.trim().length > 10; // At least 10 chars to avoid empty/whitespace
+
+      // Keep loader visible for at least 500ms to avoid flashing
+      const minDisplayTime = 500;
+      const elapsedTime = Date.now() - (streamingStartTimeRef.current || 0);
+
+      if (hasContent && elapsedTime >= minDisplayTime) {
+        devLog("🔍 Stopping web search loading - actual content received");
+        setIsWebSearching(false);
+        streamingStartTimeRef.current = null;
+      }
+    } else if (status !== "streaming") {
+      // Reset timer when not streaming
+      streamingStartTimeRef.current = null;
     }
-  }, [status, isWebSearching]);
+  }, [status, isWebSearching, messages]);
 
   // Callback to track when a message is sent with search enabled
   const handleWebSearchMessage = useCallback(
@@ -1029,19 +1056,8 @@ export default function ChatInterface({
         })();
         setWebSearchQuery(q || "search query");
 
-        // Prefetch images for Web Search and Study Mode (not for Reddit)
-        if ((selectedSearchType === "web" || selectedSearchType === "study") && !isGuest && q && q.length > 0) {
-          const endpoint = selectedSearchType === "study" ? "/api/study-mode" : "/api/web-search";
-          fetch(`${endpoint}?q=${encodeURIComponent(q)}`)
-            .then((r) => (r.ok ? r.json() : Promise.resolve({ images: [] })))
-            .then((data) => {
-              const imgs = Array.isArray(data?.images)
-                ? (data.images as string[])
-                : [];
-              if (imgs.length > 0) setStreamingWebImgs(imgs.slice(0, 15));
-            })
-            .catch(() => {});
-        }
+        // Disable prefetch - images will come from tool results in the response
+        // Prefetching causes confusion when tools like weather don't return images
       }
     },
     [selectedSearchType, messages]

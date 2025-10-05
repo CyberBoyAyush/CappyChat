@@ -18,6 +18,7 @@ import ChatMessageReasoning from "./ChatMessageReasoning";
 import WebSearchCitations, { cleanMessageContent } from "./WebSearchCitations";
 import MessageAttachments from "./MessageAttachments";
 import { AIModel, getModelConfig } from "@/lib/models";
+import RetrievalCard, { extractRetrievalCard } from "./RetrievalCard";
 import {
   User,
   Bot,
@@ -864,20 +865,29 @@ function PureMessage({
                     !isImageGeneration &&
                     messageText.trim()
                   ) {
+                    // Extract retrieval card data if present
+                    const { data: retrievalData, cleanContent: contentWithoutCard } = extractRetrievalCard(messageText);
+
                     // Filter out aspect ratio metadata from display
                     // Clean the text by removing aspect ratio markers and search URLs markers
-                    let cleanedText = messageText
+                    let cleanedText = contentWithoutCard
                       .replace(/\[aspectRatio:[^\]]+\]/g, "")
                       .trim();
                     cleanedText = cleanMessageContent(cleanedText);
 
-                    if (cleanedText) {
+                    if (cleanedText || retrievalData) {
                       return (
                         <div className="break-words overflow-hidden max-w-full mb-3 no-scrollbar">
-                          <MarkdownRenderer
-                            content={cleanedText}
-                            id={message.id}
-                          />
+                          {/* Show retrieval card if present */}
+                          {retrievalData && <RetrievalCard data={retrievalData} />}
+
+                          {/* Show markdown content */}
+                          {cleanedText && (
+                            <MarkdownRenderer
+                              content={cleanedText}
+                              id={message.id}
+                            />
+                          )}
                         </div>
                       );
                     }
