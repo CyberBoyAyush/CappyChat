@@ -904,7 +904,23 @@ html.dark .shiki span[style*="color:#c9d1d9"]  /* punctuation */ {
   text-decoration-thickness: 2px;
 }
 
+/* Light mode blockquote styles */
+.prose blockquote {
+  color: var(--muted-foreground) !important;
+  border-left-color: var(--border) !important;
+}
+
 .dark .prose blockquote {
+  color: var(--muted-foreground) !important;
+  border-left-color: var(--border) !important;
+}
+
+.capybara-light .prose blockquote {
+  color: var(--muted-foreground) !important;
+  border-left-color: var(--border) !important;
+}
+
+.capybara-dark .prose blockquote {
   color: var(--muted-foreground) !important;
   border-left-color: var(--border) !important;
 }

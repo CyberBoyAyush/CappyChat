@@ -197,10 +197,24 @@ export default function GuestWelcomeScreen({
             <br />
           </h1>
 
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8 leading-relaxed">
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-4 leading-relaxed">
             Experience intelligent conversations with 20+ advanced AI models.
             Fast, secure, and designed for the future of communication.
           </p>
+
+          <div className="mx-auto flex justify-center items-center mb-5">
+            <a
+              href="https://peerlist.io/cyberboyayush/project/cappychat"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <img
+                src="https://peerlist.io/api/v1/projects/embed/PRJH9OBLR9ALJDNNR3D89OJDBK99LK?showUpvote=true&theme=dark"
+                alt="CappyChat"
+                className="width: auto; height: 72px;"
+              />
+            </a>
+          </div>
 
           <div className="flex flex-row gap-4 justify-center items-center">
             <Button
