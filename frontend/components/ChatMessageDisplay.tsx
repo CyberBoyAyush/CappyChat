@@ -109,6 +109,20 @@ function PureMessageDisplay({
     <section className="chat-message-container flex flex-col w-full max-w-3xl space-y-6">
       {deduplicatedMessages.map((message, index) => {
         const isLast = deduplicatedMessages.length - 1 === index;
+        
+        // Filter out empty assistant messages during web search streaming
+        // This prevents an empty div from appearing while tool calls are being processed
+        const isEmptyAssistantDuringWebSearch =
+          message.role === "assistant" &&
+          isLast &&
+          status === "streaming" &&
+          isWebSearching &&
+          (!message.content || message.content.trim().length === 0);
+        
+        if (isEmptyAssistantDuringWebSearch) {
+          return null;
+        }
+        
         const prevUserMessage = (() => {
           for (let i = index - 1; i >= 0; i--) {
             if (deduplicatedMessages[i].role === "user") {
