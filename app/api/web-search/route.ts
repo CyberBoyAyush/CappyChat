@@ -17,6 +17,7 @@ import {
   executeWeather,
   executeGreeting
 } from "@/lib/tools/actions";
+import { checkGuestRateLimit } from "@/lib/guestRateLimit";
 
 /**
  * Create user-specific tools with preferences baked in
@@ -127,6 +128,14 @@ export async function POST(req: NextRequest) {
       userId,
       isGuest,
     } = body;
+
+    // Guest rate limiting
+    if (isGuest) {
+      const rateLimitResponse = await checkGuestRateLimit(req);
+      if (rateLimitResponse) {
+        return rateLimitResponse;
+      }
+    }
 
     // Validate required fields
     if (!messages || !Array.isArray(messages)) {

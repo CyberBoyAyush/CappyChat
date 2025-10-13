@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { canUserUseModel, consumeCredits } from "@/lib/tierSystem";
 import { tavily } from "@tavily/core";
 import { devLog, devWarn, devError, prodError } from "@/lib/logger";
+import { checkGuestRateLimit } from "@/lib/guestRateLimit";
 
 export const maxDuration = 60;
 
@@ -50,8 +51,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Guest users cannot use Reddit search - block access
+    // Guest rate limiting (even though they can't use reddit search, check anyway)
     if (isGuest) {
+      const rateLimitResponse = await checkGuestRateLimit(req);
+      if (rateLimitResponse) {
+        return rateLimitResponse;
+      }
+
+      // Guest users cannot use Reddit search - block access
       return new Response(
         JSON.stringify({
           error:

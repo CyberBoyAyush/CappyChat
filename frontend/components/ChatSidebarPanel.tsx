@@ -52,7 +52,7 @@ const isLastSevenDays = (date: Date) => {
 
 // Main conversation panel component
 export default function ChatSidebarPanel() {
-  const { isGuest } = useAuth();
+  const { isGuest, guestUser } = useAuth();
 
   const {
     threadCollection,
@@ -255,6 +255,11 @@ export default function ChatSidebarPanel() {
                 Welcome to CappyChat! You can send up to 2 free messages to try our
                 AI assistant.
               </div>
+              {guestUser && (
+                <div className="text-xs font-medium text-primary/80">
+                  {guestUser.messagesUsed}/{guestUser.maxMessages} free messages used
+                </div>
+              )}
               <div className="text-xs text-muted-foreground">
                 Sign up for unlimited conversations, conversation history, and
                 access to all features.

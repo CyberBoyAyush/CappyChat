@@ -59,6 +59,21 @@ interface ErrorProps {
 }
 
 export function Error({ message, type = "error", className }: ErrorProps) {
+  // Parse JSON error messages
+  const parseMessage = (msg: string): string => {
+    try {
+      const parsed = JSON.parse(msg);
+      if (parsed.error) {
+        return parsed.error;
+      }
+      return msg;
+    } catch {
+      return msg;
+    }
+  };
+
+  const displayMessage = parseMessage(message);
+
   const getErrorStyles = () => {
     switch (type) {
       case "warning":
@@ -112,7 +127,7 @@ export function Error({ message, type = "error", className }: ErrorProps) {
           styles.text
         )}
       >
-        {message}
+        {displayMessage}
       </p>
     </div>
   );
@@ -141,17 +156,26 @@ export function TierLimitError({
   // Parse error message if it contains JSON structure
   const parseErrorMessage = (msg: string): string => {
     try {
-      // Check if message contains JSON-like structure
-      if (msg.includes('"error"') && msg.includes('"code"')) {
-        // Extract the error message part
-        const errorMatch = msg.match(/"error":"([^"]+)"/);
-        if (errorMatch && errorMatch[1]) {
-          return errorMatch[1];
-        }
+      // Try to parse as JSON first
+      const parsed = JSON.parse(msg);
+      if (parsed.error) {
+        return parsed.error;
       }
       return msg;
     } catch {
-      return msg;
+      // If not valid JSON, try regex extraction
+      try {
+        if (msg.includes('"error"') && msg.includes('"code"')) {
+          // Extract the error message part
+          const errorMatch = msg.match(/"error":"([^"]+)"/);
+          if (errorMatch && errorMatch[1]) {
+            return errorMatch[1];
+          }
+        }
+        return msg;
+      } catch {
+        return msg;
+      }
     }
   };
 

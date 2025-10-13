@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { canUserUseModel, consumeCredits } from "@/lib/tierSystem";
 import { tavily } from "@tavily/core";
 import { devLog, devWarn, devError, prodError } from "@/lib/logger";
+import { checkGuestRateLimit } from "@/lib/guestRateLimit";
 
 export const maxDuration = 60;
 
@@ -76,6 +77,14 @@ export async function POST(req: NextRequest) {
       userId,
       isGuest,
     } = body;
+
+    // Guest rate limiting
+    if (isGuest) {
+      const rateLimitResponse = await checkGuestRateLimit(req);
+      if (rateLimitResponse) {
+        return rateLimitResponse;
+      }
+    }
 
     // Validate required fields
     if (!messages || !Array.isArray(messages)) {
