@@ -238,16 +238,16 @@ export default function FileUpload({
         onClick={handleButtonClick}
         disabled={disabled || uploadingFiles.length > 0}
         className={cn(
-          "relative h-9 w-9 sm:h-10 sm:w-10 transition-all duration-200 mobile-touch",
+          "relative h-6 w-6 rounded-xl transition-all duration-200 mobile-touch",
           uploadingFiles.length > 0
             ? "bg-primary/10 text-primary"
             : "hover:bg-muted/80 hover:scale-105 active:scale-95"
         )}
-        title={
-          uploadingFiles.length > 0
-            ? "Uploading files..."
-            : "Upload files (Images, PDFs, text, and Word documents)"
-        }
+        // title={
+        //   uploadingFiles.length > 0
+        //     ? "Uploading files..."
+        //     : "Upload files (Images, PDFs, text, and Word documents)"
+        // }
       >
         {uploadingFiles.length > 0 ? (
           <div className="relative">
@@ -260,11 +260,11 @@ export default function FileUpload({
         )}
 
         {/* Upload count indicator */}
-        {uploadingFiles.length > 0 && (
+        {/* {uploadingFiles.length > 0 && (
           <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium animate-pulse">
             {uploadingFiles.length}
           </div>
-        )}
+        )} */}
       </Button>
 
       {/* Drag and drop overlay - Enhanced responsive design */}
