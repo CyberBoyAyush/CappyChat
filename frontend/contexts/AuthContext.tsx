@@ -219,6 +219,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   });
 
+  // Fetch real guest usage from server on mount
+  useEffect(() => {
+    if (guestUser && !user) {
+      fetch('/api/guest-usage')
+        .then(res => res.json())
+        .then(data => {
+          setGuestUser(prev => prev ? {
+            ...prev,
+            messagesUsed: data.messagesUsed || 0,
+            maxMessages: data.maxMessages || 2
+          } : null);
+        })
+        .catch(err => console.error('Failed to fetch guest usage:', err));
+    }
+  }, [user, guestUser?.isGuest]);
+
   // Reset search type when user becomes a guest
   useEffect(() => {
     if (guestUser?.isGuest) {
@@ -1073,10 +1089,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return false;
     }
 
+    // Optimistically increment
     setGuestUser(prev => prev ? {
       ...prev,
       messagesUsed: prev.messagesUsed + 1
     } : null);
+
+    // Sync with server to get real count
+    fetch('/api/guest-usage')
+      .then(res => res.json())
+      .then(data => {
+        setGuestUser(prev => prev ? {
+          ...prev,
+          messagesUsed: data.messagesUsed || prev.messagesUsed,
+          maxMessages: data.maxMessages || 2
+        } : null);
+      })
+      .catch(err => console.error('Failed to sync guest usage:', err));
 
     return true;
   };

@@ -14,6 +14,7 @@ import {
   getProjectPromptServer,
 } from "@/lib/tierSystem";
 import { Client, Databases, Query } from "node-appwrite";
+import { checkGuestRateLimit } from "@/lib/guestRateLimit";
 
 export const maxDuration = 60;
 
@@ -83,6 +84,14 @@ export async function POST(req: NextRequest) {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    // Guest rate limiting - IP-based (2 messages per 24 hours)
+    if (isGuest) {
+      const rateLimitResponse = await checkGuestRateLimit(req);
+      if (rateLimitResponse) {
+        return rateLimitResponse;
+      }
     }
 
     // Guest user restrictions - force Gemini 2.5 Flash Lite for guest users
