@@ -32,6 +32,7 @@ interface ModelCardProps {
   onSelect: (model: AIModel) => void;
   showKeyIcon?: boolean;
   tierValidation?: TierValidationResult;
+  onHover?: (model: AIModel | null) => void;
 }
 
 const ModelCard: React.FC<ModelCardProps> = ({
@@ -40,6 +41,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
   onSelect,
   showKeyIcon = false,
   tierValidation,
+  onHover,
 }) => {
   const modelConfig = getModelConfig(model);
   const isDisabled = tierValidation && !tierValidation.canUseModel;
@@ -47,27 +49,27 @@ const ModelCard: React.FC<ModelCardProps> = ({
   return (
     <div
       onClick={() => !isDisabled && onSelect(model)}
+      onMouseEnter={() => onHover?.(model)}
       className={cn(
-        "relative group p-1.5 sm:p-2 transition-all duration-300 cursor-pointer",
-        "min-h-[60px] flex items-center justify-between",
-        "hover:bg-accent/20",
+        "relative group mx-2 px-1 my-0.5  transition-all duration-300 cursor-pointer",
+        "flex items-center justify-between rounded-lg border border-transparent",
         isDisabled
           ? "cursor-not-allowed opacity-40"
           : isSelected
-          ? "bg-primary/15"
-          : "hover:bg-accent/30"
+          ? "bg-primary/15 border-primary/40"
+          : "hover:bg-accent/30 hover:border-primary/20"
       )}
-      title={isDisabled ? tierValidation?.message : modelConfig.description}
+      // title={isDisabled ? tierValidation?.message : modelConfig.description}
     >
-      <div className="flex items-center gap-2 flex-1">
+      <div className="flex items-center md:gap-2 flex-1">
         {/* Provider Icon */}
         <div
           className={cn(
-            "flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full",
+            "flex items-center justify-center w-4 h-8  rounded-full",
             "transition-all duration-300"
           )}
         >
-          {getModelIcon(modelConfig.iconType, 16)}
+          {getModelIcon(modelConfig.iconType, 12)}
         </div>
 
         {/* Model Info */}
@@ -75,7 +77,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
           <div className="flex items-center gap-2">
             <h3
               className={cn(
-                "font-semibold text-[13px] md:text-sm truncate text-primary"
+                "font-semibold max-w-32 md:max-w-none text-[12px] truncate text-primary"
               )}
             >
               {modelConfig.displayName}
@@ -93,11 +95,15 @@ const ModelCard: React.FC<ModelCardProps> = ({
       </div>
 
       {/* Right side - Badges and Selection */}
-      <div className="flex items-center gap-1 md:gap-1.5">
+      <div className="flex items-center gap-1 ">
         {/* Model Badges */}
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-0.5 md:hidden">
           {modelConfig.isSuperPremium && (
-            <ModelBadge type="super-premium" size={12} />
+            <div className="relative">
+              <div className="absolute -top-4 -left-5 z-10">
+                <ModelBadge type="super-premium" size={16} />
+              </div>
+            </div>
           )}
           {modelConfig.isPremium && !modelConfig.isSuperPremium && (
             <ModelBadge type="premium" size={12} />
@@ -129,8 +135,83 @@ const ModelCard: React.FC<ModelCardProps> = ({
   );
 };
 
+// Provider Header Component
+const ProviderHeader: React.FC<{ company: string }> = ({ company }) => (
+  <div className="px-4 py-2 mt-3 first:mt-0">
+    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+      {company}
+    </h4>
+  </div>
+);
+
+// Model Description Panel Component (shown on md+ screens)
+const ModelDescriptionPanel = ({ model }: { model: AIModel }) => {
+  const modelConfig = getModelConfig(model);
+
+  return (
+    <div className="hidden md:block p-4 border border-border/50 bg-background/95 backdrop-blur-xl w-[280px] rounded-xl h-fit">
+      {/* Model Icon and Name */}
+      <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-accent/30">
+          {getModelIcon(modelConfig.iconType, 17)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-sm text-primary truncate">
+            {modelConfig.displayName}
+          </h3>
+          <p className="text-xs text-muted-foreground">{modelConfig.company}</p>
+        </div>
+      </div>
+
+      {/* Description */}
+      <p className="text-sm text-muted-foreground/90 leading-relaxed mb-4">
+        {modelConfig.description}
+      </p>
+
+      {/* Capabilities */}
+      <div>
+        <h4 className="text-xs font-semibold text-primary mb-2">
+          Capabilities
+        </h4>
+        <div className="flex flex-col gap-1.5">
+          {modelConfig.isSuperPremium && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+              <span>Super Premium Model</span>
+            </div>
+          )}
+          {modelConfig.isPremium && !modelConfig.isSuperPremium && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+              <span>Premium Model</span>
+            </div>
+          )}
+          {modelConfig.hasReasoning && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+              <span>Advanced Reasoning</span>
+            </div>
+          )}
+          {modelConfig.isFast && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+              <span>Fast Response</span>
+            </div>
+          )}
+          {modelConfig.isFileSupported && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
+              <span>File Upload Support</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // BYOK Status Indicator Component
-const BYOKIndicator = () => {
+const BYOKIndicator = ({ className }: { className?: string }) => {
   const { hasOpenRouterKey } = useBYOKStore();
   const navigate = useNavigate();
   const hasByok = hasOpenRouterKey();
@@ -144,10 +225,11 @@ const BYOKIndicator = () => {
       size="sm"
       onClick={handleClick}
       className={cn(
-        "h-8 px-3 text-xs font-medium rounded-md transition-all duration-200",
+        "h-8 px-2 text-xs font-medium rounded-lg transition-all duration-200 border flex items-center gap-1.5",
         hasByok
-          ? "bg-green-500/10 text-green-600 border border-green-500/20 hover:bg-green-500/20"
-          : "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20"
+          ? "bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20"
+          : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20",
+        className
       )}
       title={
         hasByok
@@ -155,8 +237,8 @@ const BYOKIndicator = () => {
           : "Configure your own API key for unlimited access"
       }
     >
-      <Key className="w-3 h-3 mr-1.5" />
-      <span>{hasByok ? "BYOK ON" : "BYOK"}</span>
+      <Key className="w-3 h-3 " />
+      <span className="text-xs">{hasByok ? "BYOK ON" : "BYOK"}</span>
     </Button>
   );
 };
@@ -172,53 +254,10 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
   const { isGuest } = useAuth();
   const selectedModelConfig = getModelConfig(selectedModel);
   const [searchQuery, setSearchQuery] = useState("");
+  const [hoveredModel, setHoveredModel] = useState<AIModel | null>(null);
   const [tierValidations, setTierValidations] = useState<
     Record<AIModel, TierValidationResult>
   >({} as Record<AIModel, TierValidationResult>);
-
-  // Provider filter state
-  type ProviderId =
-    | "all"
-    | "openai"
-    | "google"
-    | "anthropic"
-    | "x-ai"
-    | "deepseek"
-    | "qwen"
-    | "kimi";
-  const [selectedProvider, setSelectedProvider] = useState<ProviderId>("all");
-
-  // Definitions for provider UI chips - filtered based on mode
-  const PROVIDER_OPTIONS: Array<{ id: ProviderId; label: string }> =
-    useMemo(() => {
-      const baseProviders = [
-        { id: "anthropic" as ProviderId, label: "Anthropic" },
-        { id: "google" as ProviderId, label: "Google" },
-        { id: "x-ai" as ProviderId, label: "Grok" },
-        { id: "openai" as ProviderId, label: "OpenAI" },
-        { id: "deepseek" as ProviderId, label: "DeepSeek" },
-        { id: "qwen" as ProviderId, label: "Qwen" },
-        { id: "kimi" as ProviderId, label: "Kimi" },
-      ];
-
-      // Filter providers based on current mode
-      return baseProviders.filter((provider) => {
-        // Check if this provider has any models for the current mode
-        const hasRelevantModels = AI_MODELS.some((model) => {
-          const config = getModelConfig(model);
-          const matchesProvider =
-            (config.iconType as string).toLowerCase() === provider.id;
-
-          if (isImageGenMode) {
-            return matchesProvider && config.isImageGeneration;
-          } else {
-            return matchesProvider && !config.isImageGeneration;
-          }
-        });
-
-        return hasRelevantModels;
-      });
-    }, [isImageGenMode]);
 
   // For guest users, lock to Gemini 2.5 Flash Lite
   const isLocked = isGuest;
@@ -271,30 +310,6 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
     previousModeRef.current = isImageGenMode;
   }, [isImageGenMode, selectedModel, setModel]);
 
-  // Reset provider filter when switching modes if current provider has no models in new mode
-  useEffect(() => {
-    if (selectedProvider !== "all") {
-      const hasModelsInCurrentMode = AI_MODELS.some((model) => {
-        const config = getModelConfig(model);
-        const matchesProvider =
-          (config.iconType as string).toLowerCase() === selectedProvider;
-
-        if (isImageGenMode) {
-          return matchesProvider && config.isImageGeneration;
-        } else {
-          return matchesProvider && !config.isImageGeneration;
-        }
-      });
-
-      if (!hasModelsInCurrentMode) {
-        console.log(
-          "[ModelSelector] Resetting provider filter - no models in current mode"
-        );
-        setSelectedProvider("all");
-      }
-    }
-  }, [isImageGenMode, selectedProvider]);
-
   // Load tier validations for all models
   useEffect(() => {
     const loadTierValidations = async () => {
@@ -331,16 +346,9 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
         const config = getModelConfig(model);
         if (!config.isImageGeneration) return false;
       }
-      // Provider filter check
-      if (selectedProvider !== "all") {
-        const cfg = getModelConfig(model);
-        if ((cfg.iconType as string).toLowerCase() !== selectedProvider) {
-          return false;
-        }
-      }
       return true;
     },
-    [isGuest, isImageGenMode, selectedProvider]
+    [isGuest, isImageGenMode]
   );
 
   const handleModelSelect = useCallback(
@@ -354,17 +362,10 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
     [isModelEnabled, setModel, setIsOpen]
   );
 
-  // Get filtered models based on provider and search
-  const filteredModels = useMemo(() => {
+  // Get filtered models grouped by provider
+  const groupedModels = useMemo(() => {
     const models = AI_MODELS.filter((model) => {
       const config = getModelConfig(model);
-
-      // Provider filter
-      if (selectedProvider !== "all") {
-        if ((config.iconType as string).toLowerCase() !== selectedProvider) {
-          return false;
-        }
-      }
 
       // Image generation mode filter
       if (isImageGenMode && !config.isImageGeneration) return false;
@@ -386,8 +387,32 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
       return true;
     });
 
-    return models;
-  }, [selectedProvider, isImageGenMode, isGuest, searchQuery]);
+    // Group models by company
+    const grouped = models.reduce((acc, model) => {
+      const config = getModelConfig(model);
+      const company = config.company;
+
+      if (!acc[company]) {
+        acc[company] = [];
+      }
+      acc[company].push(model);
+      return acc;
+    }, {} as Record<string, AIModel[]>);
+
+    // Sort companies and models within each company
+    const sortedGrouped = Object.keys(grouped)
+      .sort()
+      .reduce((acc, company) => {
+        acc[company] = grouped[company].sort((a, b) => {
+          const configA = getModelConfig(a);
+          const configB = getModelConfig(b);
+          return configA.displayName.localeCompare(configB.displayName);
+        });
+        return acc;
+      }, {} as Record<string, AIModel[]>);
+
+    return sortedGrouped;
+  }, [isImageGenMode, isGuest, searchQuery]);
 
   return (
     <div className="flex items-center gap-2">
@@ -396,9 +421,9 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
           <Button
             variant="ghost"
             className={cn(
-              "flex items-center gap-1 sm:gap-2 h-10 sm:h-9 md:h-8 pl-2 pr-1.5 sm:pr-2 text-xs rounded-md min-w-0",
-              "text-primary hover:bg-accent hover:text-accent-foreground",
-              "transition-all duration-200 mobile-touch",
+              "flex items-center gap-2 h-11 sm:h-10 md:h-9 pl-3 pr-2 text-sm rounded-xl min-w-0 ",
+              "text-primary hover:bg-accent/40 hover:text-foreground",
+              "transition-all duration-200 mobile-touch shadow-sm",
               isLocked && "opacity-75 cursor-not-allowed hover:bg-transparent"
             )}
             aria-label={`Selected model: ${selectedModel}${
@@ -407,7 +432,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
             disabled={isLocked}
             title={isLocked ? "Locked for guest users" : "Select AI Model"}
           >
-            <div className="flex max-w-[120px] sm:max-w-[160px] md:max-w-sm items-center gap-1 sm:gap-1.5">
+            <div className="flex max-w-[150px] sm:max-w-[160px] md:max-w-sm items-center gap-1 sm:gap-1.5">
               {isGuest && (
                 <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-60 flex-shrink-0" />
               )}
@@ -417,7 +442,7 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
               {!isLocked && (
                 <ChevronDown
                   className={cn(
-                    "h-3 w-3 textt-primary transition-transform duration-200 hidden sm:block",
+                    "h-3 w-3 text-primary transition-transform duration-200 block",
                     isOpen && "rotate-180"
                   )}
                 />
@@ -427,103 +452,79 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent
           className={cn(
-            "w-[320px] sm:w-[420px] lg:w-[400px] max-w-[90vw] p-0",
-            "border border-border/50 bg-background/95 backdrop-blur-xl",
-            "max-h-[55vh] md:max-h-[55vh] overflow-hidden flex flex-col",
-            "shadow-2xl shadow-black/10 dark:shadow-black/30",
-            "rounded-2xl"
+            "w-[270px]  md:w-[580px] max-w-[90vw] p-0",
+            "bg-transparent border-transparent",
+            "max-h-[40vh] overflow-hidden shadow-none"
           )}
-          align="end"
+          align="start"
           sideOffset={8}
           collisionPadding={16}
           avoidCollisions={true}
         >
-          {/* Search and BYOK */}
-          <div className="p-3 sm:p-3 border-b border-border/50 flex-shrink-0">
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search models..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={cn(
-                    "pl-10 pr-4 py-3 text-sm rounded-xl",
-                    "border-0 bg-background/50",
-
-                    "placeholder:text-muted-foreground/70"
-                  )}
-                />
+          {/* Container with flex layout for md+ screens */}
+          <div className="flex flex-col gap-2 md:flex-row ">
+            {/* Left side: Search, BYOK, and Models List */}
+            <div className="flex flex-col rounded-xl flex-1 max-h-[40vh] min-w-0 border border-border/50 bg-background/95 backdrop-blur-xl">
+              {/* Search and BYOK */}
+              <div className="p-2.5 border-b border-border/50 flex-shrink-0">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="relative flex-1 min-w-[100px]">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Search models..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className={cn(
+                        "pl-8 pr-4 py-4 text-sm  border-b border-border/50 bg-background/70",
+                        "placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:border-primary/40"
+                      )}
+                    />
+                  </div>
+                  <BYOKIndicator className="h-8 px-4 text-xs sm:text-sm" />
+                </div>
               </div>
-              <BYOKIndicator />
-            </div>
-          </div>
 
-          {/* Providers Filter */}
-          <div className="p-3 sm:px-4 sm:py-3 border-b border-border/50 flex-shrink-0">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-primary">Providers</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-3 text-xs text-primary hover:text-foreground rounded-lg"
-                onClick={() => setSelectedProvider("all")}
+              {/* Models List */}
+              <div
+                className="flex-1 overflow-y-auto min-h-0 no-scrollbar"
+                onMouseLeave={() => setHoveredModel(null)}
               >
-                Show all
-              </Button>
+                {Object.keys(groupedModels).length > 0 ? (
+                  <div className="">
+                    {Object.entries(groupedModels).map(([company, models]) => (
+                      <div key={company}>
+                        <ProviderHeader company={company} />
+                        {models.map((model) => (
+                          <ModelCard
+                            key={model}
+                            model={model}
+                            isSelected={selectedModel === model}
+                            onSelect={handleModelSelect}
+                            showKeyIcon={hasOpenRouterKey()}
+                            tierValidation={tierValidations[model]}
+                            onHover={setHoveredModel}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Search className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground mb-2">
+                      No models found
+                    </p>
+                    <p className="text-xs text-muted-foreground/70">
+                      Try adjusting your provider or search terms
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {PROVIDER_OPTIONS.map((provider) => (
-                <button
-                  key={provider.id}
-                  type="button"
-                  onClick={() => setSelectedProvider(provider.id)}
-                  className={cn(
-                    "flex items-center gap-1 md:gap-2.5 px-1 py-1.5 md:px-3 md:py-2 rounded-full transition-all duration-200",
-                    "border border-border/50 bg-background/50 backdrop-blur-sm",
-                    "text-xs md:text-sm font-medium",
-                    selectedProvider === provider.id
-                      ? "border-primary bg-primary/10 text-primary shadow-sm"
-                      : "hover:border-primary/30 hover:bg-accent/50 text-foreground/80 hover:text-foreground"
-                  )}
-                  title={`Filter by ${provider.label}`}
-                >
-                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-background/80 border border-border/30">
-                    {getModelIcon(provider.id, 12)}
-                  </span>
-                  <span>{provider.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Models List */}
-          <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-            {filteredModels.length > 0 ? (
-              <div className="">
-                {filteredModels.map((model) => (
-                  <ModelCard
-                    key={model}
-                    model={model}
-                    isSelected={selectedModel === model}
-                    onSelect={handleModelSelect}
-                    showKeyIcon={hasOpenRouterKey()}
-                    tierValidation={tierValidations[model]}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Search className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground mb-2">
-                  No models found
-                </p>
-                <p className="text-xs text-muted-foreground/70">
-                  Try adjusting your provider or search terms
-                </p>
-              </div>
-            )}
+            {/* Right side: Model Description Panel (md+ only) */}
+            <ModelDescriptionPanel model={hoveredModel || selectedModel} />
           </div>
         </DropdownMenuContent>
       </DropdownMenu>

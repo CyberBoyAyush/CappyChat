@@ -147,7 +147,7 @@ export default function SettingsPage() {
   const [loadingTier, setLoadingTier] = useState(true);
 
   // Web tool preference state
-  const [webTool, setWebTool] = useState<'parallels' | 'tavily'>('parallels');
+  const [webTool, setWebTool] = useState<"parallels" | "tavily">("parallels");
   const [webToolSaving, setWebToolSaving] = useState(false);
   const [webToolSaved, setWebToolSaved] = useState(false);
 
@@ -462,22 +462,22 @@ export default function SettingsPage() {
     setTavilyKeyError("");
   };
 
-  const handleSaveWebTool = async (newWebTool: 'parallels' | 'tavily') => {
+  const handleSaveWebTool = async (newWebTool: "parallels" | "tavily") => {
     try {
       setWebToolSaving(true);
 
       // Import updateUserPreferences dynamically
-      const { updateUserPreferences } = await import('@/lib/appwrite');
+      const { updateUserPreferences } = await import("@/lib/appwrite");
       await updateUserPreferences({ webTool: newWebTool });
 
       setWebTool(newWebTool);
       setWebToolSaved(true);
       setTimeout(() => setWebToolSaved(false), 3000);
     } catch (error) {
-      console.error('Failed to save web tool preference:', error);
+      console.error("Failed to save web tool preference:", error);
       setNotification({
-        type: 'error',
-        message: 'Failed to save web search provider preference',
+        type: "error",
+        message: "Failed to save web search provider preference",
       });
     } finally {
       setWebToolSaving(false);
@@ -1025,7 +1025,7 @@ export default function SettingsPage() {
                         File Management
                       </h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        View and manage all files you've uploaded to AV Chat.
+                        View and manage all files you've uploaded to CappyChat.
                         You can download or delete files to free up storage
                         space.
                       </p>
@@ -1578,7 +1578,8 @@ export default function SettingsPage() {
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Choose your preferred web search provider for real-time information
+                          Choose your preferred web search provider for
+                          real-time information
                         </p>
                       </div>
 
@@ -1586,31 +1587,40 @@ export default function SettingsPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {/* Parallel AI Option */}
                           <button
-                            onClick={() => handleSaveWebTool('parallels')}
+                            onClick={() => handleSaveWebTool("parallels")}
                             disabled={webToolSaving}
                             className={`p-4 border-2 rounded-lg transition-all ${
-                              webTool === 'parallels'
-                                ? 'border-primary bg-primary/10'
-                                : 'border-border hover:border-primary/50'
+                              webTool === "parallels"
+                                ? "border-primary bg-primary/10"
+                                : "border-border hover:border-primary/50"
                             }`}
                           >
                             <div className="flex items-start gap-3">
-                              <div className={`p-2 rounded-full ${
-                                webTool === 'parallels' ? 'bg-primary/20' : 'bg-muted'
-                              }`}>
-                                <Sparkles className={`h-4 w-4 ${
-                                  webTool === 'parallels' ? 'text-primary' : 'text-muted-foreground'
-                                }`} />
+                              <div
+                                className={`p-2 rounded-full ${
+                                  webTool === "parallels"
+                                    ? "bg-primary/20"
+                                    : "bg-muted"
+                                }`}
+                              >
+                                <Sparkles
+                                  className={`h-4 w-4 ${
+                                    webTool === "parallels"
+                                      ? "text-primary"
+                                      : "text-muted-foreground"
+                                  }`}
+                                />
                               </div>
                               <div className="flex-1 text-left">
                                 <div className="flex items-center gap-2">
                                   <p className="font-medium">Parallel AI</p>
-                                  {webTool === 'parallels' && (
+                                  {webTool === "parallels" && (
                                     <Check className="h-4 w-4 text-primary" />
                                   )}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  Advanced multi-query search with better results
+                                  Advanced multi-query search with better
+                                  results
                                 </p>
                                 <span className="inline-block mt-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
                                   Default
@@ -1621,26 +1631,34 @@ export default function SettingsPage() {
 
                           {/* Tavily Option */}
                           <button
-                            onClick={() => handleSaveWebTool('tavily')}
+                            onClick={() => handleSaveWebTool("tavily")}
                             disabled={webToolSaving}
                             className={`p-4 border-2 rounded-lg transition-all ${
-                              webTool === 'tavily'
-                                ? 'border-primary bg-primary/10'
-                                : 'border-border hover:border-primary/50'
+                              webTool === "tavily"
+                                ? "border-primary bg-primary/10"
+                                : "border-border hover:border-primary/50"
                             }`}
                           >
                             <div className="flex items-start gap-3">
-                              <div className={`p-2 rounded-full ${
-                                webTool === 'tavily' ? 'bg-primary/20' : 'bg-muted'
-                              }`}>
-                                <Server className={`h-4 w-4 ${
-                                  webTool === 'tavily' ? 'text-primary' : 'text-muted-foreground'
-                                }`} />
+                              <div
+                                className={`p-2 rounded-full ${
+                                  webTool === "tavily"
+                                    ? "bg-primary/20"
+                                    : "bg-muted"
+                                }`}
+                              >
+                                <Server
+                                  className={`h-4 w-4 ${
+                                    webTool === "tavily"
+                                      ? "text-primary"
+                                      : "text-muted-foreground"
+                                  }`}
+                                />
                               </div>
                               <div className="flex-1 text-left">
                                 <div className="flex items-center gap-2">
                                   <p className="font-medium">Tavily</p>
-                                  {webTool === 'tavily' && (
+                                  {webTool === "tavily" && (
                                     <Check className="h-4 w-4 text-primary" />
                                   )}
                                 </div>
@@ -1660,9 +1678,18 @@ export default function SettingsPage() {
                         )}
 
                         <div className="text-xs text-muted-foreground space-y-1">
-                          <p>✓ Parallel AI: Uses advanced multi-query search for comprehensive results</p>
-                          <p>✓ Tavily: Traditional search with built-in image support</p>
-                          <p>✓ Both providers deliver high-quality, real-time information</p>
+                          <p>
+                            ✓ Parallel AI: Uses advanced multi-query search for
+                            comprehensive results
+                          </p>
+                          <p>
+                            ✓ Tavily: Traditional search with built-in image
+                            support
+                          </p>
+                          <p>
+                            ✓ Both providers deliver high-quality, real-time
+                            information
+                          </p>
                         </div>
                       </div>
                     </div>

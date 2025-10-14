@@ -34,6 +34,13 @@ import { cn } from "@/lib/utils";
 import { toast } from "./ui/Toast";
 import { format } from "date-fns";
 import { useAuth } from "../contexts/AuthContext";
+import { PDFThumbnail } from "./ui/PDFThumbnail";
+import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+
+// Configure PDF.js worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 // Helper function to get file icon and theme-aware color
 const getFileIcon = (fileType: string) => {
@@ -286,9 +293,11 @@ export default function FileManager({ className }: FileManagerProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<UserFile | null>(null);
-  // Image preview dialog state
+  // Image/PDF preview dialog state
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<UserFile | null>(null);
+  const [numPages, setNumPages] = useState<number | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const { user } = useAuth();
 
@@ -526,13 +535,25 @@ export default function FileManager({ className }: FileManagerProps) {
   };
 
   const handleView = (file: UserFile) => {
-    if (file.fileType === "image") {
+    if (file.fileType === "image" || file.fileType === "pdf") {
+      if (file.fileType === "pdf") {
+        setPdfLoading(true);
+        setNumPages(null);
+      }
       setPreviewFile(file);
       setPreviewOpen(true);
     } else {
       window.open(file.url, "_blank", "noopener,noreferrer");
     }
   };
+
+  // Cleanup when preview closes
+  useEffect(() => {
+    if (!previewOpen) {
+      setPdfLoading(false);
+      setNumPages(null);
+    }
+  }, [previewOpen]);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
@@ -687,17 +708,23 @@ export default function FileManager({ className }: FileManagerProps) {
                 )}
 
                 {file.fileType === "pdf" && (
-                  <div className="flex h-full bg-primary/10  items-center justify-center mb-3 border border-ring/20 rounded-sm">
-                    <FileText className="w-5 h-5 text-red-500" />
-                    <span className="text-xs text-muted-foreground">
-                      PDF File
-                    </span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleView(file)}
+                    className="mb-3 group cursor-pointer block relative rounded border overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 h-28"
+                  >
+                    <PDFThumbnail
+                      url={file.url}
+                      alt={file.originalName}
+                      className="w-full h-full"
+                    />
+                    <span className="pointer-events-none absolute inset-0 ring-0 group-hover:ring-2 ring-inset ring-ring/40 rounded"></span>
+                  </button>
                 )}
               </div>
               {/* Action buttons */}
               <div className="flex gap-1">
-                {file.fileType !== "image" && (
+                {file.fileType !== "image" && file.fileType !== "pdf" && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -787,11 +814,11 @@ export default function FileManager({ className }: FileManagerProps) {
         isDeleting={bulkDeleting}
       />
 
-      {/* Image Preview Dialog */}
+      {/* Image/PDF Preview Dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent
           showCloseButton={false}
-          className="sm:max-w-3xl bg-background border-border p-0 overflow-hidden"
+          className="sm:max-w-4xl bg-background border-border p-0 overflow-hidden"
         >
           <VisuallyHidden>
             <DialogTitle>
@@ -803,19 +830,76 @@ export default function FileManager({ className }: FileManagerProps) {
           <button
             type="button"
             onClick={() => setPreviewOpen(false)}
-            className="absolute top-3 right-3 inline-flex items-center justify-center h-8 w-8 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            className="absolute top-3 right-3 z-50 inline-flex items-center justify-center h-8 w-8 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             aria-label="Close preview"
           >
             <X className="h-4 w-4" />
           </button>
           {previewFile && (
-            <div className="max-h-[85vh] w-full flex items-center justify-center bg-card">
-              <img
-                src={previewFile.url}
-                alt={previewFile.originalName}
-                className="max-h-[85vh] w-auto object-contain"
-              />
-            </div>
+            <>
+              {previewFile.fileType === "image" ? (
+                <div className="max-h-[85vh] w-full flex items-center justify-center bg-card">
+                  <img
+                    src={previewFile.url}
+                    alt={previewFile.originalName}
+                    className="max-h-[85vh] w-auto object-contain"
+                  />
+                </div>
+              ) : previewFile.fileType === "pdf" ? (
+                <div className="max-h-[55vh] md:max-h-[85vh] overflow-x-hidden w-full overflow-y-auto bg-card p-4 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+                  {pdfLoading && !numPages && (
+                    <div className="flex flex-col items-center justify-center py-20">
+                      <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
+                      <p className="text-sm text-muted-foreground">
+                        Loading PDF...
+                      </p>
+                    </div>
+                  )}
+                  <Document
+                    file={previewFile.url}
+                    onLoadSuccess={({ numPages }) => {
+                      setNumPages(numPages);
+                      setPdfLoading(false);
+                    }}
+                    onLoadError={() => {
+                      setPdfLoading(false);
+                    }}
+                    loading=""
+                    error={
+                      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                        <FileText className="h-12 w-12 mb-2" />
+                        <p>Failed to load PDF</p>
+                      </div>
+                    }
+                    className="flex flex-col items-center gap-4"
+                  >
+                    {numPages &&
+                      Array.from(new Array(numPages), (_, index) => (
+                        <div
+                          key={`page_${index + 1}`}
+                          className="border border-border rounded shadow-sm bg-white"
+                        >
+                          <Page
+                            pageNumber={index + 1}
+                            width={Math.min(window.innerWidth * 0.8, 800)}
+                            renderTextLayer={true}
+                            renderAnnotationLayer={true}
+                            loading={
+                              <div className="flex items-center justify-center py-8">
+                                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                              </div>
+                            }
+                            className="pdf-preview-page"
+                          />
+                          <div className="text-center py-2 text-xs text-muted-foreground bg-muted/50">
+                            Page {index + 1} of {numPages}
+                          </div>
+                        </div>
+                      ))}
+                  </Document>
+                </div>
+              ) : null}
+            </>
           )}
         </DialogContent>
       </Dialog>

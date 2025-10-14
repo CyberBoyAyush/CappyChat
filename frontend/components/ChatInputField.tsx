@@ -7,8 +7,23 @@
  * Creates new threads when needed and manages chat state.
  */
 
-import { ArrowUpIcon, Sparkles } from "lucide-react";
+import {
+  ArrowUpIcon,
+  Sparkles,
+  Settings,
+  ChevronDown,
+  Check,
+  WandSparkles,
+  Globe,
+  MessageCircle,
+  GraduationCap,
+  Square,
+  RectangleHorizontal,
+  Monitor,
+  Smartphone,
+} from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Textarea } from "@/frontend/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Button } from "@/frontend/components/ui/button";
@@ -22,30 +37,24 @@ import { StopIcon } from "./ui/UIComponents";
 import { HybridDB } from "@/lib/hybridDB";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 import { ModelSelector } from "./ModelSelector";
-import { ConversationStyleSelector } from "./ConversationStyleSelector";
 import { devLog, devError } from "@/lib/logger";
 import {
-  AspectRatioSelector,
   ASPECT_RATIOS,
   AspectRatio,
   getDimensionsForModel,
 } from "./AspectRatioSelector";
-import { SearchTypeSelector } from "./SearchTypeSelector";
-import { useSearchTypeStore } from "@/frontend/stores/SearchTypeStore";
+import {
+  useSearchTypeStore,
+  SearchType,
+} from "@/frontend/stores/SearchTypeStore";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { getModelConfig } from "@/lib/models";
 import VoiceInputButton from "./ui/VoiceInputButton";
 import FileUpload, { UploadingFile } from "./FileUpload";
 import { FileAttachment } from "@/lib/appwriteDB";
-import {
-  X,
-  FileImage,
-  FileText,
-  Loader2,
-  CheckCircle,
-  XCircle,
-} from "lucide-react";
+import { X, FileImage, FileText, Loader2, XCircle } from "lucide-react";
 import { RiImageAiFill } from "react-icons/ri";
+import { FaRedditAlien } from "react-icons/fa6";
 import { toast } from "./ui/Toast";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import { useAuthDialog } from "@/frontend/hooks/useAuthDialog";
@@ -53,6 +62,16 @@ import AuthDialog from "./auth/AuthDialog";
 import { extractMemories, shouldAddMemory } from "@/lib/memoryExtractor";
 import { AppwriteDB } from "@/lib/appwriteDB";
 import { SparklesIcon } from "./ui/icons/SparklesIcon";
+import { Switch2 } from "@/frontend/components/ui/switch2";
+import { useConversationStyleStore } from "@/frontend/stores/ConversationStyleStore";
+import { PDFThumbnail } from "./ui/PDFThumbnail";
+import { getAllConversationStyles } from "@/lib/conversationStyles";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/frontend/components/ui/dropdown-menu";
+import { FaTools } from "react-icons/fa";
 
 // Extended UIMessage type to include attachments
 type ExtendedUIMessage = UIMessage & {
@@ -199,10 +218,42 @@ function PureInputField({
   const { complete } = useChatMessageSummary();
 
   // Search state (Chat, Web Search, or Reddit Search)
-  const { selectedSearchType } = useSearchTypeStore();
+  const { selectedSearchType, setSearchType } = useSearchTypeStore();
+
+  // Conversation style state
+  const { selectedStyle, setStyle, getStyleConfig } =
+    useConversationStyleStore();
 
   // Model selection state
   const { selectedModel, setModel } = useModelStore();
+
+  // Tools dropdown state
+  const [isToolsDropdownOpen, setIsToolsDropdownOpen] = useState(false);
+  const [showStyleSubDropdown, setShowStyleSubDropdown] = useState(false);
+
+  // Ref for style dropdown to handle click outside
+  const styleDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside for style dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showStyleSubDropdown &&
+        styleDropdownRef.current &&
+        !styleDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowStyleSubDropdown(false);
+      }
+    };
+
+    if (showStyleSubDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showStyleSubDropdown]);
 
   // Sync isImageGenMode with selected model on mount and when model changes
   useEffect(() => {
@@ -288,20 +339,62 @@ function PureInputField({
   }, []);
 
   // Helper functions for file display
-  const getFileIcon = (file: File) => {
-    if (file.type.startsWith("image/")) {
-      return <FileImage className="w-3 h-3 flex-shrink-0" />;
+  const getFileIcon = useCallback((mimeType: string) => {
+    if (mimeType.startsWith("image/")) {
+      return <FileImage className="h-5 w-5 text-blue-500" />;
     }
-    return <FileText className="w-3 h-3 flex-shrink-0" />;
-  };
+    if (mimeType === "application/pdf" || mimeType.includes("document")) {
+      return <FileText className="h-5 w-5 text-red-500" />;
+    }
+    return <FileText className="h-5 w-5 text-muted-foreground" />;
+  }, []);
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
+  const activeUploadingPreviews = useMemo(
+    () =>
+      uploadingFiles
+        .filter((uploadingFile) => uploadingFile.status !== "success")
+        .map((uploadingFile) => {
+          const key = `${uploadingFile.file.name}-${uploadingFile.file.size}-${uploadingFile.file.lastModified}`;
+          const isImage = uploadingFile.file.type.startsWith("image/");
+          const isPDF = uploadingFile.file.type === "application/pdf";
+          const url =
+            isImage || isPDF
+              ? URL.createObjectURL(uploadingFile.file)
+              : undefined;
+
+          return {
+            key,
+            isImage,
+            isPDF,
+            url,
+            data: uploadingFile,
+          };
+        }),
+    [uploadingFiles]
+  );
+
+  useEffect(() => {
+    return () => {
+      activeUploadingPreviews.forEach((preview) => {
+        if (preview.url) {
+          URL.revokeObjectURL(preview.url);
+        }
+      });
+    };
+  }, [activeUploadingPreviews]);
+
+  const uploadStatus = useMemo(() => {
+    if (uploadingFiles.length === 0) return null;
+
+    const errorCount = uploadingFiles.filter(
+      (file) => file.status === "error"
+    ).length;
+    if (errorCount > 0) {
+      return `Upload failed for ${errorCount} file${errorCount > 1 ? "s" : ""}`;
+    }
+
+    return null;
+  }, [uploadingFiles]);
 
   // Upload pasted files
   const uploadPastedFiles = useCallback(
@@ -609,7 +702,9 @@ function PureInputField({
 
       // Track if this message was sent with search enabled (web, reddit, or study)
       if (
-        (selectedSearchType === "web" || selectedSearchType === "reddit" || selectedSearchType === "study") &&
+        (selectedSearchType === "web" ||
+          selectedSearchType === "reddit" ||
+          selectedSearchType === "study") &&
         onWebSearchMessage
       ) {
         onWebSearchMessage(messageId, finalInput);
@@ -739,14 +834,15 @@ function PureInputField({
       // Call image generation API
       try {
         // Get conversation history for context (last 6 messages)
-        const conversationHistory = messages
-          ?.slice(-6)
-          .filter((m) => m.role === "user" || m.role === "assistant")
-          .map((m) => ({
-            role: m.role,
-            content: m.content,
-            imgurl: (m as any).imgurl, // Include previous image URL if exists
-          })) || [];
+        const conversationHistory =
+          messages
+            ?.slice(-6)
+            .filter((m) => m.role === "user" || m.role === "assistant")
+            .map((m) => ({
+              role: m.role,
+              content: m.content,
+              imgurl: (m as any).imgurl, // Include previous image URL if exists
+            })) || [];
 
         const response = await fetch("/api/image-generation", {
           method: "POST",
@@ -1102,129 +1198,134 @@ function PureInputField({
     [uploadPastedFiles]
   );
 
+  const hasPreviews =
+    attachments.length > 0 || activeUploadingPreviews.length > 0;
+
   return (
     <div className="w-full max-w-full">
+      <AnimatePresence>
+        {hasPreviews && (
+          <motion.div
+            key="active-files"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="mb-2"
+          >
+            <div className="flex flex-wrap gap-3">
+              {attachments.map((attachment) => (
+                <motion.div
+                  key={attachment.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="relative group"
+                >
+                  <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-primary/20 bg-background flex items-center justify-center">
+                    {attachment.fileType === "image" ? (
+                      <img
+                        src={attachment.url}
+                        alt={attachment.originalName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : attachment.fileType === "pdf" && attachment.url ? (
+                      <PDFThumbnail
+                        url={attachment.url}
+                        alt={attachment.originalName}
+                        className="w-full h-full"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center">
+                        {getFileIcon(attachment.mimeType)}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => removeAttachment(attachment.id)}
+                    className="absolute -top-2 -right-2 p-1 rounded-full bg-background border border-border hover:bg-red-500 hover:text-white transition-colors md:opacity-0 md:group-hover:opacity-100"
+                    type="button"
+                    aria-label={`Remove ${attachment.originalName}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+
+                  <div className="absolute bottom-0 border-x border-primary/20 border-b left-0 right-0 bg-background/90 backdrop-blur-sm px-2 py-1 text-[10px] text-primary rounded-b-xl truncate md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    {attachment.originalName}
+                  </div>
+                </motion.div>
+              ))}
+
+              {activeUploadingPreviews.map((preview) => (
+                <motion.div
+                  key={preview.key}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="relative group"
+                >
+                  <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-border/60 bg-background flex items-center justify-center">
+                    {preview.isImage && preview.url ? (
+                      <img
+                        src={preview.url}
+                        alt={preview.data.file.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : preview.isPDF && preview.url ? (
+                      <PDFThumbnail
+                        url={preview.url}
+                        alt={preview.data.file.name}
+                        className="w-full h-full"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center">
+                        {getFileIcon(preview.data.file.type)}
+                      </div>
+                    )}
+
+                    {preview.data.status === "uploading" && (
+                      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex flex-col items-center justify-center gap-1">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        <span className="text-[10px] font-medium text-muted-foreground">
+                          Uploading
+                        </span>
+                      </div>
+                    )}
+
+                    {preview.data.status === "error" && (
+                      <div className="absolute inset-0 bg-red-500/10 flex flex-col items-center justify-center gap-1 px-2 text-center">
+                        <XCircle className="h-6 w-6 text-red-500" />
+                        {preview.data.error && (
+                          <span className="text-[10px] text-red-500 line-clamp-2">
+                            {preview.data.error}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="absolute bottom-0 left-0 right-0 bg-background/90 backdrop-blur-sm px-2 py-1 text-[10px] text-primary rounded-b-xl truncate md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    {preview.data.file.name}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {uploadStatus && (
+              <p className="mt-2 text-xs font-medium text-red-500">
+                {uploadStatus}
+              </p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="border-[1px] border-primary/30 rounded-2xl shadow-lg w-full backdrop-blur-md overflow-hidden">
         <div className="flex flex-col bg-background/55 border-y-2 sm:border-y-4 md:border-y-8 rounded-2xl border-x-2 sm:border-x-4 md:border-x-8 border-primary/10 dark:border-zinc-800/50 overflow-hidden">
-          {/* Upload Status - Enhanced responsive design */}
-          {uploadingFiles.length > 0 && (
-            <div
-              className={cn(
-                "px-3 sm:px-4 py-3 border-b border-border/50 bg-muted/30",
-                uploadingFiles.every((f) => f.status === "success") &&
-                  "bg-primary/5 border-ring/15 border rounded-t-md",
-                uploadingFiles.some((f) => f.status === "error") &&
-                  "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
-              )}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="relative">
-                  {uploadingFiles.some((f) => f.status === "uploading") && (
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                  )}
-                  {uploadingFiles.every((f) => f.status === "success") && (
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                  )}
-                  {uploadingFiles.some((f) => f.status === "error") && (
-                    <XCircle className="w-4 h-4 text-red-500" />
-                  )}
-                </div>
-                <div className="text-sm font-medium text-foreground">
-                  {uploadingFiles.every((f) => f.status === "success")
-                    ? `Successfully uploaded ${uploadingFiles.length} file${
-                        uploadingFiles.length > 1 ? "s" : ""
-                      }!`
-                    : uploadingFiles.some((f) => f.status === "error")
-                    ? `Upload failed for ${
-                        uploadingFiles.filter((f) => f.status === "error")
-                          .length
-                      } file${
-                        uploadingFiles.filter((f) => f.status === "error")
-                          .length > 1
-                          ? "s"
-                          : ""
-                      }`
-                    : `Uploading ${uploadingFiles.length} file${
-                        uploadingFiles.length > 1 ? "s" : ""
-                      }...`}
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                {uploadingFiles.map((uploadingFile, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-2 p-2 rounded-lg bg-background/50"
-                  >
-                    <div className="flex-shrink-0">
-                      {getFileIcon(uploadingFile.file)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium truncate text-foreground">
-                        {uploadingFile.file.name}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatFileSize(uploadingFile.file.size)}
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0">
-                      {uploadingFile.status === "uploading" && (
-                        <Loader2 className="w-3 h-3 animate-spin text-primary" />
-                      )}
-                      {uploadingFile.status === "success" && (
-                        <CheckCircle className="w-3 h-3 text-green-500" />
-                      )}
-                      {uploadingFile.status === "error" && (
-                        <XCircle className="w-3 h-3 text-red-500" />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Enhanced Attachment Preview */}
-          {attachments.length > 0 && (
-            <div className="px-3 sm:px-4 pt-3 pb-2 bg-primary/5 border-b border-border/50">
-              <div className="flex flex-wrap gap-2">
-                {attachments.map((attachment) => (
-                  <div
-                    key={attachment.id}
-                    className="group flex items-center gap-2 bg-primary/15 hover:bg-primary/20 rounded-xl px-3 py-2 text-xs transition-colors mobile-touch"
-                  >
-                    <div className="flex-shrink-0">
-                      {attachment.fileType === "image" ? (
-                        <div className="relative">
-                          <FileImage className="w-4 h-4 text-blue-500" />
-                        </div>
-                      ) : (
-                        <div className="relative">
-                          <FileText className="w-4 h-4 text-red-500" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate max-w-20 sm:max-w-28 md:max-w-36 text-foreground">
-                        {attachment.originalName}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {(attachment.size / 1024).toFixed(1)} KB
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => removeAttachment(attachment.id)}
-                      className="flex-shrink-0 flex justify-center items-center text-muted-foreground hover:text-red-500 opacity-70 group-hover:opacity-100 transition-all mobile-touch"
-                      type="button"
-                      aria-label={`Remove ${attachment.originalName}`}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Input Area */}
           <div className="bg-transparent overflow-y-auto max-h-[250px] sm:max-h-[300px] rounded-t-xl relative">
             <div
               className={cn("relative", isVoiceInputActive && "animate-pulse")}
@@ -1245,7 +1346,7 @@ function PureInputField({
                 }
                 className={cn(
                   "w-full px-3 sm:px-4 py-3 sm:py-2 md:pt-4 pr-10 sm:pr-12 border-none shadow-none scrollbar-none",
-                  "placeholder:text-muted-foreground/40 resize-none text-foreground",
+                  "placeholder:text-muted-foreground/40 resize-none text-primary",
                   "focus-visible:ring-0 focus-visible:ring-offset-0",
                   "min-h-[44px] sm:min-h-[40px] text-base sm:text-base",
                   "selection:bg-primary selection:text-primary-foreground",
@@ -1330,7 +1431,7 @@ function PureInputField({
                   className={cn(
                     isVoiceInputActive
                       ? "text-red-500 hover:text-red-600"
-                      : "text-foreground"
+                      : "text-primary"
                   )}
                   size="md"
                   disabled={status === "streaming" || status === "submitted"}
@@ -1360,24 +1461,289 @@ function PureInputField({
 
           <div className="min-h-[60px] sm:h-14 flex bg-transparent items-center px-2 sm:px-3 border-t border-border/50">
             <div className="flex items-center justify-between w-full gap-1 sm:gap-2 md:gap-3">
-              <div className="flex items-center gap-1 sm:gap-2 flex-shrink min-w-0 overflow-hidden">
+              <div className="flex items-center  flex-shrink min-w-0 overflow-hidden">
                 {!isGuest && (
                   <>
+                    {/* Hide file upload for Reddit and Web search */}
+                    {selectedSearchType !== "reddit" &&
+                      selectedSearchType !== "web" && (
+                        <FileUpload
+                          onFilesUploaded={handleFilesUploaded}
+                          onUploadStatusChange={handleUploadStatusChange}
+                          disabled={
+                            status === "streaming" ||
+                            status === "submitted" ||
+                            (isImageGenMode &&
+                              !getModelConfig(selectedModel).image2imageGen)
+                          }
+                          acceptedFileTypes={
+                            isImageGenMode &&
+                            getModelConfig(selectedModel).image2imageGen
+                              ? "image/png,image/jpeg,image/jpg"
+                              : "image/*,.pdf,.txt,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                          }
+                        />
+                      )}
+                  </>
+                )}
+
+                {!isGuest && (
+                  <>
+                    {/* Unified Tools Dropdown */}
+                    <DropdownMenu
+                      open={isToolsDropdownOpen}
+                      onOpenChange={setIsToolsDropdownOpen}
+                    >
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={cn(
+                            "flex items-center rounded-lg text-xs font-medium transition-all duration-200",
+                            "hover:bg-accent hover:text-primary h-8 w-8 md:h-10 md:w-10"
+                          )}
+                        >
+                          <FaTools className="h-3 w-3 md:h-4 md:w-4 text-primary" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        side="top"
+                        align="start"
+                        className={cn(
+                          "w-40 md:w-64 p-0 overflow-visible",
+                          "border border-border/50 bg-background/95 backdrop-blur-xl",
+                          "shadow-xl rounded-xl"
+                        )}
+                        sideOffset={6}
+                      >
+                        <div className="p-4 md:p-5 space-y-2 md:space-y-3 overflow-visible">
+                          {isImageGenMode ? (
+                            /* Show Aspect Ratio when image gen is ON */
+                            <div className="space-y-2 md:space-y-3">
+                              {/* Image Generation Toggle */}
+                              <div className="flex items-center  justify-between">
+                                <span className="text-xs truncate mr-2.5 md:text-sm text-primary font-medium">
+                                  Image Generation
+                                </span>
+                                <Switch2
+                                  isSelected={isImageGenMode}
+                                  onChange={(isSelected) => {
+                                    setIsImageGenMode(isSelected);
+                                    if (isSelected) {
+                                      const currentConfig =
+                                        getModelConfig(selectedModel);
+                                      if (!currentConfig.isImageGeneration) {
+                                        setModel("Gemini Nano Banana");
+                                      }
+                                    } else {
+                                      const currentConfig =
+                                        getModelConfig(selectedModel);
+                                      if (currentConfig.isImageGeneration) {
+                                        setModel("Gemini 2.5 Flash Lite");
+                                      }
+                                    }
+                                  }}
+                                />
+                              </div>
+                              <label className="text-[10px] md:text-xs text-primary font-semibold  uppercase tracking-wide">
+                                Aspect Ratio
+                              </label>
+                              <div className="space-y-1 mt-1">
+                                {ASPECT_RATIOS.map((ratio) => {
+                                  const RatioIcon = ratio.icon;
+                                  const isSelected =
+                                    selectedAspectRatio.id === ratio.id;
+                                  return (
+                                    <button
+                                      key={ratio.id}
+                                      onClick={() =>
+                                        setSelectedAspectRatio(ratio)
+                                      }
+                                      className={cn(
+                                        "w-full flex items-center gap-2 md:gap-2.5 p-1.5 md:p-2 rounded-lg text-left transition-all",
+                                        "hover:bg-accent/30",
+                                        isSelected && "bg-primary/15"
+                                      )}
+                                    >
+                                      <RatioIcon className="h-3 w-3 md:h-3.5 md:w-3.5 text-primary flex-shrink-0" />
+                                      <div className="flex-1 text-primary min-w-0">
+                                        <div className="flex items-center justify-between">
+                                          <span className="font-medium truncate text-xs md:text-sm ">
+                                            {ratio.name} ({ratio.ratio})
+                                          </span>
+                                          {isSelected && (
+                                            <Check className="h-2.5 w-2.5 md:h-3 md:w-3  flex-shrink-0" />
+                                          )}
+                                        </div>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            /* Show Conversation Style and Search Type when image gen is OFF */
+                            <>
+                              {/* Conversation Style with Sub-dropdown */}
+                              <div className="relative" ref={styleDropdownRef}>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setShowStyleSubDropdown(
+                                      !showStyleSubDropdown
+                                    )
+                                  }
+                                  className="w-full cursor-pointer flex items-center justify-between  rounded-lg "
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs md:text-sm text-primary font-medium">
+                                      Style:
+                                    </span>
+                                    <span className="text-xs md:text-sm text-muted-foreground">
+                                      {getStyleConfig().name}
+                                    </span>
+                                  </div>
+                                  <ChevronDown
+                                    className={cn(
+                                      "h-3 w-3 md:h-3.5 md:w-3.5 text-muted-foreground transition-transform duration-200",
+                                      showStyleSubDropdown && "-rotate-90"
+                                    )}
+                                  />
+                                </button>
+
+                                {/* Style Sub-dropdown */}
+                                {showStyleSubDropdown && (
+                                  <div className="absolute top-0 max-h-44 md:max-h-56 no-scrollbar overflow-y-auto left-full ml-3 md:ml-4 w-36 md:w-48 rounded-xl border border-border/50 bg-background backdrop-blur-xl shadow-xl z-[110]">
+                                    <div className="p-1.5 md:p-2 space-y-1">
+                                      {getAllConversationStyles().map(
+                                        (style) => {
+                                          const StyleIcon = style.icon;
+                                          const isSelected =
+                                            selectedStyle === style.id;
+                                          return (
+                                            <button
+                                              key={style.id}
+                                              onClick={() => {
+                                                setStyle(style.id);
+                                                setShowStyleSubDropdown(false);
+                                              }}
+                                              className={cn(
+                                                "w-full cursor-pointer flex items-center gap-2 md:gap-2.5 p-1.5 md:p-2 rounded-lg text-left transition-all",
+                                                "hover:bg-accent/30",
+                                                isSelected && "bg-primary/15"
+                                              )}
+                                            >
+                                              <StyleIcon className="h-3 w-3 md:h-3.5 md:w-3.5 text-primary flex-shrink-0" />
+                                              <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between">
+                                                  <span className="font-medium text-[10px] md:text-[12px] text-primary">
+                                                    {style.name}
+                                                  </span>
+                                                  {isSelected && (
+                                                    <Check className="h-2.5 w-2.5 md:h-3 md:w-3 text-primary flex-shrink-0" />
+                                                  )}
+                                                </div>
+                                              </div>
+                                            </button>
+                                          );
+                                        }
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="border-t border-border/50" />
+
+                              {/* Search Type */}
+                              <div className="space-y-2 md:space-y-3">
+                                {/* Image Generation Toggle */}
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs mr-2 truncate md:text-sm text-primary font-medium">
+                                    Image Generation
+                                  </span>
+                                  <Switch2
+                                    isSelected={isImageGenMode}
+                                    onChange={(isSelected) => {
+                                      setIsImageGenMode(isSelected);
+                                      if (isSelected) {
+                                        const currentConfig =
+                                          getModelConfig(selectedModel);
+                                        if (!currentConfig.isImageGeneration) {
+                                          setModel("Gemini Nano Banana");
+                                        }
+                                      } else {
+                                        const currentConfig =
+                                          getModelConfig(selectedModel);
+                                        if (currentConfig.isImageGeneration) {
+                                          setModel("Gemini 2.5 Flash Lite");
+                                        }
+                                      }
+                                    }}
+                                  />
+                                </div>
+                                <div className="space-y-2 md:space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs md:text-sm text-primary font-medium">
+                                        Web Search
+                                      </span>
+                                    </div>
+                                    <Switch2
+                                      isSelected={selectedSearchType === "web"}
+                                      onChange={(isSelected) =>
+                                        setSearchType(
+                                          isSelected ? "web" : "chat"
+                                        )
+                                      }
+                                    />
+                                  </div>
+
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs md:text-sm text-primary font-medium">
+                                        Reddit Search
+                                      </span>
+                                    </div>
+                                    <Switch2
+                                      isSelected={
+                                        selectedSearchType === "reddit"
+                                      }
+                                      onChange={(isSelected) =>
+                                        setSearchType(
+                                          isSelected ? "reddit" : "chat"
+                                        )
+                                      }
+                                    />
+                                  </div>
+
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs md:text-sm text-primary font-medium">
+                                        Study Mode
+                                      </span>
+                                    </div>
+                                    <Switch2
+                                      isSelected={
+                                        selectedSearchType === "study"
+                                      }
+                                      onChange={(isSelected) =>
+                                        setSearchType(
+                                          isSelected ? "study" : "chat"
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <div className="min-w-0 flex-shrink overflow-hidden">
                       <ModelSelector isImageGenMode={isImageGenMode} />
                     </div>
-                    {isImageGenMode ? (
-                      <AspectRatioSelector
-                        selectedRatio={selectedAspectRatio}
-                        onRatioChange={setSelectedAspectRatio}
-                        className="hidden md:flex flex-shrink-0"
-                      />
-                    ) : (
-                      <>
-                        <ConversationStyleSelector className="hidden md:flex flex-shrink-0" />
-                        <SearchTypeSelector className="hidden md:flex flex-shrink-0" />
-                      </>
-                    )}
                   </>
                 )}
                 {isGuest && (
@@ -1388,95 +1754,6 @@ function PureInputField({
               </div>
 
               <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 flex-shrink-0">
-                {!isGuest && (
-                  <>
-                    {isImageGenMode ? (
-                      <AspectRatioSelector
-                        selectedRatio={selectedAspectRatio}
-                        onRatioChange={setSelectedAspectRatio}
-                        className="flex md:hidden"
-                      />
-                    ) : (
-                      <>
-                        <ConversationStyleSelector className="flex md:hidden" />
-                        <SearchTypeSelector className="flex md:hidden" />
-                      </>
-                    )}
-                    <Button
-                      variant={isImageGenMode ? "default" : "outline"}
-                      size="icon"
-                      className={`h-10 w-10  shadow-none border-0 sm:h-9 sm:w-9 mobile-touch relative ${
-                        isImageGenMode
-                          ? "bg-primary"
-                          : "text-primary bg-transparent"
-                      }`}
-                      onClick={() => {
-                        const newImageGenMode = !isImageGenMode;
-                        setIsImageGenMode(newImageGenMode);
-
-                        // Handle model switching
-                        if (newImageGenMode) {
-                          // Entering image generation mode - switch to image generation model if not already
-                          const currentConfig = getModelConfig(selectedModel);
-                          if (!currentConfig.isImageGeneration) {
-                            console.log(
-                              "🎨 Switching to image generation model: Gemini Nano Banana"
-                            );
-                            setModel("Gemini Nano Banana");
-                          }
-                        } else {
-                          // Exiting image generation mode - switch back to default model
-                          const currentConfig = getModelConfig(selectedModel);
-                          if (currentConfig.isImageGeneration) {
-                            console.log(
-                              "💬 Switching back to default model: Gemini 2.5 Flash Lite"
-                            );
-                            setModel("Gemini 2.5 Flash Lite");
-                          }
-                        }
-                      }}
-                      disabled={
-                        status === "streaming" || status === "submitted"
-                      }
-                      aria-label={
-                        isImageGenMode
-                          ? "Switch to text mode"
-                          : "Switch to image generation mode"
-                      }
-                      title={
-                        isImageGenMode
-                          ? "Switch to text mode"
-                          : "Generate images with AI"
-                      }
-                    >
-                      <RiImageAiFill
-                        size={22}
-                        className={cn(
-                          isImageGenMode ? "text-background" : "text-primary"
-                        )}
-                      />
-                    </Button>
-                    {/* Hide file upload for Reddit and Web search */}
-                    {selectedSearchType !== "reddit" && selectedSearchType !== "web" && (
-                      <FileUpload
-                        onFilesUploaded={handleFilesUploaded}
-                        onUploadStatusChange={handleUploadStatusChange}
-                        disabled={
-                          status === "streaming" ||
-                          status === "submitted" ||
-                          (isImageGenMode &&
-                            !getModelConfig(selectedModel).image2imageGen)
-                        }
-                        acceptedFileTypes={
-                          isImageGenMode &&
-                          getModelConfig(selectedModel).image2imageGen
-                            ? "image/png,image/jpeg,image/jpg"
-                            : "image/*,.pdf,.txt,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                        }
-                      />
-                    )}
-                  </>
-                )}
                 {status === "submitted" || status === "streaming" ? (
                   <StopButton stop={stop} />
                 ) : (
