@@ -1807,3 +1807,41 @@ html {
     transform: translateX(-70%);
   }
 }
+
+/* PDF Thumbnail Styles */
+.pdf-thumbnail-container {
+  width: 100%;
+  height: 100%;
+}
+
+.pdf-thumbnail-container .react-pdf__Document {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pdf-thumbnail-container .react-pdf__Page {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.pdf-thumbnail-container .react-pdf__Page__canvas {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+/* PDF Preview Page Styles */
+.pdf-preview-page {
+  max-width: 100%;
+}
+
+.pdf-preview-page canvas {
+  max-width: 100%;
+  height: auto !important;
+}

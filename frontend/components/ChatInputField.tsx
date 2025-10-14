@@ -64,6 +64,7 @@ import { AppwriteDB } from "@/lib/appwriteDB";
 import { SparklesIcon } from "./ui/icons/SparklesIcon";
 import { Switch2 } from "@/frontend/components/ui/switch2";
 import { useConversationStyleStore } from "@/frontend/stores/ConversationStyleStore";
+import { PDFThumbnail } from "./ui/PDFThumbnail";
 import { getAllConversationStyles } from "@/lib/conversationStyles";
 import {
   DropdownMenu,
@@ -355,13 +356,16 @@ function PureInputField({
         .map((uploadingFile) => {
           const key = `${uploadingFile.file.name}-${uploadingFile.file.size}-${uploadingFile.file.lastModified}`;
           const isImage = uploadingFile.file.type.startsWith("image/");
-          const url = isImage
-            ? URL.createObjectURL(uploadingFile.file)
-            : undefined;
+          const isPDF = uploadingFile.file.type === "application/pdf";
+          const url =
+            isImage || isPDF
+              ? URL.createObjectURL(uploadingFile.file)
+              : undefined;
 
           return {
             key,
             isImage,
+            isPDF,
             url,
             data: uploadingFile,
           };
@@ -1226,6 +1230,12 @@ function PureInputField({
                         alt={attachment.originalName}
                         className="w-full h-full object-cover"
                       />
+                    ) : attachment.fileType === "pdf" && attachment.url ? (
+                      <PDFThumbnail
+                        url={attachment.url}
+                        alt={attachment.originalName}
+                        className="w-full h-full"
+                      />
                     ) : (
                       <div className="flex items-center justify-center">
                         {getFileIcon(attachment.mimeType)}
@@ -1263,6 +1273,12 @@ function PureInputField({
                         src={preview.url}
                         alt={preview.data.file.name}
                         className="w-full h-full object-cover"
+                      />
+                    ) : preview.isPDF && preview.url ? (
+                      <PDFThumbnail
+                        url={preview.url}
+                        alt={preview.data.file.name}
+                        className="w-full h-full"
                       />
                     ) : (
                       <div className="flex items-center justify-center">
