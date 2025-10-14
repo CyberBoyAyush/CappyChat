@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withBetterStack } from "@logtail/next";
 
 // Bundle analyzer for optimization
 const withBundleAnalyzer = require("@next/bundle-analyzer")({
@@ -116,4 +117,5 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withBundleAnalyzer(nextConfig);
+// Wrap with Better Stack first, then bundle analyzer
+export default withBundleAnalyzer(withBetterStack(nextConfig));

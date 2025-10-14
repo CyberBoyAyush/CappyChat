@@ -8,6 +8,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSubscriptionCheckout, Currency } from '@/services/subscription.service';
 import { Client, Users } from 'node-appwrite';
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logValidationError,
+  flushLogs,
+} from '@/lib/betterstack-logger';
 
 // Initialize server client for user verification
 const client = new Client()
@@ -18,12 +26,23 @@ const client = new Client()
 const users = new Users(client);
 
 export async function POST(req: NextRequest) {
+  const logger = createBetterStackLogger('checkout-create');
+  let userId: string | undefined;
+
   try {
     const body = await req.json();
-    const { userId, userEmail, currency } = body;
+    const { userId: requestUserId, userEmail, currency } = body;
+    userId = requestUserId;
+
+    await logApiRequestStart(logger, '/api/checkout/create', {
+      userId: userId || 'unknown',
+      currency: currency || 'USD',
+    });
 
     // Validate required fields
     if (!userId || !userEmail) {
+      await logValidationError(logger, '/api/checkout/create', 'userId/userEmail', 'User ID and email are required');
+      await flushLogs(logger);
       return NextResponse.json(
         { error: 'User ID and email are required' },
         { status: 400 }
@@ -75,6 +94,13 @@ export async function POST(req: NextRequest) {
       origin
     );
 
+    await logApiRequestSuccess(logger, '/api/checkout/create', {
+      userId,
+      currency: selectedCurrency,
+      customerId: customerId || 'pending',
+    });
+    await flushLogs(logger);
+
     return NextResponse.json({
       success: true,
       paymentUrl,
@@ -84,9 +110,14 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('Error creating checkout:', error);
-    
+
+    await logApiRequestError(logger, '/api/checkout/create', error, {
+      userId: userId || 'unknown',
+    });
+    await flushLogs(logger);
+
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to create checkout session',
         details: error instanceof Error ? error.message : 'Unknown error'
       },

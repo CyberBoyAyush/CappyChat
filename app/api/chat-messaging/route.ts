@@ -15,6 +15,16 @@ import {
 } from "@/lib/tierSystem";
 import { Client, Databases, Query } from "node-appwrite";
 import { checkGuestRateLimit } from "@/lib/guestRateLimit";
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logValidationError,
+  logRateLimit,
+  logCreditConsumption,
+  flushLogs,
+} from "@/lib/betterstack-logger";
 
 export const maxDuration = 60;
 
@@ -55,21 +65,43 @@ const getGlobalMemoryServer = async (
 };
 
 export async function POST(req: NextRequest) {
+  // Create Better Stack logger for this request
+  const logger = createBetterStackLogger("chat-messaging");
+
+  // Declare variables outside try block for error handling
+  let userId: string | undefined;
+  let model: string | undefined;
+
   try {
     const body = await req.json();
     const {
       messages,
-      model,
+      model: requestModel,
       conversationStyle,
       userApiKey,
       experimental_attachments,
-      userId,
+      userId: requestUserId,
       threadId,
       isGuest,
     } = body;
 
+    // Assign to outer scope variables
+    userId = requestUserId;
+    model = requestModel;
+
+    // Log request start
+    await logApiRequestStart(logger, "/api/chat-messaging", {
+      userId: userId || "guest",
+      model,
+      isGuest: !!isGuest,
+      hasAttachments: !!(experimental_attachments && experimental_attachments.length > 0),
+      messageCount: messages?.length || 0,
+    });
+
     // Validate required fields
     if (!messages || !Array.isArray(messages)) {
+      await logValidationError(logger, "/api/chat-messaging", "messages", "Messages array is required");
+      await flushLogs(logger);
       return new Response(
         JSON.stringify({ error: "Messages array is required" }),
         {
@@ -80,6 +112,8 @@ export async function POST(req: NextRequest) {
     }
 
     if (!model || typeof model !== "string") {
+      await logValidationError(logger, "/api/chat-messaging", "model", "Model is required");
+      await flushLogs(logger);
       return new Response(JSON.stringify({ error: "Model is required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -90,6 +124,11 @@ export async function POST(req: NextRequest) {
     if (isGuest) {
       const rateLimitResponse = await checkGuestRateLimit(req);
       if (rateLimitResponse) {
+        await logRateLimit(logger, "/api/chat-messaging", {
+          userId: "guest",
+          reason: "Guest rate limit exceeded",
+        });
+        await flushLogs(logger);
         return rateLimitResponse;
       }
     }
@@ -104,6 +143,11 @@ export async function POST(req: NextRequest) {
     const modelConfig = getModelConfig(actualModel as AIModel);
 
     if (!modelConfig) {
+      await logValidationError(logger, "/api/chat-messaging", "model", "Invalid model specified", {
+        requestedModel: model,
+        actualModel,
+      });
+      await flushLogs(logger);
       return new Response(
         JSON.stringify({ error: "Invalid model specified" }),
         {
@@ -162,6 +206,12 @@ export async function POST(req: NextRequest) {
       );
 
       if (!tierValidation.canUseModel) {
+        await logValidationError(logger, "/api/chat-messaging", "tier", "Tier limit exceeded", {
+          userId,
+          model: actualModel,
+          message: tierValidation.message,
+        });
+        await flushLogs(logger);
         return new Response(
           JSON.stringify({
             error: tierValidation.message || "Model access denied",
@@ -181,7 +231,21 @@ export async function POST(req: NextRequest) {
         userId,
         isGuest
       );
+
+      // Log credit consumption
+      await logCreditConsumption(logger, {
+        userId,
+        model: actualModel,
+        usingBYOK,
+        creditsConsumed,
+      });
+
       if (!creditsConsumed && !usingBYOK) {
+        await logValidationError(logger, "/api/chat-messaging", "credits", "Insufficient credits", {
+          userId,
+          model: actualModel,
+        });
+        await flushLogs(logger);
         return new Response(
           JSON.stringify({
             error: "Insufficient credits for this model",
@@ -360,6 +424,18 @@ export async function POST(req: NextRequest) {
     console.log("Sending request to AI SDK with model:", modelConfig.modelId);
     console.log("Number of processed messages:", processedMessages?.length);
 
+    // Log streaming start
+    await logApiRequestSuccess(logger, "/api/chat-messaging", {
+      userId: userId || "guest",
+      model: actualModel,
+      modelId: modelConfig.modelId,
+      messageCount: processedMessages?.length,
+      hasCustomProfile: !!customProfile,
+      hasProjectPrompt: !!projectPrompt,
+      hasGlobalMemory: !!(globalMemory && globalMemory.enabled),
+      filesInContext: conversationFiles.length,
+    });
+
     // Build system prompt with custom profile information
     let systemPrompt = `
       ${styleConfig.systemPrompt}
@@ -460,13 +536,22 @@ export async function POST(req: NextRequest) {
     const result = streamText({
       model: aiModel,
       messages: processedMessages,
-      onError: (error) => {
+      onError: async (error) => {
         console.error("OpenRouter API error:", error);
+        await logApiRequestError(logger, "/api/chat-messaging", error, {
+          userId: userId || "guest",
+          model: actualModel,
+          modelId: modelConfig.modelId,
+        });
+        await flushLogs(logger);
       },
       system: systemPrompt,
       experimental_transform: [smoothStream({ chunking: "word" })],
       abortSignal: req.signal,
     });
+
+    // Flush logs before returning streaming response
+    await flushLogs(logger);
 
     return result.toDataStreamResponse({
       sendReasoning: true,
@@ -476,6 +561,11 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.log("error", error);
+    await logApiRequestError(logger, "/api/chat-messaging", error, {
+      userId: userId || "guest",
+      model: model || "unknown",
+    });
+    await flushLogs(logger);
     return new NextResponse(
       JSON.stringify({ error: "Internal Server Error" }),
       {

@@ -1,15 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
-import { devError, prodError } from "@/lib/logger";
+import { prodError } from "@/lib/logger";
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logValidationError,
+  flushLogs,
+} from "@/lib/betterstack-logger";
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
+  const logger = createBetterStackLogger('speech-to-text');
+
   try {
     const formData = await req.formData();
     const audioFile = formData.get("audio") as File;
     const userOpenAIKey = formData.get("userOpenAIKey") as string;
 
+    // Log request start
+    await logApiRequestStart(logger, '/api/speech-to-text', {
+      hasAudioFile: !!audioFile,
+      audioSize: audioFile?.size || 0,
+      hasUserKey: !!userOpenAIKey,
+    });
+
     if (!audioFile) {
+      await logValidationError(logger, '/api/speech-to-text', 'audio', 'Audio file is required');
+      await flushLogs(logger);
       return NextResponse.json(
         { error: "Audio file is required" },
         { status: 400 }
@@ -94,11 +113,20 @@ export async function POST(req: NextRequest) {
     const result = await response.json();
 
     if (!result.text) {
+      await logValidationError(logger, '/api/speech-to-text', 'speech', 'No speech detected in audio');
+      await flushLogs(logger);
       return NextResponse.json(
         { error: "No speech detected in audio. Please try again." },
         { status: 400 }
       );
     }
+
+    // Log success
+    await logApiRequestSuccess(logger, '/api/speech-to-text', {
+      textLength: result.text.trim().length,
+      audioSize: audioFile.size,
+    });
+    await flushLogs(logger);
 
     return NextResponse.json({
       text: result.text.trim(),
@@ -106,6 +134,8 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     prodError("Speech-to-text API error", error, "SpeechToTextAPI");
+    await logApiRequestError(logger, '/api/speech-to-text', error);
+    await flushLogs(logger);
     return NextResponse.json(
       { error: "Internal server error. Please try again." },
       { status: 500 }

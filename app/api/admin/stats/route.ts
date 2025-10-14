@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Client, Users, Databases, Query, Models } from 'node-appwrite';
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logAuthEvent,
+  flushLogs,
+} from '@/lib/betterstack-logger';
 
 // Initialize Appwrite client for server-side operations
 const client = new Client()
@@ -11,11 +19,22 @@ const users = new Users(client);
 const databases = new Databases(client);
 
 export async function POST(req: NextRequest) {
+  const logger = createBetterStackLogger('admin-stats');
+
   try {
+    await logApiRequestStart(logger, '/api/admin/stats', {
+      timestamp: new Date().toISOString(),
+    });
+
     const { adminKey } = await req.json();
-    
+
     // Verify admin access
     if (!adminKey || adminKey !== process.env.ADMIN_SECRET_KEY) {
+      await logAuthEvent(logger, 'admin_access_denied', {
+        endpoint: '/api/admin/stats',
+        reason: 'Invalid admin key',
+      });
+      await flushLogs(logger);
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -24,13 +43,20 @@ export async function POST(req: NextRequest) {
 
     // Get all statistics
     const stats = await getAdminStats();
-    
+
+    await logApiRequestSuccess(logger, '/api/admin/stats', {
+      statsRetrieved: true,
+    });
+    await flushLogs(logger);
+
     return NextResponse.json({
       success: true,
       stats
     });
   } catch (error) {
     console.error('Error getting admin stats:', error);
+    await logApiRequestError(logger, '/api/admin/stats', error, {});
+    await flushLogs(logger);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

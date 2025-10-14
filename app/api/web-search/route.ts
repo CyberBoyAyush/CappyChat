@@ -8,7 +8,7 @@ import {
 } from "@/lib/conversationStyles";
 import { NextRequest, NextResponse } from "next/server";
 import { canUserUseModel, consumeCredits, getUserPreferencesServer } from "@/lib/tierSystem";
-import { devLog, devWarn, devError, prodError } from "@/lib/logger";
+import { devLog, devWarn, devError } from "@/lib/logger";
 import { z } from "zod";
 import { tavily } from "@tavily/core";
 import {
@@ -18,6 +18,16 @@ import {
   executeGreeting
 } from "@/lib/tools/actions";
 import { checkGuestRateLimit } from "@/lib/guestRateLimit";
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logValidationError,
+  logRateLimit,
+  logCreditConsumption,
+  flushLogs,
+} from "@/lib/betterstack-logger";
 
 /**
  * Create user-specific tools with preferences baked in
@@ -117,6 +127,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const logger = createBetterStackLogger('web-search');
+  let userId: string | undefined;
+  let model: string | undefined;
+
   try {
     const body = await req.json();
     const {
@@ -124,21 +138,38 @@ export async function POST(req: NextRequest) {
       conversationStyle,
       userApiKey,
       userTavilyApiKey,
-      model,
-      userId,
+      model: requestModel,
+      userId: requestUserId,
       isGuest,
     } = body;
+
+    userId = requestUserId;
+    model = requestModel;
+
+    await logApiRequestStart(logger, '/api/web-search', {
+      userId: userId || 'guest',
+      model: model || 'Gemini 2.5 Flash Lite',
+      isGuest: !!isGuest,
+      messageCount: messages?.length || 0,
+    });
 
     // Guest rate limiting
     if (isGuest) {
       const rateLimitResponse = await checkGuestRateLimit(req);
       if (rateLimitResponse) {
+        await logRateLimit(logger, '/api/web-search', {
+          userId: 'guest',
+          reason: 'guest_rate_limit',
+        });
+        await flushLogs(logger);
         return rateLimitResponse;
       }
     }
 
     // Validate required fields
     if (!messages || !Array.isArray(messages)) {
+      await logValidationError(logger, '/api/web-search', 'messages', 'Messages array is required');
+      await flushLogs(logger);
       return new Response(
         JSON.stringify({ error: "Messages array is required" }),
         {
@@ -151,7 +182,7 @@ export async function POST(req: NextRequest) {
     // Use the provided model or default to Gemini 2.5 Flash Lite
     // Allow any model for web search with Tavily integration
     const selectedModel = model || "Gemini 2.5 Flash Lite";
-    const modelConfig = getModelConfig(selectedModel);
+    const modelConfig = getModelConfig(selectedModel as any);
 
     if (!modelConfig) {
       return new Response(
@@ -309,6 +340,8 @@ export async function POST(req: NextRequest) {
       ]);
 
       if (!creditsConsumed && !usingBYOK) {
+        await logValidationError(logger, '/api/web-search', 'credits', 'Insufficient credits for web search');
+        await flushLogs(logger);
         return new Response(
           JSON.stringify({
             error: "Insufficient credits for web search",
@@ -320,6 +353,13 @@ export async function POST(req: NextRequest) {
           }
         );
       }
+
+      // Log credit consumption
+      await logCreditConsumption(logger, {
+        userId: userId || 'unknown',
+        model: selectedModel,
+        usingBYOK,
+      });
     } catch (error) {
       devError("Failed to consume credits:", error);
 
@@ -328,6 +368,11 @@ export async function POST(req: NextRequest) {
         devWarn("Credit consumption timed out, continuing with search...");
         // Continue execution - don't block the search for credit consumption issues
       } else {
+        await logApiRequestError(logger, '/api/web-search', error, {
+          userId: userId || 'unknown',
+          model: selectedModel,
+        });
+        await flushLogs(logger);
         return new Response(
           JSON.stringify({
             error: "Failed to process request. Please try again.",
@@ -429,8 +474,9 @@ export async function POST(req: NextRequest) {
         );
 
         // Log tool usage
+        let toolsUsed: string[] = [];
         if (result.steps && result.steps.length > 0) {
-          const toolsUsed = result.steps
+          toolsUsed = result.steps
             .flatMap(step => step.toolCalls?.map(tc => tc.toolName) || [])
             .filter((v, i, a) => a.indexOf(v) === i); // unique
           devLog(`🔧 Tools used: ${toolsUsed.join(', ')}`);
@@ -443,6 +489,16 @@ export async function POST(req: NextRequest) {
           devWarn(`⚠️ Found ${brokenMatches.length} broken citations (missing URLs):`,
             brokenMatches.map(m => m[0]));
         }
+
+        // Log success
+        await logApiRequestSuccess(logger, '/api/web-search', {
+          userId: userId || 'unknown',
+          model: selectedModel,
+          textLength: result.text.length,
+          toolsUsed: toolsUsed.join(', '),
+          toolCallCount: result.steps?.length || 0,
+        });
+        await flushLogs(logger);
       },
       system: systemPrompt,
       experimental_transform: [smoothStream({ chunking: "word" })],
@@ -457,6 +513,11 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     devLog("error", error);
+    await logApiRequestError(logger, '/api/web-search', error, {
+      userId: userId || 'unknown',
+      model: model || 'unknown',
+    });
+    await flushLogs(logger);
     return new NextResponse(
       JSON.stringify({ error: "Internal Server Error" }),
       {

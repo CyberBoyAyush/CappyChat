@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminGetUserByEmail, adminUpdateUserTier, adminResetUserCredits, getUserPreferencesServer } from '@/lib/tierSystem';
 import { Client, Users } from 'node-appwrite';
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logAuthEvent,
+  flushLogs,
+} from '@/lib/betterstack-logger';
 
 
 // Initialize server client
@@ -12,11 +20,25 @@ const client = new Client()
 const users = new Users(client);
 
 export async function POST(req: NextRequest) {
+  const logger = createBetterStackLogger('admin-manage-user');
+  let action: string | undefined;
+
   try {
-    const { adminKey, action, email, userId, tier, subscriptionOverride } = await req.json();
-    
+    const body = await req.json();
+    const { adminKey, action: requestAction, email, userId, tier, subscriptionOverride } = body;
+    action = requestAction;
+
+    await logApiRequestStart(logger, '/api/admin/manage-user', {
+      action: action || 'unknown',
+    });
+
     // Verify admin access
     if (!adminKey || adminKey !== process.env.ADMIN_SECRET_KEY) {
+      await logAuthEvent(logger, 'admin_access_denied', {
+        endpoint: '/api/admin/manage-user',
+        action: action || 'unknown',
+      });
+      await flushLogs(logger);
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -42,7 +64,13 @@ export async function POST(req: NextRequest) {
         
         // Get user preferences
         const preferences = await getUserPreferencesServer(user.$id);
-        
+
+        await logApiRequestSuccess(logger, '/api/admin/manage-user', {
+          action: 'getUserByEmail',
+          email,
+        });
+        await flushLogs(logger);
+
         return NextResponse.json({
           success: true,
           user: {
@@ -160,6 +188,10 @@ export async function POST(req: NextRequest) {
     }
   } catch (error) {
     console.error('Error in admin manage user:', error);
+    await logApiRequestError(logger, '/api/admin/manage-user', error, {
+      action: action || 'unknown',
+    });
+    await flushLogs(logger);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

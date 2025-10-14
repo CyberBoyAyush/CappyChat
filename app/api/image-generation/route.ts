@@ -2,16 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { canUserUseModel, consumeCredits } from '@/lib/tierSystem';
 import { prodError } from '@/lib/logger';
 import { CloudinaryService } from '@/lib/cloudinary';
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logValidationError,
+  logCreditConsumption,
+  flushLogs,
+} from '@/lib/betterstack-logger';
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
+  const logger = createBetterStackLogger('image-generation');
+
+  // Declare variables outside try block for error handling
+  let userId: string | undefined;
+  let model: string | undefined;
+
   try {
     const body = await req.json();
     const {
       prompt,
-      model,
-      userId,
+      model: requestModel,
+      userId: requestUserId,
       isGuest,
       userApiKey,
       width = 1024,
@@ -20,8 +35,23 @@ export async function POST(req: NextRequest) {
       conversationHistory = []
     } = body;
 
+    // Assign to outer scope variables
+    userId = requestUserId;
+    model = requestModel;
+
+    // Log request start
+    await logApiRequestStart(logger, '/api/image-generation', {
+      userId: userId || 'guest',
+      model,
+      isGuest: !!isGuest,
+      dimensions: `${width}x${height}`,
+      hasConversationHistory: conversationHistory.length > 0,
+    });
+
     // Validate required fields
     if (!prompt || !model) {
+      await logValidationError(logger, '/api/image-generation', 'prompt/model', 'Prompt and model are required');
+      await flushLogs(logger);
       return NextResponse.json(
         { error: 'Prompt and model are required' },
         { status: 400 }
@@ -32,7 +62,7 @@ export async function POST(req: NextRequest) {
     if (!isGuest) {
       // Check tier validation for image generation models
       const usingBYOK = !!userApiKey;
-      const tierValidation = await canUserUseModel(model, usingBYOK, userId, isGuest);
+      const tierValidation = await canUserUseModel(model as any, usingBYOK, userId, isGuest);
 
       if (!tierValidation.canUseModel) {
         return NextResponse.json(
@@ -236,12 +266,26 @@ export async function POST(req: NextRequest) {
     // Consume credits for non-guest users
     if (!isGuest && userId) {
       try {
-        await consumeCredits(model, false, userId, isGuest);
+        await consumeCredits(model as any, false, userId, isGuest);
         console.log(`💳 Credits consumed for user ${userId} using model ${model}`);
+        await logCreditConsumption(logger, {
+          userId,
+          model,
+          dimensions: `${width}x${height}`,
+        });
       } catch (error) {
         console.error('Failed to consume credits:', error);
       }
     }
+
+    // Log success
+    await logApiRequestSuccess(logger, '/api/image-generation', {
+      userId: userId || 'guest',
+      model,
+      dimensions: `${width}x${height}`,
+      imageUploaded: finalImageUrl !== imageUrl,
+    });
+    await flushLogs(logger);
 
     return NextResponse.json({
       success: true,
@@ -253,6 +297,13 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     prodError('Image generation error', error, 'ImageGenerationAPI');
+
+    // Log error
+    await logApiRequestError(logger, '/api/image-generation', error, {
+      userId: userId || 'unknown',
+      model: model || 'unknown',
+    });
+    await flushLogs(logger);
 
     if (error instanceof Error) {
       if (error.message.includes('API key') || error.message.includes('401')) {

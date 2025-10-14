@@ -11,6 +11,14 @@ import { canUserUseModel, consumeCredits } from "@/lib/tierSystem";
 import { tavily } from "@tavily/core";
 import { devLog, devWarn, devError, prodError } from "@/lib/logger";
 import { checkGuestRateLimit } from "@/lib/guestRateLimit";
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logCreditConsumption,
+  flushLogs,
+} from "@/lib/betterstack-logger";
 
 export const maxDuration = 60;
 
@@ -66,6 +74,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const logger = createBetterStackLogger('study-mode');
+  let userId: string | undefined;
+  let model: string | undefined;
+
   try {
     const body = await req.json();
     const {
@@ -73,10 +85,20 @@ export async function POST(req: NextRequest) {
       conversationStyle,
       userApiKey,
       userTavilyApiKey,
-      model,
-      userId,
+      model: requestModel,
+      userId: requestUserId,
       isGuest,
     } = body;
+
+    userId = requestUserId;
+    model = requestModel;
+
+    await logApiRequestStart(logger, '/api/study-mode', {
+      userId: userId || 'guest',
+      model: model || 'Gemini 2.5 Flash Lite',
+      isGuest: !!isGuest,
+      messageCount: messages?.length || 0,
+    });
 
     // Guest rate limiting
     if (isGuest) {
@@ -99,7 +121,7 @@ export async function POST(req: NextRequest) {
 
     // Use the provided model or default to Gemini 2.5 Flash Lite
     const selectedModel = model || "Gemini 2.5 Flash Lite";
-    const modelConfig = getModelConfig(selectedModel);
+    const modelConfig = getModelConfig(selectedModel as any);
 
     if (!modelConfig) {
       return new Response(
@@ -355,12 +377,24 @@ Return ONLY the search query.`;
           }
         );
       }
+
+      // Log credit consumption
+      await logCreditConsumption(logger, {
+        userId: userId || 'unknown',
+        model: selectedModel,
+        usingBYOK,
+      });
     } catch (error) {
       devError("Failed to consume credits:", error);
 
       if (error instanceof Error && error.message.includes("timeout")) {
         devWarn("Credit consumption timed out, continuing with Study Mode...");
       } else {
+        await logApiRequestError(logger, '/api/study-mode', error, {
+          userId: userId || 'unknown',
+          model: selectedModel,
+        });
+        await flushLogs(logger);
         return new Response(
           JSON.stringify({
             error: "Failed to process request. Please try again.",
@@ -732,11 +766,19 @@ Return ONLY the search query.`;
       onError: (error) => {
         devLog("error", error);
       },
-      onFinish: (result) => {
+      onFinish: async (result) => {
         devLog(
           "📚 Study Mode response finished. Text length:",
           result.text.length
         );
+
+        // Log success
+        await logApiRequestSuccess(logger, '/api/study-mode', {
+          userId: userId || 'unknown',
+          model: selectedModel,
+          textLength: result.text.length,
+        });
+        await flushLogs(logger);
       },
       system: systemPrompt,
       experimental_transform: [smoothStream({ chunking: "word" })],
@@ -751,6 +793,11 @@ Return ONLY the search query.`;
     });
   } catch (error) {
     devLog("error", error);
+    await logApiRequestError(logger, '/api/study-mode', error, {
+      userId: userId || 'unknown',
+      model: model || 'unknown',
+    });
+    await flushLogs(logger);
     return new NextResponse(
       JSON.stringify({ error: "Internal Server Error" }),
       {

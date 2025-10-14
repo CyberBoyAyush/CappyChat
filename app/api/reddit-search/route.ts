@@ -11,29 +11,55 @@ import { canUserUseModel, consumeCredits } from "@/lib/tierSystem";
 import { tavily } from "@tavily/core";
 import { devLog, devWarn, devError, prodError } from "@/lib/logger";
 import { checkGuestRateLimit } from "@/lib/guestRateLimit";
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logValidationError,
+  logRateLimit,
+  logCreditConsumption,
+  flushLogs,
+} from "@/lib/betterstack-logger";
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
+  const logger = createBetterStackLogger('reddit-search');
+  let userId: string | undefined;
+  let model: string | undefined;
+
   try {
     const {
       messages,
-      model,
+      model: requestModel,
       conversationStyle,
-      userId,
+      userId: requestUserId,
       userApiKey,
       userTavilyApiKey,
       isGuest,
     } = await req.json();
 
+    userId = requestUserId;
+    model = requestModel;
+
     // Use the provided model or default to Gemini 2.5 Flash Lite
     const selectedModel = model || "Gemini 2.5 Flash Lite";
+
+    await logApiRequestStart(logger, '/api/reddit-search', {
+      userId: userId || 'guest',
+      model: selectedModel,
+      isGuest: !!isGuest,
+      messageCount: messages?.length || 0,
+    });
 
     devLog(
       `🔍 Reddit search request received for user ${userId} using model ${selectedModel}`
     );
 
     if (!messages || messages.length === 0) {
+      await logValidationError(logger, '/api/reddit-search', 'messages', 'No messages provided');
+      await flushLogs(logger);
       return new Response(JSON.stringify({ error: "No messages provided" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -207,6 +233,8 @@ export async function POST(req: NextRequest) {
       ]);
 
       if (!creditsConsumed && !usingBYOK) {
+        await logValidationError(logger, '/api/reddit-search', 'credits', 'Insufficient credits for this model');
+        await flushLogs(logger);
         return new Response(
           JSON.stringify({
             error: "Insufficient credits for this model",
@@ -218,6 +246,13 @@ export async function POST(req: NextRequest) {
           }
         );
       }
+
+      // Log credit consumption
+      await logCreditConsumption(logger, {
+        userId: userId || 'unknown',
+        model: selectedModel,
+        usingBYOK,
+      });
     } catch (error) {
       devError("Failed to consume credits:", error);
 
@@ -226,6 +261,11 @@ export async function POST(req: NextRequest) {
         devWarn("Credit consumption timed out, continuing with search...");
         // Continue execution - don't block the search for credit consumption issues
       } else {
+        await logApiRequestError(logger, '/api/reddit-search', error, {
+          userId: userId || 'unknown',
+          model: selectedModel,
+        });
+        await flushLogs(logger);
         return new Response(
           JSON.stringify({
             error: "Failed to process request. Please try again.",
@@ -299,7 +339,7 @@ export async function POST(req: NextRequest) {
       onError: (error) => {
         devLog("error", error);
       },
-      onFinish: (result) => {
+      onFinish: async (result) => {
         devLog(
           "🔍 Reddit search response finished. Text length:",
           result.text.length
@@ -313,6 +353,15 @@ export async function POST(req: NextRequest) {
             devLog("🔍 Extracted URLs from marker:", markerMatch[1].split("|"));
           }
         }
+
+        // Log success
+        await logApiRequestSuccess(logger, '/api/reddit-search', {
+          userId: userId || 'unknown',
+          model: selectedModel,
+          textLength: result.text.length,
+          hasMarker,
+        });
+        await flushLogs(logger);
       },
       system: `
       ${styleConfig.systemPrompt}
@@ -358,6 +407,11 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     devLog("error", error);
+    await logApiRequestError(logger, '/api/reddit-search', error, {
+      userId: userId || 'unknown',
+      model: model || 'unknown',
+    });
+    await flushLogs(logger);
     return new NextResponse(
       JSON.stringify({ error: "Internal Server Error" }),
       {
