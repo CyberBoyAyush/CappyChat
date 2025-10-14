@@ -1,81 +1,123 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { NextResponse } from "next/server";
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logValidationError,
+  flushLogs,
+} from "@/lib/betterstack-logger";
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const {
-    prompt,
-    isTitle,
-    isEnhancement,
-    context,
-    messageId,
-    threadId,
-    userApiKey,
-    isSuggestions,
-    userQuestion,
-    aiAnswer,
-    suggestionCount,
-    isQueryOptimization,
-    isMultiQuery, // For generating multiple search queries
-  } = body;
-
-  // AI text generation is completely free - no tier validation or credit consumption
-  console.log(
-    "📝 AI text generation - completely free service (no credits consumed)"
-  );
-
-  // Use user's API key if provided, otherwise fall back to system key
-  const apiKey = userApiKey || process.env.OPENROUTER_API_KEY;
-
-  if (!apiKey) {
-    return NextResponse.json(
-      {
-        error:
-          "OpenRouter API key not configured. Please add your API key in Settings → Application.",
-      },
-      { status: 500 }
-    );
-  }
-
-  const openrouter = createOpenRouter({
-    apiKey,
-    headers: {
-      "HTTP-Referer": "https://cappychat.com",
-      "X-Title": "CappyChat - AI Chat Application",
-      "User-Agent": "CappyChat/1.0.0",
-    },
-  });
-
-  // Validate required fields (skip for suggestions, query optimization, and multi-query)
-  if (!isEnhancement && !isSuggestions && !isQueryOptimization && !isMultiQuery) {
-    if (!prompt || typeof prompt !== "string") {
-      return NextResponse.json(
-        { error: "Prompt is required" },
-        { status: 400 }
-      );
-    }
-  }
-
-  // For enhancement, suggestions, query optimization, or multi-query, we don't need messageId and threadId
-  if (!isEnhancement && !isSuggestions && !isQueryOptimization && !isMultiQuery) {
-    if (!messageId || typeof messageId !== "string") {
-      return NextResponse.json(
-        { error: "Message ID is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!threadId || typeof threadId !== "string") {
-      return NextResponse.json(
-        { error: "Thread ID is required" },
-        { status: 400 }
-      );
-    }
-  }
+  // Create Better Stack logger for this request
+  const logger = createBetterStackLogger("ai-text-generation");
 
   try {
-    if (isEnhancement) {
+    const body = await req.json();
+    const {
+      prompt,
+      isTitle,
+      isEnhancement,
+      context,
+      messageId,
+      threadId,
+      userApiKey,
+      isSuggestions,
+      userQuestion,
+      aiAnswer,
+      suggestionCount,
+      isQueryOptimization,
+      isMultiQuery, // For generating multiple search queries
+    } = body;
+
+    // Determine request type for logging
+    const requestType = isTitle
+      ? "title"
+      : isEnhancement
+      ? "enhancement"
+      : isSuggestions
+      ? "suggestions"
+      : isQueryOptimization
+      ? "query-optimization"
+      : isMultiQuery
+      ? "multi-query"
+      : "unknown";
+
+    // Log request start
+    await logApiRequestStart(logger, "/api/ai-text-generation", {
+      requestType,
+      hasPrompt: !!prompt,
+      hasContext: !!context,
+      hasSuggestions: !!isSuggestions,
+    });
+
+    // AI text generation is completely free - no tier validation or credit consumption
+    console.log(
+      "📝 AI text generation - completely free service (no credits consumed)"
+    );
+
+    // Use user's API key if provided, otherwise fall back to system key
+    const apiKey = userApiKey || process.env.OPENROUTER_API_KEY;
+
+    if (!apiKey) {
+      await logValidationError(logger, "/api/ai-text-generation", "apiKey", "API key not configured");
+      await flushLogs(logger);
+      return NextResponse.json(
+        {
+          error:
+            "OpenRouter API key not configured. Please add your API key in Settings → Application.",
+        },
+        { status: 500 }
+      );
+    }
+
+    const openrouter = createOpenRouter({
+      apiKey,
+      headers: {
+        "HTTP-Referer": "https://cappychat.com",
+        "X-Title": "CappyChat - AI Chat Application",
+        "User-Agent": "CappyChat/1.0.0",
+      },
+    });
+
+    // Validate required fields (skip for suggestions, query optimization, and multi-query)
+    if (!isEnhancement && !isSuggestions && !isQueryOptimization && !isMultiQuery) {
+      if (!prompt || typeof prompt !== "string") {
+        await logValidationError(logger, "/api/ai-text-generation", "prompt", "Prompt is required");
+        await flushLogs(logger);
+        return NextResponse.json(
+          { error: "Prompt is required" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // For enhancement, suggestions, query optimization, or multi-query, we don't need messageId and threadId
+    if (!isEnhancement && !isSuggestions && !isQueryOptimization && !isMultiQuery) {
+      if (!messageId || typeof messageId !== "string") {
+        await logValidationError(logger, "/api/ai-text-generation", "messageId", "Message ID is required");
+        await flushLogs(logger);
+        return NextResponse.json(
+          { error: "Message ID is required" },
+          { status: 400 }
+        );
+      }
+
+      if (!threadId || typeof threadId !== "string") {
+        await logValidationError(logger, "/api/ai-text-generation", "threadId", "Thread ID is required");
+        await flushLogs(logger);
+        return NextResponse.json(
+          { error: "Thread ID is required" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Main logic wrapped in try-catch
+    try {
+      if (isEnhancement) {
       // Prompt enhancement using Gemini 2.5 Flash Lite (free model)
       const { text: enhancedPrompt } = await generateText({
         model: openrouter("google/gemini-2.5-flash-lite"),
@@ -124,6 +166,14 @@ OUTPUT THE ENHANCED PROMPT ONLY. NO EXPLANATIONS. NO ANSWERS.`,
         temperature: 0.2,
         maxTokens: 200,
       });
+
+      // Log success
+      await logApiRequestSuccess(logger, "/api/ai-text-generation", {
+        requestType: "enhancement",
+        originalLength: prompt?.length || 0,
+        enhancedLength: enhancedPrompt?.length || 0,
+      });
+      await flushLogs(logger);
 
       return NextResponse.json({ enhancedPrompt, isEnhancement });
     } else if (isSuggestions) {
@@ -202,6 +252,13 @@ OUTPUT THE ENHANCED PROMPT ONLY. NO EXPLANATIONS. NO ANSWERS.`,
         })
         .slice(0, count);
 
+      // Log success
+      await logApiRequestSuccess(logger, "/api/ai-text-generation", {
+        requestType: "suggestions",
+        suggestionCount: suggestions.length,
+      });
+      await flushLogs(logger);
+
       return NextResponse.json({ suggestions, isSuggestions: true });
     } else if (isQueryOptimization) {
       // Query optimization for study mode image search
@@ -212,6 +269,13 @@ OUTPUT THE ENHANCED PROMPT ONLY. NO EXPLANATIONS. NO ANSWERS.`,
         maxTokens: 100,
         temperature: 0.3,
       });
+
+      // Log success
+      await logApiRequestSuccess(logger, "/api/ai-text-generation", {
+        requestType: "query-optimization",
+        queryLength: text?.length || 0,
+      });
+      await flushLogs(logger);
 
       return NextResponse.json({ text, isQueryOptimization: true });
     } else if (isMultiQuery) {
@@ -273,6 +337,13 @@ Output: ["Latest AI news 2025", "Recent artificial intelligence developments", "
         queries = [prompt, prompt, prompt]; // Fallback to original prompt
       }
 
+      // Log success
+      await logApiRequestSuccess(logger, "/api/ai-text-generation", {
+        requestType: "multi-query",
+        queryCount: queries.length,
+      });
+      await flushLogs(logger);
+
       return NextResponse.json({ queries, isMultiQuery: true });
     } else {
       // Title generation (existing functionality) - handles both isTitle=true and undefined
@@ -288,16 +359,40 @@ Output: ["Latest AI news 2025", "Recent artificial intelligence developments", "
         prompt,
       });
 
-      return NextResponse.json({ title, isTitle, messageId, threadId });
+      // Log success
+      await logApiRequestSuccess(logger, "/api/ai-text-generation", {
+        requestType: "title",
+        titleLength: title?.length || 0,
+      });
+      await flushLogs(logger);
+
+        return NextResponse.json({ title, isTitle, messageId, threadId });
+      }
+    } catch (error) {
+      console.error("Failed to generate:", error);
+
+      // Log error with request type from outer scope
+      await logApiRequestError(logger, "/api/ai-text-generation", error, {
+        requestType,
+      });
+      await flushLogs(logger);
+
+      return NextResponse.json(
+        {
+          error: requestType === "enhancement"
+            ? "Failed to enhance prompt"
+            : "Failed to generate title",
+        },
+        { status: 500 }
+      );
     }
-  } catch (error) {
-    console.error("Failed to generate:", error);
+  } catch (outerError) {
+    // Handle errors from the outer try block (e.g., JSON parsing)
+    console.error("Failed to process request:", outerError);
+    await logApiRequestError(logger, "/api/ai-text-generation", outerError);
+    await flushLogs(logger);
     return NextResponse.json(
-      {
-        error: isEnhancement
-          ? "Failed to enhance prompt"
-          : "Failed to generate title",
-      },
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }

@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Client, Users, Query } from 'node-appwrite';
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logValidationError,
+  flushLogs,
+} from '@/lib/betterstack-logger';
 
 // Initialize server client for user lookup
 const client = new Client()
@@ -10,13 +18,21 @@ const client = new Client()
 const users = new Users(client);
 
 export async function POST(req: NextRequest) {
+  const logger = createBetterStackLogger('projects');
+
   try {
     const body = await req.json();
     const { action, email, userIds } = body;
 
+    await logApiRequestStart(logger, '/api/projects', {
+      action: action || 'unknown',
+    });
+
     switch (action) {
       case 'findUserByEmail':
         if (!email) {
+          await logValidationError(logger, '/api/projects', 'email', 'Email is required');
+          await flushLogs(logger);
           return NextResponse.json(
             { error: 'Email is required' },
             { status: 400 }
@@ -44,6 +60,12 @@ export async function POST(req: NextRequest) {
 
         console.log(`Successfully found user: ${userToAdd.name} (${userToAdd.email})`);
 
+        await logApiRequestSuccess(logger, '/api/projects', {
+          action: 'findUserByEmail',
+          userFound: true,
+        });
+        await flushLogs(logger);
+
         return NextResponse.json({
           success: true,
           user: {
@@ -55,6 +77,8 @@ export async function POST(req: NextRequest) {
 
       case 'getUserDetails':
         if (!userIds || !Array.isArray(userIds)) {
+          await logValidationError(logger, '/api/projects', 'userIds', 'User IDs array is required');
+          await flushLogs(logger);
           return NextResponse.json(
             { error: 'User IDs array is required' },
             { status: 400 }
@@ -82,12 +106,20 @@ export async function POST(req: NextRequest) {
           })
         );
 
+        await logApiRequestSuccess(logger, '/api/projects', {
+          action: 'getUserDetails',
+          userCount: userDetails.length,
+        });
+        await flushLogs(logger);
+
         return NextResponse.json({
           success: true,
           users: userDetails
         });
 
       default:
+        await logValidationError(logger, '/api/projects', 'action', 'Invalid action');
+        await flushLogs(logger);
         return NextResponse.json(
           { error: 'Invalid action' },
           { status: 400 }
@@ -95,6 +127,8 @@ export async function POST(req: NextRequest) {
     }
   } catch (error: any) {
     console.error('Project API error:', error);
+    await logApiRequestError(logger, '/api/projects', error);
+    await flushLogs(logger);
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

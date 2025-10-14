@@ -7,6 +7,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Client, Users } from 'node-appwrite';
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logAuthEvent,
+  flushLogs,
+} from '@/lib/betterstack-logger';
 
 // Initialize Appwrite client
 const client = new Client()
@@ -18,12 +26,23 @@ const users = new Users(client);
 
 // GET - Fetch all premium subscriptions
 export async function GET(req: NextRequest) {
+  const logger = createBetterStackLogger('admin-subscriptions');
+
   try {
+    await logApiRequestStart(logger, '/api/admin/subscriptions', {
+      method: 'GET',
+    });
+
     const { searchParams } = new URL(req.url);
     const adminKey = searchParams.get('adminKey');
 
     // Verify admin access using admin key
     if (!adminKey || adminKey !== process.env.ADMIN_SECRET_KEY) {
+      await logAuthEvent(logger, 'admin_access_denied', {
+        endpoint: '/api/admin/subscriptions',
+        method: 'GET',
+      });
+      await flushLogs(logger);
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 403 }
@@ -88,6 +107,12 @@ export async function GET(req: NextRequest) {
 
     const combinedData = usersWithSubscriptions;
 
+    await logApiRequestSuccess(logger, '/api/admin/subscriptions', {
+      method: 'GET',
+      subscriptionsCount: combinedData.length,
+    });
+    await flushLogs(logger);
+
     return NextResponse.json({
       success: true,
       data: combinedData,
@@ -96,8 +121,12 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching subscriptions:', error);
+    await logApiRequestError(logger, '/api/admin/subscriptions', error, {
+      method: 'GET',
+    });
+    await flushLogs(logger);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to fetch subscriptions',
         details: error instanceof Error ? error.message : 'Unknown error'
       },

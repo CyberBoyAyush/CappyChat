@@ -11,6 +11,16 @@ import { Client, Databases, Query } from "node-appwrite";
 import { CloudinaryService } from "@/lib/cloudinary";
 import { FileAttachment } from "@/lib/appwriteDB";
 import { devLog } from "@/lib/logger";
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logValidationError,
+  logFileOperation,
+  logDatabaseOperation,
+  flushLogs,
+} from "@/lib/betterstack-logger";
 
 // Initialize server client
 const client = new Client()
@@ -182,10 +192,19 @@ async function handleBulkDeleteImages(userId: string) {
 
 // POST: List all files for current user (changed from GET to POST to receive userId in body)
 export async function POST(req: NextRequest) {
+  const logger = createBetterStackLogger('files');
+
   try {
     const { userId } = await req.json();
 
+    await logApiRequestStart(logger, '/api/files', {
+      userId: userId || 'unknown',
+      method: 'POST',
+    });
+
     if (!userId) {
+      await logValidationError(logger, '/api/files', 'userId', 'User ID is required');
+      await flushLogs(logger);
       return NextResponse.json(
         { error: "User ID is required" },
         { status: 400 }
@@ -267,6 +286,12 @@ export async function POST(req: NextRequest) {
     // Calculate total size
     const totalSize = uniqueFiles.reduce((sum, file) => sum + file.size, 0);
 
+    await logApiRequestSuccess(logger, '/api/files', {
+      totalFiles: uniqueFiles.length,
+      totalSize,
+    });
+    await flushLogs(logger);
+
     return NextResponse.json({
       success: true,
       files: uniqueFiles,
@@ -275,6 +300,8 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching user files:", error);
+    await logApiRequestError(logger, '/api/files', error);
+    await flushLogs(logger);
     return NextResponse.json(
       { error: "Failed to fetch files" },
       { status: 500 }
@@ -284,11 +311,21 @@ export async function POST(req: NextRequest) {
 
 // DELETE: Delete a specific file or bulk delete images
 export async function DELETE(req: NextRequest) {
+  const logger = createBetterStackLogger('files');
+
   try {
     const { userId, publicId, resourceType, bulkDeleteImages } =
       await req.json();
 
+    await logApiRequestStart(logger, '/api/files', {
+      userId: userId || 'unknown',
+      method: 'DELETE',
+      bulkDelete: !!bulkDeleteImages,
+    });
+
     if (!userId) {
+      await logValidationError(logger, '/api/files', 'userId', 'User ID is required');
+      await flushLogs(logger);
       return NextResponse.json(
         { error: "User ID is required" },
         { status: 400 }
@@ -401,12 +438,25 @@ export async function DELETE(req: NextRequest) {
       // Continue even if database update fails - file is already deleted from storage
     }
 
+    await logFileOperation(logger, 'delete', {
+      userId,
+      publicId,
+      resourceType,
+    });
+    await logApiRequestSuccess(logger, '/api/files', {
+      operation: 'delete',
+      publicId,
+    });
+    await flushLogs(logger);
+
     return NextResponse.json({
       success: true,
       message: "File deleted successfully",
     });
   } catch (error) {
     console.error("Error deleting file:", error);
+    await logApiRequestError(logger, '/api/files', error);
+    await flushLogs(logger);
     return NextResponse.json(
       { error: "Failed to delete file" },
       { status: 500 }

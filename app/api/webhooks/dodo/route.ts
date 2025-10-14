@@ -9,6 +9,13 @@ import { Webhooks } from '@dodopayments/nextjs';
 import { DODO_CONFIG } from '@/lib/dodo-client';
 import { UserSubscription, TIER_LIMITS } from '@/lib/appwrite';
 import { createSafeWebhookHandler, extractUserIdSafely } from '@/lib/webhookSafety';
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  flushLogs,
+} from '@/lib/betterstack-logger';
 
 // Server-side function to update user subscription and tier atomically
 const updateUserSubscriptionAndTierServer = async (
@@ -101,9 +108,16 @@ const extractUserId = (payload: any): string | null => {
 
 export const POST = Webhooks({
   webhookKey: DODO_CONFIG.webhookSecret,
-  
+
   // Handle all webhook events for logging
   onPayload: async (payload) => {
+    const logger = createBetterStackLogger('webhook-dodo');
+    await logApiRequestStart(logger, '/api/webhooks/dodo', {
+      eventType: payload.type,
+      timestamp: new Date().toISOString(),
+    });
+    await flushLogs(logger);
+
     console.log('DODO Webhook received:', {
       type: payload.type,
       timestamp: new Date().toISOString(),
@@ -113,37 +127,53 @@ export const POST = Webhooks({
 
   // Subscription became active (new subscription or reactivation)
   onSubscriptionActive: createSafeWebhookHandler('SubscriptionActive', async (payload) => {
+    const logger = createBetterStackLogger('webhook-dodo');
     console.log('🎉 Subscription activated webhook received!');
 
-    const userId = extractUserId(payload);
-    const subscriptionData = payload.data as any;
+    try {
+      const userId = extractUserId(payload);
+      const subscriptionData = payload.data as any;
 
-    const subscriptionUpdate = {
-      tier: 'PREMIUM' as const,
-      status: 'active' as const,
-      customerId: subscriptionData.customer?.customer_id || subscriptionData.customer_id,
-      subscriptionId: subscriptionData.subscription_id || subscriptionData.id,
-      currentPeriodEnd: subscriptionData.current_period_end,
-      next_billing_date: subscriptionData.next_billing_date || subscriptionData.current_period_end, // Set next billing date
-      cancelAtPeriodEnd: false,
-      currency: subscriptionData.billing_currency as 'INR' | 'USD',
-      amount: subscriptionData.recurring_pre_tax_amount || subscriptionData.amount,
-    };
+      const subscriptionUpdate = {
+        tier: 'PREMIUM' as const,
+        status: 'active' as const,
+        customerId: subscriptionData.customer?.customer_id || subscriptionData.customer_id,
+        subscriptionId: subscriptionData.subscription_id || subscriptionData.id,
+        currentPeriodEnd: subscriptionData.current_period_end,
+        next_billing_date: subscriptionData.next_billing_date || subscriptionData.current_period_end, // Set next billing date
+        cancelAtPeriodEnd: false,
+        currency: subscriptionData.billing_currency as 'INR' | 'USD',
+        amount: subscriptionData.recurring_pre_tax_amount || subscriptionData.amount,
+      };
 
-    const tierUpdate = {
-      tier: 'premium' as const,
-      freeCredits: 1200,      // Premium tier free model credits
-      premiumCredits: 600,    // Premium tier premium model credits
-      superPremiumCredits: 50, // Premium tier super premium model credits
-      lastResetDate: new Date().toISOString(),
-    };
+      const tierUpdate = {
+        tier: 'premium' as const,
+        freeCredits: 1200,      // Premium tier free model credits
+        premiumCredits: 600,    // Premium tier premium model credits
+        superPremiumCredits: 50, // Premium tier super premium model credits
+        lastResetDate: new Date().toISOString(),
+      };
 
-    console.log('📝 Atomically updating subscription and tier system...');
-    console.log('📋 Subscription update data:', subscriptionUpdate);
-    console.log('📋 Tier update data:', tierUpdate);
-    await updateUserSubscriptionAndTierServer(userId!, subscriptionUpdate, tierUpdate);
+      console.log('📝 Atomically updating subscription and tier system...');
+      console.log('📋 Subscription update data:', subscriptionUpdate);
+      console.log('📋 Tier update data:', tierUpdate);
+      await updateUserSubscriptionAndTierServer(userId!, subscriptionUpdate, tierUpdate);
 
-    console.log('🎊 User successfully upgraded to premium:', userId);
+      console.log('🎊 User successfully upgraded to premium:', userId);
+
+      await logApiRequestSuccess(logger, '/api/webhooks/dodo', {
+        event: 'SubscriptionActive',
+        userId: userId || 'unknown',
+        tier: 'premium',
+      });
+      await flushLogs(logger);
+    } catch (error) {
+      await logApiRequestError(logger, '/api/webhooks/dodo', error, {
+        event: 'SubscriptionActive',
+      });
+      await flushLogs(logger);
+      throw error;
+    }
   }),
 
   // Subscription renewed (successful recurring payment)
