@@ -14,11 +14,12 @@ import GuestWelcomeScreen from "./GuestWelcomeScreen";
 import AuthLoadingScreen from "./auth/AuthLoadingScreen";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 import { PlusIcon } from "./ui/icons/PlusIcon";
+import ArtifactViewer from "./ArtifactViewer";
 
 import { UIMessage } from "ai";
 
 import { HybridDB, dbEvents } from "@/lib/hybridDB";
-import type { FileAttachment } from "@/lib/appwriteDB";
+import type { FileAttachment, PlanArtifact } from "@/lib/appwriteDB";
 import { streamingSync, StreamingState } from "@/lib/streamingSync";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { getModelConfig, AIModel } from "@/lib/models";
@@ -44,6 +45,8 @@ import {
   Sparkles,
   CircleHelp,
   X,
+  Eye,
+  Code2,
 } from "lucide-react";
 import { useChatMessageNavigator } from "@/frontend/hooks/useChatMessageNavigator";
 import { useOutletContext } from "react-router-dom";
@@ -51,7 +54,14 @@ import { useIsMobile } from "@/hooks/useMobileDetection";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router";
 import { Plus } from "lucide-react";
-import { useRef, useState, useEffect, useCallback, Fragment } from "react";
+import {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  Fragment,
+} from "react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
@@ -241,6 +251,15 @@ export default function ChatInterface({
   const [pendingAttachmentsForSubmit, setPendingAttachmentsForSubmit] =
     useState<FileAttachment[] | null>(null);
   const pendingUserMessageRef = useRef<UIMessage | null>(null);
+  const [nextAssistantId, setNextAssistantId] = useState<string | null>(null);
+  // Use ref to avoid race condition with state updates for assistant ID
+  const nextAssistantIdRef = useRef<string | null>(null);
+
+  // Callback to set both state and ref for assistant ID to avoid race conditions
+  const handlePrepareAssistantId = useCallback((id: string) => {
+    nextAssistantIdRef.current = id;
+    setNextAssistantId(id);
+  }, []);
 
   // State for model-specific retry
   const [retryModel, setRetryModel] = useState<AIModel | null>(null);
@@ -268,6 +287,12 @@ export default function ChatInterface({
 
   const [selectedPrompt, setSelectedPrompt] = useState("");
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
+  const [planArtifactPanel, setPlanArtifactPanel] = useState<{
+    messageId: string;
+    artifacts: PlanArtifact[];
+    activeArtifactId: string;
+  } | null>(null);
+  const pendingPlanMessageId = useRef<string | null>(null);
 
   const {
     isNavigatorVisible,
@@ -294,6 +319,8 @@ export default function ChatInterface({
           ? "/api/reddit-search"
           : selectedSearchType === "study"
           ? "/api/study-mode"
+          : selectedSearchType === "plan"
+          ? "/api/plan-mode"
           : "/api/web-search"
         : "/api/chat-messaging",
     id: threadId,
@@ -310,6 +337,11 @@ export default function ChatInterface({
         devLog("🔍 Stopping web search loading state");
         setIsWebSearching(false);
       }
+
+      // NOTE: Do NOT stop Plan Mode execution here!
+      // The loader timing logic in the useEffect (lines 1260-1294) handles this
+      // based on content availability and minimum display time.
+      // Stopping it here causes the loader to disappear too early, before content is visible.
 
       // Clear the pending user message ref (user message is now stored immediately in ChatInputField)
       if (pendingUserMessageRef.current) {
@@ -329,25 +361,85 @@ export default function ChatInterface({
       // Save the AI message (useChat already handles adding it to the messages array)
       // We just need to persist it to the database using the actual message ID from useChat
       const modelUsed = retryModel || selectedModel;
+      // Use ref to get the planned assistant ID to avoid race condition with state updates
+      const persistedMessageId =
+        nextAssistantIdRef.current || nextAssistantId || message.id;
+
       const aiMessage: UIMessage & {
         webSearchResults?: string[];
         webSearchImgs?: string[];
         model?: string;
+        isPlan?: boolean;
       } = {
-        id: message.id,
+        id: persistedMessageId,
         parts: message.parts as UIMessage["parts"],
         role: "assistant",
         content: message.content,
         createdAt: new Date(),
         model: modelUsed, // Store the model used to generate this message
+        // Mark assistant message for Plan Mode so artifacts can be rendered
+        isPlan: selectedSearchType === "plan",
       };
+
+      const planMarkers = /<!--\s*PLAN_ARTIFACT_AVAILABLE\s*-->/g;
+
+      if (selectedSearchType === "plan") {
+        // Remove any intermediate assistant messages generated during tool steps
+        setMessages((prevMessages) => {
+          const lastUserIndex = (() => {
+            for (let i = prevMessages.length - 1; i >= 0; i--) {
+              if (prevMessages[i].role === "user") {
+                return i;
+              }
+            }
+            return -1;
+          })();
+
+          if (lastUserIndex === -1) {
+            return prevMessages;
+          }
+
+          const filtered = prevMessages.filter((msg, index) => {
+            if (index <= lastUserIndex) return true;
+            if (msg.role !== "assistant") return true;
+            return msg.id === message.id;
+          });
+
+          return deduplicateMessages(filtered);
+        });
+      }
+
+      if (aiMessage.isPlan) {
+        // Clean Plan Mode message content
+        let cleanedContent = aiMessage.content;
+
+        // Remove PLAN_ARTIFACT_AVAILABLE markers
+        cleanedContent = cleanedContent.replace(planMarkers, "").trim();
+
+        // Remove tool call JSON objects (if any leaked through)
+        // Pattern: {"toolName":"...", "toolCallId":"...", ...}
+        cleanedContent = cleanedContent
+          .replace(/\{[^}]*"toolName"[^}]*\}/g, "")
+          .trim();
+        cleanedContent = cleanedContent
+          .replace(/\{[^}]*"toolCallId"[^}]*\}/g, "")
+          .trim();
+
+        // Remove empty lines and excessive whitespace
+        cleanedContent = cleanedContent.replace(/\n\s*\n\s*\n/g, "\n\n").trim();
+
+        aiMessage.content = cleanedContent;
+
+        // Update parts to match cleaned content
+        aiMessage.parts = [{ type: "text", text: cleanedContent }];
+      }
 
       // Extract URLs from any assistant message content for citations
       devLog(
         "🔍 onFinish: Checking message content for URLs. Content length:",
         message.content.length
       );
-      const extractedUrls = extractUrlsFromContent(message.content);
+      const extractedUrls = extractUrlsFromContent(aiMessage.content);
       devLog("🔍 onFinish: URLs found:", extractedUrls.length, extractedUrls);
 
       if (extractedUrls.length > 0) {
@@ -378,7 +470,7 @@ export default function ChatInterface({
               .slice(0, 15)
           : [];
 
-      const extractedImgs = extractImagesFromContent(message.content);
+      const extractedImgs = extractImagesFromContent(aiMessage.content);
       if (extractedImgs.length > 0) {
         aiMessage.webSearchImgs = extractedImgs;
         setMessages((prev) => {
@@ -387,6 +479,29 @@ export default function ChatInterface({
               ? ({ ...m, webSearchImgs: extractedImgs } as UIMessage & {
                   webSearchImgs?: string[];
                 })
+              : m
+          );
+          return deduplicateMessages(updated);
+        });
+      }
+
+      if (
+        message.id !== persistedMessageId ||
+        aiMessage.content !== message.content
+      ) {
+        setMessages((prev) => {
+          const updated = prev.map((m) =>
+            m.id === message.id
+              ? ({
+                  ...m,
+                  id: persistedMessageId,
+                  content: aiMessage.content,
+                  parts: aiMessage.parts,
+                  webSearchResults: aiMessage.webSearchResults,
+                  webSearchImgs: aiMessage.webSearchImgs,
+                  model: aiMessage.model,
+                  isPlan: aiMessage.isPlan,
+                } as UIMessage)
               : m
           );
           return deduplicateMessages(updated);
@@ -403,12 +518,39 @@ export default function ChatInterface({
 
       // Skip database operations for guest users
       if (!isGuest) {
+        // Track this message as recently appended to prevent real-time sync from duplicating it
+        // Track both the old AI SDK ID and the new persisted ID
+        recentlyAppendedMessages.current.add(message.id); // Old AI SDK ID
+        recentlyAppendedMessages.current.add(persistedMessageId); // New persisted ID
+        devLog("[ChatInterface] Tracking message IDs to prevent duplication:", {
+          aiSdkId: message.id,
+          persistedId: persistedMessageId,
+        });
+
+        // Remove from tracking after 3 seconds
+        setTimeout(() => {
+          recentlyAppendedMessages.current.delete(message.id);
+          recentlyAppendedMessages.current.delete(persistedMessageId);
+          devLog("[ChatInterface] Stopped tracking message IDs");
+        }, 3000);
+
         HybridDB.createMessage(threadId, aiMessage);
+        if (aiMessage.isPlan) {
+          HybridDB.loadPlanArtifactsFromRemote(threadId).catch((error) =>
+            devWarn(
+              "Failed to refresh plan artifacts after assistant message:",
+              error
+            )
+          );
+        }
+        // Clear planned assistant id so future turns generate a fresh one
+        setNextAssistantId(null);
+        nextAssistantIdRef.current = null;
 
         // Create summary for assistant message
-        createSummary(message.content, {
+        createSummary(aiMessage.content, {
           body: {
-            messageId: message.id,
+            messageId: persistedMessageId,
             threadId: threadId,
           },
         });
@@ -435,6 +577,7 @@ export default function ChatInterface({
       userId: user?.$id,
       threadId: threadId,
       isGuest: isGuest,
+      assistantMessageId: nextAssistantId || undefined,
     },
   });
 
@@ -445,6 +588,63 @@ export default function ChatInterface({
       setSelectedPrompt("");
     }
   }, [selectedPrompt, setInput]);
+
+  // Preload Plan Mode artifacts when messages with isPlan flag are detected
+  useEffect(() => {
+    if (isGuest || messages.length === 0) return;
+
+    const hasPlanMessages = messages.some((msg) => (msg as any).isPlan);
+
+    if (hasPlanMessages) {
+      devLog(
+        "[ChatInterface] Detected Plan Mode messages, preloading artifacts for thread:",
+        threadId
+      );
+      HybridDB.loadPlanArtifactsFromRemote(threadId).catch((error) =>
+        devWarn("[ChatInterface] Failed to preload Plan Mode artifacts:", error)
+      );
+    }
+  }, [threadId, messages.length, isGuest]); // Run when messages are loaded or thread changes
+
+  useEffect(() => {
+    if (!planArtifactPanel) return;
+
+    const handlePlanArtifactsUpdate = (
+      updatedThreadId: string,
+      updatedArtifacts: PlanArtifact[]
+    ) => {
+      if (updatedThreadId !== threadId) return;
+      setPlanArtifactPanel((current) => {
+        if (!current) return current;
+        const relevant = updatedArtifacts.filter(
+          (artifact) => artifact.messageId === current.messageId
+        );
+
+        if (relevant.length === 0) {
+          return null;
+        }
+
+        const activeArtifact = relevant.find(
+          (artifact) => artifact.id === current.activeArtifactId
+        );
+
+        const nextPanel = {
+          messageId: current.messageId,
+          artifacts: relevant,
+          activeArtifactId: activeArtifact
+            ? activeArtifact.id
+            : relevant[relevant.length - 1].id,
+        };
+        pendingPlanMessageId.current = null;
+        return nextPanel;
+      });
+    };
+
+    dbEvents.on("plan_artifacts_updated", handlePlanArtifactsUpdate);
+    return () => {
+      dbEvents.off("plan_artifacts_updated", handlePlanArtifactsUpdate);
+    };
+  }, [planArtifactPanel, threadId]);
 
   // Auto-submit pending input handed off during new-chat navigation
   useEffect(() => {
@@ -618,6 +818,29 @@ export default function ChatInterface({
     if (status === "streaming" && messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === "assistant") {
+        // For Plan Mode, skip streaming sync if message has active tool calls
+        if (selectedSearchType === "plan") {
+          const hasToolInvocations =
+            !!(lastMessage as any).toolInvocations &&
+            Array.isArray((lastMessage as any).toolInvocations) &&
+            (lastMessage as any).toolInvocations.length > 0;
+
+          const parts = lastMessage.parts || [];
+          const hasToolCallParts = parts.some(
+            (part: any) =>
+              part.type === "tool-call" || part.type === "tool-result"
+          );
+
+          // Skip syncing if message has tool calls (not final response yet)
+          if (hasToolInvocations || hasToolCallParts) {
+            devLog(
+              "[ChatInterface] Skipping streaming sync for Plan Mode message with tool calls:",
+              lastMessage.id
+            );
+            return;
+          }
+        }
+
         // Check if this is a new streaming message or content update
         const isNewMessage =
           !lastStreamingMessageRef.current ||
@@ -781,8 +1004,24 @@ export default function ChatInterface({
               attachments: msg.attachments,
               model: msg.model,
               imgurl: msg.imgurl,
+              // Preserve Plan Mode flag for rendering artifacts
+              isPlan: (msg as any).isPlan,
             } as any)
         );
+
+        // Preload Plan Mode artifacts if any messages have isPlan flag
+        const hasPlanMessages = uiMessages.some((msg) => (msg as any).isPlan);
+        if (hasPlanMessages) {
+          devLog(
+            "[ChatInterface] Found Plan Mode messages, preloading artifacts"
+          );
+          HybridDB.loadPlanArtifactsFromRemote(threadId).catch((error) =>
+            devWarn(
+              "[ChatInterface] Failed to preload Plan Mode artifacts:",
+              error
+            )
+          );
+        }
 
         // Smart merge: Preserve messages that were recently added by append()
         // and only add new messages from the database
@@ -1000,6 +1239,11 @@ export default function ChatInterface({
   const nextResponseNeedsWebSearch = useRef<boolean>(false);
   const [isWebSearching, setIsWebSearching] = useState<boolean>(false);
   const [webSearchQuery, setWebSearchQuery] = useState<string>("");
+
+  // Track Plan Mode tool execution
+  const [isPlanModeExecuting, setIsPlanModeExecuting] =
+    useState<boolean>(false);
+  const [planModeQuery, setPlanModeQuery] = useState<string>("");
   // Prefetched images to show immediately while streaming starts
   const [streamingWebImgs, setStreamingWebImgs] = useState<string[] | null>(
     null
@@ -1008,22 +1252,26 @@ export default function ChatInterface({
   // Track when streaming actually starts with content
   const streamingStartTimeRef = useRef<number | null>(null);
 
-  // Effect to stop web search loading when actual content starts streaming
-  // Keep loader visible during tool execution (minimum 1 second, or until content appears)
+  // Effect to stop web search/plan mode loading when actual content starts streaming
+  // Keep loader visible during tool execution (minimum 500ms, or until content appears)
   useEffect(() => {
+    // Handle Web Search loading
     if (status === "streaming" && isWebSearching) {
       // Record when streaming started
       if (streamingStartTimeRef.current === null) {
         streamingStartTimeRef.current = Date.now();
-        devLog("🔍 Streaming started, keeping loader visible during tool execution");
+        devLog(
+          "🔍 Streaming started, keeping loader visible during tool execution"
+        );
       }
 
       // Check if the last message has actual content (not just empty or tool calls)
       const lastMessage = messages[messages.length - 1];
-      const hasContent = lastMessage &&
-                        lastMessage.role === "assistant" &&
-                        lastMessage.content &&
-                        lastMessage.content.trim().length > 10; // At least 10 chars to avoid empty/whitespace
+      const hasContent =
+        lastMessage &&
+        lastMessage.role === "assistant" &&
+        lastMessage.content &&
+        lastMessage.content.trim().length > 10; // At least 10 chars to avoid empty/whitespace
 
       // Keep loader visible for at least 500ms to avoid flashing
       const minDisplayTime = 500;
@@ -1034,26 +1282,111 @@ export default function ChatInterface({
         setIsWebSearching(false);
         streamingStartTimeRef.current = null;
       }
-    } else if (status !== "streaming") {
-      // Reset timer when not streaming
-      streamingStartTimeRef.current = null;
     }
-  }, [status, isWebSearching, messages]);
 
-  // Callback to track when a message is sent with search enabled
+    // Handle Plan Mode loading
+    if (status === "streaming" && isPlanModeExecuting) {
+      // Record when streaming started
+      if (streamingStartTimeRef.current === null) {
+        streamingStartTimeRef.current = Date.now();
+        devLog(
+          "🎨 Plan Mode streaming started, keeping loader visible during tool execution"
+        );
+      }
+
+      // Keep loader visible for at least 1000ms to avoid flashing and ensure smooth transition
+      const minDisplayTime = 1000;
+      const elapsedTime = Date.now() - (streamingStartTimeRef.current || 0);
+
+      if (elapsedTime < minDisplayTime) {
+        // Do nothing - we simply keep the loader active until streaming completes
+      }
+    }
+
+    // Reset timer when streaming ends, but be careful with Plan Mode cleanup
+    if (status !== "streaming") {
+      // Only reset timer if we have meaningful content or streaming is truly done
+      const lastMessage = messages[messages.length - 1];
+      const hasContent =
+        lastMessage &&
+        lastMessage.role === "assistant" &&
+        lastMessage.content &&
+        lastMessage.content.trim().length > 50;
+
+      devLog("🎨 Status changed from streaming:", {
+        status,
+        isPlanModeExecuting,
+        hasContent,
+        contentLength: lastMessage?.content?.trim().length || 0,
+      });
+
+      // Only clean up Plan Mode if we have content OR if status is "ready" (truly done)
+      if (isPlanModeExecuting && (hasContent || status === "ready")) {
+        devLog(
+          "🎨 Streaming ended with content or completed, cleaning up Plan Mode execution state"
+        );
+        setIsPlanModeExecuting(false);
+        streamingStartTimeRef.current = null;
+      } else if (!isPlanModeExecuting) {
+        // Always reset timer if not in Plan Mode
+        streamingStartTimeRef.current = null;
+      } else {
+        devLog(
+          "🎨 Keeping Plan Mode active - waiting for content or completion"
+        );
+      }
+    }
+  }, [status, isWebSearching, isPlanModeExecuting, messages]);
+
+  // Ensure Plan Mode loader kicks in whenever a request is submitted,
+  // even if the trigger bypasses handleWebSearchMessage (e.g. quick suggestions)
+  useEffect(() => {
+    if (selectedSearchType !== "plan" || status !== "submitted") {
+      return;
+    }
+
+    if (!isPlanModeExecuting) {
+      devLog(
+        "🎨 Plan Mode submission detected - enabling loader via status change"
+      );
+      setIsPlanModeExecuting(true);
+    }
+
+    const lastUserMessage = [...messages]
+      .reverse()
+      .find((message) => message.role === "user" && message.content?.trim());
+
+    if (lastUserMessage?.content && lastUserMessage.content !== planModeQuery) {
+      setPlanModeQuery(lastUserMessage.content);
+    }
+  }, [
+    selectedSearchType,
+    status,
+    messages,
+    isPlanModeExecuting,
+    planModeQuery,
+  ]);
+
+  // Callback to track when a message is sent with search enabled or plan mode
   const handleWebSearchMessage = useCallback(
     (messageId: string, searchQuery?: string) => {
       nextResponseNeedsWebSearch.current = true;
-      if (selectedSearchType !== "chat") {
+
+      // Get query for loaders
+      const q = (() => {
+        if (searchQuery) return searchQuery;
+        const lastUserMessage = messages
+          .filter((msg) => msg.role === "user")
+          .pop();
+        return lastUserMessage?.content || "";
+      })();
+
+      if (selectedSearchType === "plan") {
+        // Track Plan Mode execution
+        setIsPlanModeExecuting(true);
+        setPlanModeQuery(q || "planning request");
+      } else if (selectedSearchType !== "chat") {
         setIsWebSearching(true);
-        // Use the provided search query or fallback to getting from messages
-        const q = (() => {
-          if (searchQuery) return searchQuery;
-          const lastUserMessage = messages
-            .filter((msg) => msg.role === "user")
-            .pop();
-          return lastUserMessage?.content || "";
-        })();
         setWebSearchQuery(q || "search query");
 
         // Disable prefetch - images will come from tool results in the response
@@ -1331,7 +1664,148 @@ export default function ChatInterface({
     }
   }, [messages.length, status, threadId]);
 
+  // Filter messages to hide tool call responses during Plan Mode execution
+  const displayMessages = useMemo(() => {
+    if (selectedSearchType !== "plan") {
+      return messages;
+    }
+
+    // During Plan Mode, filter out intermediate assistant messages
+    // Only show the final assistant message after all tool calls complete
+    const filtered: UIMessage[] = [];
+
+    // Find the index of the last message to identify which is currently streaming
+    const lastMessageIndex = messages.length - 1;
+    const lastUserIndex = (() => {
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].role === "user") {
+          return i;
+        }
+      }
+      return -1;
+    })();
+
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+      const isLastMessage = i === lastMessageIndex;
+
+      // Always show user messages
+      if (msg.role === "user") {
+        filtered.push(msg);
+        continue;
+      }
+
+      // For assistant messages during Plan Mode:
+      if (msg.role === "assistant") {
+        if (
+          status === "streaming" &&
+          isPlanModeExecuting &&
+          i > lastUserIndex &&
+          !isLastMessage
+        ) {
+          devLog(
+            "[ChatInterface] Hiding earlier assistant turn while Plan Mode streaming:",
+            msg.id
+          );
+          continue;
+        }
+        // During streaming, only hide the LAST (currently streaming) assistant message
+        // Keep all previous assistant messages visible for persistence
+        if (status === "streaming" && isLastMessage && isPlanModeExecuting) {
+          devLog(
+            "[ChatInterface] Hiding CURRENT streaming assistant message during Plan Mode:",
+            msg.id
+          );
+          continue;
+        }
+
+        // After streaming completes OR for previous messages, apply filtering
+        const content = msg.content || "";
+
+        // IMPORTANT: After streaming completes, prioritize showing messages with actual content
+        // The AI SDK keeps tool invocation metadata even after final response is generated
+        // So we check content first before filtering based on tool calls
+
+        // Hide empty messages (no content at all)
+        if (content.trim().length === 0) {
+          devLog("[ChatInterface] Hiding empty message:", msg.id);
+          continue;
+        }
+
+        // Check if message has active tool invocations (AI SDK structure)
+        const hasToolInvocations =
+          !!(msg as any).toolInvocations &&
+          Array.isArray((msg as any).toolInvocations) &&
+          (msg as any).toolInvocations.length > 0;
+
+        // Check message parts for tool calls
+        const parts = msg.parts || [];
+        const hasToolCallParts = parts.some(
+          (part: any) =>
+            part.type === "tool-call" || part.type === "tool-result"
+        );
+
+        // Check if content looks like an intermediate step
+        const isIntermediateStep =
+          content.includes("First, let's") ||
+          content.includes("Now, let's") ||
+          content.includes("Next, I'll") ||
+          content.match(/^(First|Now|Next|Then),?\s/i) ||
+          (content.length < 100 && content.includes("create"));
+
+        // Only filter out messages with tool calls if they ALSO have no meaningful content
+        // This allows final responses with tool metadata to be shown
+        if ((hasToolInvocations || hasToolCallParts) && content.length < 50) {
+          devLog(
+            "[ChatInterface] Hiding message with tool calls and minimal content:",
+            msg.id
+          );
+          continue;
+        }
+
+        // Hide intermediate steps that are just transitional text
+        if (isIntermediateStep && content.length < 200) {
+          devLog("[ChatInterface] Hiding short intermediate step:", msg.id);
+          continue;
+        }
+
+        // If we got here, the message has meaningful content - show it!
+        filtered.push(msg);
+      }
+    }
+
+    return filtered;
+  }, [messages, selectedSearchType, status, isPlanModeExecuting]);
+
   const hasMessages = messages.length > 0;
+
+  // Memoize dynamic width styles to prevent excessive recalculations and lag
+  const dynamicWidthStyle = useMemo(() => {
+    if (isMobile) {
+      return {
+        width: "100%",
+        marginLeft: 0,
+      };
+    }
+
+    if (sidebarState === "open") {
+      return {
+        width: `calc(100% - ${sidebarWidth}px)`,
+        marginLeft: `${sidebarWidth}px`,
+        transition:
+          "width 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        willChange: "width, margin-left",
+      };
+    }
+
+    return {
+      width: "100%",
+      marginLeft: 0,
+      transition:
+        "width 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+      willChange: "width, margin-left",
+    };
+  }, [isMobile, sidebarState, sidebarWidth]);
 
   useEffect(() => {
     if (!hasMessages && mainRef.current) {
@@ -1501,6 +1975,7 @@ export default function ChatInterface({
                 onPendingAttachmentsConsumed={() =>
                   setPendingAttachmentsForSubmit(null)
                 }
+                onPrepareAssistantId={handlePrepareAssistantId}
               />
             </div>
           </div>
@@ -1508,7 +1983,7 @@ export default function ChatInterface({
           <div className="mx-auto flex justify-center px-4 py-6">
             <ChatMessageDisplay
               threadId={threadId}
-              messages={messages}
+              messages={displayMessages}
               status={status}
               setMessages={setMessages}
               reload={reload}
@@ -1518,30 +1993,26 @@ export default function ChatInterface({
               onRetryWithModel={handleRetryWithModel}
               isWebSearching={isWebSearching}
               webSearchQuery={webSearchQuery}
+              isPlanModeExecuting={isPlanModeExecuting}
+              planModeQuery={planModeQuery}
               selectedSearchType={selectedSearchType}
               onSuggestedQuestionClick={handleSuggestedQuestionClick}
               streamingWebImgs={streamingWebImgs || undefined}
+              onShowPlanArtifact={(messageId, artifacts, activeArtifactId) => {
+                pendingPlanMessageId.current = messageId;
+                setPlanArtifactPanel({
+                  messageId,
+                  artifacts,
+                  activeArtifactId,
+                });
+              }}
             />
           </div>
         )}
       </main>
 
       <div className="fixed hidden md:block top-0 left-0 right-0 z-50">
-        <div
-          className="relative"
-          style={{
-            width: isMobile
-              ? "100%"
-              : sidebarState === "open"
-              ? `calc(100% - ${sidebarWidth}px)`
-              : "100%",
-            marginLeft: isMobile
-              ? 0
-              : sidebarState === "open"
-              ? `${sidebarWidth}px`
-              : 0,
-          }}
-        >
+        <div className="relative" style={dynamicWidthStyle}>
           <div
             className={`absolute left-1/2 -translate-x-1/2 top-3 ${
               state === "open" ? "top-5" : "top-3"
@@ -1563,18 +2034,7 @@ export default function ChatInterface({
                 ? "opacity-100"
                 : "opacity-0 pointer-events-none"
             )}
-            style={{
-              width: isMobile
-                ? "100%"
-                : sidebarState === "open"
-                ? `calc(100% - ${sidebarWidth}px)`
-                : "100%",
-              marginLeft: isMobile
-                ? 0
-                : sidebarState === "open"
-                ? `${sidebarWidth}px`
-                : 0,
-            }}
+            style={dynamicWidthStyle}
           >
             <Button
               onClick={scrollToBottom}
@@ -1608,18 +2068,7 @@ export default function ChatInterface({
                 ? "ml-auto"
                 : "w-full"
             )}
-            style={{
-              width: isMobile
-                ? "100%"
-                : sidebarState === "open"
-                ? `calc(100% - ${sidebarWidth}px)`
-                : "100%",
-              marginLeft: isMobile
-                ? 0
-                : sidebarState === "open"
-                ? `${sidebarWidth}px`
-                : 0,
-            }}
+            style={dynamicWidthStyle}
           >
             <div className="w-full max-w-3xl">
               <ChatInputField
@@ -1635,6 +2084,7 @@ export default function ChatInterface({
                 submitRef={chatInputSubmitRef}
                 messages={messages}
                 onMessageAppended={trackAppendedMessage}
+                onPrepareAssistantId={handlePrepareAssistantId}
               />
             </div>
           </motion.div>
@@ -1697,9 +2147,357 @@ export default function ChatInterface({
         title={authDialog.title}
         description={authDialog.description}
       />
+
+      <PlanArtifactSidePanel
+        panelState={planArtifactPanel}
+        onClose={() => {
+          pendingPlanMessageId.current = null;
+          setPlanArtifactPanel(null);
+        }}
+        onSelectArtifact={(artifactId) =>
+          setPlanArtifactPanel((current) =>
+            current
+              ? {
+                  ...current,
+                  activeArtifactId: artifactId,
+                }
+              : current
+          )
+        }
+      />
     </div>
   );
 }
+
+const PlanArtifactSidePanel = ({
+  panelState,
+  onClose,
+  onSelectArtifact,
+}: {
+  panelState: {
+    messageId: string;
+    artifacts: PlanArtifact[];
+    activeArtifactId: string;
+  } | null;
+  onClose: () => void;
+  onSelectArtifact: (artifactId: string) => void;
+}) => {
+  const activeArtifact = panelState?.artifacts.find(
+    (artifact) => artifact.id === panelState.activeArtifactId
+  );
+
+  // View state for MVP artifacts
+  const [view, setView] = useState<"preview" | "code">("preview");
+  const [codeTab, setCodeTab] = useState<"html" | "css" | "js">("html");
+
+  // Constants for artifact panel sizing
+  const ARTIFACT_MIN_WIDTH = 400;
+  const ARTIFACT_MAX_WIDTH = 1200;
+  const ARTIFACT_DEFAULT_WIDTH = 600;
+
+  // Resizable panel state
+  const [panelWidth, setPanelWidth] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("planArtifactPanelWidth");
+      return saved ? parseInt(saved, 10) : ARTIFACT_DEFAULT_WIDTH;
+    }
+    return ARTIFACT_DEFAULT_WIDTH;
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Refs for performance optimization - similar to ChatLayoutWrapper
+  const dragStateRef = useRef({ startX: 0, startWidth: 0 });
+  const lastSaveRef = useRef<number>(0);
+
+  // Detect mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Debounced localStorage save for width - similar to ChatLayoutWrapper
+  const saveWidthToStorage = useCallback((width: number) => {
+    const now = Date.now();
+    if (now - lastSaveRef.current > 100) {
+      // Debounce 100ms
+      lastSaveRef.current = now;
+      try {
+        localStorage.setItem("planArtifactPanelWidth", String(width));
+      } catch (e) {
+        console.warn("Failed to save artifact panel width:", e);
+      }
+    }
+  }, []);
+
+  // Optimized mouse down handler - similar to ChatLayoutWrapper
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (isMobile) return;
+
+      e.preventDefault(); // Prevent default drag behavior
+      dragStateRef.current = {
+        startX: e.clientX,
+        startWidth: panelWidth,
+      };
+      setIsResizing(true);
+
+      // Add class instead of inline style for better performance
+      document.body.classList.add("select-none");
+    },
+    [isMobile, panelWidth]
+  );
+
+  // Optimized drag handling with RAF and error boundaries - matching ChatLayoutWrapper
+  useEffect(() => {
+    if (!isResizing) return;
+
+    let animationFrameId: number | null = null;
+
+    // Set cursor style during resize for better UX
+    document.body.style.cursor = "col-resize";
+
+    const handleMouseMove = (e: MouseEvent) => {
+      // Cancel previous animation frame if exists
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+
+      // Use RAF for smooth updates
+      animationFrameId = requestAnimationFrame(() => {
+        try {
+          const deltaX = dragStateRef.current.startX - e.clientX; // Inverted for right-side panel
+          const newWidth = dragStateRef.current.startWidth + deltaX;
+
+          // Clamp width between min and max
+          const clampedWidth = Math.max(
+            ARTIFACT_MIN_WIDTH,
+            Math.min(
+              ARTIFACT_MAX_WIDTH,
+              Math.min(newWidth, window.innerWidth * 0.8)
+            )
+          );
+
+          // Only update if width changed significantly (reduce re-renders)
+          if (Math.abs(clampedWidth - panelWidth) > 1) {
+            setPanelWidth(clampedWidth);
+            // Save to storage will be debounced automatically
+            saveWidthToStorage(clampedWidth);
+          }
+        } catch (error) {
+          console.error("Error during artifact panel resize:", error);
+          setIsResizing(false);
+          document.body.classList.remove("select-none");
+          document.body.style.cursor = "";
+        }
+      });
+    };
+
+    const handleMouseUp = () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      setIsResizing(false);
+      document.body.classList.remove("select-none");
+      document.body.style.cursor = "";
+
+      // Final save to localStorage
+      try {
+        localStorage.setItem("planArtifactPanelWidth", String(panelWidth));
+      } catch (e) {
+        console.warn("Failed to save artifact panel width:", e);
+      }
+    };
+
+    // Add event listeners with error handling
+    try {
+      document.addEventListener("mousemove", handleMouseMove, {
+        passive: false,
+      });
+      document.addEventListener("mouseup", handleMouseUp, { passive: true });
+      document.addEventListener("mouseleave", handleMouseUp, { passive: true }); // Handle mouse leaving window
+    } catch (error) {
+      console.error("Failed to add drag event listeners:", error);
+      setIsResizing(false);
+      document.body.classList.remove("select-none");
+      document.body.style.cursor = "";
+    }
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      // Clean up cursor style
+      document.body.style.cursor = "";
+
+      try {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+        document.removeEventListener("mouseleave", handleMouseUp);
+      } catch (error) {
+        console.error("Failed to remove drag event listeners:", error);
+      }
+    };
+  }, [isResizing, panelWidth, saveWidthToStorage]);
+
+  return (
+    <AnimatePresence>
+      {panelState && activeArtifact && (
+        <>
+          <motion.div
+            key="plan-panel-overlay"
+            className="fixed inset-0 z-[70] bg-background/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          />
+          <motion.aside
+            key="plan-panel"
+            className="fixed right-0 top-0 bottom-0 z-[71] bg-background shadow-2xl border-l flex flex-col"
+            style={{
+              width: isMobile ? "100%" : `${panelWidth}px`,
+              minWidth: isMobile ? undefined : `${ARTIFACT_MIN_WIDTH}px`,
+              transform: "translateZ(0)", // Force GPU acceleration
+              backfaceVisibility: "hidden", // Improve rendering performance
+              willChange: isResizing ? "width" : "auto", // Optimize during resize
+            }}
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 400 }}
+          >
+            {/* Resize Handle - Only visible on desktop */}
+            {!isMobile && (
+              <div
+                className={cn(
+                  "absolute -left-1 top-0 bottom-0 w-2 cursor-col-resize transition-colors group z-10 hover:bg-primary/5",
+                  isResizing && "bg-primary/10"
+                )}
+                onMouseDown={handleMouseDown}
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Resize artifact panel"
+                aria-valuenow={panelWidth}
+                aria-valuemin={ARTIFACT_MIN_WIDTH}
+                aria-valuemax={ARTIFACT_MAX_WIDTH}
+                style={{
+                  touchAction: "none",
+                }}
+              >
+                {/* Visual indicator */}
+                <div
+                  className={cn(
+                    "absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-1 h-16 bg-border rounded-full transition-all",
+                    isResizing
+                      ? "bg-primary h-24"
+                      : "group-hover:bg-primary/70 group-hover:h-20"
+                  )}
+                />
+                {/* Hover area for easier grabbing */}
+                <div className="absolute -left-2 top-0 bottom-0 w-6" />
+              </div>
+            )}
+            {/* First Row: Preview/Code Toggle, Title, Close Button */}
+            <div className="flex items-center gap-3 bg-muted/30 px-4 py-3 border-b flex-shrink-0">
+              {/* Left: Preview/Code Toggle (only for MVP artifacts) */}
+              {activeArtifact.type === "mvp" && (
+                <div className="flex items-center gap-0.5 border rounded-md overflow-hidden">
+                  <button
+                    onClick={() => setView("preview")}
+                    className={`p-1.5 transition-colors ${
+                      view === "preview"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background hover:bg-muted"
+                    }`}
+                    title="Preview"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setView("code")}
+                    className={`p-1.5 transition-colors ${
+                      view === "code"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background hover:bg-muted"
+                    }`}
+                    title="Code"
+                  >
+                    <Code2 className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Middle: Artifact Title */}
+              <h3 className="flex-1 text-sm font-medium truncate text-center">
+                {activeArtifact.title}
+              </h3>
+
+              {/* Right: Close Button */}
+              <Button variant="ghost" size="icon" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Second Row: HTML/CSS/JS Tabs (only when code view is active for MVP) */}
+            {activeArtifact.type === "mvp" && view === "code" && (
+              <div className="flex items-center gap-1 bg-muted/20 px-4 py-2 border-b flex-shrink-0">
+                {(["html", "css", "js"] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setCodeTab(t)}
+                    className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                      codeTab === t
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background hover:bg-muted"
+                    }`}
+                  >
+                    {t.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Multiple Artifacts Selector */}
+            {panelState.artifacts.length > 1 && (
+              <div className="flex flex-wrap gap-2 border-b px-4 py-2 flex-shrink-0">
+                {panelState.artifacts.map((artifact) => (
+                  <button
+                    key={artifact.id}
+                    onClick={() => onSelectArtifact(artifact.id)}
+                    className={cn(
+                      "px-2 py-1 rounded-md text-xs border transition",
+                      artifact.id === panelState.activeArtifactId
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card border-border hover:border-primary"
+                    )}
+                  >
+                    {artifact.title}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Content Area */}
+            <div className="flex-1 min-h-0">
+              <ArtifactViewer
+                artifact={activeArtifact}
+                view={view}
+                setView={setView}
+                codeTab={codeTab}
+                setCodeTab={setCodeTab}
+              />
+            </div>
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
 
 ////////////////////////////////////////////////////
 /////////////////Left Side Panel Trigger////////////

@@ -101,6 +101,7 @@ export default function ChatThreadPage() {
         isImageGenerationLoading: message.isImageGenerationLoading, // ✅ Include loading flag!
         isImageGeneration: message.isImageGeneration, // ✅ Include generation flag!
         aspectRatio: message.aspectRatio, // ✅ Include aspect ratio for image generation!
+        isPlan: (message as any).isPlan, // ✅ Include Plan Mode flag for artifacts!
       };
     });
   }, []);

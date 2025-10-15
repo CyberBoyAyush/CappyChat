@@ -93,6 +93,7 @@ interface InputFieldProps {
   onMessageAppended?: (messageId: string) => void;
   pendingAttachments?: FileAttachment[] | null;
   onPendingAttachmentsConsumed?: () => void;
+  onPrepareAssistantId?: (id: string) => void;
 }
 
 interface StopButtonProps {
@@ -169,6 +170,7 @@ function PureInputField({
   onMessageAppended,
   pendingAttachments,
   onPendingAttachmentsConsumed,
+  onPrepareAssistantId,
 }: InputFieldProps) {
   const { textareaRef, adjustHeight } = useTextAreaAutoResize({
     minHeight: 72,
@@ -704,7 +706,8 @@ function PureInputField({
       if (
         (selectedSearchType === "web" ||
           selectedSearchType === "reddit" ||
-          selectedSearchType === "study") &&
+          selectedSearchType === "study" ||
+          selectedSearchType === "plan") &&
         onWebSearchMessage
       ) {
         onWebSearchMessage(messageId, finalInput);
@@ -954,6 +957,32 @@ function PureInputField({
       }
     } else {
       // Normal text message flow
+      // Generate a planned assistant message ID so server can persist artifacts against it
+      let plannedAssistantId: string | undefined;
+      if (onPrepareAssistantId) {
+        try {
+          plannedAssistantId = `ai_${uuidv4()}`;
+          onPrepareAssistantId(plannedAssistantId);
+        } catch (_) {
+          plannedAssistantId = plannedAssistantId ?? `ai_${uuidv4()}`;
+        }
+      }
+
+      const appendOptions: Parameters<typeof append>[1] = {
+        experimental_attachments:
+          finalAttachments.length > 0 ? finalAttachments : undefined,
+      };
+
+      if (selectedSearchType === "plan") {
+        if (!plannedAssistantId) {
+          plannedAssistantId = `ai_${uuidv4()}`;
+        }
+        appendOptions.body = {
+          assistantMessageId: plannedAssistantId,
+          threadId,
+        } as Record<string, unknown>;
+      }
+
       // First add to UI with append(), then store to database to prevent race condition
       append(
         {
@@ -965,10 +994,7 @@ function PureInputField({
           attachments:
             finalAttachments.length > 0 ? finalAttachments : undefined,
         } as any,
-        {
-          experimental_attachments:
-            finalAttachments.length > 0 ? finalAttachments : undefined,
-        }
+        appendOptions
       );
 
       // Track that this message was just appended to prevent real-time sync from overwriting it
@@ -1730,6 +1756,25 @@ function PureInputField({
                                       onChange={(isSelected) =>
                                         setSearchType(
                                           isSelected ? "study" : "chat"
+                                        )
+                                      }
+                                    />
+                                  </div>
+
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs md:text-sm text-primary font-medium">
+                                        Plan Mode
+                                      </span>
+                                      <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-amber-200/80 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200">
+                                        NEW
+                                      </span>
+                                    </div>
+                                    <Switch2
+                                      isSelected={selectedSearchType === "plan"}
+                                      onChange={(isSelected) =>
+                                        setSearchType(
+                                          isSelected ? "plan" : "chat"
                                         )
                                       }
                                     />

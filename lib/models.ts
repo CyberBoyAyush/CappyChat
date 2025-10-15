@@ -6,7 +6,7 @@ export const AI_MODELS = [
   "OpenAI 5",
   "OpenAI o4-mini",
   "Open AI OSS 120B",
-  "Claude Haiku 3.5",
+  "Claude Haiku 4.5",
   "DeepSeek R1 Fast",
   "DeepSeek V3.1",
   "Qwen3 Max",
@@ -132,18 +132,19 @@ export const MODEL_CONFIGS = {
     description:
       "OpenAI's latest mini model with advanced reasoning capabilities and coding capabilities",
   },
-  "Claude Haiku 3.5": {
-    modelId: "anthropic/claude-3.5-haiku",
+  "Claude Haiku 4.5": {
+    modelId: "anthropic/claude-haiku-4.5",
     provider: "openrouter",
-    displayName: "Claude Haiku 3.5",
+    displayName: "Claude Haiku 4.5",
     iconType: "anthropic",
     company: "Anthropic",
     isPremium: true,
     isSuperPremium: false,
-    hasReasoning: false,
+    hasReasoning: true,
     isFileSupported: true,
     isFast: true,
-    description: "Anthropic's model for fast responses",
+    description:
+      "Anthropic's fastest and most efficient model with frontier-level intelligence, extended thinking, and exceptional coding capabilities (200K context)",
   },
   "Claude Sonnet 4": {
     modelId: "anthropic/claude-4-sonnet",

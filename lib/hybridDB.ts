@@ -5,7 +5,7 @@
  * Provides instant UI updates while maintaining data consistency.
  */
 
-import { AppwriteDB, Thread, DBMessage, MessageSummary, FileAttachment, Project } from './appwriteDB';
+import { AppwriteDB, Thread, DBMessage, MessageSummary, FileAttachment, Project, PlanArtifact } from './appwriteDB';
 import { LocalDB } from './localDB';
 import { AppwriteRealtime } from './appwriteRealtime';
 import { devLog, prodError, devError, devWarn } from './logger';
@@ -184,6 +184,7 @@ export class HybridDB {
   private static initialized = false;
   private static initializationPromise: Promise<void> | null = null;
   private static pendingMessageSyncs = new Set<string>(); // Track ongoing message syncs
+  private static pendingPlanArtifactSyncs = new Set<string>(); // Track artifact syncs
   private static isGuestMode = false; // Track if we're in guest mode
   private static recentMessageIds = new Set<string>(); // Track recently created message IDs
   private static messageCreationTimestamps = new Map<string, number>(); // Track message creation times
@@ -898,7 +899,8 @@ export class HybridDB {
       webSearchImgs: message.webSearchImgs || undefined,
       attachments: message.attachments || undefined,
       model: message.model || undefined,
-      imgurl: message.imgurl || undefined
+      imgurl: message.imgurl || undefined,
+      isPlan: typeof message.isPlan === 'boolean' ? message.isPlan : undefined
     };
 
     // Instant local update (LocalDB.addMessage handles both create and update)
@@ -956,7 +958,8 @@ export class HybridDB {
       webSearchImgs: message.webSearchImgs || undefined,
       attachments: message.attachments || undefined,
       model: message.model || undefined,
-      imgurl: message.imgurl || undefined
+      imgurl: message.imgurl || undefined,
+      isPlan: typeof message.isPlan === 'boolean' ? message.isPlan : undefined
     };
 
     // Instant local update
@@ -1021,6 +1024,117 @@ export class HybridDB {
       prodError('Failed to load messages from remote', error, 'HybridDB');
       // Return local messages as fallback (might be empty)
       return localMessages;
+    }
+  }
+
+  // ============ PLAN ARTIFACT OPERATIONS ============
+
+  static getPlanArtifactsByThread(threadId: string): PlanArtifact[] {
+    return LocalDB.getPlanArtifactsByThread(threadId);
+  }
+
+  static getPlanArtifactsByMessage(
+    threadId: string,
+    messageId: string
+  ): PlanArtifact[] {
+    return LocalDB.getPlanArtifactsByMessage(threadId, messageId);
+  }
+
+  static upsertPlanArtifacts(artifacts: PlanArtifact[]): void {
+    if (!artifacts || artifacts.length === 0) return;
+    LocalDB.upsertPlanArtifacts(artifacts);
+    const threadId = artifacts[0]?.threadId;
+    if (threadId) {
+      debouncedEmitter.emitImmediate(
+        'plan_artifacts_updated',
+        threadId,
+        LocalDB.getPlanArtifactsByThread(threadId)
+      );
+    }
+  }
+
+  static async loadPlanArtifactsFromRemote(
+    threadId: string
+  ): Promise<PlanArtifact[]> {
+    const localArtifacts = LocalDB.getPlanArtifactsByThread(threadId);
+
+    if (this.isGuestMode) {
+      return localArtifacts;
+    }
+
+    try {
+      const remoteArtifacts = await AppwriteDB.getPlanArtifactsByThread(threadId);
+      LocalDB.replacePlanArtifactsForThread(threadId, remoteArtifacts);
+      debouncedEmitter.emit(
+        'plan_artifacts_updated',
+        threadId,
+        remoteArtifacts
+      );
+
+      this.syncPlanArtifactsInBackground(threadId).catch((error) =>
+        devWarn('Parallel plan artifact sync failed:', error)
+      );
+
+      return remoteArtifacts;
+    } catch (error) {
+      devWarn('Failed to load plan artifacts from remote:', error);
+      return localArtifacts;
+    }
+  }
+
+  private static async syncPlanArtifactsInBackground(
+    threadId: string
+  ): Promise<void> {
+    if (this.isGuestMode) {
+      return;
+    }
+
+    if (this.pendingPlanArtifactSyncs.has(threadId)) {
+      return;
+    }
+
+    this.pendingPlanArtifactSyncs.add(threadId);
+
+    try {
+      const remoteArtifacts = await AppwriteDB.getPlanArtifactsByThread(threadId);
+      const localArtifacts = LocalDB.getPlanArtifactsByThread(threadId);
+
+      let hasChanges = remoteArtifacts.length !== localArtifacts.length;
+
+      if (!hasChanges) {
+        const localMap = new Map(localArtifacts.map((artifact) => [artifact.id, artifact]));
+        hasChanges = remoteArtifacts.some((remoteArtifact) => {
+          const localArtifact = localMap.get(remoteArtifact.id);
+          if (!localArtifact) return true;
+
+          return (
+            localArtifact.version !== remoteArtifact.version ||
+            localArtifact.updatedAt.getTime() !== remoteArtifact.updatedAt.getTime()
+          );
+        });
+      }
+
+      if (hasChanges) {
+        devLog(
+          '[HybridDB] Plan artifact sync detected changes, updating local cache for thread:',
+          threadId,
+          'Remote count:',
+          remoteArtifacts.length,
+          'Local count:',
+          localArtifacts.length
+        );
+
+        LocalDB.replacePlanArtifactsForThread(threadId, remoteArtifacts);
+        debouncedEmitter.emitImmediate(
+          'plan_artifacts_updated',
+          threadId,
+          remoteArtifacts
+        );
+      }
+    } catch (error) {
+      devWarn('Background plan artifact sync failed:', error);
+    } finally {
+      this.pendingPlanArtifactSyncs.delete(threadId);
     }
   }
 
@@ -1580,6 +1694,7 @@ export class HybridDB {
     this.initialized = false;
     this.initializationPromise = null;
     this.pendingMessageSyncs.clear(); // Clear pending syncs
+    this.pendingPlanArtifactSyncs.clear();
     this.recentMessageIds.clear(); // Clear message tracking
     this.messageCreationTimestamps.clear(); // Clear timestamp tracking
   }
@@ -1596,6 +1711,7 @@ export class HybridDB {
       this.initialized = false;
       this.initializationPromise = null;
       this.pendingMessageSyncs.clear();
+      this.pendingPlanArtifactSyncs.clear();
       this.isGuestMode = false;
 
       // 3. Set the new user ID

@@ -10,7 +10,12 @@ import { memo, useState, useEffect, useRef, useCallback } from "react";
 import MarkdownRenderer from "@/frontend/components/MarkdownRenderer";
 import { cn } from "@/lib/utils";
 import { UIMessage } from "ai";
+import * as React from "react";
+import { PlanArtifact } from "@/lib/appwriteDB";
+import { HybridDB, dbEvents } from "@/lib/hybridDB";
 import equal from "fast-deep-equal";
+import { devWarn } from "@/lib/logger";
+import { Code2 } from "lucide-react";
 import ChatMessageControls from "./ChatMessageControls";
 import { UseChatHelpers } from "@ai-sdk/react";
 import ChatMessageEditor from "./ChatMessageEditor";
@@ -19,6 +24,7 @@ import WebSearchCitations, { cleanMessageContent } from "./WebSearchCitations";
 import MessageAttachments from "./MessageAttachments";
 import { AIModel, getModelConfig } from "@/lib/models";
 import RetrievalCard, { extractRetrievalCard } from "./RetrievalCard";
+import { MdArrowOutward } from "react-icons/md";
 import {
   User,
   Bot,
@@ -160,6 +166,7 @@ function PureMessage({
   prevUserMessage,
   isLast,
   streamingWebImgs,
+  onShowPlanArtifact,
 }: {
   threadId: string;
   message: UIMessage;
@@ -173,6 +180,11 @@ function PureMessage({
   prevUserMessage?: string;
   isLast?: boolean;
   streamingWebImgs?: string[];
+  onShowPlanArtifact?: (
+    messageId: string,
+    artifacts: PlanArtifact[],
+    activeArtifactId: string
+  ) => void;
 }) {
   // Generate suggestions on demand (when the section is opened)
   const handleGenerateSuggestions = async () => {
@@ -846,6 +858,10 @@ function PureMessage({
                     messageText.includes("🎨 Generating your image") ||
                     messageText.includes("Generating your image");
                   const isImageGeneration = (message as any).isImageGeneration;
+                  const isPlanAssistant =
+                    message.role === "assistant" && (message as any).isPlan;
+                  const suppressPlanStreaming =
+                    isPlanAssistant && isStreaming && isLast;
 
                   console.log(
                     "🔍 Checking markdown render - isImageGenerationLoading:",
@@ -860,13 +876,31 @@ function PureMessage({
                   // Show markdown content if:
                   // 1. It's not a loading message AND not an image generation result, OR
                   // 2. It's an image generation result but has actual text content to show
+                  if (suppressPlanStreaming) {
+                    return (
+                      <div className="break-words overflow-hidden max-w-full mb-3 no-scrollbar">
+                        {isPlanAssistant && (
+                          <PlanArtifactsBlock
+                            threadId={threadId}
+                            messageId={message.id}
+                            onOpenArtifacts={onShowPlanArtifact}
+                          />
+                        )}
+                      </div>
+                    );
+                  }
+
                   if (
                     !isImageGenerationLoading &&
                     !isImageGeneration &&
-                    messageText.trim()
+                    !suppressPlanStreaming &&
+                    (messageText.trim() || isPlanAssistant)
                   ) {
                     // Extract retrieval card data if present
-                    const { data: retrievalData, cleanContent: contentWithoutCard } = extractRetrievalCard(messageText);
+                    const {
+                      data: retrievalData,
+                      cleanContent: contentWithoutCard,
+                    } = extractRetrievalCard(messageText);
 
                     // Filter out aspect ratio metadata from display
                     // Clean the text by removing aspect ratio markers and search URLs markers
@@ -879,7 +913,9 @@ function PureMessage({
                       return (
                         <div className="break-words overflow-hidden max-w-full mb-3 no-scrollbar">
                           {/* Show retrieval card if present */}
-                          {retrievalData && <RetrievalCard data={retrievalData} />}
+                          {retrievalData && (
+                            <RetrievalCard data={retrievalData} />
+                          )}
 
                           {/* Show markdown content */}
                           {cleanedText && (
@@ -1029,6 +1065,22 @@ function PureMessage({
                   );
                 })()}
 
+                {/* Plan Mode Artifacts - Show after content */}
+                {(() => {
+                  const isPlanAssistant =
+                    message.role === "assistant" && (message as any).isPlan;
+
+                  return (
+                    isPlanAssistant && (
+                      <PlanArtifactsBlock
+                        threadId={threadId}
+                        messageId={message.id}
+                        onOpenArtifacts={onShowPlanArtifact}
+                      />
+                    )
+                  );
+                })()}
+
                 {/* Suggested Questions - Hide for image generation responses */}
                 {!isStreaming &&
                   isLast &&
@@ -1106,5 +1158,203 @@ const PreviewMessage = memo(PureMessage, (prevProps, nextProps) => {
 });
 
 PreviewMessage.displayName = "PreviewMessage";
+
+// Lightweight inline viewer for plan artifacts tied to a message
+function PlanArtifactsBlock({
+  threadId,
+  messageId,
+  onOpenArtifacts,
+}: {
+  threadId: string;
+  messageId: string;
+  onOpenArtifacts?: (
+    messageId: string,
+    artifacts: PlanArtifact[],
+    activeArtifactId: string
+  ) => void;
+}) {
+  const [artifacts, setArtifacts] = React.useState<PlanArtifact[] | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [isOpening, setIsOpening] = React.useState(false);
+  React.useEffect(() => {
+    let mounted = true;
+
+    const applyArtifacts = (list: PlanArtifact[]) => {
+      if (!mounted) return;
+      setArtifacts(list.length > 0 ? list : []);
+      setLoading(false);
+    };
+
+    // Load cached artifacts first for instant display
+    const cached = HybridDB.getPlanArtifactsByMessage(threadId, messageId);
+    if (cached.length > 0) {
+      applyArtifacts(cached);
+    }
+
+    const handleUpdate = (
+      updatedThreadId: string,
+      updatedArtifacts: PlanArtifact[]
+    ) => {
+      if (!mounted || updatedThreadId !== threadId) return;
+      const relevant = updatedArtifacts.filter(
+        (artifact) => artifact.messageId === messageId
+      );
+      applyArtifacts(relevant);
+    };
+
+    dbEvents.on("plan_artifacts_updated", handleUpdate);
+
+    // Always attempt a fresh remote load
+    (async () => {
+      try {
+        const remoteArtifacts = await HybridDB.loadPlanArtifactsFromRemote(
+          threadId
+        );
+        if (!mounted) return;
+        const relevant = remoteArtifacts.filter(
+          (artifact) => artifact.messageId === messageId
+        );
+        applyArtifacts(relevant);
+      } catch (error) {
+        if (mounted) {
+          devWarn("Failed to refresh plan artifacts for message:", error);
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      mounted = false;
+      dbEvents.off("plan_artifacts_updated", handleUpdate);
+    };
+  }, [threadId, messageId]);
+
+  // Don't show anything while loading or if no artifacts exist
+  // This keeps the UI clean - artifacts appear only when they're ready
+  if (loading || !artifacts || artifacts.length === 0) {
+    return null;
+  }
+
+  const handleOpenPanel = async (targetId?: string) => {
+    try {
+      setIsOpening(true);
+      let list = artifacts || [];
+      if (list.length === 0) {
+        const remote = await HybridDB.loadPlanArtifactsFromRemote(threadId);
+        list = remote.filter((artifact) => artifact.messageId === messageId);
+        setArtifacts(list);
+      }
+
+      if (list.length === 0) {
+        toast.error("No plan artifacts available yet. Please wait a moment.");
+        return;
+      }
+
+      const chosen = targetId
+        ? list.find((artifact) => artifact.id === targetId)
+        : list[list.length - 1];
+
+      onOpenArtifacts?.(
+        messageId,
+        list,
+        chosen ? chosen.id : list[list.length - 1].id
+      );
+    } catch (error) {
+      devWarn("Failed opening plan artifact panel", error);
+      toast.error("Unable to open plan artifacts right now.");
+    } finally {
+      setIsOpening(false);
+    }
+  };
+
+  return (
+    <div className="mb-4 space-y-3">
+      {artifacts.map((artifact) => {
+        // Get artifact type details
+        const getArtifactDetails = () => {
+          if (artifact.type === "mvp") {
+            return {
+              icon: <Code2 className="h-5 w-5" />,
+              label: "Code",
+              subtitle: "HTML",
+            };
+          } else {
+            return {
+              icon: <Code2 className="h-5 w-5" />,
+              label: artifact.diagramType || "Diagram",
+              subtitle: artifact.framework || artifact.type.toUpperCase(),
+            };
+          }
+        };
+
+        const details = getArtifactDetails();
+
+        return (
+          <div key={artifact.id}>
+            {/* Main Artifact Card - Clickable */}
+            <div
+              onClick={() => handleOpenPanel(artifact.id)}
+              className="rounded-lg border border-border/50 bg-card/60 text-foreground/90 hover:bg-accent/30 transition-all cursor-pointer overflow-hidden"
+            >
+              <div className="flex relative items-center gap-3 p-2 sm:p-3">
+                {/* Icon Container */}
+                <div className="w-16 h-full pt-4 flex justify-center items-center relative z-20">
+                  {details.icon}
+                </div>
+
+                {/* Background Card - Static, no rotation */}
+                <div className="absolute left-4 top-2 -rotate-6 h-20 flex-shrink-0 w-12 sm:w-14 sm:h-20 rounded-lg border border-border/60 bg-gradient-to-bl from-card to-muted flex items-center justify-center text-muted-foreground z-10"></div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <h1 className=" text-sm mb-1 truncate">{artifact.title}</h1>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px]  text-muted-foreground">
+                      {details.label}
+                    </span>
+                    <span className="text-[12px] text-muted-foreground/60">
+                      •
+                    </span>
+                    <span className="text-[12px]  text-muted-foreground">
+                      {details.subtitle}
+                    </span>
+
+                    {/* Tags */}
+                    {(artifact.sqlSchema?.trim() ||
+                      artifact.prismaSchema?.trim() ||
+                      artifact.typeormEntities?.trim()) && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {artifact.sqlSchema?.trim() && (
+                          <span className="px-2 py-0.5 text-[8px] sm:text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20">
+                            SQL
+                          </span>
+                        )}
+                        {artifact.prismaSchema?.trim() && (
+                          <span className="px-2 py-0.5 text-[8px] sm:text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20">
+                            Prisma
+                          </span>
+                        )}
+                        {artifact.typeormEntities?.trim() && (
+                          <span className="px-2 py-0.5 text-[8px] sm:text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20">
+                            TypeORM
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Status Indicator */}
+                <div className="flex-shrink-0 px-3 sm:px-4 py-2  text-xs sm:text-sm font-medium transition-all ">
+                  <MdArrowOutward className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default PreviewMessage;
