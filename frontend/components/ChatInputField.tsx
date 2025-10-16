@@ -222,6 +222,9 @@ function PureInputField({
   // Search state (Chat, Web Search, or Reddit Search)
   const { selectedSearchType, setSearchType } = useSearchTypeStore();
 
+  // Derived state for Plan Mode (read-only from searchType)
+  const isPlanMode = selectedSearchType === "plan";
+
   // Conversation style state
   const { selectedStyle, setStyle, getStyleConfig } =
     useConversationStyleStore();
@@ -1787,7 +1790,7 @@ function PureInputField({
                       </DropdownMenuContent>
                     </DropdownMenu>
                     <div className="min-w-0 flex-shrink overflow-hidden">
-                      <ModelSelector isImageGenMode={isImageGenMode} />
+                      <ModelSelector isImageGenMode={isImageGenMode} isPlanMode={isPlanMode} />
                     </div>
                   </>
                 )}

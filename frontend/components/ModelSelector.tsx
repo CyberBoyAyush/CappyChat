@@ -245,9 +245,13 @@ const BYOKIndicator = ({ className }: { className?: string }) => {
 
 interface ModelSelectorProps {
   isImageGenMode?: boolean;
+  isPlanMode?: boolean;
 }
 
-const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
+const PureModelSelector = ({
+  isImageGenMode = false,
+  isPlanMode = false,
+}: ModelSelectorProps) => {
   const { selectedModel, setModel } = useModelStore();
   const [isOpen, setIsOpen] = useState(false);
   const { hasOpenRouterKey } = useBYOKStore();
@@ -263,9 +267,17 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
   const isLocked = isGuest;
   const usingBYOK = hasOpenRouterKey();
 
-  // Track previous mode to prevent infinite loops
+  // Track previous modes to prevent infinite loops
   const previousModeRef = useRef(isImageGenMode);
+  const previousPlanModeRef = useRef(isPlanMode);
   const isInitialMount = useRef(true);
+
+  // Plan Mode allowed models constant
+  const PLAN_MODE_ALLOWED_MODELS: AIModel[] = [
+    "Claude Haiku 4.5",
+    "Claude Sonnet 4.5",
+    "Kimi K2",
+  ];
 
   // Force guest users to use Gemini 2.5 Flash Lite
   useEffect(() => {
@@ -310,6 +322,34 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
     previousModeRef.current = isImageGenMode;
   }, [isImageGenMode, selectedModel, setModel]);
 
+  // Force Plan Mode to use only Claude Haiku 4.5 and Claude Sonnet 4.5
+  useEffect(() => {
+    // Skip on initial mount
+    if (isInitialMount.current) {
+      previousPlanModeRef.current = isPlanMode;
+      return;
+    }
+
+    // Only run if Plan Mode state actually changed
+    if (previousPlanModeRef.current === isPlanMode) {
+      return;
+    }
+
+    // If entering Plan Mode
+    if (isPlanMode) {
+      const currentConfig = getModelConfig(selectedModel);
+      if (!PLAN_MODE_ALLOWED_MODELS.includes(selectedModel)) {
+        console.log(
+          "[ModelSelector] Plan Mode detected, switching to Claude Haiku 4.5"
+        );
+        setModel("Claude Haiku 4.5");
+      }
+    }
+
+    // Update previous Plan Mode ref
+    previousPlanModeRef.current = isPlanMode;
+  }, [isPlanMode, selectedModel, setModel, PLAN_MODE_ALLOWED_MODELS]);
+
   // Load tier validations for all models
   useEffect(() => {
     const loadTierValidations = async () => {
@@ -346,9 +386,12 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
         const config = getModelConfig(model);
         if (!config.isImageGeneration) return false;
       }
+      if (isPlanMode) {
+        if (!PLAN_MODE_ALLOWED_MODELS.includes(model)) return false;
+      }
       return true;
     },
-    [isGuest, isImageGenMode]
+    [isGuest, isImageGenMode, isPlanMode, PLAN_MODE_ALLOWED_MODELS]
   );
 
   const handleModelSelect = useCallback(
@@ -370,6 +413,9 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
       // Image generation mode filter
       if (isImageGenMode && !config.isImageGeneration) return false;
       if (!isImageGenMode && config.isImageGeneration) return false;
+
+      // Plan Mode filter
+      if (isPlanMode && !PLAN_MODE_ALLOWED_MODELS.includes(model)) return false;
 
       // Guest user filter
       if (isGuest && model !== "Gemini 2.5 Flash Lite") return false;
@@ -412,7 +458,13 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
       }, {} as Record<string, AIModel[]>);
 
     return sortedGrouped;
-  }, [isImageGenMode, isGuest, searchQuery]);
+  }, [
+    isImageGenMode,
+    isGuest,
+    searchQuery,
+    isPlanMode,
+    PLAN_MODE_ALLOWED_MODELS,
+  ]);
 
   return (
     <div className="flex items-center gap-2">
@@ -454,15 +506,15 @@ const PureModelSelector = ({ isImageGenMode = false }: ModelSelectorProps) => {
           className={cn(
             "w-[270px]  md:w-[580px] max-w-[90vw] p-0",
             "bg-transparent border-transparent",
-            "max-h-[40vh] overflow-hidden shadow-none"
+            "overflow-hidden shadow-none"
           )}
           align="start"
           sideOffset={8}
           collisionPadding={16}
           avoidCollisions={true}
         >
-          {/* Container with flex layout for md+ screens */}
-          <div className="flex flex-col gap-2 md:flex-row ">
+          {/* Container with flex layout for md+ screens - Fixed height prevents layout shift */}
+          <div className="flex flex-col gap-2 md:flex-row md:h-[40vh]">
             {/* Left side: Search, BYOK, and Models List */}
             <div className="flex flex-col rounded-xl flex-1 max-h-[40vh] min-w-0 border border-border/50 bg-background/95 backdrop-blur-xl">
               {/* Search and BYOK */}
