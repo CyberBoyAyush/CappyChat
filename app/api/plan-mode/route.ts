@@ -11,6 +11,7 @@ import {
 import { devWarn, devError } from "@/lib/logger";
 import { Client, Databases, ID, Query } from "node-appwrite";
 import { DATABASE_ID, PLAN_ARTIFACTS_COLLECTION_ID } from "@/lib/appwriteDB";
+import { executeRetrieval } from "@/lib/tools/actions";
 
 export const maxDuration = 60;
 
@@ -166,7 +167,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Plan Mode allowed models whitelist
-    const PLAN_MODE_ALLOWED_MODELS = ["Claude Haiku 4.5", "Claude Sonnet 4.5", "Kimi K2"];
+    const PLAN_MODE_ALLOWED_MODELS = [
+      "Claude Haiku 4.5",
+      "Claude Sonnet 4.5",
+      "Kimi K2",
+    ];
     if (!PLAN_MODE_ALLOWED_MODELS.includes(selectedModel)) {
       return new Response(
         JSON.stringify({
@@ -520,6 +525,31 @@ export async function POST(req: NextRequest) {
           };
         },
       }),
+      retrieval: tool({
+        description:
+          "Retrieve full content from a URL. Returns text, title, summary, and images. Use this when the user provides a URL or asks to analyze a specific website, domain, or online resource.",
+        parameters: z
+          .object({
+            url: z
+              .string()
+              .describe(
+                "The URL to retrieve content from (e.g., 'https://github.com', 'openai.com', 'example.com/blog')"
+              ),
+            include_summary: z
+              .boolean()
+              .optional()
+              .describe("Include AI-generated summary (default: true)"),
+            live_crawl: z
+              .enum(["never", "auto", "preferred"])
+              .optional()
+              .describe("Crawl mode (default: preferred)"),
+          })
+          .strict(),
+        execute: async ({ url, include_summary, live_crawl }) => {
+          await ensureToolCredits(ctx, 1);
+          return executeRetrieval({ url, include_summary, live_crawl });
+        },
+      }),
     });
 
     // Analyze conversation context to provide intelligent hints (before type assertion)
@@ -581,9 +611,16 @@ ${
 1. **Discuss** → Understand vision
 2. **Clarify** → Ask specific questions if vague
 3. **Suggest** → Propose helpful artifacts
-4. **Create** → Only when confirmed/requested
+4. **Analyze URLs** → If user provides URLs, call retrieval first to gather accurate details
+5. **Create** → Only when confirmed/requested
 
 === TOOL USAGE ===
+**retrieval**: Web content analysis for URL-based requirements
+- Use when user provides a URL, asks to analyze a website, or wants to replicate features from an existing site
+- Fetches title, text content, summary, and images from the provided URL
+- Call retrieval FIRST, then use the content to discuss features or to inform create_mvp or generate_diagram
+- If retrieval fails, ask for another URL or proceed with available details
+
 **create_mvp**: Include title, description, framework, theme, features, dependencies, deploymentNotes
 - Generate FULL production code - no placeholders/TODOs
 - **CSS**: ALWAYS use Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>
@@ -621,6 +658,11 @@ ${
 ✅ User: "Make dashboard" → "What data? Audience? Charts needed? Preferred style? I'll generate a custom MVP."
 
 ✅ User: "Create whiteboard app with touch + pen colors" → [Calls create_mvp] "Created interactive whiteboard with touch/mouse, colors, eraser. <!-- PLAN_ARTIFACT_AVAILABLE --> Want an architecture diagram?"
+
+✅ User: "Create an MVP like https://example.com/blog" → [Calls retrieval] → [Calls create_mvp] "Analyzed the blog layout and created a modern version with similar features. <!-- PLAN_ARTIFACT_AVAILABLE -->"
+
+❌ User: "Build something like twitter.com" → [Immediately creates MVP]
+✅ User: "Build something like twitter.com" → [Calls retrieval] "Analyzed Twitter's core features. Should I create a social media MVP with feed, posts, and user profiles?"
 
 REMEMBER: Be consultative first. Create production-quality, visually impressive UIs that look professionally designed, not basic templates.`;
 
