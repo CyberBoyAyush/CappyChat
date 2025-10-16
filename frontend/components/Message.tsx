@@ -167,6 +167,7 @@ function PureMessage({
   isLast,
   streamingWebImgs,
   onShowPlanArtifact,
+  disablePlanBlock = false,
 }: {
   threadId: string;
   message: UIMessage;
@@ -185,6 +186,7 @@ function PureMessage({
     artifacts: PlanArtifact[],
     activeArtifactId: string
   ) => void;
+  disablePlanBlock?: boolean;
 }) {
   // Generate suggestions on demand (when the section is opened)
   const handleGenerateSuggestions = async () => {
@@ -879,7 +881,7 @@ function PureMessage({
                   if (suppressPlanStreaming) {
                     return (
                       <div className="break-words overflow-hidden max-w-full mb-3 no-scrollbar">
-                        {isPlanAssistant && (
+                        {isPlanAssistant && !disablePlanBlock && (
                           <PlanArtifactsBlock
                             threadId={threadId}
                             messageId={message.id}
@@ -1071,7 +1073,7 @@ function PureMessage({
                     message.role === "assistant" && (message as any).isPlan;
 
                   return (
-                    isPlanAssistant && (
+                    isPlanAssistant && !disablePlanBlock && (
                       <PlanArtifactsBlock
                         threadId={threadId}
                         messageId={message.id}

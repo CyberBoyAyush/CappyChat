@@ -27,6 +27,18 @@ export async function GET(
     // Get messages for the shared thread using server-side client
     const messages = await AppwriteServerDB.getSharedThreadMessages(sharedThread.threadId);
 
+    // Get all plan artifacts for the thread using server-side client
+    const planArtifacts = await AppwriteServerDB.getPlanArtifactsByThread(sharedThread.threadId);
+
+    // Group artifacts by messageId for easy lookup
+    const artifactsByMessage = planArtifacts.reduce((acc, artifact) => {
+      if (!acc[artifact.messageId]) {
+        acc[artifact.messageId] = [];
+      }
+      acc[artifact.messageId].push(artifact);
+      return acc;
+    }, {} as Record<string, any[]>);
+
     return NextResponse.json({
       success: true,
       thread: {
@@ -46,6 +58,8 @@ export async function GET(
         imgurl: msg.imgurl,
         webSearchResults: (msg as any).webSearchResults || undefined,
         webSearchImgs: (msg as any).webSearchImgs || undefined,
+        isPlan: msg.isPlan || false,
+        planArtifacts: artifactsByMessage[msg.id] || []
       }))
     });
 

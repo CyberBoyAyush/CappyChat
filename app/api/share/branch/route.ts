@@ -45,20 +45,67 @@ export async function POST(request: NextRequest) {
 
     console.log(`📝 Copying ${originalMessages.length} messages to new thread`);
 
-    // Copy messages to the new thread using server-side method
+    // Build message ID mapping and copy messages
+    const messageIdMap: Record<string, string> = {};
+
     for (const message of originalMessages) {
+      const newMessageId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+      messageIdMap[message.id] = newMessageId;
+
       await AppwriteServerDB.createMessageForThread(newThreadId, userId, {
-        id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        id: newMessageId,
         role: message.role,
         content: message.content,
         createdAt: message.createdAt,
         model: message.model,
         attachments: message.attachments,
-        imgurl: (message as DBMessage & { imgurl?: string }).imgurl
+        imgurl: (message as DBMessage & { imgurl?: string }).imgurl,
+        webSearchResults: (message as DBMessage & { webSearchResults?: string[] }).webSearchResults,
+        webSearchImgs: (message as DBMessage & { webSearchImgs?: string[] }).webSearchImgs,
+        isPlan: message.isPlan
       });
     }
 
-    console.log('✅ Branch created successfully:', newThreadId);
+    // Get all artifacts from the original shared thread
+    const originalArtifacts = await AppwriteServerDB.getPlanArtifactsByThread(sharedThread.threadId);
+    console.log(`🎨 Copying ${originalArtifacts.length} plan artifacts to new thread`);
+
+    // Copy artifacts to the new thread with proper ownership and message mapping
+    for (const artifact of originalArtifacts) {
+      const newMessageId = messageIdMap[artifact.messageId];
+      
+      if (!newMessageId) {
+        console.warn(`⚠️ Skipping artifact ${artifact.id} - could not map messageId ${artifact.messageId}`);
+        continue;
+      }
+
+      await AppwriteServerDB.createPlanArtifactForThread(newThreadId, {
+        artifactId: `artifact_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        messageId: newMessageId,
+        userId: userId, // Transfer ownership to branching user
+        type: artifact.type,
+        title: artifact.title,
+        description: artifact.description,
+        htmlCode: artifact.htmlCode,
+        cssCode: artifact.cssCode,
+        jsCode: artifact.jsCode,
+        framework: artifact.framework,
+        theme: artifact.theme,
+        diagramType: artifact.diagramType,
+        diagramCode: artifact.diagramCode,
+        outputFormat: artifact.outputFormat,
+        sqlSchema: artifact.sqlSchema,
+        prismaSchema: artifact.prismaSchema,
+        typeormEntities: artifact.typeormEntities,
+        diagramSvg: artifact.diagramSvg,
+        mermaidCode: artifact.mermaidCode,
+        d3Code: artifact.d3Code,
+        version: artifact.version,
+        parentArtifactId: artifact.parentArtifactId || undefined
+      });
+    }
+
+    console.log('✅ Branch created successfully with messages and artifacts:', newThreadId);
 
     return NextResponse.json({
       success: true,

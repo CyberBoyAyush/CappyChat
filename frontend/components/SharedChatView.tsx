@@ -9,10 +9,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "./ui/button";
-import { GitBranch, Calendar, Loader2, AlertCircle } from "lucide-react";
+import { GitBranch, Calendar, Loader2, AlertCircle, Code2, Eye } from "lucide-react";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import Message from "./Message";
 import { UIMessage } from "ai";
+import { PlanArtifact } from "@/lib/appwriteDB";
 
 interface SharedThread {
   id: string;
@@ -22,13 +23,69 @@ interface SharedThread {
   isShared: boolean;
 }
 
+interface SharedMessage extends UIMessage {
+  isPlan?: boolean;
+  planArtifacts?: PlanArtifact[];
+}
+
+interface ReadOnlyPlanArtifactProps {
+  artifacts: PlanArtifact[];
+}
+
 interface SharedChatViewProps {
   shareId: string;
 }
 
+// Read-only component for displaying plan artifacts in shared view
+function ReadOnlyPlanArtifact({ artifacts }: ReadOnlyPlanArtifactProps) {
+  if (!artifacts || artifacts.length === 0) return null;
+
+  return (
+    <div className="mt-4 p-4 bg-muted/30 border border-border/50 rounded-xl">
+      <div className="flex items-center gap-2 mb-3">
+        <Eye className="h-4 w-4 text-primary" />
+        <h4 className="text-sm font-medium text-foreground">Plan Artifacts</h4>
+        <span className="text-xs text-muted-foreground">
+          ({artifacts.length})
+        </span>
+      </div>
+      <div className="space-y-2">
+        {artifacts.map((artifact) => (
+          <div
+            key={artifact.id}
+            className="flex items-center justify-between p-3 bg-background/50 border border-border/30 rounded-lg hover:border-border/50 transition-colors"
+          >
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <Code2 className="h-4 w-4 text-primary" />
+                <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">
+                  {artifact.type === "mvp" ? "Code" : artifact.diagramType || "Diagram"}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {artifact.title}
+                </p>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                  {artifact.framework && (
+                    <span>Framework: {artifact.framework}</span>
+                  )}
+                  {artifact.version && (
+                    <span>Version: {artifact.version}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function SharedChatView({ shareId }: SharedChatViewProps) {
   const [thread, setThread] = useState<SharedThread | null>(null);
-  const [messages, setMessages] = useState<UIMessage[]>([]);
+  const [messages, setMessages] = useState<SharedMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [branching, setBranching] = useState(false);
@@ -239,16 +296,22 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
       <div className="max-w-5xl mx-auto px-4 pt-48 pb-16 md:py-28 ">
         <div className="space-y-6 no-scrollbar">
           {messages.map((message) => (
-            <Message
-              key={message.id}
-              threadId={thread?.id || ""}
-              message={message}
-              setMessages={() => {}} // Read-only, no message updates
-              reload={async () => Promise.resolve(null)} // Read-only, no reload
-              isStreaming={false}
-              registerRef={() => {}} // No navigation needed
-              stop={() => {}} // No stopping needed
-            />
+            <div key={message.id}>
+              <Message
+                threadId={thread?.id || ""}
+                message={message}
+                setMessages={() => {}} // Read-only, no message updates
+                reload={async () => Promise.resolve(null)} // Read-only, no reload
+                isStreaming={false}
+                registerRef={() => {}} // No navigation needed
+                stop={() => {}} // No stopping needed
+                disablePlanBlock={true} // Disable internal PlanArtifactsBlock to avoid HybridDB calls
+              />
+              {/* Read-only plan artifacts for shared view */}
+              {message.isPlan && message.planArtifacts && message.planArtifacts.length > 0 && (
+                <ReadOnlyPlanArtifact artifacts={message.planArtifacts} />
+              )}
+            </div>
           ))}
 
           {messages.length === 0 && (

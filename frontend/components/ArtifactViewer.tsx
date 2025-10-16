@@ -275,8 +275,8 @@ function ZoomableContainer({
   const touchStartZoomRef = React.useRef<number>(1);
 
   const MIN_ZOOM = 0.5;
-  const MAX_ZOOM = 4;
-  const ZOOM_STEP = 0.1;
+  const MAX_ZOOM = 10;
+  const ZOOM_STEP = 0.2;
 
   const handleZoom = (delta: number) => {
     setZoom((z) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z + delta)));
@@ -335,7 +335,10 @@ function ZoomableContainer({
     handleZoom(delta);
   };
 
-  const getDistance = (touch1: React.Touch | Touch, touch2: React.Touch | Touch): number => {
+  const getDistance = (
+    touch1: React.Touch | Touch,
+    touch2: React.Touch | Touch
+  ): number => {
     const dx = touch1.clientX - touch2.clientX;
     const dy = touch1.clientY - touch2.clientY;
     return Math.sqrt(dx * dx + dy * dy);
@@ -367,10 +370,17 @@ function ZoomableContainer({
       e.preventDefault();
       const currentDistance = getDistance(e.touches[0], e.touches[1]);
       const scale = currentDistance / touchStartDistanceRef.current;
-      const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, touchStartZoomRef.current * scale));
+      const newZoom = Math.max(
+        MIN_ZOOM,
+        Math.min(MAX_ZOOM, touchStartZoomRef.current * scale)
+      );
       setZoom(newZoom);
       setIsDragging(false);
-    } else if (e.touches.length === 1 && isDragging && touchStartDistanceRef.current === null) {
+    } else if (
+      e.touches.length === 1 &&
+      isDragging &&
+      touchStartDistanceRef.current === null
+    ) {
       // Single finger drag
       e.preventDefault();
       if (animationFrameRef.current !== null) {
