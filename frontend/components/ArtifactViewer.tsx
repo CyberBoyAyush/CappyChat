@@ -3,7 +3,7 @@ import React from "react";
 import { PlanArtifact } from "@/lib/appwriteDB";
 import ShikiHighlighter from "react-shiki";
 import { useTheme } from "next-themes";
-import { Eye, Code2 } from "lucide-react";
+import { Eye, Code2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 
 export default function ArtifactViewer({
   artifact,
@@ -256,6 +256,231 @@ function DiagramViewer({ artifact }: { artifact: PlanArtifact }) {
   );
 }
 
+function ZoomableContainer({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const [zoom, setZoom] = React.useState(1);
+  const [pan, setPan] = React.useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = React.useState(false);
+  const dragStartRef = React.useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  const panRef = React.useRef({ x: 0, y: 0 });
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const animationFrameRef = React.useRef<number | null>(null);
+  const touchStartDistanceRef = React.useRef<number | null>(null);
+  const touchStartZoomRef = React.useRef<number>(1);
+
+  const MIN_ZOOM = 0.5;
+  const MAX_ZOOM = 4;
+  const ZOOM_STEP = 0.1;
+
+  const handleZoom = (delta: number) => {
+    setZoom((z) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z + delta)));
+  };
+
+  const handleReset = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    panRef.current = { x: 0, y: 0 };
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    setIsDragging(true);
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      panX: panRef.current.x,
+      panY: panRef.current.y,
+    };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+
+    animationFrameRef.current = requestAnimationFrame(() => {
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+
+      const newPan = {
+        x: dragStartRef.current.panX + dx,
+        y: dragStartRef.current.panY + dy,
+      };
+
+      panRef.current = newPan;
+      setPan(newPan);
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+    handleZoom(delta);
+  };
+
+  const getDistance = (touch1: React.Touch | Touch, touch2: React.Touch | Touch): number => {
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const distance = getDistance(e.touches[0], e.touches[1]);
+      touchStartDistanceRef.current = distance;
+      touchStartZoomRef.current = zoom;
+      setIsDragging(false);
+    } else if (e.touches.length === 1) {
+      e.preventDefault();
+      setIsDragging(true);
+      dragStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        panX: panRef.current.x,
+        panY: panRef.current.y,
+      };
+      touchStartDistanceRef.current = null;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && touchStartDistanceRef.current !== null) {
+      // Pinch zoom
+      e.preventDefault();
+      const currentDistance = getDistance(e.touches[0], e.touches[1]);
+      const scale = currentDistance / touchStartDistanceRef.current;
+      const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, touchStartZoomRef.current * scale));
+      setZoom(newZoom);
+      setIsDragging(false);
+    } else if (e.touches.length === 1 && isDragging && touchStartDistanceRef.current === null) {
+      // Single finger drag
+      e.preventDefault();
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+
+      animationFrameRef.current = requestAnimationFrame(() => {
+        const dx = e.touches[0].clientX - dragStartRef.current.x;
+        const dy = e.touches[0].clientY - dragStartRef.current.y;
+
+        const newPan = {
+          x: dragStartRef.current.panX + dx,
+          y: dragStartRef.current.panY + dy,
+        };
+
+        panRef.current = newPan;
+        setPan(newPan);
+      });
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    touchStartDistanceRef.current = null;
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      className={`relative h-full flex flex-col bg-white dark:bg-zinc-900 rounded ${className}`}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{
+        cursor: isDragging ? "grabbing" : "grab",
+        touchAction: "none",
+      }}
+    >
+      {/* Zoom Controls */}
+      <div className="absolute top-2 left-2 z-10 flex gap-1 bg-background/80 backdrop-blur p-1 rounded border shadow-md">
+        <button
+          onClick={() => handleZoom(ZOOM_STEP)}
+          className="p-1.5 hover:bg-muted rounded transition-colors hover:shadow-sm active:scale-95"
+          title="Zoom In (Ctrl + Scroll)"
+        >
+          <ZoomIn className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => handleZoom(-ZOOM_STEP)}
+          className="p-1.5 hover:bg-muted rounded transition-colors hover:shadow-sm active:scale-95"
+          title="Zoom Out (Ctrl + Scroll)"
+        >
+          <ZoomOut className="w-4 h-4" />
+        </button>
+        <div className="px-2 py-1 text-xs font-mono text-muted-foreground select-none">
+          {Math.round(zoom * 100)}%
+        </div>
+        <button
+          onClick={handleReset}
+          className="p-1.5 hover:bg-muted rounded transition-colors hover:shadow-sm active:scale-95"
+          title="Reset Zoom & Pan"
+        >
+          <RotateCcw className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Draggable Content */}
+      <div
+        ref={contentRef}
+        className="flex-1 overflow-hidden select-none"
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        style={{
+          cursor: isDragging ? "grabbing" : "grab",
+          touchAction: "none",
+        }}
+      >
+        <div
+          className="h-full w-full origin-center"
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: "center",
+            willChange: isDragging ? "transform" : "auto",
+            transition: isDragging ? "none" : "transform 0.3s ease-out",
+          }}
+        >
+          <div className="w-full h-full flex items-center justify-center">
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MermaidBlock({ code }: { code: string }) {
   const ref = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
@@ -284,19 +509,17 @@ function MermaidBlock({ code }: { code: string }) {
     };
   }, [code]);
   return (
-    <div
-      ref={ref}
-      className="h-full overflow-auto no-xy-scrollbar bg-white dark:bg-zinc-900 m-2 p-2 rounded"
-    />
+    <ZoomableContainer className="m-2">
+      <div ref={ref} className="p-2" />
+    </ZoomableContainer>
   );
 }
 
 function SvgBlock({ svg }: { svg: string }) {
   return (
-    <div
-      className="h-full overflow-auto no-xy-scrollbar bg-white dark:bg-zinc-900 p-2 rounded"
-      dangerouslySetInnerHTML={{ __html: svg }}
-    />
+    <ZoomableContainer className="p-2">
+      <div dangerouslySetInnerHTML={{ __html: svg }} />
+    </ZoomableContainer>
   );
 }
 

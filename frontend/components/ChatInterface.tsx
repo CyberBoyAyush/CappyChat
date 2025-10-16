@@ -613,37 +613,52 @@ export default function ChatInterface({
   }, [threadId, planMessageSignal, isGuest]); // Run when messages are loaded, thread changes, or isPlan flags change
 
   useEffect(() => {
-    if (!planArtifactPanel) return;
-
     const handlePlanArtifactsUpdate = (
       updatedThreadId: string,
       updatedArtifacts: PlanArtifact[]
     ) => {
       if (updatedThreadId !== threadId) return;
-      setPlanArtifactPanel((current) => {
-        if (!current) return current;
-        const relevant = updatedArtifacts.filter(
-          (artifact) => artifact.messageId === current.messageId
-        );
 
-        if (relevant.length === 0) {
-          return null;
+      // If panel is open, update it with new artifacts
+      if (planArtifactPanel) {
+        setPlanArtifactPanel((current) => {
+          if (!current) return current;
+          const relevant = updatedArtifacts.filter(
+            (artifact) => artifact.messageId === current.messageId
+          );
+
+          if (relevant.length === 0) {
+            return null;
+          }
+
+          const activeArtifact = relevant.find(
+            (artifact) => artifact.id === current.activeArtifactId
+          );
+
+          const nextPanel = {
+            messageId: current.messageId,
+            artifacts: relevant,
+            activeArtifactId: activeArtifact
+              ? activeArtifact.id
+              : relevant[relevant.length - 1].id,
+          };
+          pendingPlanMessageId.current = null;
+          return nextPanel;
+        });
+      } else {
+        // Panel is closed, but artifacts arrived - auto-open panel for the latest artifact
+        const latestArtifact = updatedArtifacts[updatedArtifacts.length - 1];
+        if (latestArtifact) {
+          devLog("[ChatInterface] Auto-opening plan artifacts panel for new artifacts:", latestArtifact.messageId);
+          setPlanArtifactPanel({
+            messageId: latestArtifact.messageId,
+            artifacts: updatedArtifacts.filter(
+              (artifact) => artifact.messageId === latestArtifact.messageId
+            ),
+            activeArtifactId: latestArtifact.id,
+          });
         }
-
-        const activeArtifact = relevant.find(
-          (artifact) => artifact.id === current.activeArtifactId
-        );
-
-        const nextPanel = {
-          messageId: current.messageId,
-          artifacts: relevant,
-          activeArtifactId: activeArtifact
-            ? activeArtifact.id
-            : relevant[relevant.length - 1].id,
-        };
-        pendingPlanMessageId.current = null;
-        return nextPanel;
-      });
+      }
     };
 
     dbEvents.on("plan_artifacts_updated", handlePlanArtifactsUpdate);

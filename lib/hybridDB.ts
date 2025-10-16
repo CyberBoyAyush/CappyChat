@@ -1456,7 +1456,8 @@ export class HybridDB {
       webSearchImgs: (appwriteMessage as any).webSearchImgs || undefined,
       attachments: attachments,
       model: appwriteMessage.model || undefined,
-      imgurl: appwriteMessage.imgurl || undefined
+      imgurl: appwriteMessage.imgurl || undefined,
+      isPlan: typeof (appwriteMessage as any).isPlan === "boolean" ? (appwriteMessage as any).isPlan : undefined
     };
 
     LocalDB.addMessage(message);
@@ -1478,13 +1479,14 @@ export class HybridDB {
     const existingMessage = existingMessages.find(m => m.id === appwriteMessage.messageId);
 
     if (existingMessage) {
-      // Check if both content and imgurl are the same to avoid unnecessary updates
+      // Check if content, imgurl, model, or isPlan changed
       const contentUnchanged = existingMessage.content === appwriteMessage.content;
       const imgUrlUnchanged = existingMessage.imgurl === appwriteMessage.imgurl;
       const modelUnchanged = existingMessage.model === appwriteMessage.model;
+      const isPlanUnchanged = existingMessage.isPlan === (appwriteMessage as any).isPlan;
       
-      if (contentUnchanged && imgUrlUnchanged && modelUnchanged) {
-        devLog('[HybridDB] Message content, imgurl, and model unchanged, skipping update:', appwriteMessage.messageId);
+      if (contentUnchanged && imgUrlUnchanged && modelUnchanged && isPlanUnchanged) {
+        devLog('[HybridDB] Message content, imgurl, model, and isPlan unchanged, skipping update:', appwriteMessage.messageId);
         return;
       }
       
@@ -1492,8 +1494,11 @@ export class HybridDB {
         contentChanged: !contentUnchanged,
         imgUrlChanged: !imgUrlUnchanged, 
         modelChanged: !modelUnchanged,
+        isPlanChanged: !isPlanUnchanged,
         newImgUrl: appwriteMessage.imgurl,
-        oldImgUrl: existingMessage.imgurl
+        oldImgUrl: existingMessage.imgurl,
+        newIsPlan: (appwriteMessage as any).isPlan,
+        oldIsPlan: existingMessage.isPlan
       });
     } else {
       devLog('[HybridDB] New message received via update event:', appwriteMessage.messageId);
@@ -1544,7 +1549,8 @@ export class HybridDB {
       webSearchImgs: (appwriteMessage as any).webSearchImgs || undefined,
       attachments: attachments,
       model: appwriteMessage.model || undefined,
-      imgurl: appwriteMessage.imgurl || undefined
+      imgurl: appwriteMessage.imgurl || undefined,
+      isPlan: typeof (appwriteMessage as any).isPlan === "boolean" ? (appwriteMessage as any).isPlan : undefined
     };
 
     LocalDB.addMessage(message); // addMessage handles both create and update
