@@ -589,6 +589,12 @@ export default function ChatInterface({
     }
   }, [selectedPrompt, setInput]);
 
+  // Create stable signal for plan messages - includes isPlan flag to trigger rerun when it changes
+  const planMessageSignal = useMemo(() => {
+    const planMessages = messages.filter((msg) => (msg as any).isPlan);
+    return `${messages.length}_${planMessages.length}_${planMessages.map(m => m.id).join(',')}`;
+  }, [messages]);
+
   // Preload Plan Mode artifacts when messages with isPlan flag are detected
   useEffect(() => {
     if (isGuest || messages.length === 0) return;
@@ -604,7 +610,7 @@ export default function ChatInterface({
         devWarn("[ChatInterface] Failed to preload Plan Mode artifacts:", error)
       );
     }
-  }, [threadId, messages.length, isGuest]); // Run when messages are loaded or thread changes
+  }, [threadId, planMessageSignal, isGuest]); // Run when messages are loaded, thread changes, or isPlan flags change
 
   useEffect(() => {
     if (!planArtifactPanel) return;

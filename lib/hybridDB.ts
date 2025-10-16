@@ -227,6 +227,9 @@ export class HybridDB {
       onProjectCreated: this.handleRemoteProjectCreated.bind(this),
       onProjectUpdated: this.handleRemoteProjectUpdated.bind(this),
       onProjectDeleted: this.handleRemoteProjectDeleted.bind(this),
+      onPlanArtifactCreated: this.handleRemotePlanArtifactCreated.bind(this),
+      onPlanArtifactUpdated: this.handleRemotePlanArtifactUpdated.bind(this),
+      onPlanArtifactDeleted: this.handleRemotePlanArtifactDeleted.bind(this),
     });
 
     // Subscribe to realtime updates immediately for better UX
@@ -1168,10 +1171,20 @@ export class HybridDB {
           const localMsg = localMessageMap.get(remoteMsg.id);
           if (!localMsg) return true; // New message
           
-          // Check for content or imgurl differences
-          return localMsg.content !== remoteMsg.content || 
-                 localMsg.imgurl !== remoteMsg.imgurl ||
-                 localMsg.model !== remoteMsg.model;
+          // Check for content, imgurl, model, isPlan, and attachments differences
+          const contentDiff = localMsg.content !== remoteMsg.content;
+          const imgurlDiff = localMsg.imgurl !== remoteMsg.imgurl;
+          const modelDiff = localMsg.model !== remoteMsg.model;
+          const isPlanDiff = localMsg.isPlan !== remoteMsg.isPlan;
+          
+          // Check attachments - compare count and structure
+          const localAttachCount = localMsg.attachments?.length || 0;
+          const remoteAttachCount = remoteMsg.attachments?.length || 0;
+          const attachmentsDiff = localAttachCount !== remoteAttachCount ||
+            (localMsg.attachments && remoteMsg.attachments && 
+             JSON.stringify(localMsg.attachments) !== JSON.stringify(remoteMsg.attachments));
+          
+          return contentDiff || imgurlDiff || modelDiff || isPlanDiff || attachmentsDiff;
         });
       }
 
@@ -1644,6 +1657,84 @@ export class HybridDB {
     debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
   }
 
+  // ============ PLAN ARTIFACT REALTIME HANDLERS ============
+
+  private static handleRemotePlanArtifactCreated(appwriteArtifact: any): void {
+    devLog('[HybridDB] Handling remote plan artifact created:', appwriteArtifact.artifactId);
+    const artifact: PlanArtifact = {
+      id: appwriteArtifact.$id,
+      artifactId: appwriteArtifact.artifactId,
+      threadId: appwriteArtifact.threadId,
+      messageId: appwriteArtifact.messageId,
+      userId: appwriteArtifact.userId,
+      type: appwriteArtifact.type,
+      title: appwriteArtifact.title,
+      description: appwriteArtifact.description,
+      htmlCode: appwriteArtifact.htmlCode,
+      cssCode: appwriteArtifact.cssCode,
+      jsCode: appwriteArtifact.jsCode,
+      framework: appwriteArtifact.framework,
+      theme: appwriteArtifact.theme,
+      diagramType: appwriteArtifact.diagramType,
+      diagramCode: appwriteArtifact.diagramCode,
+      outputFormat: appwriteArtifact.outputFormat,
+      sqlSchema: appwriteArtifact.sqlSchema,
+      prismaSchema: appwriteArtifact.prismaSchema,
+      typeormEntities: appwriteArtifact.typeormEntities,
+      diagramSvg: appwriteArtifact.diagramSvg,
+      mermaidCode: appwriteArtifact.mermaidCode,
+      d3Code: appwriteArtifact.d3Code,
+      version: appwriteArtifact.version,
+      parentArtifactId: appwriteArtifact.parentArtifactId,
+      isPublic: appwriteArtifact.isPublic,
+      createdAt: new Date(appwriteArtifact.$createdAt),
+      updatedAt: new Date(appwriteArtifact.$updatedAt),
+    };
+    LocalDB.upsertPlanArtifacts([artifact]);
+    debouncedEmitter.emitImmediate('plan_artifacts_updated', appwriteArtifact.threadId, LocalDB.getPlanArtifactsByThread(appwriteArtifact.threadId));
+  }
+
+  private static handleRemotePlanArtifactUpdated(appwriteArtifact: any): void {
+    devLog('[HybridDB] Handling remote plan artifact updated:', appwriteArtifact.artifactId);
+    const artifact: PlanArtifact = {
+      id: appwriteArtifact.$id,
+      artifactId: appwriteArtifact.artifactId,
+      threadId: appwriteArtifact.threadId,
+      messageId: appwriteArtifact.messageId,
+      userId: appwriteArtifact.userId,
+      type: appwriteArtifact.type,
+      title: appwriteArtifact.title,
+      description: appwriteArtifact.description,
+      htmlCode: appwriteArtifact.htmlCode,
+      cssCode: appwriteArtifact.cssCode,
+      jsCode: appwriteArtifact.jsCode,
+      framework: appwriteArtifact.framework,
+      theme: appwriteArtifact.theme,
+      diagramType: appwriteArtifact.diagramType,
+      diagramCode: appwriteArtifact.diagramCode,
+      outputFormat: appwriteArtifact.outputFormat,
+      sqlSchema: appwriteArtifact.sqlSchema,
+      prismaSchema: appwriteArtifact.prismaSchema,
+      typeormEntities: appwriteArtifact.typeormEntities,
+      diagramSvg: appwriteArtifact.diagramSvg,
+      mermaidCode: appwriteArtifact.mermaidCode,
+      d3Code: appwriteArtifact.d3Code,
+      version: appwriteArtifact.version,
+      parentArtifactId: appwriteArtifact.parentArtifactId,
+      isPublic: appwriteArtifact.isPublic,
+      createdAt: new Date(appwriteArtifact.$createdAt),
+      updatedAt: new Date(appwriteArtifact.$updatedAt),
+    };
+    LocalDB.upsertPlanArtifacts([artifact]);
+    debouncedEmitter.emitImmediate('plan_artifacts_updated', appwriteArtifact.threadId, LocalDB.getPlanArtifactsByThread(appwriteArtifact.threadId));
+  }
+
+  private static handleRemotePlanArtifactDeleted(appwriteArtifact: any): void {
+    devLog('[HybridDB] Handling remote plan artifact deleted:', appwriteArtifact.artifactId);
+    LocalDB.deletePlanArtifactsByThread(appwriteArtifact.threadId);
+    debouncedEmitter.emitImmediate('plan_artifacts_updated', appwriteArtifact.threadId, LocalDB.getPlanArtifactsByThread(appwriteArtifact.threadId));
+  }
+
   // ============ SYNC MANAGEMENT ============
 
   private static queueSync(syncOperation: () => Promise<void>): void {
@@ -1729,6 +1820,9 @@ export class HybridDB {
         onProjectCreated: this.handleRemoteProjectCreated.bind(this),
         onProjectUpdated: this.handleRemoteProjectUpdated.bind(this),
         onProjectDeleted: this.handleRemoteProjectDeleted.bind(this),
+        onPlanArtifactCreated: this.handleRemotePlanArtifactCreated.bind(this),
+        onPlanArtifactUpdated: this.handleRemotePlanArtifactUpdated.bind(this),
+        onPlanArtifactDeleted: this.handleRemotePlanArtifactDeleted.bind(this),
       });
 
       // 5. Subscribe to realtime updates

@@ -320,10 +320,6 @@ export async function POST(req: NextRequest) {
             outputFormat: payload.data.outputFormat || undefined,
             sqlSchema: payload.data.sqlSchema || undefined,
             prismaSchema: payload.data.prismaSchema || undefined,
-            typeormEntities: payload.data.typeormEntities || undefined,
-            diagramSvg: payload.data.diagramSvg || undefined,
-            mermaidCode: payload.data.mermaidCode || undefined,
-            d3Code: payload.data.d3Code || undefined,
             version: versionMeta?.version ?? 1,
             parentArtifactId: versionMeta?.parentArtifactId || undefined,
             isPublic: false,
@@ -450,45 +446,36 @@ export async function POST(req: NextRequest) {
       }),
       generate_diagram: tool({
         description:
-          "Generate a diagram artifact (ERD, flowchart, sequence, architecture). Returns code in Mermaid/PlantUML/etc.",
-        parameters: z.object({
-          type: z
-            .enum([
-              "erd",
-              "flowchart",
-              "sequence",
-              "architecture",
-              "state_machine",
-              "user_journey",
-            ])
-            .describe("Diagram type"),
-          title: z.string().min(3).describe("Diagram title"),
-          description: z.string().min(5).describe("What to visualize"),
-          outputFormat: z.enum(["mermaid", "svg", "d3"]).default("mermaid"),
-          diagramCode: z
-            .string()
-            .min(1)
-            .describe("Generated diagram definition (Mermaid or other syntax)"),
-          diagramSvg: z.string().optional(),
-          mermaidCode: z.string().optional(),
-          d3Code: z.string().optional(),
-          sqlSchema: z.string().optional(),
-          prismaSchema: z.string().optional(),
-          typeormEntities: z.string().optional(),
-          notes: z.string().optional(),
-        }),
+          "Generate a Mermaid diagram artifact (ERD, flowchart, sequence, architecture, state machine, user journey).",
+        parameters: z
+          .object({
+            type: z
+              .enum([
+                "erd",
+                "flowchart",
+                "sequence",
+                "architecture",
+                "state_machine",
+                "user_journey",
+              ])
+              .describe("Diagram type"),
+            title: z.string().min(3).describe("Diagram title"),
+            description: z.string().min(5).describe("What to visualize"),
+            diagramCode: z
+              .string()
+              .min(1)
+              .describe("Mermaid diagram code"),
+            sqlSchema: z.string().optional().describe("SQL schema (if applicable)"),
+            prismaSchema: z.string().optional().describe("Prisma schema (if applicable)"),
+          })
+          .strict(),
         execute: async ({
           type,
           title,
           description,
-          outputFormat,
           diagramCode,
-          diagramSvg,
-          mermaidCode,
-          d3Code,
           sqlSchema,
           prismaSchema,
-          typeormEntities,
         }) => {
           await ensureToolCredits(ctx, 3);
           const persisted = await persistPlanArtifact(ctx, {
@@ -498,13 +485,9 @@ export async function POST(req: NextRequest) {
             data: {
               diagramType: type,
               diagramCode,
-              outputFormat,
+              outputFormat: "mermaid",
               sqlSchema,
               prismaSchema,
-              typeormEntities,
-              diagramSvg,
-              mermaidCode,
-              d3Code,
             },
           });
 
@@ -512,13 +495,11 @@ export async function POST(req: NextRequest) {
             type: "diagram",
             title,
             description,
-            outputFormat,
             diagramType: type,
             artifactId: persisted?.artifactId,
             version: persisted?.version ?? 1,
             sqlSchema,
             prismaSchema,
-            typeormEntities,
           };
         },
       }),
@@ -605,10 +586,10 @@ When you DO create artifacts:
   - Ensure the HTML structure is semantic and accessible with proper ARIA labels
 
 - **generate_diagram**: ALWAYS include diagramCode with complete definition
-  - Include type, title, description, outputFormat
-  - Provide diagramSvg and/or mermaidCode/d3Code when available
-  - For ERDs: Include matching sqlSchema/prisma/typeorm entities when the user asks for database code; otherwise diagramCode alone is acceptable
-  - Use proper Mermaid syntax for flowcharts, sequence diagrams, etc.
+  - Include type, title, description, and diagramCode (Mermaid format)
+  - For ERDs: Include matching sqlSchema and/or prismaSchema when the user asks for database code
+  - Support types: erd, flowchart, sequence, architecture, state_machine, user_journey
+  - ALWAYS use Mermaid syntax - renders natively in browser for all diagram types
 
 After creating artifacts:
 - Provide brief summary of what you created
