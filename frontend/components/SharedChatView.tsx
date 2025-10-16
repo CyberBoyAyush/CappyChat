@@ -9,11 +9,20 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "./ui/button";
-import { GitBranch, Calendar, Loader2, AlertCircle, Code2, Eye } from "lucide-react";
+import {
+  GitBranch,
+  Calendar,
+  Loader2,
+  AlertCircle,
+  Code2,
+  Eye,
+} from "lucide-react";
+import { MdArrowOutward } from "react-icons/md";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import Message from "./Message";
 import { UIMessage } from "ai";
 import { PlanArtifact } from "@/lib/appwriteDB";
+import PlanArtifactSidePanel from "@/frontend/components/panel/PlanArtifactSidePanel";
 
 interface SharedThread {
   id: string;
@@ -30,6 +39,8 @@ interface SharedMessage extends UIMessage {
 
 interface ReadOnlyPlanArtifactProps {
   artifacts: PlanArtifact[];
+  messageId: string;
+  onArtifactClick?: (artifact: PlanArtifact) => void;
 }
 
 interface SharedChatViewProps {
@@ -37,48 +48,107 @@ interface SharedChatViewProps {
 }
 
 // Read-only component for displaying plan artifacts in shared view
-function ReadOnlyPlanArtifact({ artifacts }: ReadOnlyPlanArtifactProps) {
+function ReadOnlyPlanArtifact({
+  artifacts,
+  messageId,
+  onArtifactClick,
+}: ReadOnlyPlanArtifactProps) {
   if (!artifacts || artifacts.length === 0) return null;
 
   return (
-    <div className="mt-4 p-4 bg-muted/30 border border-border/50 rounded-xl">
-      <div className="flex items-center gap-2 mb-3">
-        <Eye className="h-4 w-4 text-primary" />
-        <h4 className="text-sm font-medium text-foreground">Plan Artifacts</h4>
-        <span className="text-xs text-muted-foreground">
-          ({artifacts.length})
-        </span>
-      </div>
-      <div className="space-y-2">
-        {artifacts.map((artifact) => (
-          <div
-            key={artifact.id}
-            className="flex items-center justify-between p-3 bg-background/50 border border-border/30 rounded-lg hover:border-border/50 transition-colors"
-          >
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <Code2 className="h-4 w-4 text-primary" />
-                <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">
-                  {artifact.type === "mvp" ? "Code" : artifact.diagramType || "Diagram"}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
-                  {artifact.title}
-                </p>
-                <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
-                  {artifact.framework && (
-                    <span>Framework: {artifact.framework}</span>
-                  )}
-                  {artifact.version && (
-                    <span>Version: {artifact.version}</span>
-                  )}
+    <div className="mb-4 space-y-3">
+      {artifacts.map((artifact) => {
+        // Get artifact type details
+        const getArtifactDetails = () => {
+          if (artifact.type === "mvp") {
+            return {
+              icon: <Code2 className="h-5 w-5" />,
+              label: "Code",
+              subtitle: "HTML",
+            };
+          } else {
+            return {
+              icon: <Code2 className="h-5 w-5" />,
+              label: artifact.diagramType || "Diagram",
+              subtitle: artifact.framework || artifact.type.toUpperCase(),
+            };
+          }
+        };
+
+        const details = getArtifactDetails();
+
+        return (
+          <div key={artifact.id}>
+            {/* Main Artifact Card - Clickable */}
+            <div
+              onClick={() => onArtifactClick?.(artifact)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onArtifactClick?.(artifact);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              className="rounded-lg border border-border/50 bg-card/60 text-foreground/90 hover:bg-accent/30 transition-all cursor-pointer overflow-hidden"
+            >
+              <div className="flex relative items-center gap-3 p-2 sm:p-3">
+                {/* Icon Container */}
+                <div className="w-16 h-full pt-4 flex justify-center items-center relative z-20">
+                  {details.icon}
+                </div>
+
+                {/* Background Card - Static, no rotation */}
+                <div className="absolute left-4 top-2 -rotate-6 h-20 flex-shrink-0 w-12 sm:w-14 sm:h-20 rounded-lg border border-border/60 bg-gradient-to-bl from-card to-muted flex items-center justify-center text-muted-foreground z-10"></div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-sm mb-1 truncate">{artifact.title}</h1>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] text-muted-foreground">
+                      {details.label}
+                    </span>
+                    <span className="text-[12px] text-muted-foreground/60">
+                      •
+                    </span>
+                    <span className="text-[12px] text-muted-foreground">
+                      {details.subtitle}
+                    </span>
+
+                    {/* Tags */}
+                    {(artifact.sqlSchema?.trim() ||
+                      artifact.prismaSchema?.trim() ||
+                      artifact.typeormEntities?.trim()) && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {artifact.sqlSchema?.trim() && (
+                          <span className="px-2 py-0.5 text-[8px] sm:text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20">
+                            SQL
+                          </span>
+                        )}
+                        {artifact.prismaSchema?.trim() && (
+                          <span className="px-2 py-0.5 text-[8px] sm:text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20">
+                            Prisma
+                          </span>
+                        )}
+                        {artifact.typeormEntities?.trim() && (
+                          <span className="px-2 py-0.5 text-[8px] sm:text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20">
+                            TypeORM
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Status Indicator */}
+                <div className="flex-shrink-0 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-all">
+                  <MdArrowOutward className="h-5 w-5 text-primary" />
                 </div>
               </div>
             </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }
@@ -89,6 +159,11 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [branching, setBranching] = useState(false);
+  const [planArtifactPanel, setPlanArtifactPanel] = useState<{
+    messageId: string;
+    artifacts: PlanArtifact[];
+    activeArtifactId: string;
+  } | null>(null);
   const { user, isGuest, refreshUser } = useAuth();
   const navigate = useNavigate();
 
@@ -308,9 +383,21 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
                 disablePlanBlock={true} // Disable internal PlanArtifactsBlock to avoid HybridDB calls
               />
               {/* Read-only plan artifacts for shared view */}
-              {message.isPlan && message.planArtifacts && message.planArtifacts.length > 0 && (
-                <ReadOnlyPlanArtifact artifacts={message.planArtifacts} />
-              )}
+              {message.isPlan &&
+                message.planArtifacts &&
+                message.planArtifacts.length > 0 && (
+                  <ReadOnlyPlanArtifact
+                    artifacts={message.planArtifacts}
+                    messageId={message.id}
+                    onArtifactClick={(artifact) =>
+                      setPlanArtifactPanel({
+                        messageId: message.id,
+                        artifacts: message.planArtifacts!,
+                        activeArtifactId: artifact.id,
+                      })
+                    }
+                  />
+                )}
             </div>
           ))}
 
@@ -323,6 +410,17 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
           )}
         </div>
       </div>
+
+      {/* Plan Artifact Side Panel */}
+      <PlanArtifactSidePanel
+        panelState={planArtifactPanel}
+        onClose={() => setPlanArtifactPanel(null)}
+        onSelectArtifact={(artifactId) =>
+          setPlanArtifactPanel((current) =>
+            current ? { ...current, activeArtifactId: artifactId } : null
+          )
+        }
+      />
     </div>
   );
 }
