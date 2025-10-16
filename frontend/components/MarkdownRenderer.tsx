@@ -70,6 +70,50 @@ const components: Components = {
   hr: ({ ...props }) => (
     <hr className="my-6 border-0 h-px bg-ring/30" {...props} />
   ),
+  table: ({ children, ...props }) => (
+    <div className="my-4 overflow-x-auto max-w-full">
+      <table
+        className="w-full border-collapse border border-border/80 rounded-lg overflow-hidden"
+        {...props}
+      >
+        {children}
+      </table>
+    </div>
+  ),
+  thead: ({ children, ...props }) => (
+    <thead className="bg-muted/50 border-b border-border/80" {...props}>
+      {children}
+    </thead>
+  ),
+  tbody: ({ children, ...props }) => (
+    <tbody className="divide-y divide-border bg-background" {...props}>
+      {children}
+    </tbody>
+  ),
+  tr: ({ children, ...props }) => (
+    <tr
+      className="border-b border-border/80 bg-muted/20 transition-colors"
+      {...props}
+    >
+      {children}
+    </tr>
+  ),
+  th: ({ children, ...props }) => (
+    <th
+      className="px-4 py-3 text-left font-semibold text-foreground bg-foreground/5 border-r border-border/80 last:border-r-0"
+      {...props}
+    >
+      {children}
+    </th>
+  ),
+  td: ({ children, ...props }) => (
+    <td
+      className="px-4 py-3 text-foreground border-r border-border/80 last:border-r-0 align-top"
+      {...props}
+    >
+      {children}
+    </td>
+  ),
 };
 
 function CodeBlock({ children, className, ...props }: CodeComponentProps) {
@@ -132,7 +176,9 @@ function LinkComponent({ href, children, ...props }: LinkComponentProps) {
       {...props}
     >
       {children}
-      {isExternal && <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-70 hover:opacity-100" />}
+      {isExternal && (
+        <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-70 hover:opacity-100" />
+      )}
     </a>
   );
 }
