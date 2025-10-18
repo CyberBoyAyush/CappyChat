@@ -887,6 +887,9 @@ ${
 - **ACCESSIBILITY**: Semantic HTML, ARIA labels, keyboard navigation, color contrast
 
 **generate_diagram**: Include type, title, description, diagramCode (Mermaid syntax)
+- Mermaid output must be ready-to-render Mermaid text (no Markdown fences, no surrounding commentary)
+- Never HTML-encode characters (keep '&', '<', '>', ''', '"' as-is inside node labels)
+- Start with the proper diagram keyword (e.g., 'flowchart LR', 'sequenceDiagram') and keep labels inside Mermaid brackets without extra quoting
 - For ERDs: Add sqlSchema/prismaSchema when user requests DB code
 - Types: erd, flowchart, sequence, architecture, state_machine, user_journey
 
