@@ -277,7 +277,7 @@ const PureModelSelector = ({
     "Claude Haiku 4.5",
     "Claude Sonnet 4.5",
     "Gemini 2.5 Flash",
-    "OpenAI 5 Mini",
+    // "OpenAI 5 Mini",
   ];
 
   // Force guest users to use Gemini 2.5 Flash Lite

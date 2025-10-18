@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
       "Claude Haiku 4.5",
       "Claude Sonnet 4.5",
       "Gemini 2.5 Flash",
-      "OpenAI 5 Mini",
+      // "OpenAI 5 Mini",
     ];
     if (!PLAN_MODE_ALLOWED_MODELS.includes(selectedModel)) {
       return new Response(
@@ -490,7 +490,21 @@ export async function POST(req: NextRequest) {
       }),
       generate_diagram: tool({
         description:
-          "Generate a Mermaid diagram artifact (ERD, flowchart, sequence, architecture, state machine, user journey).",
+          "Generate a Mermaid diagram artifact (ERD, flowchart, sequence, architecture, state machine, user journey). IMPORTANT: Always follow these rules:\n" +
+          "1. START with a valid Mermaid header on line 1:\n" +
+          "   - sequenceDiagram (for sequence diagrams with participants and messages)\n" +
+          "   - flowchart TD or graph TD (for flowcharts with nodes and edges)\n" +
+          "   - classDiagram (for class definitions with properties/methods)\n" +
+          "   - erDiagram or ER_DIAGRAM (for entity-relationship diagrams)\n" +
+          "   - stateDiagram-v2 (for state machines)\n" +
+          "   - journey (for user journey maps)\n" +
+          "2. ENFORCE syntax rules:\n" +
+          "   - Sequence diagrams: Declare all participants first (participant Actor1), then use Actor1->>Actor2: message format.\n" +
+          "   - Flowcharts: Use proper edges (A-->B, A---B, A-.->B). Put free text inside nodes [text] or ((text)), not standalone.\n" +
+          "   - Do NOT mix diagram syntaxes (e.g., sequence arrows in a flowchart).\n" +
+          "3. NEVER include Markdown fences (```mermaid) or HTML comments in the code.\n" +
+          "4. USE ASCII only: Use - for dashes, -> for arrows, not unicode (–, —, →).\n" +
+          "5. Return plain, valid Mermaid syntax ready to render directly.",
         parameters: z
           .object({
             type: z
@@ -505,7 +519,12 @@ export async function POST(req: NextRequest) {
               .describe("Diagram type"),
             title: z.string().min(3).describe("Diagram title"),
             description: z.string().min(5).describe("What to visualize"),
-            diagramCode: z.string().min(1).describe("Mermaid diagram code"),
+            diagramCode: z
+              .string()
+              .min(1)
+              .describe(
+                "Mermaid diagram code (MUST start with proper header keyword)"
+              ),
             sqlSchema: z
               .string()
               .optional()
