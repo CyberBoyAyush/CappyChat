@@ -13,10 +13,12 @@ import {
   MESSAGES_COLLECTION_ID,
   MESSAGE_SUMMARIES_COLLECTION_ID,
   PROJECTS_COLLECTION_ID,
+  PLAN_ARTIFACTS_COLLECTION_ID,
   AppwriteThread,
   AppwriteMessage,
   AppwriteMessageSummary,
-  AppwriteProject
+  AppwriteProject,
+  AppwritePlanArtifact
 } from './appwriteDB';
 
 // Object to store callback events for UI updates
@@ -33,6 +35,9 @@ type RealtimeCallbacks = {
   onProjectCreated?: (project: AppwriteProject) => void;
   onProjectUpdated?: (project: AppwriteProject) => void;
   onProjectDeleted?: (project: AppwriteProject) => void;
+  onPlanArtifactCreated?: (artifact: AppwritePlanArtifact) => void;
+  onPlanArtifactUpdated?: (artifact: AppwritePlanArtifact) => void;
+  onPlanArtifactDeleted?: (artifact: AppwritePlanArtifact) => void;
 };
 
 export class AppwriteRealtime {
@@ -44,12 +49,13 @@ export class AppwriteRealtime {
     this.callbacks = { ...this.callbacks, ...callbacks };
   }
   
-  // Subscribe to all collections (threads, messages, message_summaries, projects)
+  // Subscribe to all collections (threads, messages, message_summaries, projects, plan_artifacts)
   static subscribeToAll(userId: string): void {
     this.subscribeToThreads(userId);
     this.subscribeToMessages(userId);
     this.subscribeToMessageSummaries(userId);
     this.subscribeToProjects(userId);
+    this.subscribeToPlanArtifacts(userId);
   }
   
   // Unsubscribe from all collections
@@ -247,6 +253,38 @@ export class AppwriteRealtime {
     console.log('[AppwriteRealtime] Successfully subscribed to projects');
   }
 
+  // Subscribe to plan artifacts collection changes
+  static subscribeToPlanArtifacts(userId: string): void {
+    if (this.subscriptions.has('plan_artifacts')) {
+      console.log('[AppwriteRealtime] Already subscribed to plan artifacts');
+      return; // Already subscribed
+    }
+
+    const unsubscribe = client.subscribe(
+      `databases.${DATABASE_ID}.collections.${PLAN_ARTIFACTS_COLLECTION_ID}.documents`,
+      (response: RealtimeResponseEvent<AppwritePlanArtifact>) => {
+        // Process only events for the current user
+        if (response.payload?.userId !== userId) {
+          return;
+        }
+
+        // Handle different event types
+        const eventType = response.events[0];
+
+        if (eventType.includes('.create')) {
+          this.handlePlanArtifactCreated(response.payload);
+        } else if (eventType.includes('.update')) {
+          this.handlePlanArtifactUpdated(response.payload);
+        } else if (eventType.includes('.delete')) {
+          this.handlePlanArtifactDeleted(response.payload);
+        }
+      }
+    );
+
+    this.subscriptions.set('plan_artifacts', unsubscribe);
+    console.log('[AppwriteRealtime] Successfully subscribed to plan artifacts');
+  }
+
   // --------- Thread Event Handlers ---------
   
   // Handle thread created event
@@ -348,6 +386,32 @@ export class AppwriteRealtime {
     // Trigger UI update callback
     if (this.callbacks.onProjectDeleted) {
       this.callbacks.onProjectDeleted(project);
+    }
+  }
+
+  // --------- Plan Artifact Event Handlers ---------
+
+  // Handle plan artifact created event
+  private static handlePlanArtifactCreated(artifact: AppwritePlanArtifact): void {
+    // Trigger UI update callback
+    if (this.callbacks.onPlanArtifactCreated) {
+      this.callbacks.onPlanArtifactCreated(artifact);
+    }
+  }
+
+  // Handle plan artifact updated event
+  private static handlePlanArtifactUpdated(artifact: AppwritePlanArtifact): void {
+    // Trigger UI update callback
+    if (this.callbacks.onPlanArtifactUpdated) {
+      this.callbacks.onPlanArtifactUpdated(artifact);
+    }
+  }
+
+  // Handle plan artifact deleted event
+  private static handlePlanArtifactDeleted(artifact: AppwritePlanArtifact): void {
+    // Trigger UI update callback
+    if (this.callbacks.onPlanArtifactDeleted) {
+      this.callbacks.onPlanArtifactDeleted(artifact);
     }
   }
 }

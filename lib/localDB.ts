@@ -5,7 +5,7 @@
  * Provides instant UI updates while maintaining data consistency.
  */
 
-import { Thread, DBMessage, MessageSummary, Project } from './appwriteDB';
+import { Thread, DBMessage, MessageSummary, Project, PlanArtifact } from './appwriteDB';
 import { devLog, devWarn, devInfo, devError, prodError } from './logger';
 
 // Local storage keys
@@ -14,6 +14,7 @@ const STORAGE_KEYS = {
   MESSAGES: 'atchat_messages',
   SUMMARIES: 'atchat_summaries',
   PROJECTS: 'atchat_projects',
+  PLAN_ARTIFACTS: 'atchat_plan_artifacts',
   USER_ID: 'atchat_user_id'
 };
 
@@ -115,6 +116,7 @@ export class LocalDB {
       // Also delete associated messages and summaries
       this.deleteMessagesByThread(threadId);
       this.deleteSummariesByThread(threadId);
+      this.deletePlanArtifactsByThread(threadId);
     } catch (error) {
       devError('Error deleting thread from local storage:', error);
     }
@@ -250,6 +252,133 @@ export class LocalDB {
   // Clear messages by thread ID (public method for sync operations)
   static clearMessagesByThread(threadId: string): void {
     this.deleteMessagesByThread(threadId);
+  }
+
+  // ============ PLAN ARTIFACT OPERATIONS ============
+
+  private static getAllPlanArtifacts(): PlanArtifact[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.PLAN_ARTIFACTS);
+      if (!data) return [];
+
+      const artifacts = JSON.parse(data);
+      return artifacts.map((artifact: any) => ({
+        ...artifact,
+        createdAt: new Date(artifact.createdAt),
+        updatedAt: new Date(artifact.updatedAt),
+      }));
+    } catch (error) {
+      devError('Error loading plan artifacts from local storage:', error);
+      return [];
+    }
+  }
+
+  private static saveAllPlanArtifacts(artifacts: PlanArtifact[]): void {
+    try {
+      const serializable = artifacts.map((artifact) => ({
+        ...artifact,
+        createdAt:
+          artifact.createdAt instanceof Date
+            ? artifact.createdAt.toISOString()
+            : new Date(artifact.createdAt).toISOString(),
+        updatedAt:
+          artifact.updatedAt instanceof Date
+            ? artifact.updatedAt.toISOString()
+            : new Date(artifact.updatedAt).toISOString(),
+      }));
+      localStorage.setItem(
+        STORAGE_KEYS.PLAN_ARTIFACTS,
+        JSON.stringify(serializable)
+      );
+    } catch (error) {
+      devError('Error saving plan artifacts to local storage:', error);
+    }
+  }
+
+  static upsertPlanArtifacts(artifacts: PlanArtifact[]): void {
+    if (!artifacts || artifacts.length === 0) return;
+    try {
+      const existing = this.getAllPlanArtifacts();
+      const merged = new Map<string, PlanArtifact>();
+
+      for (const item of existing) {
+        merged.set(item.id, item);
+      }
+
+      for (const artifact of artifacts) {
+        merged.set(artifact.id, artifact);
+      }
+
+      const ordered = Array.from(merged.values()).sort(
+        (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+      );
+
+      this.saveAllPlanArtifacts(ordered);
+    } catch (error) {
+      devError('Error upserting plan artifacts in local storage:', error);
+    }
+  }
+
+  static replacePlanArtifactsForThread(
+    threadId: string,
+    artifacts: PlanArtifact[]
+  ): void {
+    try {
+      const existing = this.getAllPlanArtifacts().filter(
+        (artifact) => artifact.threadId !== threadId
+      );
+
+      const combined = existing.concat(artifacts);
+      combined.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+      this.saveAllPlanArtifacts(combined);
+    } catch (error) {
+      devError('Error replacing plan artifacts for thread:', error);
+    }
+  }
+
+  static getPlanArtifactsByThread(threadId: string): PlanArtifact[] {
+    return this.getAllPlanArtifacts()
+      .filter((artifact) => artifact.threadId === threadId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  }
+
+  static getPlanArtifactsByMessage(
+    threadId: string,
+    messageId: string
+  ): PlanArtifact[] {
+    return this.getAllPlanArtifacts()
+      .filter(
+        (artifact) =>
+          artifact.threadId === threadId && artifact.messageId === messageId
+      )
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  }
+
+  static deletePlanArtifactsByThread(threadId: string): void {
+    try {
+      const remaining = this.getAllPlanArtifacts().filter(
+        (artifact) => artifact.threadId !== threadId
+      );
+      this.saveAllPlanArtifacts(remaining);
+    } catch (error) {
+      devError('Error deleting plan artifacts by thread:', error);
+    }
+  }
+
+  static deletePlanArtifactById(artifactId: string): void {
+    try {
+      const remaining = this.getAllPlanArtifacts().filter(
+        (artifact) => artifact.id !== artifactId
+      );
+      this.saveAllPlanArtifacts(remaining);
+    } catch (error) {
+      devError('Error deleting plan artifact by ID:', error);
+    }
+  }
+
+  static clearPlanArtifacts(): void {
+    localStorage.removeItem(STORAGE_KEYS.PLAN_ARTIFACTS);
   }
 
   // ============ MESSAGE SUMMARY OPERATIONS ============

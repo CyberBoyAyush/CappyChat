@@ -9,7 +9,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type SearchType = "chat" | "web" | "reddit" | "study";
+export type SearchType = "chat" | "web" | "reddit" | "study" | "plan";
 
 export interface SearchTypeConfig {
   id: SearchType;
@@ -47,6 +47,13 @@ export const SEARCH_TYPE_CONFIGS: Record<SearchType, SearchTypeConfig> = {
     description: "Interactive learning with web-enhanced AI tutoring",
     icon: "GraduationCap",
     color: "text-purple-500",
+  },
+  plan: {
+    id: "plan",
+    name: "Plan Mode",
+    description: "Generate diagrams and MVP artifacts via AI tools",
+    icon: "Projector",
+    color: "text-amber-500",
   },
 };
 
