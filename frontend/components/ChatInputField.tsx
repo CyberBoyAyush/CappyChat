@@ -1765,11 +1765,11 @@ function PureInputField({
                                   </div>
 
                                   <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex w-full items-center gap-3">
                                       <span className="text-xs md:text-sm text-primary font-medium">
                                         Plan Mode
                                       </span>
-                                      <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-amber-200/80 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200">
+                                      <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-primary text-background">
                                         NEW
                                       </span>
                                     </div>
@@ -1790,7 +1790,10 @@ function PureInputField({
                       </DropdownMenuContent>
                     </DropdownMenu>
                     <div className="min-w-0 flex-shrink overflow-hidden">
-                      <ModelSelector isImageGenMode={isImageGenMode} isPlanMode={isPlanMode} />
+                      <ModelSelector
+                        isImageGenMode={isImageGenMode}
+                        isPlanMode={isPlanMode}
+                      />
                     </div>
                   </>
                 )}
