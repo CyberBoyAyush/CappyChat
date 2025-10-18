@@ -6,7 +6,14 @@
  * Mobile-friendly with icon-only display on small screens.
  */
 
-import { ChevronDown, Check, Globe, MessageCircle, GraduationCap } from "lucide-react";
+import {
+  ChevronDown,
+  Check,
+  Globe,
+  MessageCircle,
+  GraduationCap,
+  Projector,
+} from "lucide-react";
 import { FaRedditAlien } from "react-icons/fa6";
 import { memo, useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -33,6 +40,7 @@ const IconMap = {
   MessageCircle,
   FaRedditAlien,
   GraduationCap,
+  Projector,
 };
 
 function PureSearchTypeSelector({ className }: SearchTypeSelectorProps) {

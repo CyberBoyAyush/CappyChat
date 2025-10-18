@@ -17,11 +17,13 @@ import { useIsMobile } from "@/hooks/useMobileDetection";
 import { AIModel } from "@/lib/models";
 import WebSearchLoader from "./WebSearchLoader";
 import RedditSearchLoader from "./RedditSearchLoader";
+import PlanModeLoader from "./PlanModeLoader";
 import {
   useSearchTypeStore,
   SearchType,
 } from "@/frontend/stores/SearchTypeStore";
 import { devWarn } from "@/lib/logger";
+import type { PlanArtifact } from "@/lib/appwriteDB";
 
 function PureMessageDisplay({
   threadId,
@@ -35,9 +37,12 @@ function PureMessageDisplay({
   onRetryWithModel,
   isWebSearching,
   webSearchQuery,
+  isPlanModeExecuting,
+  planModeQuery,
   selectedSearchType,
   onSuggestedQuestionClick,
   streamingWebImgs,
+  onShowPlanArtifact,
 }: {
   threadId: string;
   messages: UIMessage[];
@@ -50,9 +55,16 @@ function PureMessageDisplay({
   onRetryWithModel?: (model?: AIModel, message?: UIMessage) => void;
   isWebSearching?: boolean;
   webSearchQuery?: string;
+  isPlanModeExecuting?: boolean;
+  planModeQuery?: string;
   selectedSearchType?: SearchType;
   onSuggestedQuestionClick?: (q: string) => void;
   streamingWebImgs?: string[];
+  onShowPlanArtifact?: (
+    messageId: string,
+    artifacts: PlanArtifact[],
+    activeArtifactId: string
+  ) => void;
 }) {
   const { selectedSearchType: storeSearchType } = useSearchTypeStore();
   // Use the passed selectedSearchType prop if available, otherwise fall back to store
@@ -109,20 +121,20 @@ function PureMessageDisplay({
     <section className="chat-message-container flex flex-col w-full max-w-3xl space-y-6">
       {deduplicatedMessages.map((message, index) => {
         const isLast = deduplicatedMessages.length - 1 === index;
-        
-        // Filter out empty assistant messages during web search streaming
+
+        // Filter out empty assistant messages during web search or plan mode streaming
         // This prevents an empty div from appearing while tool calls are being processed
-        const isEmptyAssistantDuringWebSearch =
+        const isEmptyAssistantDuringToolExecution =
           message.role === "assistant" &&
           isLast &&
           status === "streaming" &&
-          isWebSearching &&
+          (isWebSearching || isPlanModeExecuting) &&
           (!message.content || message.content.trim().length === 0);
-        
-        if (isEmptyAssistantDuringWebSearch) {
+
+        if (isEmptyAssistantDuringToolExecution) {
           return null;
         }
-        
+
         const prevUserMessage = (() => {
           for (let i = index - 1; i >= 0; i--) {
             if (deduplicatedMessages[i].role === "user") {
@@ -146,10 +158,13 @@ function PureMessageDisplay({
             prevUserMessage={prevUserMessage}
             isLast={isLast}
             streamingWebImgs={isLast ? streamingWebImgs : undefined}
+            onShowPlanArtifact={onShowPlanArtifact}
           />
         );
       })}
-      {(status === "submitted" || (status === "streaming" && isWebSearching)) && (
+      {(status === "submitted" ||
+        (status === "streaming" && isWebSearching) ||
+        (status === "streaming" && isPlanModeExecuting)) && (
         <div className="flex gap-2 w-full max-w-full pr-4 pb-6">
           {/* Assistant Avatar */}
           <div className="flex-shrink-0 mt-1">
@@ -159,7 +174,9 @@ function PureMessageDisplay({
           </div>
           {/* Loading Animation - Show appropriate search loader if search is enabled */}
           <div className="flex-1 mt-1">
-            {isWebSearching || currentSearchType !== "chat" ? (
+            {isWebSearching ||
+            isPlanModeExecuting ||
+            currentSearchType !== "chat" ? (
               currentSearchType === "reddit" ? (
                 <RedditSearchLoader
                   searchQuery={webSearchQuery || "search query"}
@@ -167,6 +184,10 @@ function PureMessageDisplay({
               ) : currentSearchType === "web" ? (
                 <WebSearchLoader
                   searchQuery={webSearchQuery || "search query"}
+                />
+              ) : currentSearchType === "plan" && isPlanModeExecuting ? (
+                <PlanModeLoader
+                  userQuery={planModeQuery || "planning request"}
                 />
               ) : (
                 <MessageLoading />

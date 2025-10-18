@@ -9,10 +9,20 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "./ui/button";
-import { GitBranch, Calendar, Loader2, AlertCircle } from "lucide-react";
+import {
+  GitBranch,
+  Calendar,
+  Loader2,
+  AlertCircle,
+  Code2,
+  Eye,
+} from "lucide-react";
+import { MdArrowOutward } from "react-icons/md";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import Message from "./Message";
 import { UIMessage } from "ai";
+import { PlanArtifact } from "@/lib/appwriteDB";
+import PlanArtifactSidePanel from "@/frontend/components/panel/PlanArtifactSidePanel";
 
 interface SharedThread {
   id: string;
@@ -22,16 +32,138 @@ interface SharedThread {
   isShared: boolean;
 }
 
+interface SharedMessage extends UIMessage {
+  isPlan?: boolean;
+  planArtifacts?: PlanArtifact[];
+}
+
+interface ReadOnlyPlanArtifactProps {
+  artifacts: PlanArtifact[];
+  messageId: string;
+  onArtifactClick?: (artifact: PlanArtifact) => void;
+}
+
 interface SharedChatViewProps {
   shareId: string;
 }
 
+// Read-only component for displaying plan artifacts in shared view
+function ReadOnlyPlanArtifact({
+  artifacts,
+  messageId,
+  onArtifactClick,
+}: ReadOnlyPlanArtifactProps) {
+  if (!artifacts || artifacts.length === 0) return null;
+
+  return (
+    <div className="mb-4 space-y-3">
+      {artifacts.map((artifact) => {
+        // Get artifact type details
+        const getArtifactDetails = () => {
+          if (artifact.type === "mvp") {
+            return {
+              icon: <Code2 className="h-5 w-5" />,
+              label: "Code",
+              subtitle: "HTML",
+            };
+          } else {
+            return {
+              icon: <Code2 className="h-5 w-5" />,
+              label: artifact.diagramType || "Diagram",
+              subtitle: artifact.framework || artifact.type.toUpperCase(),
+            };
+          }
+        };
+
+        const details = getArtifactDetails();
+
+        return (
+          <div key={artifact.id}>
+            {/* Main Artifact Card - Clickable */}
+            <div
+              onClick={() => onArtifactClick?.(artifact)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onArtifactClick?.(artifact);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              className="rounded-lg border border-border/50 bg-card/60 text-foreground/90 hover:bg-accent/30 transition-all cursor-pointer overflow-hidden"
+            >
+              <div className="flex relative items-center gap-3 p-2 sm:p-3">
+                {/* Icon Container */}
+                <div className="w-16 h-full pt-4 flex justify-center items-center relative z-20">
+                  {details.icon}
+                </div>
+
+                {/* Background Card - Static, no rotation */}
+                <div className="absolute left-4 top-2 -rotate-6 h-20 flex-shrink-0 w-12 sm:w-14 sm:h-20 rounded-lg border border-border/60 bg-gradient-to-bl from-card to-muted flex items-center justify-center text-muted-foreground z-10"></div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-sm mb-1 truncate">{artifact.title}</h1>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] text-muted-foreground">
+                      {details.label}
+                    </span>
+                    <span className="text-[12px] text-muted-foreground/60">
+                      •
+                    </span>
+                    <span className="text-[12px] text-muted-foreground">
+                      {details.subtitle}
+                    </span>
+
+                    {/* Tags */}
+                    {(artifact.sqlSchema?.trim() ||
+                      artifact.prismaSchema?.trim() ||
+                      artifact.typeormEntities?.trim()) && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {artifact.sqlSchema?.trim() && (
+                          <span className="px-2 py-0.5 text-[8px] sm:text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20">
+                            SQL
+                          </span>
+                        )}
+                        {artifact.prismaSchema?.trim() && (
+                          <span className="px-2 py-0.5 text-[8px] sm:text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20">
+                            Prisma
+                          </span>
+                        )}
+                        {artifact.typeormEntities?.trim() && (
+                          <span className="px-2 py-0.5 text-[8px] sm:text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20">
+                            TypeORM
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Status Indicator */}
+                <div className="flex-shrink-0 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-all">
+                  <MdArrowOutward className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function SharedChatView({ shareId }: SharedChatViewProps) {
   const [thread, setThread] = useState<SharedThread | null>(null);
-  const [messages, setMessages] = useState<UIMessage[]>([]);
+  const [messages, setMessages] = useState<SharedMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [branching, setBranching] = useState(false);
+  const [planArtifactPanel, setPlanArtifactPanel] = useState<{
+    messageId: string;
+    artifacts: PlanArtifact[];
+    activeArtifactId: string;
+  } | null>(null);
   const { user, isGuest, refreshUser } = useAuth();
   const navigate = useNavigate();
 
@@ -239,16 +371,34 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
       <div className="max-w-5xl mx-auto px-4 pt-48 pb-16 md:py-28 ">
         <div className="space-y-6 no-scrollbar">
           {messages.map((message) => (
-            <Message
-              key={message.id}
-              threadId={thread?.id || ""}
-              message={message}
-              setMessages={() => {}} // Read-only, no message updates
-              reload={async () => Promise.resolve(null)} // Read-only, no reload
-              isStreaming={false}
-              registerRef={() => {}} // No navigation needed
-              stop={() => {}} // No stopping needed
-            />
+            <div key={message.id}>
+              <Message
+                threadId={thread?.id || ""}
+                message={message}
+                setMessages={() => {}} // Read-only, no message updates
+                reload={async () => Promise.resolve(null)} // Read-only, no reload
+                isStreaming={false}
+                registerRef={() => {}} // No navigation needed
+                stop={() => {}} // No stopping needed
+                disablePlanBlock={true} // Disable internal PlanArtifactsBlock to avoid HybridDB calls
+              />
+              {/* Read-only plan artifacts for shared view */}
+              {message.isPlan &&
+                message.planArtifacts &&
+                message.planArtifacts.length > 0 && (
+                  <ReadOnlyPlanArtifact
+                    artifacts={message.planArtifacts}
+                    messageId={message.id}
+                    onArtifactClick={(artifact) =>
+                      setPlanArtifactPanel({
+                        messageId: message.id,
+                        artifacts: message.planArtifacts!,
+                        activeArtifactId: artifact.id,
+                      })
+                    }
+                  />
+                )}
+            </div>
           ))}
 
           {messages.length === 0 && (
@@ -260,6 +410,17 @@ export default function SharedChatView({ shareId }: SharedChatViewProps) {
           )}
         </div>
       </div>
+
+      {/* Plan Artifact Side Panel */}
+      <PlanArtifactSidePanel
+        panelState={planArtifactPanel}
+        onClose={() => setPlanArtifactPanel(null)}
+        onSelectArtifact={(artifactId) =>
+          setPlanArtifactPanel((current) =>
+            current ? { ...current, activeArtifactId: artifactId } : null
+          )
+        }
+      />
     </div>
   );
 }

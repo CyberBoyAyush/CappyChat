@@ -93,6 +93,7 @@ interface InputFieldProps {
   onMessageAppended?: (messageId: string) => void;
   pendingAttachments?: FileAttachment[] | null;
   onPendingAttachmentsConsumed?: () => void;
+  onPrepareAssistantId?: (id: string) => void;
 }
 
 interface StopButtonProps {
@@ -169,6 +170,7 @@ function PureInputField({
   onMessageAppended,
   pendingAttachments,
   onPendingAttachmentsConsumed,
+  onPrepareAssistantId,
 }: InputFieldProps) {
   const { textareaRef, adjustHeight } = useTextAreaAutoResize({
     minHeight: 72,
@@ -219,6 +221,9 @@ function PureInputField({
 
   // Search state (Chat, Web Search, or Reddit Search)
   const { selectedSearchType, setSearchType } = useSearchTypeStore();
+
+  // Derived state for Plan Mode (read-only from searchType)
+  const isPlanMode = selectedSearchType === "plan";
 
   // Conversation style state
   const { selectedStyle, setStyle, getStyleConfig } =
@@ -704,7 +709,8 @@ function PureInputField({
       if (
         (selectedSearchType === "web" ||
           selectedSearchType === "reddit" ||
-          selectedSearchType === "study") &&
+          selectedSearchType === "study" ||
+          selectedSearchType === "plan") &&
         onWebSearchMessage
       ) {
         onWebSearchMessage(messageId, finalInput);
@@ -954,6 +960,32 @@ function PureInputField({
       }
     } else {
       // Normal text message flow
+      // Generate a planned assistant message ID so server can persist artifacts against it
+      let plannedAssistantId: string | undefined;
+      if (onPrepareAssistantId) {
+        try {
+          plannedAssistantId = `ai_${uuidv4()}`;
+          onPrepareAssistantId(plannedAssistantId);
+        } catch (_) {
+          plannedAssistantId = plannedAssistantId ?? `ai_${uuidv4()}`;
+        }
+      }
+
+      const appendOptions: Parameters<typeof append>[1] = {
+        experimental_attachments:
+          finalAttachments.length > 0 ? finalAttachments : undefined,
+      };
+
+      if (selectedSearchType === "plan") {
+        if (!plannedAssistantId) {
+          plannedAssistantId = `ai_${uuidv4()}`;
+        }
+        appendOptions.body = {
+          assistantMessageId: plannedAssistantId,
+          threadId,
+        } as Record<string, unknown>;
+      }
+
       // First add to UI with append(), then store to database to prevent race condition
       append(
         {
@@ -965,10 +997,7 @@ function PureInputField({
           attachments:
             finalAttachments.length > 0 ? finalAttachments : undefined,
         } as any,
-        {
-          experimental_attachments:
-            finalAttachments.length > 0 ? finalAttachments : undefined,
-        }
+        appendOptions
       );
 
       // Track that this message was just appended to prevent real-time sync from overwriting it
@@ -1734,6 +1763,25 @@ function PureInputField({
                                       }
                                     />
                                   </div>
+
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex w-full items-center gap-3">
+                                      <span className="text-xs md:text-sm text-primary font-medium">
+                                        Plan Mode
+                                      </span>
+                                      <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-primary text-background">
+                                        NEW
+                                      </span>
+                                    </div>
+                                    <Switch2
+                                      isSelected={selectedSearchType === "plan"}
+                                      onChange={(isSelected) =>
+                                        setSearchType(
+                                          isSelected ? "plan" : "chat"
+                                        )
+                                      }
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             </>
@@ -1742,7 +1790,10 @@ function PureInputField({
                       </DropdownMenuContent>
                     </DropdownMenu>
                     <div className="min-w-0 flex-shrink overflow-hidden">
-                      <ModelSelector isImageGenMode={isImageGenMode} />
+                      <ModelSelector
+                        isImageGenMode={isImageGenMode}
+                        isPlanMode={isPlanMode}
+                      />
                     </div>
                   </>
                 )}

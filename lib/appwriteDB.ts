@@ -5,18 +5,29 @@
  * All data is stored directly in Appwrite for better synchronization.
  */
 
-import { Databases, ID, Models, Query } from 'appwrite';
-import { client } from './appwrite';
-import { getCachedAccount } from './accountCache';
-import { devLog, devWarn, devError } from './logger';
+import { Databases, ID, Models, Query } from "appwrite";
+import { client } from "./appwrite";
+import { getCachedAccount } from "./accountCache";
+import { devLog, devWarn, devError } from "./logger";
 
 // Database and Collection IDs
-export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
-export const THREADS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_THREADS_COLLECTION_ID || 'threads';
-export const MESSAGES_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID || 'messages';
-export const MESSAGE_SUMMARIES_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_MESSAGE_SUMMARIES_COLLECTION_ID || 'message_summaries';
-export const PROJECTS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECTS_COLLECTION_ID || 'projects';
-export const GLOBAL_MEMORY_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_GLOBAL_MEMORY_COLLECTION_ID || 'global_memory';
+export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "";
+export const THREADS_COLLECTION_ID =
+  process.env.NEXT_PUBLIC_APPWRITE_THREADS_COLLECTION_ID || "threads";
+export const MESSAGES_COLLECTION_ID =
+  process.env.NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID || "messages";
+export const MESSAGE_SUMMARIES_COLLECTION_ID =
+  process.env.NEXT_PUBLIC_APPWRITE_MESSAGE_SUMMARIES_COLLECTION_ID ||
+  "message_summaries";
+export const PROJECTS_COLLECTION_ID =
+  process.env.NEXT_PUBLIC_APPWRITE_PROJECTS_COLLECTION_ID || "projects";
+export const GLOBAL_MEMORY_COLLECTION_ID =
+  process.env.NEXT_PUBLIC_APPWRITE_GLOBAL_MEMORY_COLLECTION_ID ||
+  "global_memory";
+// New: Plan Artifacts collection for Plan Mode generated outputs
+export const PLAN_ARTIFACTS_COLLECTION_ID =
+  process.env.NEXT_PUBLIC_APPWRITE_PLAN_ARTIFACTS_COLLECTION_ID ||
+  "plan_artifacts";
 
 // Initialize Appwrite databases service
 const databases = new Databases(client);
@@ -84,7 +95,7 @@ export interface FileAttachment {
   id: string;
   filename: string;
   originalName: string;
-  fileType: 'image' | 'pdf' | 'text' | 'document';
+  fileType: "image" | "pdf" | "text" | "document";
   mimeType: string;
   size: number;
   url: string;
@@ -99,13 +110,15 @@ export interface AppwriteMessage extends Models.Document {
   threadId: string;
   userId: string;
   content: string;
-  role: 'user' | 'assistant' | 'system' | 'data';
+  role: "user" | "assistant" | "system" | "data";
   createdAt: string; // ISO date string
   webSearchResults?: string[]; // URLs from web search results
   webSearchImgs?: string[]; // Image URLs from web search
   attachments?: string | FileAttachment[]; // File attachments (stored as JSON string in Appwrite)
   model?: string; // AI model used to generate the message (for assistant messages)
   imgurl?: string; // URL of generated image (for image generation messages)
+  // Plan Mode flag to mark assistant messages that contain plan artifacts
+  isPlan?: boolean;
 }
 
 // Define Message interface for internal use
@@ -114,13 +127,76 @@ export interface DBMessage {
   threadId: string;
   content: string;
   parts?: any[];
-  role: 'user' | 'assistant' | 'system' | 'data';
+  role: "user" | "assistant" | "system" | "data";
   createdAt: Date;
   webSearchResults?: string[]; // URLs from web search results
   webSearchImgs?: string[]; // Image URLs from web search
   attachments?: FileAttachment[]; // File attachments
   model?: string; // AI model used to generate the message (for assistant messages)
   imgurl?: string; // URL of generated image (for image generation messages)
+  // Plan Mode flag to mark assistant messages that contain plan artifacts
+  isPlan?: boolean;
+}
+
+// -------- Plan Artifacts Types --------
+export type PlanArtifactType = "mvp" | "diagram";
+
+export interface AppwritePlanArtifact extends Models.Document {
+  artifactId: string; // required
+  threadId: string; // required
+  messageId: string; // required
+  userId: string; // required
+  type: PlanArtifactType; // required
+  title: string; // required
+  description?: string;
+  htmlCode?: string;
+  cssCode?: string;
+  jsCode?: string;
+  framework?: string; // e.g., vanilla/react/vue/svelte
+  theme?: string; // light/dark
+  diagramType?: string; // erd/flowchart/sequence/architecture
+  diagramCode?: string; // Mermaid/PlantUML source
+  outputFormat?: string; // mermaid/plantuml
+  sqlSchema?: string;
+  prismaSchema?: string;
+  typeormEntities?: string;
+  diagramSvg?: string;
+  mermaidCode?: string;
+  d3Code?: string;
+  version: number; // required (min 1)
+  parentArtifactId?: string | null;
+  isPublic?: boolean;
+  // $createdAt/$updatedAt come from Models.Document
+}
+
+export interface PlanArtifact {
+  id: string; // $id
+  artifactId: string;
+  threadId: string;
+  messageId: string;
+  userId: string;
+  type: PlanArtifactType;
+  title: string;
+  description?: string;
+  htmlCode?: string;
+  cssCode?: string;
+  jsCode?: string;
+  framework?: string;
+  theme?: string;
+  diagramType?: string;
+  diagramCode?: string;
+  outputFormat?: string;
+  sqlSchema?: string;
+  prismaSchema?: string;
+  typeormEntities?: string;
+  diagramSvg?: string;
+  mermaidCode?: string;
+  d3Code?: string;
+  version: number;
+  parentArtifactId?: string | null;
+  isPublic?: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Interface for Appwrite Message Summary document
@@ -167,11 +243,11 @@ export class AppwriteDB {
     try {
       const user = await getCachedAccount();
       if (!user || !user.$id) {
-        throw new Error('No authenticated user found');
+        throw new Error("No authenticated user found");
       }
       return user.$id;
     } catch {
-      throw new Error('User is not authenticated');
+      throw new Error("User is not authenticated");
     }
   }
 
@@ -183,10 +259,12 @@ export class AppwriteDB {
       return !!(user && user.$id && user.status && user.emailVerification);
     } catch (error: any) {
       // Check if it's a guest user error or other authentication issue
-      if (error.type === 'general_unauthorized_scope' ||
-          error.code === 401 ||
-          error.message?.includes('missing scope') ||
-          error.message?.includes('guests')) {
+      if (
+        error.type === "general_unauthorized_scope" ||
+        error.code === 401 ||
+        error.message?.includes("missing scope") ||
+        error.message?.includes("guests")
+      ) {
         return false; // User is guest or not authenticated
       }
       return false; // Any other error means not authenticated
@@ -204,41 +282,41 @@ export class AppwriteDB {
       const ownThreadsResponse = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
-        [
-          Query.equal('userId', userId),
-          Query.orderDesc('lastMessageAt')
-        ]
+        [Query.equal("userId", userId), Query.orderDesc("lastMessageAt")]
       );
 
       // Get projects where user is a member to access collaborative threads
       const memberProjects = await databases.listDocuments(
         DATABASE_ID,
         PROJECTS_COLLECTION_ID,
-        [
-          Query.contains('members', userId)
-        ]
+        [Query.contains("members", userId)]
       );
 
       // Get collaborative threads from projects where user is a member
       let collaborativeThreads: any[] = [];
       if (memberProjects.documents.length > 0) {
-        const projectIds = memberProjects.documents.map(doc => (doc as unknown as AppwriteProject).projectId);
+        const projectIds = memberProjects.documents.map(
+          (doc) => (doc as unknown as AppwriteProject).projectId
+        );
 
         // Get threads from collaborative projects (excluding user's own threads)
         const collaborativeResponse = await databases.listDocuments(
           DATABASE_ID,
           THREADS_COLLECTION_ID,
           [
-            Query.contains('projectId', projectIds),
-            Query.notEqual('userId', userId), // Exclude user's own threads to avoid duplicates
-            Query.orderDesc('lastMessageAt')
+            Query.contains("projectId", projectIds),
+            Query.notEqual("userId", userId), // Exclude user's own threads to avoid duplicates
+            Query.orderDesc("lastMessageAt"),
           ]
         );
         collaborativeThreads = collaborativeResponse.documents;
       }
 
       // Combine and sort all threads
-      const allThreadDocs = [...ownThreadsResponse.documents, ...collaborativeThreads];
+      const allThreadDocs = [
+        ...ownThreadsResponse.documents,
+        ...collaborativeThreads,
+      ];
 
       // Map Appwrite threads to Thread format
       const threads = allThreadDocs.map((doc) => {
@@ -252,22 +330,27 @@ export class AppwriteDB {
           isPinned: threadDoc.isPinned || false,
           tags: threadDoc.tags || [],
           isBranched: threadDoc.isBranched || false,
-          projectId: threadDoc.projectId
+          projectId: threadDoc.projectId,
         };
       });
 
       // Sort by lastMessageAt descending
-      threads.sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime());
+      threads.sort(
+        (a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime()
+      );
 
       return threads;
     } catch (error) {
-      devError('Error fetching threads from Appwrite:', error);
+      devError("Error fetching threads from Appwrite:", error);
       return [];
     }
   }
 
   // Get threads with pagination for current user
-  static async getThreadsPaginated(limit: number = 25, offset: number = 0): Promise<{
+  static async getThreadsPaginated(
+    limit: number = 25,
+    offset: number = 0
+  ): Promise<{
     threads: Thread[];
     hasMore: boolean;
     total: number;
@@ -280,10 +363,10 @@ export class AppwriteDB {
         DATABASE_ID,
         THREADS_COLLECTION_ID,
         [
-          Query.equal('userId', userId),
-          Query.orderDesc('lastMessageAt'),
+          Query.equal("userId", userId),
+          Query.orderDesc("lastMessageAt"),
           Query.limit(limit),
-          Query.offset(offset)
+          Query.offset(offset),
         ]
       );
 
@@ -299,21 +382,21 @@ export class AppwriteDB {
           isPinned: threadDoc.isPinned || false, // Default to false for existing threads
           tags: threadDoc.tags || [], // Default to empty array for existing threads
           isBranched: threadDoc.isBranched || false, // Default to false for existing threads
-          projectId: threadDoc.projectId // Optional project ID
+          projectId: threadDoc.projectId, // Optional project ID
         };
       });
 
       return {
         threads,
         hasMore: response.total > offset + limit,
-        total: response.total
+        total: response.total,
       };
     } catch (error) {
-      devError('Error fetching paginated threads from Appwrite:', error);
+      devError("Error fetching paginated threads from Appwrite:", error);
       return {
         threads: [],
         hasMore: false,
-        total: 0
+        total: 0,
       };
     }
   }
@@ -327,26 +410,18 @@ export class AppwriteDB {
       // This is faster than filtering all threads
       const [pinnedResponse, projectResponse] = await Promise.all([
         // Get pinned threads
-        databases.listDocuments(
-          DATABASE_ID,
-          THREADS_COLLECTION_ID,
-          [
-            Query.equal('userId', userId),
-            Query.equal('isPinned', true),
-            Query.orderDesc('lastMessageAt'),
-            Query.limit(100) // Reasonable limit for pinned threads
-          ]
-        ),
+        databases.listDocuments(DATABASE_ID, THREADS_COLLECTION_ID, [
+          Query.equal("userId", userId),
+          Query.equal("isPinned", true),
+          Query.orderDesc("lastMessageAt"),
+          Query.limit(100), // Reasonable limit for pinned threads
+        ]),
         // Get project threads (we'll need to filter these since isNotNull might not work)
-        databases.listDocuments(
-          DATABASE_ID,
-          THREADS_COLLECTION_ID,
-          [
-            Query.equal('userId', userId),
-            Query.orderDesc('lastMessageAt'),
-            Query.limit(200) // Get more to filter for project threads
-          ]
-        )
+        databases.listDocuments(DATABASE_ID, THREADS_COLLECTION_ID, [
+          Query.equal("userId", userId),
+          Query.orderDesc("lastMessageAt"),
+          Query.limit(200), // Get more to filter for project threads
+        ]),
       ]);
 
       // Map pinned threads
@@ -361,7 +436,7 @@ export class AppwriteDB {
           isPinned: threadDoc.isPinned || false,
           tags: threadDoc.tags || [],
           isBranched: threadDoc.isBranched || false,
-          projectId: threadDoc.projectId
+          projectId: threadDoc.projectId,
         };
       });
 
@@ -378,14 +453,13 @@ export class AppwriteDB {
             isPinned: threadDoc.isPinned || false,
             tags: threadDoc.tags || [],
             isBranched: threadDoc.isBranched || false,
-            projectId: threadDoc.projectId
+            projectId: threadDoc.projectId,
           };
         })
-        .filter((thread: any) =>
-          // Only include threads with projectId that are not already pinned
-          thread.projectId &&
-          thread.projectId !== '' &&
-          !thread.isPinned
+        .filter(
+          (thread: any) =>
+            // Only include threads with projectId that are not already pinned
+            thread.projectId && thread.projectId !== "" && !thread.isPinned
         );
 
       // Combine pinned and project threads, removing duplicates
@@ -397,13 +471,16 @@ export class AppwriteDB {
 
       return uniquePriorityThreads;
     } catch (error) {
-      devError('Error fetching priority threads from Appwrite:', error);
+      devError("Error fetching priority threads from Appwrite:", error);
       return [];
     }
   }
 
   // Get regular threads (not pinned, not in projects) with pagination
-  static async getRegularThreadsPaginated(limit: number = 25, offset: number = 0): Promise<{
+  static async getRegularThreadsPaginated(
+    limit: number = 25,
+    offset: number = 0
+  ): Promise<{
     threads: Thread[];
     hasMore: boolean;
     total: number;
@@ -417,11 +494,11 @@ export class AppwriteDB {
         DATABASE_ID,
         THREADS_COLLECTION_ID,
         [
-          Query.equal('userId', userId),
-          Query.equal('isPinned', false), // Only get unpinned threads
-          Query.orderDesc('lastMessageAt'),
+          Query.equal("userId", userId),
+          Query.equal("isPinned", false), // Only get unpinned threads
+          Query.orderDesc("lastMessageAt"),
           Query.limit(limit * 3), // Get more to account for filtering out project threads
-          Query.offset(offset)
+          Query.offset(offset),
         ]
       );
 
@@ -437,32 +514,35 @@ export class AppwriteDB {
           isPinned: threadDoc.isPinned || false,
           tags: threadDoc.tags || [],
           isBranched: threadDoc.isBranched || false,
-          projectId: threadDoc.projectId
+          projectId: threadDoc.projectId,
         };
       });
 
       // Filter out threads that have a projectId
       const regularThreads = allThreads
-        .filter(thread => !thread.projectId || thread.projectId === '')
+        .filter((thread) => !thread.projectId || thread.projectId === "")
         .slice(0, limit); // Only return the requested limit
 
       return {
         threads: regularThreads,
         hasMore: response.total > offset + limit, // Approximate hasMore
-        total: response.total
+        total: response.total,
       };
     } catch (error) {
-      devError('Error fetching regular threads from Appwrite:', error);
+      devError("Error fetching regular threads from Appwrite:", error);
       return {
         threads: [],
         hasMore: false,
-        total: 0
+        total: 0,
       };
     }
   }
 
   // Create a new thread (with duplicate check) - optimized for speed
-  static async createThread(threadId: string, projectId?: string): Promise<string> {
+  static async createThread(
+    threadId: string,
+    projectId?: string
+  ): Promise<string> {
     try {
       const userId = await this.getCurrentUserId();
       const now = new Date();
@@ -471,18 +551,20 @@ export class AppwriteDB {
       if (projectId) {
         const canCreateInProject = await this.canUserAccessProject(projectId);
         if (!canCreateInProject) {
-          throw new Error('You do not have permission to create threads in this project');
+          throw new Error(
+            "You do not have permission to create threads in this project"
+          );
         }
       }
 
       const threadData: any = {
         threadId: threadId,
         userId: userId,
-        title: 'New Chat',
+        title: "New Chat",
         updatedAt: now.toISOString(),
         lastMessageAt: now.toISOString(),
         isPinned: false, // New threads are not pinned by default
-        isBranched: false // New threads are not branched by default
+        isBranched: false, // New threads are not branched by default
       };
 
       // Add projectId if provided
@@ -500,14 +582,11 @@ export class AppwriteDB {
         );
       } catch (error: any) {
         // If error is due to duplicate, check if thread exists and return
-        if (error.code === 409 || error.message?.includes('already exists')) {
+        if (error.code === 409 || error.message?.includes("already exists")) {
           const existingThreads = await databases.listDocuments(
             DATABASE_ID,
             THREADS_COLLECTION_ID,
-            [
-              Query.equal('threadId', threadId),
-              Query.equal('userId', userId)
-            ]
+            [Query.equal("threadId", threadId), Query.equal("userId", userId)]
           );
           if (existingThreads.documents.length > 0) {
             return threadId;
@@ -518,7 +597,7 @@ export class AppwriteDB {
 
       return threadId;
     } catch (error) {
-      devError('Error creating thread:', error);
+      devError("Error creating thread:", error);
       throw error;
     }
   }
@@ -533,10 +612,7 @@ export class AppwriteDB {
       const response = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
-        [
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("threadId", threadId), Query.equal("userId", userId)]
       );
 
       if (response.documents.length > 0) {
@@ -557,13 +633,16 @@ export class AppwriteDB {
         throw new Error(`Thread with ID ${threadId} not found`);
       }
     } catch (error) {
-      devError('Error updating thread:', error);
+      devError("Error updating thread:", error);
       throw error;
     }
   }
 
   // Pin or unpin a thread
-  static async updateThreadPinStatus(threadId: string, isPinned: boolean): Promise<void> {
+  static async updateThreadPinStatus(
+    threadId: string,
+    isPinned: boolean
+  ): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
       const now = new Date();
@@ -572,10 +651,7 @@ export class AppwriteDB {
       const response = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
-        [
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("threadId", threadId), Query.equal("userId", userId)]
       );
 
       if (response.documents.length > 0) {
@@ -596,13 +672,16 @@ export class AppwriteDB {
         throw new Error(`Thread with ID ${threadId} not found`);
       }
     } catch (error) {
-      devError('Error updating thread pin status:', error);
+      devError("Error updating thread pin status:", error);
       throw error;
     }
   }
 
   // Update thread tags
-  static async updateThreadTags(threadId: string, tags: string[]): Promise<void> {
+  static async updateThreadTags(
+    threadId: string,
+    tags: string[]
+  ): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
       const now = new Date();
@@ -611,10 +690,7 @@ export class AppwriteDB {
       const response = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
-        [
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("threadId", threadId), Query.equal("userId", userId)]
       );
 
       if (response.documents.length > 0) {
@@ -635,13 +711,16 @@ export class AppwriteDB {
         throw new Error(`Thread with ID ${threadId} not found`);
       }
     } catch (error) {
-      devError('Error updating thread tags:', error);
+      devError("Error updating thread tags:", error);
       throw error;
     }
   }
 
   // Update thread project
-  static async updateThreadProject(threadId: string, projectId?: string): Promise<void> {
+  static async updateThreadProject(
+    threadId: string,
+    projectId?: string
+  ): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
       const now = new Date();
@@ -650,10 +729,7 @@ export class AppwriteDB {
       const response = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
-        [
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("threadId", threadId), Query.equal("userId", userId)]
       );
 
       if (response.documents.length > 0) {
@@ -682,7 +758,7 @@ export class AppwriteDB {
         throw new Error(`Thread with ID ${threadId} not found`);
       }
     } catch (error) {
-      devError('Error updating thread project:', error);
+      devError("Error updating thread project:", error);
       throw error;
     }
   }
@@ -696,10 +772,7 @@ export class AppwriteDB {
       const threadsResponse = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
-        [
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("threadId", threadId), Query.equal("userId", userId)]
       );
 
       if (threadsResponse.documents.length === 0) {
@@ -711,10 +784,7 @@ export class AppwriteDB {
       const messagesResponse = await databases.listDocuments(
         DATABASE_ID,
         MESSAGES_COLLECTION_ID,
-        [
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("threadId", threadId), Query.equal("userId", userId)]
       );
 
       for (const doc of messagesResponse.documents) {
@@ -729,10 +799,7 @@ export class AppwriteDB {
       const summariesResponse = await databases.listDocuments(
         DATABASE_ID,
         MESSAGE_SUMMARIES_COLLECTION_ID,
-        [
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("threadId", threadId), Query.equal("userId", userId)]
       );
 
       for (const doc of summariesResponse.documents) {
@@ -743,15 +810,31 @@ export class AppwriteDB {
         );
       }
 
+      // Find and delete all plan artifacts for this thread
+      const artifactsResponse = await databases.listDocuments(
+        DATABASE_ID,
+        PLAN_ARTIFACTS_COLLECTION_ID,
+        [Query.equal("threadId", threadId), Query.equal("userId", userId)]
+      );
+
+      for (const doc of artifactsResponse.documents) {
+        await databases.deleteDocument(
+          DATABASE_ID,
+          PLAN_ARTIFACTS_COLLECTION_ID,
+          doc.$id
+        );
+      }
+
       // Delete the thread itself
-      const threadDoc = threadsResponse.documents[0] as unknown as AppwriteThread;
+      const threadDoc = threadsResponse
+        .documents[0] as unknown as AppwriteThread;
       await databases.deleteDocument(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
         threadDoc.$id
       );
     } catch (error) {
-      devError('Error deleting thread:', error);
+      devError("Error deleting thread:", error);
       throw error;
     }
   }
@@ -765,17 +848,19 @@ export class AppwriteDB {
       const threadsResponse = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
-        [Query.equal('userId', userId)]
+        [Query.equal("userId", userId)]
       );
 
-      // Delete each thread, which will cascade to delete messages and summaries
+      // Delete each thread, which will cascade to delete messages, summaries, and plan artifacts
       for (const threadDoc of threadsResponse.documents) {
-        await this.deleteThread((threadDoc as unknown as AppwriteThread).threadId);
+        await this.deleteThread(
+          (threadDoc as unknown as AppwriteThread).threadId
+        );
       }
 
       // No need to clear local DB as we're using Appwrite exclusively now
     } catch (error) {
-      devError('Error deleting all threads:', error);
+      devError("Error deleting all threads:", error);
       throw error;
     }
   }
@@ -790,29 +875,24 @@ export class AppwriteDB {
       // Get projects where user is owner OR member
       const [ownedProjects, memberProjects] = await Promise.all([
         // Projects owned by user
-        databases.listDocuments(
-          DATABASE_ID,
-          PROJECTS_COLLECTION_ID,
-          [
-            Query.equal('userId', userId),
-            Query.orderDesc('updatedAt')
-          ]
-        ),
+        databases.listDocuments(DATABASE_ID, PROJECTS_COLLECTION_ID, [
+          Query.equal("userId", userId),
+          Query.orderDesc("updatedAt"),
+        ]),
         // Projects where user is a member
-        databases.listDocuments(
-          DATABASE_ID,
-          PROJECTS_COLLECTION_ID,
-          [
-            Query.contains('members', userId),
-            Query.orderDesc('updatedAt')
-          ]
-        )
+        databases.listDocuments(DATABASE_ID, PROJECTS_COLLECTION_ID, [
+          Query.contains("members", userId),
+          Query.orderDesc("updatedAt"),
+        ]),
       ]);
 
       // Combine and deduplicate projects
-      const allProjectDocs = [...ownedProjects.documents, ...memberProjects.documents];
-      const uniqueProjects = allProjectDocs.filter((doc, index, self) =>
-        index === self.findIndex(d => d.$id === doc.$id)
+      const allProjectDocs = [
+        ...ownedProjects.documents,
+        ...memberProjects.documents,
+      ];
+      const uniqueProjects = allProjectDocs.filter(
+        (doc, index, self) => index === self.findIndex((d) => d.$id === doc.$id)
       );
 
       // Map Appwrite projects to Project format
@@ -826,19 +906,24 @@ export class AppwriteDB {
           colorIndex: projectDoc.colorIndex,
           members: projectDoc.members || [],
           createdAt: new Date(doc.$createdAt),
-          updatedAt: new Date(projectDoc.updatedAt)
+          updatedAt: new Date(projectDoc.updatedAt),
         };
       });
 
       return projects;
     } catch (error) {
-      devError('Error fetching projects from Appwrite:', error);
+      devError("Error fetching projects from Appwrite:", error);
       return [];
     }
   }
 
   // Create a new project
-  static async createProject(projectId: string, name: string, description?: string, prompt?: string): Promise<string> {
+  static async createProject(
+    projectId: string,
+    name: string,
+    description?: string,
+    prompt?: string
+  ): Promise<string> {
     try {
       const userId = await this.getCurrentUserId();
       const now = new Date();
@@ -847,11 +932,11 @@ export class AppwriteDB {
         projectId: projectId,
         userId: userId,
         name: name,
-        description: description || '',
-        prompt: prompt || '',
+        description: description || "",
+        prompt: prompt || "",
         members: [], // Initialize empty members array
         createdAt: now.toISOString(),
-        updatedAt: now.toISOString()
+        updatedAt: now.toISOString(),
       };
 
       await databases.createDocument(
@@ -863,13 +948,18 @@ export class AppwriteDB {
 
       return projectId;
     } catch (error) {
-      devError('Error creating project:', error);
+      devError("Error creating project:", error);
       throw error;
     }
   }
 
   // Update project
-  static async updateProject(projectId: string, name: string, description?: string, prompt?: string): Promise<void> {
+  static async updateProject(
+    projectId: string,
+    name: string,
+    description?: string,
+    prompt?: string
+  ): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
       const now = new Date();
@@ -878,10 +968,7 @@ export class AppwriteDB {
       const response = await databases.listDocuments(
         DATABASE_ID,
         PROJECTS_COLLECTION_ID,
-        [
-          Query.equal('projectId', projectId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("projectId", projectId), Query.equal("userId", userId)]
       );
 
       if (response.documents.length > 0) {
@@ -894,22 +981,25 @@ export class AppwriteDB {
           doc.$id,
           {
             name: name,
-            description: description || '',
-            prompt: prompt || '',
-            updatedAt: now.toISOString()
+            description: description || "",
+            prompt: prompt || "",
+            updatedAt: now.toISOString(),
           }
         );
       } else {
         throw new Error(`Project with ID ${projectId} not found`);
       }
     } catch (error) {
-      devError('Error updating project:', error);
+      devError("Error updating project:", error);
       throw error;
     }
   }
 
   // Update project color
-  static async updateProjectColor(projectId: string, colorIndex: number): Promise<void> {
+  static async updateProjectColor(
+    projectId: string,
+    colorIndex: number
+  ): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
       const now = new Date();
@@ -918,10 +1008,7 @@ export class AppwriteDB {
       const response = await databases.listDocuments(
         DATABASE_ID,
         PROJECTS_COLLECTION_ID,
-        [
-          Query.equal('projectId', projectId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("projectId", projectId), Query.equal("userId", userId)]
       );
 
       if (response.documents.length > 0) {
@@ -934,20 +1021,23 @@ export class AppwriteDB {
           doc.$id,
           {
             colorIndex: colorIndex,
-            updatedAt: now.toISOString()
+            updatedAt: now.toISOString(),
           }
         );
       } else {
         throw new Error(`Project with ID ${projectId} not found`);
       }
     } catch (error) {
-      devError('Error updating project color:', error);
+      devError("Error updating project color:", error);
       throw error;
     }
   }
 
   // Delete project and optionally reassign threads
-  static async deleteProject(projectId: string, reassignThreadsToProjectId?: string): Promise<void> {
+  static async deleteProject(
+    projectId: string,
+    reassignThreadsToProjectId?: string
+  ): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
 
@@ -955,10 +1045,7 @@ export class AppwriteDB {
       const projectsResponse = await databases.listDocuments(
         DATABASE_ID,
         PROJECTS_COLLECTION_ID,
-        [
-          Query.equal('projectId', projectId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("projectId", projectId), Query.equal("userId", userId)]
       );
 
       if (projectsResponse.documents.length === 0) {
@@ -970,16 +1057,13 @@ export class AppwriteDB {
       const threadsResponse = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
-        [
-          Query.equal('projectId', projectId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("projectId", projectId), Query.equal("userId", userId)]
       );
 
       // Update threads - either reassign to another project or remove project association
       for (const threadDoc of threadsResponse.documents) {
         const updateData: any = {
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         };
 
         if (reassignThreadsToProjectId) {
@@ -998,14 +1082,15 @@ export class AppwriteDB {
       }
 
       // Delete the project itself
-      const projectDoc = projectsResponse.documents[0] as unknown as AppwriteProject;
+      const projectDoc = projectsResponse
+        .documents[0] as unknown as AppwriteProject;
       await databases.deleteDocument(
         DATABASE_ID,
         PROJECTS_COLLECTION_ID,
         projectDoc.$id
       );
     } catch (error) {
-      devError('Error deleting project:', error);
+      devError("Error deleting project:", error);
       throw error;
     }
   }
@@ -1013,7 +1098,10 @@ export class AppwriteDB {
   // -------------- Project Member Operations --------------
 
   // Add member to project (only project owner can do this)
-  static async addProjectMember(projectId: string, memberUserId: string): Promise<void> {
+  static async addProjectMember(
+    projectId: string,
+    memberUserId: string
+  ): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
 
@@ -1022,13 +1110,13 @@ export class AppwriteDB {
         DATABASE_ID,
         PROJECTS_COLLECTION_ID,
         [
-          Query.equal('projectId', projectId),
-          Query.equal('userId', userId) // Only owner can add members
+          Query.equal("projectId", projectId),
+          Query.equal("userId", userId), // Only owner can add members
         ]
       );
 
       if (response.documents.length === 0) {
-        throw new Error('Project not found or you are not the owner');
+        throw new Error("Project not found or you are not the owner");
       }
 
       const projectDoc = response.documents[0] as unknown as AppwriteProject;
@@ -1036,7 +1124,7 @@ export class AppwriteDB {
 
       // Check if user is already a member
       if (currentMembers.includes(memberUserId)) {
-        throw new Error('User is already a member of this project');
+        throw new Error("User is already a member of this project");
       }
 
       // Add the new member
@@ -1048,17 +1136,20 @@ export class AppwriteDB {
         projectDoc.$id,
         {
           members: updatedMembers,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         }
       );
     } catch (error) {
-      devError('Error adding project member:', error);
+      devError("Error adding project member:", error);
       throw error;
     }
   }
 
   // Remove member from project (only project owner can do this)
-  static async removeProjectMember(projectId: string, memberUserId: string): Promise<void> {
+  static async removeProjectMember(
+    projectId: string,
+    memberUserId: string
+  ): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
 
@@ -1067,20 +1158,20 @@ export class AppwriteDB {
         DATABASE_ID,
         PROJECTS_COLLECTION_ID,
         [
-          Query.equal('projectId', projectId),
-          Query.equal('userId', userId) // Only owner can remove members
+          Query.equal("projectId", projectId),
+          Query.equal("userId", userId), // Only owner can remove members
         ]
       );
 
       if (response.documents.length === 0) {
-        throw new Error('Project not found or you are not the owner');
+        throw new Error("Project not found or you are not the owner");
       }
 
       const projectDoc = response.documents[0] as unknown as AppwriteProject;
       const currentMembers = projectDoc.members || [];
 
       // Remove the member
-      const updatedMembers = currentMembers.filter(id => id !== memberUserId);
+      const updatedMembers = currentMembers.filter((id) => id !== memberUserId);
 
       await databases.updateDocument(
         DATABASE_ID,
@@ -1088,11 +1179,11 @@ export class AppwriteDB {
         projectDoc.$id,
         {
           members: updatedMembers,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         }
       );
     } catch (error) {
-      devError('Error removing project member:', error);
+      devError("Error removing project member:", error);
       throw error;
     }
   }
@@ -1107,22 +1198,22 @@ export class AppwriteDB {
         DATABASE_ID,
         PROJECTS_COLLECTION_ID,
         [
-          Query.equal('projectId', projectId),
+          Query.equal("projectId", projectId),
           Query.or([
-            Query.equal('userId', userId), // Owner
-            Query.contains('members', userId) // Member
-          ])
+            Query.equal("userId", userId), // Owner
+            Query.contains("members", userId), // Member
+          ]),
         ]
       );
 
       if (response.documents.length === 0) {
-        throw new Error('Project not found or you do not have access');
+        throw new Error("Project not found or you do not have access");
       }
 
       const projectDoc = response.documents[0] as unknown as AppwriteProject;
       return projectDoc.members || [];
     } catch (error) {
-      devError('Error getting project members:', error);
+      devError("Error getting project members:", error);
       throw error;
     }
   }
@@ -1135,15 +1226,12 @@ export class AppwriteDB {
       const response = await databases.listDocuments(
         DATABASE_ID,
         PROJECTS_COLLECTION_ID,
-        [
-          Query.equal('projectId', projectId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("projectId", projectId), Query.equal("userId", userId)]
       );
 
       return response.documents.length > 0;
     } catch (error) {
-      devError('Error checking project ownership:', error);
+      devError("Error checking project ownership:", error);
       return false;
     }
   }
@@ -1154,9 +1242,7 @@ export class AppwriteDB {
       const response = await databases.listDocuments(
         DATABASE_ID,
         PROJECTS_COLLECTION_ID,
-        [
-          Query.equal('projectId', projectId)
-        ]
+        [Query.equal("projectId", projectId)]
       );
 
       if (response.documents.length > 0) {
@@ -1166,7 +1252,7 @@ export class AppwriteDB {
 
       return null;
     } catch (error) {
-      devError('Error getting project owner ID:', error);
+      devError("Error getting project owner ID:", error);
       return null;
     }
   }
@@ -1183,17 +1269,17 @@ export class AppwriteDB {
         DATABASE_ID,
         PROJECTS_COLLECTION_ID,
         [
-          Query.equal('projectId', projectId),
+          Query.equal("projectId", projectId),
           Query.or([
-            Query.equal('userId', userId), // Owner
-            Query.contains('members', userId) // Member
-          ])
+            Query.equal("userId", userId), // Owner
+            Query.contains("members", userId), // Member
+          ]),
         ]
       );
 
       return response.documents.length > 0;
     } catch (error) {
-      devError('Error checking project access:', error);
+      devError("Error checking project access:", error);
       return false;
     }
   }
@@ -1207,10 +1293,7 @@ export class AppwriteDB {
       const ownThreadResponse = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
-        [
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("threadId", threadId), Query.equal("userId", userId)]
       );
 
       if (ownThreadResponse.documents.length > 0) {
@@ -1221,9 +1304,7 @@ export class AppwriteDB {
       const threadResponse = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
-        [
-          Query.equal('threadId', threadId)
-        ]
+        [Query.equal("threadId", threadId)]
       );
 
       if (threadResponse.documents.length === 0) {
@@ -1240,14 +1321,14 @@ export class AppwriteDB {
         DATABASE_ID,
         PROJECTS_COLLECTION_ID,
         [
-          Query.equal('projectId', thread.projectId),
-          Query.contains('members', userId)
+          Query.equal("projectId", thread.projectId),
+          Query.contains("members", userId),
         ]
       );
 
       return projectResponse.documents.length > 0;
     } catch (error) {
-      devError('Error checking thread access:', error);
+      devError("Error checking thread access:", error);
       return false;
     }
   }
@@ -1270,10 +1351,7 @@ export class AppwriteDB {
       const response = await databases.listDocuments(
         DATABASE_ID,
         MESSAGES_COLLECTION_ID,
-        [
-          Query.equal('threadId', threadId),
-          Query.orderAsc('createdAt')
-        ]
+        [Query.equal("threadId", threadId), Query.orderAsc("createdAt")]
       );
 
       // Map Appwrite messages to local DBMessage format
@@ -1283,28 +1361,36 @@ export class AppwriteDB {
         // Parse attachments from JSON string if present
         let attachments: FileAttachment[] | undefined = undefined;
         if (messageDoc.attachments) {
-          devLog('🔍 Raw attachments from Appwrite:', messageDoc.attachments, 'Type:', typeof messageDoc.attachments);
+          devLog(
+            "🔍 Raw attachments from Appwrite:",
+            messageDoc.attachments,
+            "Type:",
+            typeof messageDoc.attachments
+          );
           try {
             // If it's already an object, use it directly (backward compatibility)
-            if (typeof messageDoc.attachments === 'object') {
+            if (typeof messageDoc.attachments === "object") {
               attachments = messageDoc.attachments as FileAttachment[];
-              devLog('✅ Using attachments as object:', attachments);
+              devLog("✅ Using attachments as object:", attachments);
             } else {
               // If it's a string, parse it
               attachments = JSON.parse(messageDoc.attachments as string);
-              devLog('✅ Parsed attachments from JSON string:', attachments);
+              devLog("✅ Parsed attachments from JSON string:", attachments);
             }
 
             // Ensure createdAt is a Date object for each attachment
             if (attachments && Array.isArray(attachments)) {
-              attachments = attachments.map(att => ({
+              attachments = attachments.map((att) => ({
                 ...att,
-                createdAt: typeof att.createdAt === 'string' ? new Date(att.createdAt) : att.createdAt
+                createdAt:
+                  typeof att.createdAt === "string"
+                    ? new Date(att.createdAt)
+                    : att.createdAt,
               }));
-              devLog('✅ Final processed attachments:', attachments);
+              devLog("✅ Final processed attachments:", attachments);
             }
           } catch (error) {
-            devError('❌ Error parsing attachments:', error);
+            devError("❌ Error parsing attachments:", error);
             attachments = undefined;
           }
         }
@@ -1329,13 +1415,17 @@ export class AppwriteDB {
           webSearchImgs: (messageDoc as any).webSearchImgs || undefined,
           attachments: attachments,
           model: messageDoc.model || undefined,
-          imgurl: messageDoc.imgurl || undefined
+          imgurl: messageDoc.imgurl || undefined,
+          isPlan:
+            typeof (messageDoc as any).isPlan === "boolean"
+              ? (messageDoc as any).isPlan
+              : undefined,
         };
       });
 
       return messages;
     } catch (error) {
-      devError('Error fetching messages from Appwrite:', error);
+      devError("Error fetching messages from Appwrite:", error);
       return []; // Return empty array instead of using localDb as fallback
     }
   }
@@ -1350,20 +1440,23 @@ export class AppwriteDB {
         DATABASE_ID,
         MESSAGES_COLLECTION_ID,
         [
-          Query.equal('messageId', message.id),
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId)
+          Query.equal("messageId", message.id),
+          Query.equal("threadId", threadId),
+          Query.equal("userId", userId),
         ]
       );
 
       if (messagesResponse.documents.length === 0) {
-        devLog('[AppwriteDB] Message not found for update, creating new one:', message.id);
+        devLog(
+          "[AppwriteDB] Message not found for update, creating new one:",
+          message.id
+        );
         // If message doesn't exist, create it
         return this.createMessage(threadId, message);
       }
 
       const existingDoc = messagesResponse.documents[0];
-      devLog('[AppwriteDB] Updating existing message:', message.id);
+      devLog("[AppwriteDB] Updating existing message:", message.id);
 
       // Update message data
       const messageData: any = {
@@ -1384,7 +1477,7 @@ export class AppwriteDB {
 
       // Add attachments if present (serialize to JSON string for Appwrite)
       if (message.attachments && message.attachments.length > 0) {
-        devLog('💾 Updating attachments in Appwrite:', message.attachments);
+        devLog("💾 Updating attachments in Appwrite:", message.attachments);
         messageData.attachments = JSON.stringify(message.attachments);
       }
 
@@ -1396,6 +1489,11 @@ export class AppwriteDB {
       // Add imgurl if present (for image generation messages)
       if (message.imgurl) {
         messageData.imgurl = message.imgurl;
+      }
+
+      // Plan Mode flag
+      if (typeof message.isPlan === "boolean") {
+        messageData.isPlan = message.isPlan;
       }
 
       // Update the existing document
@@ -1411,7 +1509,7 @@ export class AppwriteDB {
       const messageCreatedAt = message.createdAt || now;
       await this.updateThreadLastMessage(threadId, messageCreatedAt, now);
     } catch (error) {
-      devError('Error updating message:', error);
+      devError("Error updating message:", error);
       throw error;
     }
   }
@@ -1430,7 +1528,7 @@ export class AppwriteDB {
         userId: userId,
         content: message.content,
         role: message.role,
-        createdAt: messageCreatedAt.toISOString()
+        createdAt: messageCreatedAt.toISOString(),
       };
 
       // Add webSearchResults if present
@@ -1445,9 +1543,9 @@ export class AppwriteDB {
 
       // Add attachments if present (serialize to JSON string for Appwrite)
       if (message.attachments && message.attachments.length > 0) {
-        devLog('💾 Storing attachments to Appwrite:', message.attachments);
+        devLog("💾 Storing attachments to Appwrite:", message.attachments);
         messageData.attachments = JSON.stringify(message.attachments);
-        devLog('💾 Serialized attachments:', messageData.attachments);
+        devLog("💾 Serialized attachments:", messageData.attachments);
       }
 
       // Add model if present (for assistant messages)
@@ -1458,58 +1556,87 @@ export class AppwriteDB {
       // Add imgurl if present (for image generation messages)
       if (message.imgurl) {
         const imgUrlLength = message.imgurl.length;
-        const imgUrlType = message.imgurl.startsWith('data:') ? 'base64' : 'url';
-        console.log('💾 [createMessage] Storing imgurl to Appwrite. Length:', imgUrlLength, 'Type:', imgUrlType);
+        const imgUrlType = message.imgurl.startsWith("data:")
+          ? "base64"
+          : "url";
+        console.log(
+          "💾 [createMessage] Storing imgurl to Appwrite. Length:",
+          imgUrlLength,
+          "Type:",
+          imgUrlType
+        );
 
         // Check if the image URL is too large (Appwrite string fields have limits)
-        if (imgUrlLength > 1000000) { // 1MB limit
-          console.warn('⚠️ imgurl is very large:', imgUrlLength, 'bytes. This might exceed Appwrite field limits.');
+        if (imgUrlLength > 1000000) {
+          // 1MB limit
+          console.warn(
+            "⚠️ imgurl is very large:",
+            imgUrlLength,
+            "bytes. This might exceed Appwrite field limits."
+          );
         }
 
         messageData.imgurl = message.imgurl;
       }
 
-      const messagePromise = databases.createDocument(
-        DATABASE_ID,
-        MESSAGES_COLLECTION_ID,
-        ID.unique(),
-        messageData
-      ).catch(async (error) => {
-        // If message creation fails, don't automatically create thread
-        // Let it fail since HybridDB should have handled thread creation
-        throw error;
-      });
+      // Plan Mode flag
+      if (typeof message.isPlan === "boolean") {
+        messageData.isPlan = message.isPlan;
+      }
+
+      const messagePromise = databases
+        .createDocument(
+          DATABASE_ID,
+          MESSAGES_COLLECTION_ID,
+          ID.unique(),
+          messageData
+        )
+        .catch(async (error) => {
+          // If message creation fails, don't automatically create thread
+          // Let it fail since HybridDB should have handled thread creation
+          throw error;
+        });
 
       // Update thread timestamp in parallel
-      const updateThreadPromise = this.updateThreadLastMessage(threadId, messageCreatedAt, now);
+      const updateThreadPromise = this.updateThreadLastMessage(
+        threadId,
+        messageCreatedAt,
+        now
+      );
 
       // Execute both operations in parallel
       await Promise.all([messagePromise, updateThreadPromise]);
 
       if (message.imgurl) {
-        console.log('✅ [createMessage] Message with imgurl successfully saved to Appwrite');
+        console.log(
+          "✅ [createMessage] Message with imgurl successfully saved to Appwrite"
+        );
       }
     } catch (error) {
-      devError('Error creating message:', error);
+      devError("Error creating message:", error);
       if (message.imgurl) {
-        console.error('❌ [createMessage] Failed to save message with imgurl to Appwrite:', error);
+        console.error(
+          "❌ [createMessage] Failed to save message with imgurl to Appwrite:",
+          error
+        );
       }
       throw error;
     }
   }
 
   // Helper function to update thread's last message timestamp
-  private static async updateThreadLastMessage(threadId: string, messageCreatedAt: Date, now: Date): Promise<void> {
+  private static async updateThreadLastMessage(
+    threadId: string,
+    messageCreatedAt: Date,
+    now: Date
+  ): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
 
       const threadsResponse = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
-        [
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("threadId", threadId), Query.equal("userId", userId)]
       );
 
       if (threadsResponse.documents.length > 0) {
@@ -1520,17 +1647,20 @@ export class AppwriteDB {
           doc.$id,
           {
             lastMessageAt: messageCreatedAt.toISOString(),
-            updatedAt: now.toISOString()
+            updatedAt: now.toISOString(),
           }
         );
       } else {
         // Thread doesn't exist, this is expected during sync operations
         // Don't create a new thread here as HybridDB handles thread creation
-        devWarn('Thread not found during timestamp update, skipping:', threadId);
+        devWarn(
+          "Thread not found during timestamp update, skipping:",
+          threadId
+        );
       }
     } catch (error) {
       // Silent fail for thread update - the message creation is more important
-      devWarn('Failed to update thread timestamp:', error);
+      devWarn("Failed to update thread timestamp:", error);
     }
   }
 
@@ -1548,15 +1678,17 @@ export class AppwriteDB {
         DATABASE_ID,
         MESSAGES_COLLECTION_ID,
         [
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId),
+          Query.equal("threadId", threadId),
+          Query.equal("userId", userId),
           gte
-            ? Query.greaterThanEqual('createdAt', createdAt.toISOString())
-            : Query.greaterThan('createdAt', createdAt.toISOString())
+            ? Query.greaterThanEqual("createdAt", createdAt.toISOString())
+            : Query.greaterThan("createdAt", createdAt.toISOString()),
         ]
       );
 
-      const messageIds = messagesResponse.documents.map(doc => (doc as unknown as AppwriteMessage).messageId);
+      const messageIds = messagesResponse.documents.map(
+        (doc) => (doc as unknown as AppwriteMessage).messageId
+      );
 
       // Delete messages from Appwrite
       for (const doc of messagesResponse.documents) {
@@ -1573,9 +1705,9 @@ export class AppwriteDB {
           DATABASE_ID,
           MESSAGE_SUMMARIES_COLLECTION_ID,
           [
-            Query.equal('threadId', threadId),
-            Query.equal('userId', userId),
-            Query.equal('messageId', messageIds)
+            Query.equal("threadId", threadId),
+            Query.equal("userId", userId),
+            Query.equal("messageId", messageIds),
           ]
         );
 
@@ -1590,7 +1722,7 @@ export class AppwriteDB {
 
       // No more LocalDB operations - we're using Appwrite exclusively
     } catch (error) {
-      devError('Error deleting messages:', error);
+      devError("Error deleting messages:", error);
       throw error;
     }
   }
@@ -1619,13 +1751,13 @@ export class AppwriteDB {
           messageId: messageId,
           userId: userId,
           content: content,
-          createdAt: now.toISOString()
+          createdAt: now.toISOString(),
         }
       );
 
       return summaryId;
     } catch (error) {
-      devError('Error creating message summary:', error);
+      devError("Error creating message summary:", error);
       throw error;
     }
   }
@@ -1640,9 +1772,9 @@ export class AppwriteDB {
         DATABASE_ID,
         MESSAGE_SUMMARIES_COLLECTION_ID,
         [
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId),
-          Query.orderAsc('createdAt')
+          Query.equal("threadId", threadId),
+          Query.equal("userId", userId),
+          Query.orderAsc("createdAt"),
         ]
       );
 
@@ -1654,13 +1786,13 @@ export class AppwriteDB {
           threadId: summaryDoc.threadId,
           messageId: summaryDoc.messageId,
           content: summaryDoc.content,
-          createdAt: new Date(summaryDoc.createdAt)
+          createdAt: new Date(summaryDoc.createdAt),
         };
       });
 
       return summaries;
     } catch (error) {
-      devError('Error fetching message summaries from Appwrite:', error);
+      devError("Error fetching message summaries from Appwrite:", error);
       return []; // Return empty array instead of using localDb as fallback
     }
   }
@@ -1676,9 +1808,9 @@ export class AppwriteDB {
         DATABASE_ID,
         MESSAGES_COLLECTION_ID,
         [
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId),
-          Query.orderAsc('createdAt')
+          Query.equal("threadId", threadId),
+          Query.equal("userId", userId),
+          Query.orderAsc("createdAt"),
         ]
       );
 
@@ -1689,11 +1821,11 @@ export class AppwriteDB {
       }
 
       // Enhance summaries with role information
-      const summariesWithRole = summaries.map(summary => {
+      const summariesWithRole = summaries.map((summary) => {
         const message = messagesMap.get(summary.messageId);
         return {
           ...summary,
-          role: message ? message.role : 'user'
+          role: message ? message.role : "user",
         };
       });
 
@@ -1704,13 +1836,20 @@ export class AppwriteDB {
         return timeA - timeB;
       });
     } catch (error) {
-      devError('Error fetching message summaries with role from Appwrite:', error);
+      devError(
+        "Error fetching message summaries with role from Appwrite:",
+        error
+      );
       return []; // Return empty array instead of using localDb as fallback
     }
   }
 
   // Branch a thread (copy thread and all its messages)
-  static async branchThread(originalThreadId: string, newThreadId: string, newTitle?: string): Promise<string> {
+  static async branchThread(
+    originalThreadId: string,
+    newThreadId: string,
+    newTitle?: string
+  ): Promise<string> {
     try {
       const userId = await this.getCurrentUserId();
       const now = new Date();
@@ -1720,16 +1859,17 @@ export class AppwriteDB {
         DATABASE_ID,
         THREADS_COLLECTION_ID,
         [
-          Query.equal('threadId', originalThreadId),
-          Query.equal('userId', userId)
+          Query.equal("threadId", originalThreadId),
+          Query.equal("userId", userId),
         ]
       );
 
       if (originalThreadResponse.documents.length === 0) {
-        throw new Error('Original thread not found');
+        throw new Error("Original thread not found");
       }
 
-      const originalThread = originalThreadResponse.documents[0] as unknown as AppwriteThread;
+      const originalThread = originalThreadResponse
+        .documents[0] as unknown as AppwriteThread;
 
       // Create the new branched thread
       const branchedThreadData = {
@@ -1740,7 +1880,7 @@ export class AppwriteDB {
         lastMessageAt: now.toISOString(),
         isPinned: false, // Branched threads are not pinned by default
         isBranched: true, // Mark as branched
-        tags: originalThread.tags || [] // Copy tags from original thread
+        tags: originalThread.tags || [], // Copy tags from original thread
       };
 
       await databases.createDocument(
@@ -1755,9 +1895,9 @@ export class AppwriteDB {
         DATABASE_ID,
         MESSAGES_COLLECTION_ID,
         [
-          Query.equal('threadId', originalThreadId),
-          Query.equal('userId', userId),
-          Query.orderAsc('createdAt')
+          Query.equal("threadId", originalThreadId),
+          Query.equal("userId", userId),
+          Query.orderAsc("createdAt"),
         ]
       );
 
@@ -1771,7 +1911,7 @@ export class AppwriteDB {
           content: originalMessage.content,
           role: originalMessage.role,
           createdAt: originalMessage.createdAt,
-          webSearchResults: originalMessage.webSearchResults || undefined
+          webSearchResults: originalMessage.webSearchResults || undefined,
         };
 
         // Handle attachments properly
@@ -1799,7 +1939,7 @@ export class AppwriteDB {
 
       return newThreadId;
     } catch (error) {
-      devError('Error branching thread:', error);
+      devError("Error branching thread:", error);
       throw error;
     }
   }
@@ -1809,7 +1949,7 @@ export class AppwriteDB {
     try {
       // Nothing to clear - Appwrite is the source of truth
     } catch (error) {
-      devError('Error in clearLocalDatabase:', error);
+      devError("Error in clearLocalDatabase:", error);
       throw error;
     }
   }
@@ -1820,15 +1960,13 @@ export class AppwriteDB {
       const userId = await this.getCurrentUserId();
 
       // Check connection by getting threads from Appwrite
-      await databases.listDocuments(
-        DATABASE_ID,
-        THREADS_COLLECTION_ID,
-        [Query.equal('userId', userId)]
-      );
+      await databases.listDocuments(DATABASE_ID, THREADS_COLLECTION_ID, [
+        Query.equal("userId", userId),
+      ]);
 
       // No need to sync with local DB since Appwrite is the source of truth
     } catch (error) {
-      devError('Error connecting to Appwrite:', error);
+      devError("Error connecting to Appwrite:", error);
       throw error;
     }
   }
@@ -1841,15 +1979,13 @@ export class AppwriteDB {
       if (!user) return false;
 
       // Test database access
-      await databases.listDocuments(
-        DATABASE_ID,
-        THREADS_COLLECTION_ID,
-        [Query.limit(1)]
-      );
+      await databases.listDocuments(DATABASE_ID, THREADS_COLLECTION_ID, [
+        Query.limit(1),
+      ]);
 
       return true;
     } catch (err) {
-      devError('Appwrite connection test failed:', err);
+      devError("Appwrite connection test failed:", err);
       return false;
     }
   }
@@ -1861,10 +1997,7 @@ export class AppwriteDB {
       const response = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
-        [
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("threadId", threadId), Query.equal("userId", userId)]
       );
       return response.documents.length > 0;
     } catch {
@@ -1877,12 +2010,12 @@ export class AppwriteDB {
   // Get user's global memory settings
   static async getGlobalMemory(userId?: string): Promise<GlobalMemory | null> {
     try {
-      const currentUserId = userId || await this.getCurrentUserId();
+      const currentUserId = userId || (await this.getCurrentUserId());
 
       const response = await databases.listDocuments(
         DATABASE_ID,
         GLOBAL_MEMORY_COLLECTION_ID,
-        [Query.equal('userId', currentUserId)]
+        [Query.equal("userId", currentUserId)]
       );
 
       if (response.documents.length === 0) {
@@ -1899,15 +2032,19 @@ export class AppwriteDB {
         updatedAt: new Date(doc.updatedAt),
       };
     } catch (error) {
-      devError('Error getting global memory:', error);
+      devError("Error getting global memory:", error);
       throw error;
     }
   }
 
   // Update user's global memory settings
-  static async updateGlobalMemory(userId: string, memories: string[], enabled: boolean): Promise<void> {
+  static async updateGlobalMemory(
+    userId: string,
+    memories: string[],
+    enabled: boolean
+  ): Promise<void> {
     try {
-      const currentUserId = userId || await this.getCurrentUserId();
+      const currentUserId = userId || (await this.getCurrentUserId());
 
       // Check if memory document exists
       const existing = await this.getGlobalMemory(currentUserId);
@@ -1940,7 +2077,7 @@ export class AppwriteDB {
         );
       }
     } catch (error) {
-      devError('Error updating global memory:', error);
+      devError("Error updating global memory:", error);
       throw error;
     }
   }
@@ -1948,7 +2085,7 @@ export class AppwriteDB {
   // Add a new memory (maintains 30 item limit)
   static async addMemory(userId: string, memory: string): Promise<void> {
     try {
-      const currentUserId = userId || await this.getCurrentUserId();
+      const currentUserId = userId || (await this.getCurrentUserId());
       const existing = await this.getGlobalMemory(currentUserId);
 
       let memories: string[] = [];
@@ -1971,7 +2108,7 @@ export class AppwriteDB {
 
       await this.updateGlobalMemory(currentUserId, memories, enabled);
     } catch (error) {
-      devError('Error adding memory:', error);
+      devError("Error adding memory:", error);
       throw error;
     }
   }
@@ -1979,11 +2116,11 @@ export class AppwriteDB {
   // Delete a specific memory by index
   static async deleteMemory(userId: string, index: number): Promise<void> {
     try {
-      const currentUserId = userId || await this.getCurrentUserId();
+      const currentUserId = userId || (await this.getCurrentUserId());
       const existing = await this.getGlobalMemory(currentUserId);
 
       if (!existing || index < 0 || index >= existing.memories.length) {
-        throw new Error('Invalid memory index');
+        throw new Error("Invalid memory index");
       }
 
       const memories = [...existing.memories];
@@ -1991,7 +2128,7 @@ export class AppwriteDB {
 
       await this.updateGlobalMemory(currentUserId, memories, existing.enabled);
     } catch (error) {
-      devError('Error deleting memory:', error);
+      devError("Error deleting memory:", error);
       throw error;
     }
   }
@@ -1999,14 +2136,14 @@ export class AppwriteDB {
   // Clear all memories
   static async clearAllMemories(userId: string): Promise<void> {
     try {
-      const currentUserId = userId || await this.getCurrentUserId();
+      const currentUserId = userId || (await this.getCurrentUserId());
       const existing = await this.getGlobalMemory(currentUserId);
 
       if (existing) {
         await this.updateGlobalMemory(currentUserId, [], existing.enabled);
       }
     } catch (error) {
-      devError('Error clearing all memories:', error);
+      devError("Error clearing all memories:", error);
       throw error;
     }
   }
@@ -2014,11 +2151,14 @@ export class AppwriteDB {
   // -------------- Thread Sharing Operations --------------
 
   // Update thread sharing status
-  static async updateThreadSharing(threadId: string, sharingData: {
-    isShared: boolean;
-    shareId?: string;
-    sharedAt?: string;
-  }): Promise<void> {
+  static async updateThreadSharing(
+    threadId: string,
+    sharingData: {
+      isShared: boolean;
+      shareId?: string;
+      sharedAt?: string;
+    }
+  ): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
       const now = new Date();
@@ -2027,14 +2167,11 @@ export class AppwriteDB {
       const response = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
-        [
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("threadId", threadId), Query.equal("userId", userId)]
       );
 
       if (response.documents.length === 0) {
-        throw new Error('Thread not found');
+        throw new Error("Thread not found");
       }
 
       const doc = response.documents[0] as unknown as AppwriteThread;
@@ -2044,27 +2181,26 @@ export class AppwriteDB {
         doc.$id,
         {
           ...sharingData,
-          updatedAt: now.toISOString()
+          updatedAt: now.toISOString(),
         }
       );
     } catch (error) {
-      devError('Error updating thread sharing:', error);
+      devError("Error updating thread sharing:", error);
       throw error;
     }
   }
 
   // Get shared thread by shareId (server-side only - requires admin privileges)
-  static async getSharedThreadServerSide(shareId: string): Promise<AppwriteThread | null> {
+  static async getSharedThreadServerSide(
+    shareId: string
+  ): Promise<AppwriteThread | null> {
     try {
       // This method should only be called from server-side API routes
       // where we have admin privileges
       const response = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
-        [
-          Query.equal('shareId', shareId),
-          Query.equal('isShared', true)
-        ]
+        [Query.equal("shareId", shareId), Query.equal("isShared", true)]
       );
 
       if (response.documents.length === 0) {
@@ -2073,23 +2209,23 @@ export class AppwriteDB {
 
       return response.documents[0] as unknown as AppwriteThread;
     } catch (error) {
-      devError('Error getting shared thread (server-side):', error);
+      devError("Error getting shared thread (server-side):", error);
       throw error;
     }
   }
 
   // Get messages for a shared thread (server-side only - requires admin privileges)
-  static async getSharedThreadMessagesServerSide(threadId: string): Promise<DBMessage[]> {
+  static async getSharedThreadMessagesServerSide(
+    threadId: string
+  ): Promise<DBMessage[]> {
     try {
       // This method should only be called from server-side API routes
       // where we have admin privileges
+
       const response = await databases.listDocuments(
         DATABASE_ID,
         MESSAGES_COLLECTION_ID,
-        [
-          Query.equal('threadId', threadId),
-          Query.orderAsc('$createdAt')
-        ]
+        [Query.equal("threadId", threadId), Query.orderAsc("$createdAt")]
       );
 
       return response.documents.map((doc) => {
@@ -2100,7 +2236,7 @@ export class AppwriteDB {
         if (messageDoc.attachments) {
           try {
             // If it's already an object, use it directly (backward compatibility)
-            if (typeof messageDoc.attachments === 'object') {
+            if (typeof messageDoc.attachments === "object") {
               attachments = messageDoc.attachments as FileAttachment[];
             } else {
               // If it's a string, parse it
@@ -2109,13 +2245,16 @@ export class AppwriteDB {
 
             // Ensure createdAt is a Date object for each attachment
             if (attachments && Array.isArray(attachments)) {
-              attachments = attachments.map(att => ({
+              attachments = attachments.map((att) => ({
                 ...att,
-                createdAt: typeof att.createdAt === 'string' ? new Date(att.createdAt) : att.createdAt
+                createdAt:
+                  typeof att.createdAt === "string"
+                    ? new Date(att.createdAt)
+                    : att.createdAt,
               }));
             }
           } catch (error) {
-            devError('Error parsing attachments:', error);
+            devError("Error parsing attachments:", error);
             attachments = undefined;
           }
         }
@@ -2127,11 +2266,11 @@ export class AppwriteDB {
           content: messageDoc.content || "",
           createdAt: new Date(doc.$createdAt),
           model: messageDoc.model,
-          attachments: attachments
+          attachments: attachments,
         };
       });
     } catch (error) {
-      devError('Error getting shared thread messages (server-side):', error);
+      devError("Error getting shared thread messages (server-side):", error);
       throw error;
     }
   }
@@ -2144,10 +2283,7 @@ export class AppwriteDB {
       const response = await databases.listDocuments(
         DATABASE_ID,
         THREADS_COLLECTION_ID,
-        [
-          Query.equal('threadId', threadId),
-          Query.equal('userId', userId)
-        ]
+        [Query.equal("threadId", threadId), Query.equal("userId", userId)]
       );
 
       if (response.documents.length === 0) {
@@ -2156,8 +2292,188 @@ export class AppwriteDB {
 
       return response.documents[0] as unknown as AppwriteThread;
     } catch (error) {
-      devError('Error getting thread:', error);
+      devError("Error getting thread:", error);
       throw error;
+    }
+  }
+
+  // -------------- Plan Artifacts Operations --------------
+
+  // Create a new plan artifact (requires messageId)
+  static async createPlanArtifact(
+    input: Omit<PlanArtifact, "id" | "createdAt" | "updatedAt">
+  ): Promise<PlanArtifact> {
+    try {
+      const userId = await this.getCurrentUserId();
+      if (!input.userId) input.userId = userId;
+
+      const doc = await databases.createDocument(
+        DATABASE_ID,
+        PLAN_ARTIFACTS_COLLECTION_ID,
+        ID.unique(),
+        {
+          artifactId: input.artifactId,
+          threadId: input.threadId,
+          messageId: input.messageId,
+          userId: input.userId,
+          type: input.type,
+          title: input.title,
+          description: input.description || undefined,
+          htmlCode: input.htmlCode || undefined,
+          cssCode: input.cssCode || undefined,
+          jsCode: input.jsCode || undefined,
+          framework: input.framework || undefined,
+          theme: input.theme || undefined,
+          diagramType: input.diagramType || undefined,
+          diagramCode: input.diagramCode || undefined,
+          outputFormat: input.outputFormat || undefined,
+          sqlSchema: input.sqlSchema || undefined,
+          prismaSchema: input.prismaSchema || undefined,
+          typeormEntities: input.typeormEntities || undefined,
+          diagramSvg: input.diagramSvg || undefined,
+          mermaidCode: input.mermaidCode || undefined,
+          d3Code: input.d3Code || undefined,
+          version: Math.max(1, Number(input.version || 1)),
+          parentArtifactId: input.parentArtifactId || undefined,
+          isPublic: !!input.isPublic,
+        }
+      );
+
+      return {
+        id: (doc as any).$id,
+        artifactId: (doc as any).artifactId,
+        threadId: (doc as any).threadId,
+        messageId: (doc as any).messageId,
+        userId: (doc as any).userId,
+        type: (doc as any).type,
+        title: (doc as any).title,
+        description: (doc as any).description,
+        htmlCode: (doc as any).htmlCode,
+        cssCode: (doc as any).cssCode,
+        jsCode: (doc as any).jsCode,
+        framework: (doc as any).framework,
+        theme: (doc as any).theme,
+        diagramType: (doc as any).diagramType,
+        diagramCode: (doc as any).diagramCode,
+        outputFormat: (doc as any).outputFormat,
+        sqlSchema: (doc as any).sqlSchema,
+        prismaSchema: (doc as any).prismaSchema,
+        typeormEntities: (doc as any).typeormEntities,
+        diagramSvg: (doc as any).diagramSvg,
+        mermaidCode: (doc as any).mermaidCode,
+        d3Code: (doc as any).d3Code,
+        version: (doc as any).version,
+        parentArtifactId: (doc as any).parentArtifactId,
+        isPublic: (doc as any).isPublic,
+        createdAt: new Date((doc as any).$createdAt),
+        updatedAt: new Date((doc as any).$updatedAt),
+      };
+    } catch (error) {
+      devError("Error creating plan artifact:", error);
+      throw error;
+    }
+  }
+
+  // Get plan artifacts for a message
+  static async getPlanArtifactsByMessage(
+    threadId: string,
+    messageId: string
+  ): Promise<PlanArtifact[]> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const resp = await databases.listDocuments(
+        DATABASE_ID,
+        PLAN_ARTIFACTS_COLLECTION_ID,
+        [
+          Query.equal("threadId", threadId),
+          Query.equal("messageId", messageId),
+          Query.equal("userId", userId),
+          Query.orderAsc("$createdAt"),
+        ]
+      );
+
+      return resp.documents.map((d: any) => ({
+        id: d.$id,
+        artifactId: d.artifactId,
+        threadId: d.threadId,
+        messageId: d.messageId,
+        userId: d.userId,
+        type: d.type,
+        title: d.title,
+        description: d.description,
+        htmlCode: d.htmlCode,
+        cssCode: d.cssCode,
+        jsCode: d.jsCode,
+        framework: d.framework,
+        theme: d.theme,
+        diagramType: d.diagramType,
+        diagramCode: d.diagramCode,
+        outputFormat: d.outputFormat,
+        sqlSchema: d.sqlSchema,
+        prismaSchema: d.prismaSchema,
+        typeormEntities: d.typeormEntities,
+        diagramSvg: d.diagramSvg,
+        mermaidCode: d.mermaidCode,
+        d3Code: d.d3Code,
+        version: d.version,
+        parentArtifactId: d.parentArtifactId,
+        isPublic: d.isPublic,
+        createdAt: new Date(d.$createdAt),
+        updatedAt: new Date(d.$updatedAt),
+      }));
+    } catch (error) {
+      devError("Error fetching plan artifacts:", error);
+      return [];
+    }
+  }
+
+  // Get plan artifacts for a thread
+  static async getPlanArtifactsByThread(
+    threadId: string
+  ): Promise<PlanArtifact[]> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const resp = await databases.listDocuments(
+        DATABASE_ID,
+        PLAN_ARTIFACTS_COLLECTION_ID,
+        [
+          Query.equal("threadId", threadId),
+          Query.equal("userId", userId),
+          Query.orderDesc("$createdAt"),
+        ]
+      );
+      return resp.documents.map((d: any) => ({
+        id: d.$id,
+        artifactId: d.artifactId,
+        threadId: d.threadId,
+        messageId: d.messageId,
+        userId: d.userId,
+        type: d.type,
+        title: d.title,
+        description: d.description,
+        htmlCode: d.htmlCode,
+        cssCode: d.cssCode,
+        jsCode: d.jsCode,
+        framework: d.framework,
+        theme: d.theme,
+        diagramType: d.diagramType,
+        diagramCode: d.diagramCode,
+        outputFormat: d.outputFormat,
+        sqlSchema: d.sqlSchema,
+        prismaSchema: d.prismaSchema,
+        typeormEntities: d.typeormEntities,
+        diagramSvg: d.diagramSvg,
+        mermaidCode: d.mermaidCode,
+        d3Code: d.d3Code,
+        version: d.version,
+        parentArtifactId: d.parentArtifactId,
+        isPublic: d.isPublic,
+        createdAt: new Date(d.$createdAt),
+        updatedAt: new Date(d.$updatedAt),
+      }));
+    } catch (error) {
+      devError("Error fetching plan artifacts by thread:", error);
+      return [];
     }
   }
 }

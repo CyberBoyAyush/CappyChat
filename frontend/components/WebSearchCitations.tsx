@@ -455,9 +455,11 @@ export function cleanMessageContent(content: string): string {
   // Remove the search URLs and images markers from the content
   const searchUrlsMarker = /<!-- SEARCH_URLS: .*? -->/g;
   const searchImagesMarker = /<!-- SEARCH_IMAGES: .*? -->/g;
+  const planArtifactsMarker = /<!-- PLAN_ARTIFACT_AVAILABLE -->/g;
   return content
     .replace(searchUrlsMarker, "")
     .replace(searchImagesMarker, "")
+    .replace(planArtifactsMarker, "")
     .trim();
 }
 

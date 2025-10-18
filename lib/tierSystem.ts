@@ -1,21 +1,29 @@
 /**
  * Tier System Management
- * 
+ *
  * Handles user tier validation, credit tracking, and model access control.
  * Integrates with Appwrite user preferences for persistent storage.
  */
 
-import { AIModel, getModelConfig } from './models';
-import { getUserPreferences, updateUserPreferences, initializeUserTier, TIER_LIMITS, UserTierPreferences, UserCustomProfile, getUserSubscription } from './appwrite';
-import { Client, Users, Query, Databases } from 'node-appwrite';
+import { AIModel, getModelConfig } from "./models";
+import {
+  getUserPreferences,
+  updateUserPreferences,
+  initializeUserTier,
+  TIER_LIMITS,
+  UserTierPreferences,
+  UserCustomProfile,
+  getUserSubscription,
+} from "./appwrite";
+import { Client, Users, Query, Databases } from "node-appwrite";
 
-export type TierType = 'free' | 'premium' | 'admin';
-export type ModelType = 'free' | 'premium' | 'superPremium';
+export type TierType = "free" | "premium" | "admin";
+export type ModelType = "free" | "premium" | "superPremium";
 
 // Initialize server-side Appwrite client for API routes
 const getServerClient = () => {
-  if (typeof window !== 'undefined') {
-    throw new Error('Server client should not be used on client side');
+  if (typeof window !== "undefined") {
+    throw new Error("Server client should not be used on client side");
   }
 
   const client = new Client()
@@ -29,39 +37,41 @@ const getServerClient = () => {
 /**
  * Get user preferences using server-side API (for API routes)
  */
-export const getUserPreferencesServer = async (userId: string): Promise<UserTierPreferences | null> => {
+export const getUserPreferencesServer = async (
+  userId: string
+): Promise<UserTierPreferences | null> => {
   try {
     const users = getServerClient();
     let user: any;
     try {
       user = await users.get(userId);
     } catch (e1) {
-      console.warn('[Server] users.get first attempt failed, retrying once');
+      console.warn("[Server] users.get first attempt failed, retrying once");
       // Retry exactly once
       user = await users.get(userId);
     }
     const prefs = user.prefs as Record<string, unknown>;
 
-    console.log('[Server] Raw user preferences:', prefs);
+    console.log("[Server] Raw user preferences:", prefs);
 
-    if (prefs && typeof prefs.tier === 'string') {
+    if (prefs && typeof prefs.tier === "string") {
       const tierPrefs = {
-        tier: prefs.tier as 'free' | 'premium' | 'admin',
+        tier: prefs.tier as "free" | "premium" | "admin",
         freeCredits: (prefs.freeCredits as number) || 0,
         premiumCredits: (prefs.premiumCredits as number) || 0,
         superPremiumCredits: (prefs.superPremiumCredits as number) || 0,
         lastResetDate: prefs.lastResetDate as string | undefined,
-        webTool: (prefs.webTool as 'parallels' | 'tavily') || 'parallels', // Default to parallels
+        webTool: (prefs.webTool as "parallels" | "tavily") || "parallels", // Default to parallels
       };
 
-      console.log('[Server] Parsed tier preferences:', tierPrefs);
+      console.log("[Server] Parsed tier preferences:", tierPrefs);
       return tierPrefs;
     }
 
-    console.log('[Server] No tier found in preferences, returning null');
+    console.log("[Server] No tier found in preferences, returning null");
     return null;
   } catch (error) {
-    console.error('[Server] Failed to get user preferences:', error);
+    console.error("[Server] Failed to get user preferences:", error);
     return null;
   }
 };
@@ -69,7 +79,10 @@ export const getUserPreferencesServer = async (userId: string): Promise<UserTier
 /**
  * Update user preferences using server-side API (for API routes)
  */
-export const updateUserPreferencesServer = async (userId: string, preferences: Partial<UserTierPreferences>): Promise<void> => {
+export const updateUserPreferencesServer = async (
+  userId: string,
+  preferences: Partial<UserTierPreferences>
+): Promise<void> => {
   try {
     const users = getServerClient();
     const user = await users.get(userId);
@@ -81,9 +94,9 @@ export const updateUserPreferencesServer = async (userId: string, preferences: P
     };
 
     await users.updatePrefs(userId, updatedPrefs);
-    console.log('[Server] Updated user preferences:', updatedPrefs);
+    console.log("[Server] Updated user preferences:", updatedPrefs);
   } catch (error) {
-    console.error('[Server] Failed to update user preferences:', error);
+    console.error("[Server] Failed to update user preferences:", error);
     throw error;
   }
 };
@@ -91,7 +104,9 @@ export const updateUserPreferencesServer = async (userId: string, preferences: P
 /**
  * Get user custom profile using server-side API (for API routes)
  */
-export const getUserCustomProfileServer = async (userId: string): Promise<UserCustomProfile | null> => {
+export const getUserCustomProfileServer = async (
+  userId: string
+): Promise<UserCustomProfile | null> => {
   try {
     const users = getServerClient();
     const user = await users.get(userId);
@@ -103,7 +118,7 @@ export const getUserCustomProfileServer = async (userId: string): Promise<UserCu
 
     return null;
   } catch (error) {
-    console.error('[Server] Failed to get user custom profile:', error);
+    console.error("[Server] Failed to get user custom profile:", error);
     return null;
   }
 };
@@ -111,7 +126,10 @@ export const getUserCustomProfileServer = async (userId: string): Promise<UserCu
 /**
  * Get project prompt for a thread using server-side API (for API routes)
  */
-export const getProjectPromptServer = async (userId: string, threadId: string): Promise<string | null> => {
+export const getProjectPromptServer = async (
+  userId: string,
+  threadId: string
+): Promise<string | null> => {
   try {
     const client = new Client()
       .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
@@ -124,10 +142,7 @@ export const getProjectPromptServer = async (userId: string, threadId: string): 
     const threadsResponse = await databases.listDocuments(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
       process.env.NEXT_PUBLIC_APPWRITE_THREADS_COLLECTION_ID!,
-      [
-        Query.equal('threadId', threadId),
-        Query.equal('userId', userId)
-      ]
+      [Query.equal("threadId", threadId), Query.equal("userId", userId)]
     );
 
     if (threadsResponse.documents.length === 0) {
@@ -145,10 +160,7 @@ export const getProjectPromptServer = async (userId: string, threadId: string): 
     const projectsResponse = await databases.listDocuments(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
       process.env.NEXT_PUBLIC_APPWRITE_PROJECTS_COLLECTION_ID!,
-      [
-        Query.equal('projectId', projectId),
-        Query.equal('userId', userId)
-      ]
+      [Query.equal("projectId", projectId), Query.equal("userId", userId)]
     );
 
     if (projectsResponse.documents.length === 0) {
@@ -158,7 +170,7 @@ export const getProjectPromptServer = async (userId: string, threadId: string): 
     const project = projectsResponse.documents[0] as any;
     return project.prompt || null;
   } catch (error) {
-    console.error('[Server] Failed to get project prompt:', error);
+    console.error("[Server] Failed to get project prompt:", error);
     return null;
   }
 };
@@ -179,20 +191,22 @@ export interface TierValidationResult {
  */
 export const getModelType = (model: AIModel): ModelType => {
   const config = getModelConfig(model);
-  
+
   if (config.isSuperPremium) {
-    return 'superPremium';
+    return "superPremium";
   } else if (config.isPremium) {
-    return 'premium';
+    return "premium";
   } else {
-    return 'free';
+    return "free";
   }
 };
 
 /**
  * Check if user has premium access via subscription
  */
-export const hasSubscriptionPremium = async (userId?: string): Promise<boolean> => {
+export const hasSubscriptionPremium = async (
+  userId?: string
+): Promise<boolean> => {
   try {
     // Use server-side client if userId is provided
     if (userId) {
@@ -206,19 +220,28 @@ export const hasSubscriptionPremium = async (userId?: string): Promise<boolean> 
       const prefs = user.prefs as Record<string, unknown>;
 
       // Check if user has subscription data in flattened fields
-      if (prefs && (prefs.subscriptionTier || prefs.tier === 'premium')) {
+      if (prefs && (prefs.subscriptionTier || prefs.tier === "premium")) {
         // Check admin override first
         if (prefs.adminOverride) {
           return true;
         }
 
-        const subscriptionTier = prefs.subscriptionTier as 'FREE' | 'PREMIUM' || (prefs.tier === 'premium' ? 'PREMIUM' : 'FREE');
-        const subscriptionStatus = prefs.subscriptionStatus as string || (prefs.tier === 'premium' ? 'active' : 'expired');
+        const subscriptionTier =
+          (prefs.subscriptionTier as "FREE" | "PREMIUM") ||
+          (prefs.tier === "premium" ? "PREMIUM" : "FREE");
+        const subscriptionStatus =
+          (prefs.subscriptionStatus as string) ||
+          (prefs.tier === "premium" ? "active" : "expired");
         const currentPeriodEnd = prefs.subscriptionPeriodEnd as string;
 
         // Check subscription status and expiry
         // Include 'cancelled' status if still within period (cancelled but active until period end)
-        if ((subscriptionStatus === 'active' || subscriptionStatus === 'cancelled' || subscriptionStatus === 'failed') && subscriptionTier === 'PREMIUM') {
+        if (
+          (subscriptionStatus === "active" ||
+            subscriptionStatus === "cancelled" ||
+            subscriptionStatus === "failed") &&
+          subscriptionTier === "PREMIUM"
+        ) {
           // Check if subscription is still valid
           if (currentPeriodEnd) {
             const expiryDate = new Date(currentPeriodEnd);
@@ -243,7 +266,12 @@ export const hasSubscriptionPremium = async (userId?: string): Promise<boolean> 
 
       // Check subscription status and expiry
       // Include 'cancelled' status if still within period (cancelled but active until period end)
-      if ((subscription.status === 'active' || subscription.status === 'cancelled' || subscription.status === 'failed') && subscription.tier === 'PREMIUM') {
+      if (
+        (subscription.status === "active" ||
+          subscription.status === "cancelled" ||
+          subscription.status === "failed") &&
+        subscription.tier === "PREMIUM"
+      ) {
         // Check if subscription is still valid
         if (subscription.currentPeriodEnd) {
           const expiryDate = new Date(subscription.currentPeriodEnd);
@@ -256,7 +284,7 @@ export const hasSubscriptionPremium = async (userId?: string): Promise<boolean> 
 
     return false;
   } catch (error) {
-    console.error('Error checking subscription premium:', error);
+    console.error("Error checking subscription premium:", error);
     return false;
   }
 };
@@ -264,13 +292,20 @@ export const hasSubscriptionPremium = async (userId?: string): Promise<boolean> 
 /**
  * Check if user can use a specific model
  */
-export const canUserUseModel = async (model: AIModel, usingBYOK: boolean = false, userId?: string, isGuest: boolean = false): Promise<TierValidationResult> => {
-  console.log(`[TierSystem] Checking model access for: ${model}, BYOK: ${usingBYOK}, Guest: ${isGuest}`);
+export const canUserUseModel = async (
+  model: AIModel,
+  usingBYOK: boolean = false,
+  userId?: string,
+  isGuest: boolean = false
+): Promise<TierValidationResult> => {
+  console.log(
+    `[TierSystem] Checking model access for: ${model}, BYOK: ${usingBYOK}, Guest: ${isGuest}`
+  );
 
   // Guest users can only use Gemini 2.5 Flash Lite
   if (isGuest) {
-    console.log('[TierSystem] Guest user detected');
-    if (model === 'Gemini 2.5 Flash Lite') {
+    console.log("[TierSystem] Guest user detected");
+    if (model === "Gemini 2.5 Flash Lite") {
       return {
         canUseModel: true,
         remainingCredits: -1, // Unlimited for guest users (no tracking)
@@ -279,14 +314,15 @@ export const canUserUseModel = async (model: AIModel, usingBYOK: boolean = false
       return {
         canUseModel: false,
         remainingCredits: 0,
-        message: 'Guest users can only use Gemini 2.5 Flash Lite. Please sign up for access to other models.',
+        message:
+          "Guest users can only use Gemini 2.5 Flash Lite. Please sign up for access to other models.",
       };
     }
   }
 
   // BYOK users bypass tier restrictions
   if (usingBYOK) {
-    console.log('[TierSystem] BYOK user, bypassing restrictions');
+    console.log("[TierSystem] BYOK user, bypassing restrictions");
     return {
       canUseModel: true,
       remainingCredits: -1, // Unlimited
@@ -298,68 +334,91 @@ export const canUserUseModel = async (model: AIModel, usingBYOK: boolean = false
     const preferences = userId
       ? await getUserPreferencesServer(userId)
       : await getUserPreferences();
-    console.log('[TierSystem] Retrieved preferences:', preferences);
+    console.log("[TierSystem] Retrieved preferences:", preferences);
 
     if (!preferences) {
-      console.log('[TierSystem] No preferences found');
+      console.log("[TierSystem] No preferences found");
       return {
         canUseModel: false,
         remainingCredits: 0,
-        message: 'User preferences not found. Please refresh the page.',
+        message: "User preferences not found. Please refresh the page.",
       };
     }
 
     // Check subscription premium access
     const hasSubscriptionAccess = await hasSubscriptionPremium(userId);
-    console.log('[TierSystem] Subscription premium access:', hasSubscriptionAccess);
+    console.log(
+      "[TierSystem] Subscription premium access:",
+      hasSubscriptionAccess
+    );
 
     const modelConfig = getModelConfig(model);
     const creditsRequired = modelConfig.isImageGeneration ? 10 : 1;
-    console.log(`[TierSystem] Model requires ${creditsRequired} credit(s) (Image Gen: ${modelConfig.isImageGeneration})`);
+    console.log(
+      `[TierSystem] Model requires ${creditsRequired} credit(s) (Image Gen: ${modelConfig.isImageGeneration})`
+    );
 
     const modelType = getModelType(model);
     let remainingCredits = 0;
     let canUse = false;
 
     // Determine effective tier (consider both tier system and subscription)
-    const effectiveTier = preferences.tier === 'admin' ? 'admin' :
-                         (preferences.tier === 'premium' || hasSubscriptionAccess) ? 'premium' : 'free';
+    const effectiveTier =
+      preferences.tier === "admin"
+        ? "admin"
+        : preferences.tier === "premium" || hasSubscriptionAccess
+        ? "premium"
+        : "free";
 
-    console.log('[TierSystem] Effective tier:', effectiveTier, 'Original tier:', preferences.tier);
+    console.log(
+      "[TierSystem] Effective tier:",
+      effectiveTier,
+      "Original tier:",
+      preferences.tier
+    );
 
     switch (modelType) {
-      case 'free':
+      case "free":
         remainingCredits = preferences.freeCredits;
-        canUse = effectiveTier === 'admin' || remainingCredits >= creditsRequired;
+        canUse =
+          effectiveTier === "admin" || remainingCredits >= creditsRequired;
         break;
-      case 'premium':
+      case "premium":
         remainingCredits = preferences.premiumCredits;
         // Premium models: admin, premium tier, or subscription premium
-        canUse = effectiveTier === 'admin' || effectiveTier === 'premium' || remainingCredits >= creditsRequired;
+        canUse =
+          effectiveTier === "admin" ||
+          effectiveTier === "premium" ||
+          remainingCredits >= creditsRequired;
         break;
-      case 'superPremium':
+      case "superPremium":
         remainingCredits = preferences.superPremiumCredits;
         // Super premium models: admin, premium tier, or subscription premium
-        canUse = effectiveTier === 'admin' || effectiveTier === 'premium' || remainingCredits >= creditsRequired;
+        canUse =
+          effectiveTier === "admin" ||
+          effectiveTier === "premium" ||
+          remainingCredits >= creditsRequired;
         break;
     }
 
     // Admin users have unlimited access
-    if (preferences.tier === 'admin') {
+    if (preferences.tier === "admin") {
       remainingCredits = -1;
     }
 
     return {
       canUseModel: canUse,
       remainingCredits,
-      message: canUse ? undefined : 'Monthly credits exhausted. Update your current plan.',
+      message: canUse
+        ? undefined
+        : "Monthly credits exhausted. Update your current plan.",
     };
   } catch (error) {
-    console.error('Error checking model access:', error);
+    console.error("Error checking model access:", error);
     return {
       canUseModel: false,
       remainingCredits: 0,
-      message: 'Error checking model access. Please try again.',
+      message: "Error checking model access. Please try again.",
     };
   }
 };
@@ -367,10 +426,15 @@ export const canUserUseModel = async (model: AIModel, usingBYOK: boolean = false
 /**
  * Consume credits for a model usage
  */
-export const consumeCredits = async (model: AIModel, usingBYOK: boolean = false, userId?: string, isGuest: boolean = false): Promise<boolean> => {
+export const consumeCredits = async (
+  model: AIModel,
+  usingBYOK: boolean = false,
+  userId?: string,
+  isGuest: boolean = false
+): Promise<boolean> => {
   // Guest users don't consume credits (no tracking)
   if (isGuest) {
-    console.log('[TierSystem] Guest user, skipping credit consumption');
+    console.log("[TierSystem] Guest user, skipping credit consumption");
     return true;
   }
 
@@ -380,49 +444,43 @@ export const consumeCredits = async (model: AIModel, usingBYOK: boolean = false,
   }
 
   try {
-    // Use server-side client if userId is provided (for API routes)
     const preferences = userId
       ? await getUserPreferencesServer(userId)
       : await getUserPreferences();
 
     if (!preferences) {
-      throw new Error('User preferences not found');
+      throw new Error("User preferences not found");
     }
 
-    // Admin users have unlimited credits
-    if (preferences.tier === 'admin') {
+    if (preferences.tier === "admin") {
       return true;
     }
 
     const modelConfig = getModelConfig(model);
     const creditsToConsume = modelConfig.isImageGeneration ? 10 : 1;
-    console.log(`[TierSystem] Consuming ${creditsToConsume} credit(s) for model: ${model} (Image Gen: ${modelConfig.isImageGeneration})`);
+    console.log(
+      `[TierSystem] Consuming ${creditsToConsume} credit(s) for model: ${model} (Image Gen: ${modelConfig.isImageGeneration})`
+    );
 
     const modelType = getModelType(model);
     const updates: Partial<UserTierPreferences> = {};
 
     switch (modelType) {
-      case 'free':
-        if (preferences.freeCredits < creditsToConsume) {
-          return false;
-        }
+      case "free":
+        if (preferences.freeCredits < creditsToConsume) return false;
         updates.freeCredits = preferences.freeCredits - creditsToConsume;
         break;
-      case 'premium':
-        if (preferences.premiumCredits < creditsToConsume) {
-          return false;
-        }
+      case "premium":
+        if (preferences.premiumCredits < creditsToConsume) return false;
         updates.premiumCredits = preferences.premiumCredits - creditsToConsume;
         break;
-      case 'superPremium':
-        if (preferences.superPremiumCredits < creditsToConsume) {
-          return false;
-        }
-        updates.superPremiumCredits = preferences.superPremiumCredits - creditsToConsume;
+      case "superPremium":
+        if (preferences.superPremiumCredits < creditsToConsume) return false;
+        updates.superPremiumCredits =
+          preferences.superPremiumCredits - creditsToConsume;
         break;
     }
 
-    // Use server-side client if userId is provided (for API routes)
     if (userId) {
       await updateUserPreferencesServer(userId, updates);
     } else {
@@ -430,7 +488,58 @@ export const consumeCredits = async (model: AIModel, usingBYOK: boolean = false,
     }
     return true;
   } catch (error) {
-    console.error('Error consuming credits:', error);
+    console.error("Error consuming credits:", error);
+    return false;
+  }
+};
+
+/**
+ * Consume an arbitrary number of credits for tool executions.
+ * Credits are deducted from the bucket that matches the selected model's tier.
+ */
+export const consumeToolCredits = async (
+  model: AIModel,
+  amount: number,
+  usingBYOK: boolean = false,
+  userId?: string,
+  isGuest: boolean = false
+): Promise<boolean> => {
+  if (isGuest) return true; // no tracking for guests
+  if (usingBYOK) return true; // BYOK bypasses credit deductions
+
+  try {
+    const preferences = userId
+      ? await getUserPreferencesServer(userId)
+      : await getUserPreferences();
+    if (!preferences) throw new Error("User preferences not found");
+
+    if (preferences.tier === "admin") return true;
+
+    const modelType = getModelType(model);
+    const updates: Partial<UserTierPreferences> = {};
+    switch (modelType) {
+      case "free":
+        if (preferences.freeCredits < amount) return false;
+        updates.freeCredits = preferences.freeCredits - amount;
+        break;
+      case "premium":
+        if (preferences.premiumCredits < amount) return false;
+        updates.premiumCredits = preferences.premiumCredits - amount;
+        break;
+      case "superPremium":
+        if (preferences.superPremiumCredits < amount) return false;
+        updates.superPremiumCredits = preferences.superPremiumCredits - amount;
+        break;
+    }
+
+    if (userId) {
+      await updateUserPreferencesServer(userId, updates);
+    } else {
+      await updateUserPreferences(updates);
+    }
+    return true;
+  } catch (error) {
+    console.error("Error consuming tool credits:", error);
     return false;
   }
 };
@@ -438,35 +547,37 @@ export const consumeCredits = async (model: AIModel, usingBYOK: boolean = false,
 /**
  * Get user's current tier information
  */
-export const getUserTierInfo = async (): Promise<UserTierPreferences | null> => {
-  return await getUserPreferences();
-};
+export const getUserTierInfo =
+  async (): Promise<UserTierPreferences | null> => {
+    return await getUserPreferences();
+  };
 
 /**
  * Get current tier information - NO AUTOMATIC UPDATES
  * Just returns the current state without any modifications
  */
-export const refreshTierInfo = async (): Promise<UserTierPreferences | null> => {
-  try {
-    console.log('[TierSystem] Getting current tier info (no updates)...');
+export const refreshTierInfo =
+  async (): Promise<UserTierPreferences | null> => {
+    try {
+      console.log("[TierSystem] Getting current tier info (no updates)...");
 
-    // Just get and return current preferences - NO MODIFICATIONS
-    const preferences = await getUserPreferences();
+      // Just get and return current preferences - NO MODIFICATIONS
+      const preferences = await getUserPreferences();
 
-    if (preferences) {
-      console.log(`[TierSystem] Current tier: ${preferences.tier}`, {
-        freeCredits: preferences.freeCredits,
-        premiumCredits: preferences.premiumCredits,
-        superPremiumCredits: preferences.superPremiumCredits
-      });
+      if (preferences) {
+        console.log(`[TierSystem] Current tier: ${preferences.tier}`, {
+          freeCredits: preferences.freeCredits,
+          premiumCredits: preferences.premiumCredits,
+          superPremiumCredits: preferences.superPremiumCredits,
+        });
+      }
+
+      return preferences;
+    } catch (error) {
+      console.error("[TierSystem] Error getting tier info:", error);
+      return null;
     }
-
-    return preferences;
-  } catch (error) {
-    console.error('[TierSystem] Error getting tier info:', error);
-    return null;
-  }
-};
+  };
 
 /**
  * Initialize tier for new users only - NO automatic updates for existing users
@@ -477,19 +588,25 @@ export const ensureUserTierInitialized = async (): Promise<void> => {
 
     if (!preferences) {
       // New user - initialize with free tier
-      console.log('[TierSystem] New user detected, initializing with free tier');
-      await initializeUserTier('free');
+      console.log(
+        "[TierSystem] New user detected, initializing with free tier"
+      );
+      await initializeUserTier("free");
     } else {
       // Existing user - check if webTool is set, if not set it to parallels for backward compatibility
       if (!preferences.webTool) {
-        console.log('[TierSystem] Existing user without webTool, setting to parallels for backward compatibility');
-        await updateUserPreferences({ webTool: 'parallels' });
+        console.log(
+          "[TierSystem] Existing user without webTool, setting to parallels for backward compatibility"
+        );
+        await updateUserPreferences({ webTool: "parallels" });
       } else {
-        console.log(`[TierSystem] Existing user with ${preferences.tier} tier - no changes made`);
+        console.log(
+          `[TierSystem] Existing user with ${preferences.tier} tier - no changes made`
+        );
       }
     }
   } catch (error) {
-    console.error('Error ensuring user tier initialized:', error);
+    console.error("Error ensuring user tier initialized:", error);
     throw error;
   }
 };
@@ -500,14 +617,17 @@ export const ensureUserTierInitialized = async (): Promise<void> => {
  */
 export const resetUserLimits = async (userId?: string): Promise<void> => {
   try {
-    console.log('[TierSystem] Admin reset requested for user:', userId || 'current user');
+    console.log(
+      "[TierSystem] Admin reset requested for user:",
+      userId || "current user"
+    );
 
     const preferences = userId
       ? await getUserPreferencesServer(userId)
       : await getUserPreferences();
 
     if (!preferences) {
-      throw new Error('User preferences not found');
+      throw new Error("User preferences not found");
     }
 
     const limits = TIER_LIMITS[preferences.tier];
@@ -520,7 +640,10 @@ export const resetUserLimits = async (userId?: string): Promise<void> => {
       lastResetDate: now,
     };
 
-    console.log(`[TierSystem] Resetting ${preferences.tier} user limits to:`, updates);
+    console.log(
+      `[TierSystem] Resetting ${preferences.tier} user limits to:`,
+      updates
+    );
 
     if (userId) {
       await updateUserPreferencesServer(userId, updates);
@@ -528,7 +651,7 @@ export const resetUserLimits = async (userId?: string): Promise<void> => {
       await updateUserPreferences(updates);
     }
   } catch (error) {
-    console.error('Error resetting user limits:', error);
+    console.error("Error resetting user limits:", error);
     throw error;
   }
 };
@@ -538,12 +661,12 @@ export const resetUserLimits = async (userId?: string): Promise<void> => {
  */
 export const adminResetUserCredits = async (userId: string): Promise<void> => {
   try {
-    console.log('[TierSystem] Admin reset for user:', userId);
+    console.log("[TierSystem] Admin reset for user:", userId);
 
     const preferences = await getUserPreferencesServer(userId);
 
     if (!preferences) {
-      throw new Error('User preferences not found');
+      throw new Error("User preferences not found");
     }
 
     const limits = TIER_LIMITS[preferences.tier];
@@ -556,10 +679,13 @@ export const adminResetUserCredits = async (userId: string): Promise<void> => {
       lastResetDate: now,
     };
 
-    console.log(`[TierSystem] Admin resetting ${preferences.tier} user credits to:`, updates);
+    console.log(
+      `[TierSystem] Admin resetting ${preferences.tier} user credits to:`,
+      updates
+    );
     await updateUserPreferencesServer(userId, updates);
   } catch (error) {
-    console.error('Error in admin reset:', error);
+    console.error("Error in admin reset:", error);
     throw error;
   }
 };
@@ -567,14 +693,17 @@ export const adminResetUserCredits = async (userId: string): Promise<void> => {
 /**
  * Admin-only function to update a user's tier
  */
-export const adminUpdateUserTier = async (userId: string, newTier: 'free' | 'premium' | 'admin'): Promise<void> => {
+export const adminUpdateUserTier = async (
+  userId: string,
+  newTier: "free" | "premium" | "admin"
+): Promise<void> => {
   try {
     console.log(`[TierSystem] Admin updating user ${userId} tier to:`, newTier);
 
     const preferences = await getUserPreferencesServer(userId);
 
     if (!preferences) {
-      throw new Error('User preferences not found');
+      throw new Error("User preferences not found");
     }
 
     const limits = TIER_LIMITS[newTier];
@@ -588,10 +717,13 @@ export const adminUpdateUserTier = async (userId: string, newTier: 'free' | 'pre
       lastResetDate: now,
     };
 
-    console.log(`[TierSystem] Admin updating user to ${newTier} tier with limits:`, updates);
+    console.log(
+      `[TierSystem] Admin updating user to ${newTier} tier with limits:`,
+      updates
+    );
     await updateUserPreferencesServer(userId, updates);
   } catch (error) {
-    console.error('Error in admin tier update:', error);
+    console.error("Error in admin tier update:", error);
     throw error;
   }
 };
@@ -599,10 +731,12 @@ export const adminUpdateUserTier = async (userId: string, newTier: 'free' | 'pre
 /**
  * Admin-only function to get user by email
  */
-export const adminGetUserByEmail = async (email: string): Promise<{ $id: string; email: string; name?: string } | null> => {
+export const adminGetUserByEmail = async (
+  email: string
+): Promise<{ $id: string; email: string; name?: string } | null> => {
   try {
     const users = getServerClient();
-    const usersList = await users.list([Query.equal('email', email)]);
+    const usersList = await users.list([Query.equal("email", email)]);
 
     if (usersList.users.length === 0) {
       return null;
@@ -615,7 +749,7 @@ export const adminGetUserByEmail = async (email: string): Promise<{ $id: string;
       name: user.name,
     };
   } catch (error) {
-    console.error('Error getting user by email:', error);
+    console.error("Error getting user by email:", error);
     throw error;
   }
 };
@@ -632,7 +766,8 @@ export const shouldResetMonthly = (lastResetDate?: string): boolean => {
   // Check if we're in a new month
   return (
     now.getFullYear() > lastReset.getFullYear() ||
-    (now.getFullYear() === lastReset.getFullYear() && now.getMonth() > lastReset.getMonth())
+    (now.getFullYear() === lastReset.getFullYear() &&
+      now.getMonth() > lastReset.getMonth())
   );
 };
 
@@ -644,7 +779,9 @@ export const shouldResetDaily = (lastResetDate?: string): boolean => {
 
   const lastReset = new Date(lastResetDate);
   const now = new Date();
-  const daysDiff = Math.floor((now.getTime() - lastReset.getTime()) / (1000 * 60 * 60 * 24));
+  const daysDiff = Math.floor(
+    (now.getTime() - lastReset.getTime()) / (1000 * 60 * 60 * 24)
+  );
 
   return daysDiff >= 30; // Reset after 30+ days
 };
@@ -654,10 +791,10 @@ export const shouldResetDaily = (lastResetDate?: string): boolean => {
  */
 export const getTierDisplayInfo = (tier: TierType) => {
   const limits = TIER_LIMITS[tier];
-  
+
   return {
     name: tier.charAt(0).toUpperCase() + tier.slice(1),
     limits,
-    isUnlimited: tier === 'admin',
+    isUnlimited: tier === "admin",
   };
 };
