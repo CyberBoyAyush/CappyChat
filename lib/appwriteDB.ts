@@ -810,6 +810,21 @@ export class AppwriteDB {
         );
       }
 
+      // Find and delete all plan artifacts for this thread
+      const artifactsResponse = await databases.listDocuments(
+        DATABASE_ID,
+        PLAN_ARTIFACTS_COLLECTION_ID,
+        [Query.equal("threadId", threadId), Query.equal("userId", userId)]
+      );
+
+      for (const doc of artifactsResponse.documents) {
+        await databases.deleteDocument(
+          DATABASE_ID,
+          PLAN_ARTIFACTS_COLLECTION_ID,
+          doc.$id
+        );
+      }
+
       // Delete the thread itself
       const threadDoc = threadsResponse
         .documents[0] as unknown as AppwriteThread;
@@ -836,7 +851,7 @@ export class AppwriteDB {
         [Query.equal("userId", userId)]
       );
 
-      // Delete each thread, which will cascade to delete messages and summaries
+      // Delete each thread, which will cascade to delete messages, summaries, and plan artifacts
       for (const threadDoc of threadsResponse.documents) {
         await this.deleteThread(
           (threadDoc as unknown as AppwriteThread).threadId

@@ -366,6 +366,17 @@ export class LocalDB {
     }
   }
 
+  static deletePlanArtifactById(artifactId: string): void {
+    try {
+      const remaining = this.getAllPlanArtifacts().filter(
+        (artifact) => artifact.id !== artifactId
+      );
+      this.saveAllPlanArtifacts(remaining);
+    } catch (error) {
+      devError('Error deleting plan artifact by ID:', error);
+    }
+  }
+
   static clearPlanArtifacts(): void {
     localStorage.removeItem(STORAGE_KEYS.PLAN_ARTIFACTS);
   }

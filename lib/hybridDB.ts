@@ -1392,6 +1392,7 @@ export class HybridDB {
 
   private static handleRemoteThreadDeleted(appwriteThread: any): void {
     LocalDB.deleteThread(appwriteThread.threadId);
+    LocalDB.deletePlanArtifactsByThread(appwriteThread.threadId);
     debouncedEmitter.emitImmediate('threads_updated', LocalDB.getThreads());
   }
 
@@ -1737,7 +1738,7 @@ export class HybridDB {
 
   private static handleRemotePlanArtifactDeleted(appwriteArtifact: any): void {
     devLog('[HybridDB] Handling remote plan artifact deleted:', appwriteArtifact.artifactId);
-    LocalDB.deletePlanArtifactsByThread(appwriteArtifact.threadId);
+    LocalDB.deletePlanArtifactById(appwriteArtifact.artifactId);
     debouncedEmitter.emitImmediate('plan_artifacts_updated', appwriteArtifact.threadId, LocalDB.getPlanArtifactsByThread(appwriteArtifact.threadId));
   }
 

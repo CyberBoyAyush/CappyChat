@@ -170,13 +170,14 @@ export async function POST(req: NextRequest) {
     const PLAN_MODE_ALLOWED_MODELS = [
       "Claude Haiku 4.5",
       "Claude Sonnet 4.5",
-      "Kimi K2",
+
+      "Grok Code Fast 1",
     ];
     if (!PLAN_MODE_ALLOWED_MODELS.includes(selectedModel)) {
       return new Response(
         JSON.stringify({
           error:
-            "Only Claude Haiku 4.5, Claude Sonnet 4.5, and Kimi K2 are available in Plan Mode",
+            "The selected model is not available in Plan Mode. Please choose from the available Plan Mode models.",
           code: "MODEL_NOT_ALLOWED_IN_PLAN_MODE",
         }),
         { status: 400, headers: { "Content-Type": "application/json" } }
@@ -307,6 +308,15 @@ export async function POST(req: NextRequest) {
         return null;
       }
 
+      // Validate required payload fields
+      if (!payload.title || !payload.type) {
+        devWarn("Missing required payload fields", {
+          hasTitle: !!payload.title,
+          hasType: !!payload.type,
+        });
+        return null;
+      }
+
       const versionMeta = await computeArtifactVersion({
         userId: uId,
         threadId: tId,
@@ -349,10 +359,13 @@ export async function POST(req: NextRequest) {
           artifactId,
           version: versionMeta?.version ?? 1,
           parentArtifactId: versionMeta?.parentArtifactId,
+          created: true,
         };
       } catch (error) {
         devError("Failed to persist plan artifact:", error);
-        throw error;
+        // Don't throw error - return null to indicate failure
+        // The tool will still execute but with created: false
+        return null;
       }
     };
 
@@ -458,6 +471,7 @@ export async function POST(req: NextRequest) {
             features,
             artifactId: persisted?.artifactId,
             version: persisted?.version ?? 1,
+            created: !!persisted,
             dependencies,
             deploymentNotes,
           };
@@ -520,6 +534,7 @@ export async function POST(req: NextRequest) {
             diagramType: type,
             artifactId: persisted?.artifactId,
             version: persisted?.version ?? 1,
+            created: !!persisted,
             sqlSchema,
             prismaSchema,
           };
@@ -686,7 +701,27 @@ REMEMBER: Be consultative first. Create production-quality, visually impressive 
 
     return result.toDataStreamResponse({
       sendReasoning: false,
-      getErrorMessage: (error) => (error as { message: string }).message,
+      getErrorMessage: (error) => {
+        const errorMessage = (error as { message: string }).message;
+        // Log the detailed error for debugging
+        devError("Plan mode stream error:", error);
+
+        // Check for specific error codes and return user-friendly messages
+        if ((error as any).code === "INSUFFICIENT_TOOL_CREDITS") {
+          return "Insufficient tool credits to complete this operation. Please check your plan mode credits.";
+        }
+
+        if ((error as any).code === "MODEL_NOT_ALLOWED_IN_PLAN_MODE") {
+          return "This model is not available in Plan Mode.";
+        }
+
+        if ((error as any).code === "TIER_LIMIT_EXCEEDED") {
+          return "Plan mode access denied. Please check your tier limits.";
+        }
+
+        // Return generic message for all other errors to avoid information disclosure
+        return "An error occurred while processing your request. Please try again.";
+      },
     });
   } catch (error) {
     devError("/api/plan-mode error:", error);

@@ -276,7 +276,8 @@ const PureModelSelector = ({
   const PLAN_MODE_ALLOWED_MODELS: AIModel[] = [
     "Claude Haiku 4.5",
     "Claude Sonnet 4.5",
-    "Kimi K2",
+
+    "Grok Code Fast 1",
   ];
 
   // Force guest users to use Gemini 2.5 Flash Lite
