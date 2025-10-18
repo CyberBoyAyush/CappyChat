@@ -276,8 +276,8 @@ const PureModelSelector = ({
   const PLAN_MODE_ALLOWED_MODELS: AIModel[] = [
     "Claude Haiku 4.5",
     "Claude Sonnet 4.5",
-
-    "Grok Code Fast 1",
+    "Gemini 2.5 Flash",
+    "OpenAI 5 Mini",
   ];
 
   // Force guest users to use Gemini 2.5 Flash Lite
@@ -577,7 +577,9 @@ const PureModelSelector = ({
             </div>
 
             {/* Right side: Model Description Panel (md+ only) */}
-            <ModelDescriptionPanel model={hoveredModel || selectedModel} />
+            <div className="hidden md:flex md:w-[280px] flex-shrink-0">
+              {hoveredModel && <ModelDescriptionPanel model={hoveredModel} />}
+            </div>
           </div>
         </DropdownMenuContent>
       </DropdownMenu>

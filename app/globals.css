@@ -1879,3 +1879,8 @@ html {
   max-width: 100%;
   height: auto !important;
 }
+
+/* Hide Mermaid error bomb SVGs only */
+svg[aria-roledescription="error"] {
+  display: none !important;
+}

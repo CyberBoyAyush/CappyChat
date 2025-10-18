@@ -493,8 +493,13 @@ function ZoomableContainer({
 
 function MermaidBlock({ code }: { code: string }) {
   const ref = React.useRef<HTMLDivElement>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  const [showCode, setShowCode] = React.useState(false);
+
   React.useEffect(() => {
     let cancelled = false;
+    setError(null);
+
     (async () => {
       if (!code || typeof window === "undefined") return;
       try {
@@ -506,18 +511,58 @@ function MermaidBlock({ code }: { code: string }) {
         );
         if (!cancelled && ref.current) {
           ref.current.innerHTML = svg;
+          setError(null);
         }
       } catch (e) {
-        if (!cancelled && ref.current) {
-          ref.current.textContent = "Failed to render Mermaid diagram";
+        if (!cancelled) {
+          const errorMsg = e instanceof Error ? e.message : "Failed to render diagram";
+          setError(errorMsg);
+          if (ref.current) {
+            ref.current.innerHTML = "";
+          }
         }
       }
     })();
+
     return () => {
       cancelled = true;
       if (ref.current) ref.current.innerHTML = "";
     };
   }, [code]);
+
+  if (error) {
+    return (
+      <div className="m-2 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
+        <div className="flex items-start gap-3">
+          <div className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
+            ⚠️
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-red-900 dark:text-red-200 mb-1">
+              Diagram Syntax Error
+            </h3>
+            <p className="text-sm text-red-800 dark:text-red-300 mb-3 break-words font-mono">
+              {error}
+            </p>
+            <button
+              onClick={() => setShowCode(!showCode)}
+              className="text-sm px-3 py-1.5 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded transition-colors"
+            >
+              {showCode ? "Hide Code" : "View Code"}
+            </button>
+          </div>
+        </div>
+        {showCode && (
+          <div className="mt-3 p-3 bg-background rounded border border-red-200 dark:border-red-800 max-h-80 overflow-auto">
+            <pre className="text-xs font-mono text-foreground whitespace-pre-wrap break-words">
+              {code}
+            </pre>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <ZoomableContainer className="m-2">
       <div ref={ref} className="p-2" />

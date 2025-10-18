@@ -8,7 +8,7 @@ import {
   consumeCredits,
   consumeToolCredits,
 } from "@/lib/tierSystem";
-import { devWarn, devError } from "@/lib/logger";
+import { devLog, devWarn, devError } from "@/lib/logger";
 import { Client, Databases, ID, Query } from "node-appwrite";
 import { DATABASE_ID, PLAN_ARTIFACTS_COLLECTION_ID } from "@/lib/appwriteDB";
 import { executeRetrieval } from "@/lib/tools/actions";
@@ -170,8 +170,8 @@ export async function POST(req: NextRequest) {
     const PLAN_MODE_ALLOWED_MODELS = [
       "Claude Haiku 4.5",
       "Claude Sonnet 4.5",
-
-      "Grok Code Fast 1",
+      "Gemini 2.5 Flash",
+      "OpenAI 5 Mini",
     ];
     if (!PLAN_MODE_ALLOWED_MODELS.includes(selectedModel)) {
       return new Response(
@@ -399,6 +399,17 @@ export async function POST(req: NextRequest) {
       }
     };
 
+    // Build an index of files accessible to the file_reader tool
+    const buildFileIndex = () => {
+      const index: Record<string, any> = {};
+      conversationFiles.forEach((file, idx) => {
+        const key = file.fileName.toLowerCase();
+        index[key] = file;
+        index[idx.toString()] = file; // Also index by number
+      });
+      return index;
+    };
+
     // Build Plan Mode tools with access to request context and server DB
     const buildPlanTools = (ctx: {
       userId?: string;
@@ -565,14 +576,184 @@ export async function POST(req: NextRequest) {
           return executeRetrieval({ url, include_summary, live_crawl });
         },
       }),
+      file_reader: tool({
+        description:
+          "Read the full text content of an uploaded file for deep analysis. Use this when you need the complete content of a file to provide detailed MVP/diagram recommendations.",
+        parameters: z
+          .object({
+            fileName: z
+              .string()
+              .optional()
+              .describe(
+                "The name of the file to read (e.g., 'requirements.txt', 'schema.sql')"
+              ),
+            fileIndex: z
+              .number()
+              .optional()
+              .describe(
+                "The index of the file in the uploaded files list (0-based)"
+              ),
+          })
+          .refine((p) => p.fileName || p.fileIndex !== undefined, {
+            message: "Provide either fileName or fileIndex",
+          }),
+        execute: async ({ fileName, fileIndex }) => {
+          await ensureToolCredits(ctx, 1);
+          const fileIndex_map = buildFileIndex();
+          const key =
+            fileIndex !== undefined
+              ? fileIndex.toString()
+              : fileName?.toLowerCase();
+
+          if (!key) {
+            return { success: false, error: "Invalid file reference" };
+          }
+
+          const file = fileIndex_map[key];
+          if (!file) {
+            return {
+              success: false,
+              error: `File not found: ${fileName || `index ${fileIndex}`}`,
+            };
+          }
+
+          // Truncate to avoid massive context; max 8k chars per file read
+          const MAX_CHARS = 8000;
+          const textContent =
+            file.textContent.length > MAX_CHARS
+              ? file.textContent.substring(0, MAX_CHARS) +
+                `\n\n[... truncated, showing first ${MAX_CHARS} characters of ${file.textContent.length} total]`
+              : file.textContent;
+
+          return {
+            success: true,
+            fileName: file.fileName,
+            fileType: file.fileType,
+            mimeType: file.mimeType,
+            size: file.size,
+            text: textContent,
+            isTruncated: file.textContent.length > MAX_CHARS,
+          };
+        },
+      }),
     });
 
-    // Analyze conversation context to provide intelligent hints (before type assertion)
-    const conversationContext = analyzeConversationContext(messages);
+    // Collect all files from conversation history for context (same as chat-messaging)
+    const conversationFiles: any[] = [];
 
-    const processedMessages = messages as Parameters<
-      typeof streamText
-    >[0]["messages"];
+    messages.forEach((message: Record<string, unknown>) => {
+      if (
+        message.experimental_attachments &&
+        Array.isArray(message.experimental_attachments)
+      ) {
+        message.experimental_attachments.forEach(
+          (attachment: Record<string, unknown>) => {
+            const fileType = attachment.fileType as string;
+            if (
+              (fileType === "text" || fileType === "document") &&
+              attachment.textContent
+            ) {
+              conversationFiles.push({
+                fileName: attachment.originalName as string,
+                fileType: fileType,
+                textContent: attachment.textContent as string,
+                mimeType: attachment.mimeType as string,
+                size: (attachment.textContent as string).length,
+                messageRole: message.role as string,
+              });
+            }
+          }
+        );
+      }
+    });
+
+    if (conversationFiles.length > 0) {
+      devLog(
+        `📎 Plan Mode: Collected ${conversationFiles.length} file(s) from conversation:`,
+        conversationFiles.map((f) => ({
+          fileName: f.fileName,
+          fileType: f.fileType,
+          sizeKB: Math.round(f.size / 1024),
+        }))
+      );
+    }
+
+    // Process messages to handle attachments (inline text, pass images via experimental_attachments)
+    const processedMessages = messages.map(
+      (message: Record<string, unknown>) => {
+        if (
+          message.experimental_attachments &&
+          Array.isArray(message.experimental_attachments) &&
+          message.experimental_attachments.length > 0
+        ) {
+          // Separate text/document attachments from other attachments
+          const textAttachments: any[] = [];
+          const otherAttachments: any[] = [];
+
+          message.experimental_attachments.forEach(
+            (attachment: Record<string, unknown>) => {
+              const fileType = attachment.fileType as string;
+
+              if (fileType === "text" || fileType === "document") {
+                textAttachments.push(attachment);
+              } else {
+                otherAttachments.push(attachment);
+              }
+            }
+          );
+
+          // Build message content with text attachments indicated
+          let messageContent = message.content as string;
+
+          if (textAttachments.length > 0) {
+            const fileNames = textAttachments.map(
+              (attachment: Record<string, unknown>) => {
+                const fileName = attachment.originalName as string;
+                const fileType = attachment.fileType as string;
+                const fileTypeLabel =
+                  fileType === "text" ? "text file" : "document";
+                return `${fileTypeLabel} "${fileName}"`;
+              }
+            );
+
+            messageContent =
+              messageContent + `\n\n[User uploaded: ${fileNames.join(", ")}]`;
+          }
+
+          // Convert remaining attachments to AI SDK format (only non-text files)
+          const aiSdkAttachments = otherAttachments
+            .map((attachment: Record<string, unknown>) => {
+              const name =
+                (attachment.originalName as string) ||
+                (attachment.filename as string);
+              const contentType =
+                (attachment.mimeType as string) ||
+                (attachment.contentType as string);
+              const url = attachment.url as string;
+
+              // Only include if all required fields are present
+              if (name && contentType && url) {
+                return { name, contentType, url };
+              }
+              return null;
+            })
+            .filter((att) => att !== null);
+
+          return {
+            ...message,
+            content: messageContent,
+            experimental_attachments:
+              aiSdkAttachments.length > 0
+                ? (aiSdkAttachments as any)
+                : undefined,
+          };
+        }
+        return message;
+      }
+    ) as Parameters<typeof streamText>[0]["messages"];
+
+    // Analyze conversation context to provide intelligent hints
+    const conversationContext = analyzeConversationContext(messages);
 
     // Consume base LLM credits (tool-specific credits handled on execute in follow-up)
     try {
@@ -595,8 +776,60 @@ export async function POST(req: NextRequest) {
       devWarn("Plan mode credit consumption failed, proceeding anyway:", e);
     }
 
+    // Build uploaded files section for system prompt with truncation
+    let uploadedFilesSection = "";
+    if (conversationFiles.length > 0) {
+      const MAX_TOTAL_CHARS = 6000;
+      const MAX_PER_FILE = 1500;
+      let totalChars = 0;
+      let truncatedWarning = "";
+
+      uploadedFilesSection = "\n=== UPLOADED FILES ===\n";
+      uploadedFilesSection += `The user has uploaded ${conversationFiles.length} file(s) for this planning session:\n\n`;
+
+      conversationFiles.forEach((file, index) => {
+        const fileHeader = `${index + 1}. ${
+          file.fileType === "text" ? "📄 TEXT" : "📋 DOCUMENT"
+        }: "${file.fileName}" (${Math.round(file.size / 1024)}KB)\n`;
+        uploadedFilesSection += fileHeader;
+
+        // Decide if we include snippet
+        if (totalChars < MAX_TOTAL_CHARS) {
+          const remainingBudget = MAX_TOTAL_CHARS - totalChars;
+          const charsToInclude = Math.min(
+            MAX_PER_FILE,
+            remainingBudget,
+            file.textContent.length
+          );
+
+          if (charsToInclude > 0) {
+            const snippet = file.textContent.substring(0, charsToInclude);
+            const isTruncated = file.textContent.length > charsToInclude;
+            uploadedFilesSection += `Content preview:\n${snippet}${
+              isTruncated
+                ? `\n[... showing ${charsToInclude} of ${file.textContent.length} chars]`
+                : ""
+            }\n\n`;
+            totalChars += charsToInclude + fileHeader.length;
+          } else {
+            uploadedFilesSection += `[Content not included due to context size limits]\n\n`;
+            truncatedWarning =
+              "\nℹ️ Use file_reader tool to fetch full content when needed.";
+          }
+        } else {
+          uploadedFilesSection += `[Content not included due to context size limits]\n\n`;
+          truncatedWarning =
+            "\nℹ️ Use file_reader tool to fetch full content when needed.";
+        }
+      });
+
+      uploadedFilesSection +=
+        truncatedWarning + "\n=== END UPLOADED FILES ===\n";
+    }
+
     const systemPrompt = `You are CappyChat's Plan Mode - a consultative planning assistant that creates artifacts when appropriate.
 
+${uploadedFilesSection}
 === CONTEXT ===
 ${conversationContext.contextHint}
 ${
@@ -630,6 +863,12 @@ ${
 5. **Create** → Only when confirmed/requested
 
 === TOOL USAGE ===
+**file_reader**: Access full uploaded file content when needed
+- Use when you need complete file text for deep analysis
+- Parameters: fileName (exact name) or fileIndex (0-based position)
+- Returns up to 8000 characters; files marked as truncated if larger
+- Call this AFTER describing how you'll use the file content
+
 **retrieval**: Web content analysis for URL-based requirements
 - Use when user provides a URL, asks to analyze a website, or wants to replicate features from an existing site
 - Fetches title, text content, summary, and images from the provided URL
