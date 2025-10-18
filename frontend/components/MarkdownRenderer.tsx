@@ -13,6 +13,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
 } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -23,6 +24,26 @@ import ShikiHighlighter from "react-shiki";
 import type { ComponentProps } from "react";
 import type { ExtraProps } from "react-markdown";
 import { Check, Copy, ExternalLink } from "lucide-react";
+
+// Pre-process markdown to extract and handle details tags
+function preprocessDetailsBlocks(markdown: string): string {
+  // Extract all <details>...</details> blocks
+  const detailsRegex = /<details[^>]*>[\s\S]*?<\/details>/gi;
+  const detailsBlocks: { [key: string]: string } = {};
+  let blockCounter = 0;
+
+  let processed = markdown.replace(detailsRegex, (match) => {
+    const placeholder = `__DETAILS_BLOCK_${blockCounter}__`;
+    detailsBlocks[placeholder] = match;
+    blockCounter++;
+    return placeholder;
+  });
+
+  // Store blocks globally so we can access them later
+  (markdown as any).__detailsBlocks = detailsBlocks;
+
+  return processed;
+}
 
 // Theme detection that supports both default and Capybara dark themes
 function useThemeDetection() {
@@ -68,7 +89,7 @@ const components: Components = {
   pre: ({ children }) => <>{children}</>,
   a: LinkComponent as Components["a"],
   hr: ({ ...props }) => (
-    <hr className="my-6 border-0 h-px bg-ring/30" {...props} />
+    <hr className="my-1 hidden border-0 h-px bg-ring/30" {...props} />
   ),
   table: ({ children, ...props }) => (
     <div className="my-4 overflow-x-auto max-w-full">
@@ -114,6 +135,17 @@ const components: Components = {
       {children}
     </td>
   ),
+  details: ({ children, ...props }) => <details {...props}>{children}</details>,
+  summary: ({ children, ...props }) => <summary {...props}>{children}</summary>,
+  html: ({ value }: any) => {
+    // Handle raw HTML content like <details> and <summary> tags
+    if (value?.includes("<details") || value?.includes("<summary")) {
+      return (
+        <div dangerouslySetInnerHTML={{ __html: value }} className="my-1" />
+      );
+    }
+    return null;
+  },
 };
 
 function CodeBlock({ children, className, ...props }: CodeComponentProps) {
@@ -284,14 +316,63 @@ function parseMarkdownIntoBlocks(markdown: string): string[] {
 }
 
 function PureMarkdownRendererBlock({ content }: { content: string }) {
+  const detailsRegex = /<details[^>]*>[\s\S]*?<\/details>/gi;
+
+  // Memoize the details extraction and content processing
+  const { processedContent, detailsBlocks } = useMemo(() => {
+    const blocks: Map<string, string> = new Map();
+    let counter = 0;
+
+    const processed = content.replace(detailsRegex, (matchedBlock) => {
+      const markerId = `DETAILSMARKER${counter}DETAILSMARKER`;
+      blocks.set(markerId, matchedBlock);
+      counter++;
+      return `\`${markerId}\``;
+    });
+
+    return { processedContent: processed, detailsBlocks: blocks };
+  }, [content]);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || detailsBlocks.size === 0) return;
+
+    // Find and replace all marker code elements
+    setTimeout(() => {
+      const allCodeElements = containerRef.current?.querySelectorAll("code");
+      if (!allCodeElements) return;
+
+      allCodeElements.forEach((codeEl) => {
+        const text = codeEl.textContent || "";
+        const markerId = text.trim();
+
+        // Check if this code element contains a marker
+        if (detailsBlocks.has(markerId)) {
+          const detailsHTML = detailsBlocks.get(markerId) || "";
+          const detailsDiv = document.createElement("div");
+          detailsDiv.innerHTML = detailsHTML;
+          detailsDiv.className = "my-3";
+
+          // Replace the code element with the actual details HTML
+          if (codeEl.parentNode) {
+            codeEl.parentNode.replaceChild(detailsDiv, codeEl);
+          }
+        }
+      });
+    }, 0);
+  }, [content]);
+
   return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm, [remarkMath]]}
-      rehypePlugins={[rehypeKatex]}
-      components={components}
-    >
-      {content}
-    </ReactMarkdown>
+    <div ref={containerRef}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, [remarkMath]]}
+        rehypePlugins={[rehypeKatex]}
+        components={components}
+      >
+        {processedContent}
+      </ReactMarkdown>
+    </div>
   );
 }
 

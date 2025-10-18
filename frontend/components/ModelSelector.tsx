@@ -276,7 +276,7 @@ const PureModelSelector = ({
   const PLAN_MODE_ALLOWED_MODELS: AIModel[] = [
     "Claude Haiku 4.5",
     "Claude Sonnet 4.5",
-    "Gemini 2.5 Flash",
+    // "Gemini 2.5 Flash",
     // "OpenAI 5 Mini",
   ];
 

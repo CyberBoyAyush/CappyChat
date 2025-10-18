@@ -491,34 +491,113 @@ function ZoomableContainer({
   );
 }
 
+function fixMermaidSyntax(code: string): string {
+  let fixed = code;
+
+  // 1. Fix unicode arrows
+  fixed = fixed.replace(/—+>/g, "-->");
+  fixed = fixed.replace(/⟶/g, "-->");
+  fixed = fixed.replace(/→/g, "-->");
+
+  // 2. Fix inline styles to classDef
+  const styleRegex = /^\s*style\s+(\w+)\s+([^\n]+)/gm;
+  const styles = new Map<string, string>();
+  let styleCounter = 0;
+
+  fixed = fixed.replace(styleRegex, (match, nodeId, styleProps) => {
+    const className = `autoStyle${styleCounter++}`;
+    styles.set(className, styleProps);
+    return `class ${nodeId} ${className}`;
+  });
+
+  // 3. Fix: "class SDK,sdkStyle" → "class SDK sdkStyle" (comma before style name)
+  fixed = fixed.replace(/\bclass\s+(\w+)\s*,\s*(\w+)(?=\s|$)/g, "class $1 $2");
+
+  // 4. Fix multiple node assignments with wrong comma placement
+  // "class A, B, C style" → "class A,B,C style"
+  fixed = fixed.replace(
+    /\bclass\s+([\w,\s]+?)\s+(\w+)/g,
+    (match, nodes, styleName) => {
+      const cleanedNodes = nodes.replace(/\s*,\s*/g, ",").trim();
+      return `class ${cleanedNodes} ${styleName}`;
+    }
+  );
+
+  // 5. Add collected classDef declarations at the end
+  if (styles.size > 0) {
+    const classDefs = Array.from(styles.entries())
+      .map(([className, props]) => `classDef ${className} ${props}`)
+      .join("\n");
+    fixed = `${fixed}\n\n${classDefs}`;
+  }
+
+  return fixed;
+}
+
 function MermaidBlock({ code }: { code: string }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [showCode, setShowCode] = React.useState(false);
+  const [usedFallback, setUsedFallback] = React.useState(false);
+  const [wasAutoFixed, setWasAutoFixed] = React.useState(false);
+
+  const fixedCode = React.useMemo(() => {
+    const fixed = fixMermaidSyntax(code);
+    setWasAutoFixed(fixed !== code);
+    return fixed;
+  }, [code]);
 
   React.useEffect(() => {
     let cancelled = false;
     setError(null);
+    setUsedFallback(false);
 
     (async () => {
-      if (!code || typeof window === "undefined") return;
+      if (!fixedCode || typeof window === "undefined") return;
+
       try {
         const mermaid = (await import("mermaid")).default;
-        mermaid.initialize({ startOnLoad: false, securityLevel: "loose" });
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: "loose",
+          theme: "default",
+        });
         const { svg } = await mermaid.render(
           `mmd-${Math.random().toString(36).slice(2)}`,
-          code
+          fixedCode
         );
         if (!cancelled && ref.current) {
           ref.current.innerHTML = svg;
           setError(null);
         }
-      } catch (e) {
-        if (!cancelled) {
-          const errorMsg = e instanceof Error ? e.message : "Failed to render diagram";
-          setError(errorMsg);
-          if (ref.current) {
-            ref.current.innerHTML = "";
+      } catch (nativeError) {
+        console.warn("Native Mermaid failed:", nativeError);
+
+        try {
+          console.log("Trying Kroki fallback...");
+          const encoded = btoa(unescape(encodeURIComponent(fixedCode)));
+          const krokiUrl = `https://kroki.io/mermaid/svg/${encoded}`;
+
+          const response = await fetch(krokiUrl);
+          if (!response.ok) throw new Error(`Kroki: ${response.status}`);
+
+          const svg = await response.text();
+          if (!cancelled && ref.current) {
+            ref.current.innerHTML = svg;
+            setUsedFallback(true);
+            setError(null);
+          }
+        } catch (fallbackError) {
+          console.error("Both renderers failed:", fallbackError);
+          if (!cancelled) {
+            const errorMsg =
+              nativeError instanceof Error
+                ? nativeError.message
+                : "Failed to render diagram";
+            setError(errorMsg);
+            if (ref.current) {
+              ref.current.innerHTML = "";
+            }
           }
         }
       }
@@ -528,7 +607,7 @@ function MermaidBlock({ code }: { code: string }) {
       cancelled = true;
       if (ref.current) ref.current.innerHTML = "";
     };
-  }, [code]);
+  }, [fixedCode]);
 
   if (error) {
     return (
@@ -555,7 +634,7 @@ function MermaidBlock({ code }: { code: string }) {
         {showCode && (
           <div className="mt-3 p-3 bg-background rounded border border-red-200 dark:border-red-800 max-h-80 overflow-auto">
             <pre className="text-xs font-mono text-foreground whitespace-pre-wrap break-words">
-              {code}
+              {fixedCode}
             </pre>
           </div>
         )}
@@ -566,6 +645,12 @@ function MermaidBlock({ code }: { code: string }) {
   return (
     <ZoomableContainer className="m-2">
       <div ref={ref} className="p-2" />
+      {/* {(usedFallback || wasAutoFixed) && (
+        <div className="text-xs text-muted-foreground text-center pb-2">
+          {wasAutoFixed && 'Auto-fixed syntax'}{wasAutoFixed && usedFallback && ' • '}
+          {usedFallback && 'Rendered with fallback'}
+        </div>
+      )} */}
     </ZoomableContainer>
   );
 }

@@ -1073,7 +1073,8 @@ function PureMessage({
                     message.role === "assistant" && (message as any).isPlan;
 
                   return (
-                    isPlanAssistant && !disablePlanBlock && (
+                    isPlanAssistant &&
+                    !disablePlanBlock && (
                       <PlanArtifactsBlock
                         threadId={threadId}
                         messageId={message.id}
@@ -1310,7 +1311,7 @@ function PlanArtifactsBlock({
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <h1 className=" text-sm mb-1 truncate">{artifact.title}</h1>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <span className="text-[12px]  text-muted-foreground">
                       {details.label}
                     </span>
@@ -1327,17 +1328,17 @@ function PlanArtifactsBlock({
                       artifact.typeormEntities?.trim()) && (
                       <div className="flex flex-wrap gap-1.5">
                         {artifact.sqlSchema?.trim() && (
-                          <span className="px-2 py-0.5 text-[8px] sm:text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20">
+                          <span className="px-1 md:px-2 py-0.5 text-[8px] sm:text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20">
                             SQL
                           </span>
                         )}
                         {artifact.prismaSchema?.trim() && (
-                          <span className="px-2 py-0.5 text-[8px] sm:text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20">
+                          <span className="px-1 md:px-2 py-0.5 text-[8px] sm:text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20">
                             Prisma
                           </span>
                         )}
                         {artifact.typeormEntities?.trim() && (
-                          <span className="px-2 py-0.5 text-[8px] sm:text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20">
+                          <span className="px-1 md:px-2 py-0.5 text-[8px] sm:text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20">
                             TypeORM
                           </span>
                         )}

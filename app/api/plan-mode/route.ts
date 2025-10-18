@@ -170,7 +170,7 @@ export async function POST(req: NextRequest) {
     const PLAN_MODE_ALLOWED_MODELS = [
       "Claude Haiku 4.5",
       "Claude Sonnet 4.5",
-      "Gemini 2.5 Flash",
+      // "Gemini 2.5 Flash",
       // "OpenAI 5 Mini",
     ];
     if (!PLAN_MODE_ALLOWED_MODELS.includes(selectedModel)) {
@@ -490,21 +490,31 @@ export async function POST(req: NextRequest) {
       }),
       generate_diagram: tool({
         description:
-          "Generate a Mermaid diagram artifact (ERD, flowchart, sequence, architecture, state machine, user journey). IMPORTANT: Always follow these rules:\n" +
-          "1. START with a valid Mermaid header on line 1:\n" +
-          "   - sequenceDiagram (for sequence diagrams with participants and messages)\n" +
-          "   - flowchart TD or graph TD (for flowcharts with nodes and edges)\n" +
-          "   - classDiagram (for class definitions with properties/methods)\n" +
-          "   - erDiagram or ER_DIAGRAM (for entity-relationship diagrams)\n" +
-          "   - stateDiagram-v2 (for state machines)\n" +
-          "   - journey (for user journey maps)\n" +
-          "2. ENFORCE syntax rules:\n" +
-          "   - Sequence diagrams: Declare all participants first (participant Actor1), then use Actor1->>Actor2: message format.\n" +
-          "   - Flowcharts: Use proper edges (A-->B, A---B, A-.->B). Put free text inside nodes [text] or ((text)), not standalone.\n" +
-          "   - Do NOT mix diagram syntaxes (e.g., sequence arrows in a flowchart).\n" +
-          "3. NEVER include Markdown fences (```mermaid) or HTML comments in the code.\n" +
-          "4. USE ASCII only: Use - for dashes, -> for arrows, not unicode (–, —, →).\n" +
-          "5. Return plain, valid Mermaid syntax ready to render directly.",
+          "Generate a Mermaid diagram artifact (ERD, flowchart, sequence, architecture, state machine, user journey). CRITICAL Syntax Rules:\n" +
+          "\n" +
+          "ARROWS (Use ONLY these):\n" +
+          "✓ --> (solid) | -.-> (dotted) | ==> (thick) | --- (line)\n" +
+          "✗ NEVER: —->, ⟶, →, unicode arrows\n" +
+          "\n" +
+          "STYLING (Use classDef + class, NEVER inline style):\n" +
+          "✓ classDef myStyle fill:#e0f2f7,stroke:#333,stroke-width:2px\n" +
+          "✓ class NodeA myStyle (single)\n" +
+          "✓ class NodeA,NodeB myStyle (multiple, commas BETWEEN nodes only)\n" +
+          "✗ NEVER: style NodeA fill:... | class NodeA,myStyle | class A, B style\n" +
+          "\n" +
+          "CLASS ASSIGNMENT FORMAT (CRITICAL):\n" +
+          "- Single: class A styleClass\n" +
+          "- Multiple: class A,B,C styleClass (NO spaces around commas)\n" +
+          "- Multiple lines: One per line (no commas before style name)\n" +
+          "\n" +
+          "OTHER RULES:\n" +
+          "- NODE IDs: alphanumeric only (A, B, node1, server_db)\n" +
+          "- LABELS: Use quotes for multi-word [My Label] or 'text'\n" +
+          "- SEQUENCE: participant X first, then X->>Y: message\n" +
+          "- FLOWCHARTS: A-->B (connectors required), text in [brackets]\n" +
+          "- NO Markdown fences (```), NO HTML comments\n" +
+          "- Keep under 25 nodes\n" +
+          "- Return ONLY valid Mermaid text (ready to render)",
         parameters: z
           .object({
             type: z

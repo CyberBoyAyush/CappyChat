@@ -1884,3 +1884,131 @@ html {
 svg[aria-roledescription="error"] {
   display: none !important;
 }
+
+/* Details and Summary Styling for Assistant Messages */
+details {
+  margin: 0.25rem 0;
+  padding: 0;
+  background-color: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+details[open] {
+  /* Optional: subtle background when open */
+}
+
+/* Summary styling - compact with chevron */
+summary {
+  font-weight: 600;
+  color: var(--foreground);
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.375rem 0;
+  transition: all 0.2s ease;
+  list-style: none;
+}
+
+summary:hover {
+  opacity: 0.8;
+}
+
+/* Hide default marker */
+summary::marker {
+  display: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Chevron icon styling */
+summary::after {
+  content: "▼";
+  font-size: 0.65em;
+  color: var(--muted-foreground);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+details[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+/* Content inside details tag */
+details > *:not(summary) {
+  margin-top: 0.5rem;
+  padding-left: 0;
+  animation: slideIn 0.2s ease-in-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Prose styling adjustments for details within markdown */
+.prose details {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  padding: 0;
+  background-color: transparent;
+}
+
+.prose summary {
+  font-weight: 600;
+  color: var(--foreground);
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  list-style: none;
+  padding: 0.375rem 0;
+}
+
+.prose summary::marker {
+  display: none;
+}
+
+.prose summary::-webkit-details-marker {
+  display: none;
+}
+
+.prose summary::after {
+  content: "▼";
+  font-size: 0.65em;
+  color: var(--muted-foreground);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.prose details[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+.prose summary:hover {
+  opacity: 0.8;
+}
+
+/* Ensure proper spacing for nested content */
+.prose details > :not(summary):first-of-type {
+  margin-top: 0.25rem;
+}
+
+.prose details > :not(summary):last-child {
+  margin-bottom: 0;
+}
