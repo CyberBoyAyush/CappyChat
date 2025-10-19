@@ -12,6 +12,13 @@ import { devLog, devWarn, devError } from "@/lib/logger";
 import { Client, Databases, ID, Query } from "node-appwrite";
 import { DATABASE_ID, PLAN_ARTIFACTS_COLLECTION_ID } from "@/lib/appwriteDB";
 import { executeRetrieval } from "@/lib/tools/actions";
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestError,
+  logCreditConsumption,
+  flushLogs,
+} from "@/lib/betterstack-logger";
 
 export const maxDuration = 60;
 
@@ -92,6 +99,7 @@ function analyzeConversationContext(messages: any[]): {
 }
 
 export async function POST(req: NextRequest) {
+  const logger = createBetterStackLogger('plan-mode');
   let userId: string | undefined;
   let model: string | undefined;
   let threadId: string | undefined;
@@ -114,6 +122,14 @@ export async function POST(req: NextRequest) {
     model = requestModel;
     threadId = requestThreadId || chatId;
     assistantMessageId = requestAssistantMessageId;
+
+    await logApiRequestStart(logger, '/api/plan-mode', {
+      userId: userId || 'guest',
+      model: model || 'Gemini 2.5 Flash Lite',
+      isGuest: !!isGuest,
+      messageCount: messages?.length || 0,
+      threadId: threadId || 'unknown',
+    });
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -793,6 +809,7 @@ export async function POST(req: NextRequest) {
         isGuest
       );
       if (!ok && !usingBYOK) {
+        await flushLogs(logger);
         return new Response(
           JSON.stringify({
             error: "Insufficient credits",
@@ -801,6 +818,12 @@ export async function POST(req: NextRequest) {
           { status: 403, headers: { "Content-Type": "application/json" } }
         );
       }
+
+      await logCreditConsumption(logger, {
+        userId: userId || 'unknown',
+        model: selectedModel,
+        usingBYOK,
+      });
     } catch (e) {
       devWarn("Plan mode credit consumption failed, proceeding anyway:", e);
     }
@@ -996,6 +1019,12 @@ REMEMBER: Be consultative first. Create production-quality, visually impressive 
     });
   } catch (error) {
     devError("/api/plan-mode error:", error);
+    await logApiRequestError(logger, '/api/plan-mode', error, {
+      userId: userId || 'unknown',
+      model: model || 'unknown',
+      threadId: threadId || 'unknown',
+    });
+    await flushLogs(logger);
     return new NextResponse(
       JSON.stringify({ error: "Internal Server Error" }),
       {

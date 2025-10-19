@@ -9,6 +9,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createCustomerPortalSession } from '@/services/subscription.service';
 import { UserSubscription } from '@/lib/appwrite';
 import { Client, Users } from 'node-appwrite';
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logValidationError,
+  flushLogs,
+} from '@/lib/betterstack-logger';
 
 // Initialize server client for user verification
 const client = new Client()
@@ -51,12 +59,21 @@ const getUserSubscriptionServer = async (userId: string): Promise<UserSubscripti
 };
 
 export async function POST(req: NextRequest) {
+  const logger = createBetterStackLogger('checkout-portal');
+  let userId: string | undefined;
+
   try {
     const body = await req.json();
-    const { userId } = body;
+    userId = body.userId;
+
+    await logApiRequestStart(logger, '/api/checkout/portal', {
+      userId: userId || 'unknown',
+    });
 
     // Validate required fields
     if (!userId) {
+      await logValidationError(logger, '/api/checkout/portal', 'userId', 'User ID is required');
+      await flushLogs(logger);
       return NextResponse.json(
         { error: 'User ID is required' },
         { status: 400 }
@@ -67,6 +84,8 @@ export async function POST(req: NextRequest) {
     try {
       await users.get(userId);
     } catch {
+      await logValidationError(logger, '/api/checkout/portal', 'user', 'User not found');
+      await flushLogs(logger);
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -75,8 +94,10 @@ export async function POST(req: NextRequest) {
 
     // Get user's subscription to find customer ID
     const subscription = await getUserSubscriptionServer(userId);
-    
+
     if (!subscription || !subscription.customerId) {
+      await logValidationError(logger, '/api/checkout/portal', 'subscription', 'No active subscription found');
+      await flushLogs(logger);
       return NextResponse.json(
         { error: 'No active subscription found. Please subscribe first.' },
         { status: 404 }
@@ -91,6 +112,12 @@ export async function POST(req: NextRequest) {
     // Create customer portal session
     const { portalUrl } = await createCustomerPortalSession(subscription.customerId);
 
+    await logApiRequestSuccess(logger, '/api/checkout/portal', {
+      userId,
+      customerId: subscription.customerId,
+    });
+    await flushLogs(logger);
+
     return NextResponse.json({
       success: true,
       portalUrl,
@@ -99,6 +126,10 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('Error creating customer portal:', error);
+    await logApiRequestError(logger, '/api/checkout/portal', error, {
+      userId: userId || 'unknown',
+    });
+    await flushLogs(logger);
     
     return NextResponse.json(
       { 
