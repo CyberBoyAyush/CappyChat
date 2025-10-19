@@ -1,12 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AppwriteDB } from '@/lib/appwriteDB';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logValidationError,
+  flushLogs,
+} from '@/lib/betterstack-logger';
 
 export async function POST(request: NextRequest) {
+  const logger = createBetterStackLogger('share-create');
+  let threadId: string | undefined;
+  let userId: string | undefined;
+
   try {
-    const { threadId } = await request.json();
+    const body = await request.json();
+    threadId = body.threadId;
+
+    await logApiRequestStart(logger, '/api/share/create', {
+      threadId: threadId || 'unknown',
+    });
 
     if (!threadId) {
+      await logValidationError(logger, '/api/share/create', 'threadId', 'Thread ID is required');
+      await flushLogs(logger);
       return NextResponse.json(
         { error: 'Thread ID is required' },
         { status: 400 }
@@ -14,8 +33,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current user ID to verify ownership
-    const userId = await AppwriteDB.getCurrentUserId();
+    userId = await AppwriteDB.getCurrentUserId();
     if (!userId) {
+      await logValidationError(logger, '/api/share/create', 'userId', 'Authentication required');
+      await flushLogs(logger);
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -25,6 +46,8 @@ export async function POST(request: NextRequest) {
     // Verify thread exists and belongs to user
     const thread = await AppwriteDB.getThread(threadId);
     if (!thread) {
+      await logValidationError(logger, '/api/share/create', 'thread', 'Thread not found');
+      await flushLogs(logger);
       return NextResponse.json(
         { error: 'Thread not found' },
         { status: 404 }
@@ -42,6 +65,13 @@ export async function POST(request: NextRequest) {
       sharedAt
     });
 
+    await logApiRequestSuccess(logger, '/api/share/create', {
+      threadId,
+      userId,
+      shareId,
+    });
+    await flushLogs(logger);
+
     return NextResponse.json({
       success: true,
       shareId,
@@ -50,6 +80,11 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error creating share:', error);
+    await logApiRequestError(logger, '/api/share/create', error, {
+      threadId: threadId || 'unknown',
+      userId: userId || 'unknown',
+    });
+    await flushLogs(logger);
     return NextResponse.json(
       { error: 'Failed to create share' },
       { status: 500 }

@@ -1,12 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AppwriteServerDB } from '@/lib/appwriteServer';
 import { DBMessage } from '@/lib/appwriteDB';
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logValidationError,
+  flushLogs,
+} from '@/lib/betterstack-logger';
 
 export async function POST(request: NextRequest) {
+  const logger = createBetterStackLogger('share-branch');
+  let shareId: string | undefined;
+  let userId: string | undefined;
+
   try {
-    const { shareId, title, userId } = await request.json();
+    const body = await request.json();
+    shareId = body.shareId;
+    const title = body.title;
+    userId = body.userId;
+
+    await logApiRequestStart(logger, '/api/share/branch', {
+      shareId: shareId || 'unknown',
+      userId: userId || 'unknown',
+    });
 
     if (!shareId) {
+      await logValidationError(logger, '/api/share/branch', 'shareId', 'Share ID is required');
+      await flushLogs(logger);
       return NextResponse.json(
         { error: 'Share ID is required' },
         { status: 400 }
@@ -14,6 +36,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (!userId) {
+      await logValidationError(logger, '/api/share/branch', 'userId', 'User ID is required');
+      await flushLogs(logger);
       return NextResponse.json(
         { error: 'User ID is required' },
         { status: 400 }
@@ -107,6 +131,15 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Branch created successfully with messages and artifacts:', newThreadId);
 
+    await logApiRequestSuccess(logger, '/api/share/branch', {
+      shareId,
+      userId,
+      newThreadId,
+      messageCount: originalMessages.length,
+      artifactCount: originalArtifacts.length,
+    });
+    await flushLogs(logger);
+
     return NextResponse.json({
       success: true,
       threadId: newThreadId,
@@ -115,6 +148,11 @@ export async function POST(request: NextRequest) {
 
   } catch (error: unknown) {
     console.error('❌ Error branching shared thread:', error);
+    await logApiRequestError(logger, '/api/share/branch', error, {
+      shareId: shareId || 'unknown',
+      userId: userId || 'unknown',
+    });
+    await flushLogs(logger);
     return NextResponse.json(
       {
         error: 'Failed to branch shared thread',

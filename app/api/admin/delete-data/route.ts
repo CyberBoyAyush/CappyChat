@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Client, Databases, Query } from 'node-appwrite';
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logAuthEvent,
+  flushLogs,
+} from '@/lib/betterstack-logger';
 
 // Initialize server client
 const client = new Client()
@@ -10,11 +18,28 @@ const client = new Client()
 const databases = new Databases(client);
 
 export async function POST(req: NextRequest) {
+  const logger = createBetterStackLogger('admin-delete-data');
+  let action: string | undefined;
+  let userId: string | undefined;
+
   try {
-    const { adminKey, action, userId, email } = await req.json();
-    
+    const body = await req.json();
+    const { adminKey, action: requestAction, userId: requestUserId, email } = body;
+    action = requestAction;
+    userId = requestUserId;
+
+    await logApiRequestStart(logger, '/api/admin/delete-data', {
+      action: action || 'unknown',
+      userId: userId || 'unknown',
+    });
+
     // Verify admin access
     if (!adminKey || adminKey !== process.env.ADMIN_SECRET_KEY) {
+      await logAuthEvent(logger, 'admin_access_denied', {
+        endpoint: '/api/admin/delete-data',
+        action: action || 'unknown',
+      });
+      await flushLogs(logger);
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -33,7 +58,7 @@ export async function POST(req: NextRequest) {
         }
 
         let targetUserId = userId;
-        
+
         // If email provided, find user ID
         if (email && !userId) {
           const users = new (await import('node-appwrite')).Users(client);
@@ -55,8 +80,22 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        if (!targetUserId) {
+          return NextResponse.json(
+            { error: 'User ID could not be determined' },
+            { status: 400 }
+          );
+        }
+
         const deletionResult = await deleteAllUserData(targetUserId, databaseId);
-        
+
+        await logApiRequestSuccess(logger, '/api/admin/delete-data', {
+          action: 'deleteUserData',
+          userId: targetUserId,
+          deletedItems: deletionResult,
+        });
+        await flushLogs(logger);
+
         return NextResponse.json({
           success: true,
           message: `Deleted user data for ${targetUserId}`,
@@ -65,7 +104,13 @@ export async function POST(req: NextRequest) {
 
       case 'deleteAllData':
         const allDataResult = await deleteAllDatabaseData(databaseId);
-        
+
+        await logApiRequestSuccess(logger, '/api/admin/delete-data', {
+          action: 'deleteAllData',
+          deletedItems: allDataResult,
+        });
+        await flushLogs(logger);
+
         return NextResponse.json({
           success: true,
           message: 'Deleted all database data (except user accounts)',
@@ -73,6 +118,7 @@ export async function POST(req: NextRequest) {
         });
 
       default:
+        await flushLogs(logger);
         return NextResponse.json(
           { error: 'Invalid action' },
           { status: 400 }
@@ -80,6 +126,11 @@ export async function POST(req: NextRequest) {
     }
   } catch (error) {
     console.error('Error in admin delete user data:', error);
+    await logApiRequestError(logger, '/api/admin/delete-data', error, {
+      action: action || 'unknown',
+      userId: userId || 'unknown',
+    });
+    await flushLogs(logger);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

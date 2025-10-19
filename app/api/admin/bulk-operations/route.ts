@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Client, Users, Query } from 'node-appwrite';
 import { getUserPreferencesServer } from '@/lib/tierSystem';
 import { TIER_LIMITS } from '@/lib/appwrite';
+import {
+  createBetterStackLogger,
+  logApiRequestStart,
+  logApiRequestSuccess,
+  logApiRequestError,
+  logAuthEvent,
+  flushLogs,
+} from '@/lib/betterstack-logger';
 
 // Initialize server client
 const client = new Client()
@@ -12,11 +20,25 @@ const client = new Client()
 const users = new Users(client);
 
 export async function POST(req: NextRequest) {
+  const logger = createBetterStackLogger('admin-bulk-operations');
+  let action: string | undefined;
+
   try {
-    const { adminKey, action, batchSize = 25, maxTime = 25000 } = await req.json();
+    const body = await req.json();
+    const { adminKey, action: requestAction, batchSize = 25, maxTime = 25000 } = body;
+    action = requestAction;
+
+    await logApiRequestStart(logger, '/api/admin/bulk-operations', {
+      action: action || 'unknown',
+    });
 
     // Verify admin access
     if (!adminKey || adminKey !== process.env.ADMIN_SECRET_KEY) {
+      await logAuthEvent(logger, 'admin_access_denied', {
+        endpoint: '/api/admin/bulk-operations',
+        action: action || 'unknown',
+      });
+      await flushLogs(logger);
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -30,6 +52,12 @@ export async function POST(req: NextRequest) {
     switch (action) {
       case 'logoutAllUsersChunked':
         const result = await logoutAllUsersChunked(validatedBatchSize, validatedMaxTime);
+        await logApiRequestSuccess(logger, '/api/admin/bulk-operations', {
+          action: 'logoutAllUsersChunked',
+          processedUsers: result.processedUsers,
+          loggedOutUsers: result.loggedOutUsers,
+        });
+        await flushLogs(logger);
         return NextResponse.json({
           success: true,
           message: `Processed ${result.processedUsers} users, logged out ${result.loggedOutUsers} users`,
@@ -38,6 +66,11 @@ export async function POST(req: NextRequest) {
 
       case 'getUserCount':
         const count = await getTotalUserCount();
+        await logApiRequestSuccess(logger, '/api/admin/bulk-operations', {
+          action: 'getUserCount',
+          totalUsers: count,
+        });
+        await flushLogs(logger);
         return NextResponse.json({
           success: true,
           totalUsers: count
@@ -45,6 +78,11 @@ export async function POST(req: NextRequest) {
 
       case 'getAllUsers':
         const allUsers = await getAllUsers();
+        await logApiRequestSuccess(logger, '/api/admin/bulk-operations', {
+          action: 'getAllUsers',
+          userCount: allUsers.length,
+        });
+        await flushLogs(logger);
         return NextResponse.json({
           success: true,
           users: allUsers
@@ -52,6 +90,11 @@ export async function POST(req: NextRequest) {
 
       case 'resetAllUserLimits':
         const resetCount = await resetAllUserLimits();
+        await logApiRequestSuccess(logger, '/api/admin/bulk-operations', {
+          action: 'resetAllUserLimits',
+          resetCount,
+        });
+        await flushLogs(logger);
         return NextResponse.json({
           success: true,
           message: `Monthly reset completed for ${resetCount} users`,
@@ -59,6 +102,7 @@ export async function POST(req: NextRequest) {
         });
 
       default:
+        await flushLogs(logger);
         return NextResponse.json(
           { error: 'Invalid action' },
           { status: 400 }
@@ -66,6 +110,10 @@ export async function POST(req: NextRequest) {
     }
   } catch (error) {
     console.error('Error in bulk operations:', error);
+    await logApiRequestError(logger, '/api/admin/bulk-operations', error, {
+      action: action || 'unknown',
+    });
+    await flushLogs(logger);
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
