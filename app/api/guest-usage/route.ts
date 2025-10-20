@@ -19,17 +19,17 @@ export async function GET(req: NextRequest) {
   try {
     await logApiRequestStart(logger, '/api/guest-usage', {});
 
-    const usage = getGuestUsage(req);
+    const usage = await getGuestUsage(req);
 
     await logApiRequestSuccess(logger, '/api/guest-usage', {
-      messagesUsed: usage?.count || 0,
-      maxMessages: usage?.maxMessages || 2,
+      messagesUsed: usage.count,
+      maxMessages: usage.maxMessages,
     });
     await flushLogs(logger);
 
     return NextResponse.json({
-      messagesUsed: usage?.count || 0,
-      maxMessages: usage?.maxMessages || 2,
+      messagesUsed: usage.count,
+      maxMessages: usage.maxMessages,
     });
   } catch (error) {
     console.error('[GuestUsage] Error getting usage:', error);

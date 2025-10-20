@@ -34,6 +34,7 @@
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.8.1",
     "@types/multer": "^1.4.13",
+    "@upstash/redis": "^1.35.6",
     "@vercel/analytics": "^1.5.0",
     "ai": "^4.3.16",
     "appwrite": "^18.1.1",
