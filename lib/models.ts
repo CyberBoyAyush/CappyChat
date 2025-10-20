@@ -22,6 +22,7 @@ export const AI_MODELS = [
   "Grok Code Fast 1",
   "Kimi K2",
   "Gemini Nano Banana",
+  "OpenAI GPT-5 Image Mini",
 ] as const;
 
 export type AIModel = (typeof AI_MODELS)[number];
@@ -48,6 +49,7 @@ export type ModelConfig = {
   isFast: boolean;
   isImageGeneration?: boolean;
   image2imageGen?: boolean;
+  imageGenCreditCost?: number;
   description: string;
 };
 
@@ -359,8 +361,26 @@ export const MODEL_CONFIGS = {
     isFast: true,
     isImageGeneration: true,
     image2imageGen: true,
+    imageGenCreditCost: 10,
     description:
       "Fast AI image generation with Gemini 2.5 Flash via OpenRouter",
+  },
+  "OpenAI GPT-5 Image Mini": {
+    modelId: "openai/gpt-5-image-mini",
+    provider: "openrouter",
+    displayName: "OpenAI GPT-5 Image Mini",
+    iconType: "openai",
+    company: "OpenAI",
+    isPremium: true,
+    isSuperPremium: false,
+    hasReasoning: false,
+    isFileSupported: true,
+    isFast: false,
+    isImageGeneration: true,
+    image2imageGen: true,
+    imageGenCreditCost: 5,
+    description:
+      "Fast and efficient image generation from OpenAI via OpenRouter",
   },
 } as const satisfies Record<AIModel, ModelConfig>;
 
@@ -369,7 +389,7 @@ export const getModelConfig = (modelName: AIModel): ModelConfig => {
   if (!config) {
     console.error(
       `Model config not found for: ${modelName}. Available models:`,
-      Object.keys(MODEL_CONFIGS)
+      Object.keys(MODEL_CONFIGS),
     );
     // Return a fallback config for the first available model
     return MODEL_CONFIGS["Gemini 2.5 Flash Lite"];

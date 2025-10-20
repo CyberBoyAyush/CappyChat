@@ -204,6 +204,18 @@ const ModelDescriptionPanel = ({ model }: { model: AIModel }) => {
               <span>File Upload Support</span>
             </div>
           )}
+          {modelConfig.isImageGeneration && modelConfig.imageGenCreditCost && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="w-1.5 h-1.5 rounded-full bg-pink-500"></div>
+              <span>{modelConfig.imageGenCreditCost} credits per image</span>
+            </div>
+          )}
+          {!modelConfig.isImageGeneration && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
+              <span>1 credit per message</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
