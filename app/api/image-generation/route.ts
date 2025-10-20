@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { canUserUseModel, consumeCredits } from '@/lib/tierSystem';
 import { prodError } from '@/lib/logger';
 import { CloudinaryService } from '@/lib/cloudinary';
+import { getModelConfig, type AIModel } from '@/lib/models';
 import {
   createBetterStackLogger,
   logApiRequestStart,
@@ -85,13 +86,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`🎨 Generating image with model: ${model}`);
+    // Get the actual model ID from the display name
+    const modelConfig = getModelConfig(model as AIModel);
+    const modelId = modelConfig.modelId;
+
+    console.log(`🎨 Generating image with model: ${model} (${modelId})`);
     console.log(`📝 Prompt: ${prompt}`);
     console.log(`📐 Dimensions: ${width}x${height}`);
     console.log(`💬 Conversation history: ${conversationHistory.length} messages`);
 
     // Prepare messages for OpenRouter with conversation history
     const messages: any[] = [];
+
+    // Add system prompt for OpenAI models to ensure image generation
+    if (modelId.includes('openai')) {
+      messages.push({
+        role: 'system',
+        content: 'You are an image generation AI. When the user provides a prompt, you MUST generate an image. Do not ask for clarification or provide text responses. Always generate the requested image directly.'
+      });
+    }
 
     // Add conversation history for context
     if (conversationHistory.length > 0) {
@@ -150,10 +163,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Prepare prompt for OpenAI models - they need more explicit instruction
+    let finalPrompt = prompt;
+    if (modelId.includes('openai')) {
+      finalPrompt = `Generate an image: ${prompt}`;
+    }
+
     // Add current user prompt
     messages.push({
       role: 'user',
-      content: prompt
+      content: finalPrompt
     });
 
     // Add image attachments to current message if provided (for image-to-image generation)
@@ -195,7 +214,7 @@ export async function POST(req: NextRequest) {
         'X-Title': 'AtChat'
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-image-preview',
+        model: modelId,
         messages,
         modalities: ['image', 'text']
       })

@@ -353,7 +353,9 @@ export const canUserUseModel = async (
     );
 
     const modelConfig = getModelConfig(model);
-    const creditsRequired = modelConfig.isImageGeneration ? 10 : 1;
+    const creditsRequired = modelConfig.isImageGeneration 
+      ? (modelConfig.imageGenCreditCost || 10)
+      : 1;
     console.log(
       `[TierSystem] Model requires ${creditsRequired} credit(s) (Image Gen: ${modelConfig.isImageGeneration})`
     );
@@ -457,7 +459,9 @@ export const consumeCredits = async (
     }
 
     const modelConfig = getModelConfig(model);
-    const creditsToConsume = modelConfig.isImageGeneration ? 10 : 1;
+    const creditsToConsume = modelConfig.isImageGeneration 
+      ? (modelConfig.imageGenCreditCost || 10)
+      : 1;
     console.log(
       `[TierSystem] Consuming ${creditsToConsume} credit(s) for model: ${model} (Image Gen: ${modelConfig.isImageGeneration})`
     );
