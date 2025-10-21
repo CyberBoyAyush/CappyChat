@@ -12,7 +12,7 @@
 
 ---
 
-**🎯 High-Performance • 🔄 Real-Time Sync • 🤖 30+ AI Models • ⚡ Sub-100ms Response**
+**🎯 High-Performance • 🔄 Real-Time Sync • 🤖 25+ AI Models • ⚡ Sub-100ms Response**
 
 [**🌐 Live Demo**](https://cappychat.com) • [**📚 Documentation**](docs/Project.md) • [**🔧 API Reference**](#api-documentation) • [**🤝 Contributing**](#contributing)
 
