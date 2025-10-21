@@ -5,7 +5,7 @@
  * This file contains the current version and detailed changelog entries.
  */
 
-export const CURRENT_VERSION = "4.0.5";
+export const CURRENT_VERSION = "4.1.0";
 
 export interface ChangelogEntry {
   version: string;
@@ -22,9 +22,96 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "4.1.0",
+    date: "2025-10-21",
+    isLatest: true,
+    features: [
+      {
+        type: "new",
+        title: "Plan Mode with AI Artifacts",
+        description:
+          "Introduced Plan Mode for creating interactive diagrams, flowcharts, and visualizations using Mermaid syntax. Features include real-time artifact generation, side panel viewer with zoom/pan controls, and seamless sharing capabilities.",
+        icon: "Brain",
+        color: "purple",
+      },
+      {
+        type: "new",
+        title: "URL Retrieval Tool",
+        description:
+          "Added URL retrieval tool for comprehensive web content analysis with live crawling, AI-powered summaries, and metadata extraction using Exa API integration.",
+        icon: "Globe",
+        color: "blue",
+      },
+      {
+        type: "new",
+        title: "Upstash Redis Rate Limiting",
+        description:
+          "Implemented persistent guest rate limiting using Upstash Redis for reliable IP-based usage tracking across serverless functions with automatic TTL expiration.",
+        icon: "Shield",
+        color: "red",
+      },
+      {
+        type: "new",
+        title: "Better Stack Logging",
+        description:
+          "Integrated Better Stack logging across all API endpoints with structured logging for request lifecycle, validation errors, rate limiting, and credit consumption for enhanced observability.",
+        icon: "Monitor",
+        color: "green",
+      },
+      {
+        type: "new",
+        title: "PDF Thumbnail Preview",
+        description:
+          "Added PDF thumbnail generation and preview functionality for better file visualization and management in chat conversations.",
+        icon: "Upload",
+        color: "orange",
+      },
+      {
+        type: "new",
+        title: "Enhanced Image Generation",
+        description:
+          "Added new image generation models to CappyChat for improved visual content creation with better quality and faster generation times.",
+        icon: "ImageIcon",
+        color: "pink",
+      },
+      {
+        type: "improvement",
+        title: "Enhanced Markdown Rendering",
+        description:
+          "Improved Markdown renderer with full table support, Mermaid diagram rendering with error handling, and enhanced code block visibility controls.",
+        icon: "BookOpen",
+        color: "blue",
+      },
+      {
+        type: "improvement",
+        title: "Model Selection Restrictions",
+        description:
+          "Enhanced model selector with intelligent restrictions for Plan Mode, file support indicators, and improved model availability based on conversation context.",
+        icon: "Settings",
+        color: "yellow",
+      },
+      {
+        type: "improvement",
+        title: "Plan Artifact Management",
+        description:
+          "Implemented comprehensive plan artifact handling with server-side retrieval, creation, deletion by thread or ID, and real-time updates in shared conversations.",
+        icon: "FolderOpen",
+        color: "purple",
+      },
+      {
+        type: "improvement",
+        title: "Enhanced UI/UX",
+        description:
+          "Improved Plan Mode layout with better spacing, styled blockquotes for light/dark modes, and enhanced artifact viewer with zoom and pan functionality.",
+        icon: "Palette",
+        color: "pink",
+      },
+    ],
+  },
+  {
     version: "4.0.5",
     date: "2025-10-05",
-    isLatest: true,
+    isLatest: false,
     features: [
       {
         type: "new",
