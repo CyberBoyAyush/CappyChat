@@ -592,7 +592,9 @@ export default function ChatInterface({
   // Create stable signal for plan messages - includes isPlan flag to trigger rerun when it changes
   const planMessageSignal = useMemo(() => {
     const planMessages = messages.filter((msg) => (msg as any).isPlan);
-    return `${messages.length}_${planMessages.length}_${planMessages.map(m => m.id).join(',')}`;
+    return `${messages.length}_${planMessages.length}_${planMessages
+      .map((m) => m.id)
+      .join(",")}`;
   }, [messages]);
 
   // Preload Plan Mode artifacts when messages with isPlan flag are detected
@@ -649,7 +651,10 @@ export default function ChatInterface({
         // Panel is closed, but artifacts arrived - auto-open panel for the latest artifact
         const latestArtifact = updatedArtifacts[updatedArtifacts.length - 1];
         if (latestArtifact) {
-          devLog("[ChatInterface] Auto-opening plan artifacts panel for new artifacts:", latestArtifact.messageId);
+          devLog(
+            "[ChatInterface] Auto-opening plan artifacts panel for new artifacts:",
+            latestArtifact.messageId
+          );
           setPlanArtifactPanel({
             messageId: latestArtifact.messageId,
             artifacts: updatedArtifacts.filter(
@@ -2001,7 +2006,7 @@ export default function ChatInterface({
             </div>
           </div>
         ) : (
-          <div className="mx-auto flex justify-center px-4 py-6">
+          <div className="mx-auto flex justify-center px-4 pt-6 pb-12">
             <ChatMessageDisplay
               threadId={threadId}
               messages={displayMessages}
