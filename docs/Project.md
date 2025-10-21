@@ -48,22 +48,28 @@ Welcome to the comprehensive documentation for CappyChat (also referred to as At
 - **Multi‑Model AI Support**: OpenRouter, OpenAI, Google, Anthropic, and more
 - **Real‑Time Sync**: Instant synchronization of messages/threads across devices and tabs
 - **Local‑First Architecture**: IndexedDB (via Dexie) for snappy UX with cloud sync
+- **Plan Mode**: Create interactive diagrams, flowcharts, and MVPs with AI artifacts
+  - **Mermaid Diagrams**: ERDs, flowcharts, sequence diagrams, architecture diagrams
+  - **MVP Generation**: HTML/CSS/JS artifacts with multiple framework support
+  - **Artifact Viewer**: Resizable side panel with zoom/pan controls
+  - **Real-time Updates**: Live artifact generation and updates
 - **Image Generation**: Text‑to‑image and image‑to‑image workflows
 - **Voice Input**: Speech‑to‑text (OpenAI Whisper)
 - **Mobile‑First Design**: Fully responsive UI
 - **Project Management**: Organize chats into projects with custom prompts
-- **File Uploads**: Attach files; AI can analyze content
+- **File Uploads**: Attach files with PDF thumbnails; AI can analyze content
 - **Web Search**: Intelligent tool calling system with Parallel AI, Tavily, and Exa
   - **Model-Driven**: AI automatically selects appropriate tools
   - **Web Search**: Multi-query search with image support
   - **Retrieval**: Live website crawling with AI summaries
   - **Weather**: Real-time weather data for any location
   - **Citations**: Rich, clickable citations with source links
-- **Markdown & Code**: Rich Markdown, syntax highlight, math via KaTeX
-- **Guest Mode**: Try without an account
+- **Markdown & Code**: Rich Markdown, syntax highlight, math via KaTeX, Mermaid diagrams
+- **Guest Mode**: Try without an account (with Upstash Redis rate limiting)
 - **Authentication**: Email/password + OAuth (Google, GitHub)
 - **Session Management**: Monitor/manage active sessions
 - **Admin Dashboard**: Admin tools for users, limits, data
+- **Observability**: Better Stack logging for enhanced monitoring and debugging
 
 ---
 
@@ -83,7 +89,10 @@ Welcome to the comprehensive documentation for CappyChat (also referred to as At
 - Next.js API Routes (TypeScript)
 - Appwrite Database + Realtime + Auth
 - Cloudinary (uploads)
-- AI: OpenRouter, OpenAI, Runware, Tavily
+- AI: OpenRouter, OpenAI, Google Gemini
+- Search: Parallel AI, Tavily, Exa
+- Logging: Better Stack
+- Rate Limiting: Upstash Redis
 
 ### Local Storage
 - IndexedDB via Dexie.js
@@ -572,6 +581,198 @@ The AI will automatically learn to use the new tool!
 
 ---
 
+## 9.1) Plan Mode & AI Artifacts
+
+### Overview
+Plan Mode is an advanced feature that allows users to create interactive diagrams, flowcharts, and minimal viable products (MVPs) with AI assistance. It uses a consultative approach where the AI helps gather requirements before generating artifacts.
+
+### Architecture
+
+```mermaid
+graph TB
+    A[User Request] --> B[Plan Mode API]
+    B --> C{AI Analysis}
+    C -->|Diagram| D[create_diagram Tool]
+    C -->|MVP| E[create_mvp Tool]
+    D --> F[Generate Mermaid Code]
+    E --> G[Generate HTML/CSS/JS]
+    F --> H[Store in plan_artifacts Collection]
+    G --> H
+    H --> I[Real-time Update]
+    I --> J[Artifact Viewer Panel]
+```
+
+### Artifact Types
+
+#### 1. Diagrams
+- **Supported Types**:
+  - ERD (Entity Relationship Diagrams)
+  - Flowcharts
+  - Sequence Diagrams
+  - Architecture Diagrams
+  - State Machines
+  - User Journey Maps
+- **Format**: Mermaid syntax only
+- **Additional Data**: SQL schema, Prisma schema (for ERDs)
+- **Rendering**: Client-side Mermaid rendering with error handling
+
+#### 2. MVPs (Minimal Viable Products)
+- **Frameworks**: Vanilla JS, React, Svelte, Vue
+- **Components**: HTML, CSS, JavaScript
+- **Themes**: Light and Dark mode support
+- **Features**: Production-quality, visually impressive UIs
+
+### Implementation Details
+
+#### API Endpoint (`app/api/plan-mode/route.ts`)
+The Plan Mode API uses Vercel AI SDK's tool calling system:
+
+```typescript
+const buildPlanTools = (ctx) => ({
+  create_mvp: tool({
+    description: "Generate a minimal MVP front-end artifact",
+    parameters: z.object({
+      title: z.string(),
+      description: z.string(),
+      framework: z.enum(["vanilla", "react", "svelte", "vue"]),
+      theme: z.enum(["light", "dark"]),
+      htmlCode: z.string(),
+      cssCode: z.string(),
+      jsCode: z.string(),
+    }),
+    execute: async (params) => {
+      // Generate and persist MVP artifact
+      return { artifactId, success: true };
+    },
+  }),
+
+  create_diagram: tool({
+    description: "Generate a diagram using Mermaid syntax",
+    parameters: z.object({
+      type: z.enum(["erd", "flowchart", "sequence", "architecture", "state_machine", "user_journey"]),
+      title: z.string(),
+      description: z.string(),
+      diagramCode: z.string(), // Mermaid syntax
+      sqlSchema: z.string().optional(),
+      prismaSchema: z.string().optional(),
+    }),
+    execute: async (params) => {
+      // Generate and persist diagram artifact
+      return { artifactId, success: true };
+    },
+  }),
+});
+```
+
+#### Database Schema (`plan_artifacts` Collection)
+
+**Required Fields:**
+- `artifactId`: Unique identifier
+- `threadId`: Conversation thread ID
+- `messageId`: Assistant message ID that generated the artifact
+- `userId`: Owner user ID
+- `type`: "mvp" or "diagram"
+- `title`: Human-readable title
+- `version`: Version number (starts at 1)
+
+**MVP Fields:**
+- `htmlCode`, `cssCode`, `jsCode`: Code content
+- `framework`: Framework type
+- `theme`: Light or dark
+
+**Diagram Fields:**
+- `diagramType`: Type of diagram
+- `diagramCode`: Mermaid syntax (canonical)
+- `outputFormat`: Always "mermaid"
+- `sqlSchema`, `prismaSchema`: Optional schemas
+
+See `docs/plan_artifacts_db.md` for complete schema documentation.
+
+#### Artifact Viewer Component
+
+The `ArtifactViewer` component provides:
+- **Resizable Side Panel**: Drag to resize, mobile-optimized
+- **Zoom & Pan Controls**: For diagrams
+- **Code/Preview Toggle**: For MVPs
+- **Multiple Artifact Support**: Switch between artifacts in same message
+- **Real-time Updates**: Live updates as artifacts are generated
+
+```typescript
+<ArtifactViewer
+  artifact={artifact}
+  view="preview" // or "code"
+  setView={setView}
+  codeTab="html" // or "css", "js"
+  setCodeTab={setCodeTab}
+/>
+```
+
+### User Experience
+
+#### 1. Consultative Approach
+The AI follows a consultative process:
+1. Understand user requirements
+2. Ask clarifying questions if needed
+3. Confirm approach before generating
+4. Generate high-quality artifacts
+
+#### 2. Real-time Generation
+- Streaming text responses during generation
+- Artifact appears in side panel when complete
+- Multiple artifacts can be generated in one conversation
+
+#### 3. Artifact Management
+- View artifacts in resizable side panel
+- Switch between multiple artifacts
+- Zoom and pan for diagrams
+- Toggle between code and preview for MVPs
+- Share artifacts with conversation sharing
+
+### Model Restrictions
+
+Plan Mode has specific model requirements:
+- **Allowed Models**: High-capability models only (GPT-5, Gemini 2.5 Pro, Claude 4, etc.)
+- **File Support**: Disabled for most models in Plan Mode
+- **Credit Cost**: 3-5 credits per artifact generation
+
+### Configuration
+
+#### Environment Variables
+```bash
+# Required for Plan Mode
+OPENROUTER_API_KEY=your_openrouter_key
+APPWRITE_API_KEY=your_appwrite_key
+
+# Collection ID
+NEXT_PUBLIC_APPWRITE_PLAN_ARTIFACTS_COLLECTION_ID=plan_artifacts
+```
+
+#### System Prompt
+The Plan Mode system prompt emphasizes:
+- Consultative approach
+- Production-quality output
+- Mermaid-only diagrams
+- Clear, professional code
+- Proper error handling
+
+### Benefits
+
+1. **Interactive Visualizations**: Create diagrams without manual coding
+2. **Rapid Prototyping**: Generate MVPs quickly
+3. **AI-Assisted Design**: Get help with architecture and design decisions
+4. **Shareable Artifacts**: Share diagrams and MVPs with others
+5. **Version Control**: Track artifact versions over time
+
+### Adding New Artifact Types
+
+To add a new artifact type:
+1. Define tool in `buildPlanTools()` function
+2. Update `PlanArtifact` interface in `lib/appwriteDB.ts`
+3. Add rendering logic in `ArtifactViewer.tsx`
+4. Update database schema in Appwrite console
+
+---
+
 ## 10) Session Management & Authentication Improvements
 
 Issues addressed:
@@ -908,6 +1109,22 @@ git checkout -b feature/your-feature
 ---
 
 ## 24) Recent Updates & New Features
+
+### Plan Mode & AI Artifacts (v4.1.0)
+- **Plan Mode**: Interactive diagram and MVP creation with AI assistance
+- **Mermaid Diagrams**: Support for ERDs, flowcharts, sequence diagrams, architecture diagrams, state machines, and user journeys
+- **MVP Generation**: Create HTML/CSS/JS artifacts with vanilla, React, Svelte, or Vue frameworks
+- **Artifact Viewer**: Resizable side panel with zoom/pan controls and code/preview toggle
+- **Real-time Updates**: Live artifact generation with streaming updates
+- **Artifact Management**: Server-side retrieval, creation, deletion by thread or ID
+- **Shared Artifacts**: View artifacts in shared conversations
+
+### Enhanced Observability & Rate Limiting (v4.1.0)
+- **Better Stack Logging**: Structured logging across all API endpoints with request lifecycle tracking
+- **Upstash Redis**: Persistent guest rate limiting across serverless functions with automatic TTL
+- **URL Retrieval Tool**: Comprehensive web content analysis with Exa API integration
+- **PDF Thumbnails**: Thumbnail generation and preview for uploaded PDF files
+- **Enhanced Markdown**: Full table support and Mermaid diagram rendering with error handling
 
 ### Version Management System (v3.0.0)
 - **Automated Changelog**: Semantic versioning with detailed changelog entries and categorization

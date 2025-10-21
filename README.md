@@ -4,7 +4,7 @@
 
 ### _Next-Generation AI Chat Platform_
 
-[![Version](https://img.shields.io/badge/version-4.0.0-2563eb?style=for-the-badge&logo=semver&logoColor=white)](https://github.com/CyberBoyAyush/CappyChat)
+[![Version](https://img.shields.io/badge/version-4.1.0-2563eb?style=for-the-badge&logo=semver&logoColor=white)](https://github.com/CyberBoyAyush/CappyChat)
 [![License](https://img.shields.io/badge/license-GPL%20v3-10b981?style=for-the-badge&logo=gnu&logoColor=white)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-15.3.4-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-3178c6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -20,17 +20,17 @@
 
 </div>
 
-## 🎉 **What's New in v4.0.0**
+## 🎉 **What's New in v4.1.0**
 
-> **Major Release** - Complete rebranding and architecture updates! CappyChat v4.0.0 brings significant improvements including OpenRouter-based image generation, 30+ AI models, enhanced web search, and much more.
+> **Plan Mode & Advanced Features** - CappyChat v4.1.0 introduces Plan Mode for creating interactive diagrams and visualizations, enhanced observability with Better Stack logging, and persistent guest rate limiting with Upstash Redis.
 
 **🌟 Highlights:**
-- 🎨 **Complete Rebranding** - New CappyChat identity with animated CapybaraIcon
-- 🖼️ **OpenRouter Image Generation** - Context-aware image creation with Gemini 2.5 Flash Image Preview
-- 🤖 **New AI Models** - Grok 4, Grok 4 Fast, Qwen3 Max, Claude Sonnet 3.7
-- 💬 **Suggested Questions** - AI-powered conversation suggestions
-- 📁 **File Pagination** - Better file management in settings
-- 💳 **Updated Subscriptions** - New credit limits and pricing ($12/month or ₹999)
+- 🧠 **Plan Mode with AI Artifacts** - Create interactive diagrams, flowcharts, and visualizations using Mermaid
+- 🌐 **URL Retrieval Tool** - Comprehensive web content analysis with live crawling and AI summaries
+- 🛡️ **Upstash Redis Rate Limiting** - Persistent guest rate limiting across serverless functions
+- 📊 **Better Stack Logging** - Enhanced observability with structured logging across all API endpoints
+- 📄 **PDF Thumbnail Preview** - Better file visualization and management
+- 🎨 **Enhanced Image Generation** - New models for improved visual content creation
 
 [**📋 View Full Changelog**](CHANGELOG.md) • [**🚀 Upgrade Guide**](docs/Project.md)
 
@@ -70,10 +70,11 @@
 
 **🎨 Advanced Features**
 
+- **Plan Mode** - Interactive diagrams and visualizations with Mermaid syntax
 - **Image Generation** - Google Gemini 2.5 Flash Image Preview (nano banana)
 - **Voice Input** - OpenAI Whisper speech-to-text integration
-- **Web Search** - Tavily API with rich citations and Reddit search
-- **File Upload** - Multi-format support with AI analysis and pagination
+- **Web Search** - Intelligent tool calling with Parallel AI, Tavily, and Exa
+- **File Upload** - Multi-format support with AI analysis, PDF thumbnails, and pagination
 
 </td>
 <td width="50%">
@@ -82,6 +83,7 @@
 
 - **Modern Stack** - Next.js 15, React 19, TypeScript, TailwindCSS
 - **Real-time Features** - WebSocket connections with Appwrite
+- **Observability** - Better Stack logging for enhanced monitoring
 - **Production Ready** - Deployed at [cappychat.com](https://cappychat.com)
 - **99.9% Uptime** - Enterprise-grade reliability
 
@@ -173,19 +175,23 @@ graph LR
 
 | Capability           | Technology                          | Features                                        |
 | -------------------- | ----------------------------------- | ----------------------------------------------- |
+| **Plan Mode**        | Mermaid + AI Artifacts              | Interactive diagrams, Flowcharts, Visualizations |
 | **Image Generation** | Gemini 2.5 Flash Image Preview      | Text-to-image, Context-aware generation         |
 | **Voice Input**      | OpenAI Whisper                      | Multi-language, Real-time transcription         |
 | **Web Search**       | Parallel AI + Tavily + Exa          | Intelligent tool calling, Rich citations, Website retrieval |
-| **File Upload**      | Cloudinary                          | Images, PDFs, Documents with AI analysis        |
+| **File Upload**      | Cloudinary                          | Images, PDFs with thumbnails, Documents with AI analysis |
 | **Collaboration**    | Real-time sync                      | Team workspaces, Member management              |
+| **Observability**    | Better Stack + Upstash Redis        | Structured logging, Persistent rate limiting    |
 
 **Advanced Features:**
 
+- 🧠 **Plan Mode** - Create diagrams, flowcharts, and MVPs with AI assistance
 - 🎭 **Conversation Styles** - Balanced, creative, precise modes
 - 🧠 **Global Memory** - Persistent context across conversations
 - 💬 **Suggested Questions** - AI-powered conversation suggestions
-- 📊 **Analytics** - Usage tracking and insights
+- 📊 **Analytics** - Usage tracking and insights with Better Stack
 - 🔗 **Share & Export** - Public sharing and data export
+- 🛡️ **Rate Limiting** - Persistent guest rate limiting with Upstash Redis
 
 </details>
 
@@ -200,9 +206,9 @@ graph LR
 const techStack = {
   frontend: ["Next.js 15", "React 19", "TypeScript 5.8", "TailwindCSS 4.1"],
   backend: ["Node.js", "Appwrite", "API Routes"],
-  database: ["IndexedDB", "Appwrite Cloud", "Real-time Sync"],
+  database: ["IndexedDB", "Appwrite Cloud", "Real-time Sync", "Upstash Redis"],
   deployment: ["Vercel", "Docker", "CDN"],
-  monitoring: ["Analytics", "Error Tracking", "Performance Metrics"],
+  monitoring: ["Better Stack", "Analytics", "Error Tracking", "Performance Metrics"],
 };
 ```
 
@@ -270,8 +276,10 @@ const techStack = {
   "auth": "Appwrite + OAuth",
   "storage": "Cloudinary",
   "ai": ["OpenRouter", "OpenAI", "Google Gemini"],
-  "search": "Tavily API",
-  "payments": "DODO Payments"
+  "search": ["Parallel AI", "Tavily", "Exa"],
+  "payments": "DODO Payments",
+  "logging": "Better Stack",
+  "rateLimit": "Upstash Redis"
 }
 ```
 
@@ -807,6 +815,7 @@ const LazyComponent = lazy(() =>
   - **Greeting**: Lightweight responses for casual greetings
 - `POST /api/reddit-search` - Reddit-specific search functionality
 - `POST /api/study-mode` - Enhanced study mode with PDF parsing and web search
+- `POST /api/plan-mode` - Plan Mode for creating diagrams and MVPs with AI artifacts
 
 #### File Management
 
@@ -922,9 +931,11 @@ interface DBMessage {
   role: "user" | "assistant" | "system" | "data";
   createdAt: Date;
   webSearchResults?: string[];
+  webSearchImgs?: string[]; // Web search image URLs
   attachments?: FileAttachment[];
   model?: string;
   imgurl?: string;
+  isPlan?: boolean; // Indicates Plan Mode message
 }
 ```
 
@@ -938,6 +949,40 @@ interface Project {
   prompt?: string;
   colorIndex?: number;
   members?: string[]; // Array of user IDs
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+#### Plan Artifact Interface
+
+```typescript
+interface PlanArtifact {
+  id: string;
+  artifactId: string;
+  threadId: string;
+  messageId: string;
+  userId: string;
+  type: "mvp" | "diagram";
+  title: string;
+  description?: string;
+  version: number;
+
+  // MVP fields
+  htmlCode?: string;
+  cssCode?: string;
+  jsCode?: string;
+  framework?: "vanilla" | "react" | "svelte" | "vue";
+  theme?: "light" | "dark";
+
+  // Diagram fields
+  diagramType?: "erd" | "flowchart" | "sequence" | "architecture" | "state_machine" | "user_journey";
+  diagramCode?: string; // Mermaid syntax
+  outputFormat?: "mermaid";
+  sqlSchema?: string;
+  prismaSchema?: string;
+
+  isPublic?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -1729,6 +1774,6 @@ For commercial licensing or permission requests, contact the copyright holders.
 
 ---
 
-<sub>© 2025 CappyChat. All rights reserved. | Version 4.0.0 | Made with ❤️ for the AI community</sub>
+<sub>© 2025 CappyChat. All rights reserved. | Version 4.1.0 | Made with ❤️ for the AI community</sub>
 
 </div>
