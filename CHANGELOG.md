@@ -10,7 +10,22 @@ CappyChat uses semantic versioning (SemVer) for version management:
 - **Minor version (X.Y.0)**: New features, backwards compatible
 - **Patch version (X.Y.Z)**: Bug fixes, small improvements
 
-## Current Version: 4.0.5
+## Current Version: 4.1.0
+
+### Version 4.1.0 - October 21, 2025
+
+**Plan Mode & Advanced Features:**
+
+- 🧠 **Plan Mode with AI Artifacts**: Introduced Plan Mode for creating interactive diagrams, flowcharts, and visualizations using Mermaid syntax with real-time artifact generation, side panel viewer with zoom/pan controls, and seamless sharing capabilities
+- 🌐 **URL Retrieval Tool**: Added URL retrieval tool for comprehensive web content analysis with live crawling, AI-powered summaries, and metadata extraction using Exa API integration
+- 🛡️ **Upstash Redis Rate Limiting**: Implemented persistent guest rate limiting using Upstash Redis for reliable IP-based usage tracking across serverless functions with automatic TTL expiration
+- 📊 **Better Stack Logging**: Integrated Better Stack logging across all API endpoints with structured logging for request lifecycle, validation errors, rate limiting, and credit consumption for enhanced observability
+- 📄 **PDF Thumbnail Preview**: Added PDF thumbnail generation and preview functionality for better file visualization and management in chat conversations
+- 🎨 **Enhanced Image Generation**: Added new image generation models to CappyChat for improved visual content creation with better quality and faster generation times
+- 📝 **Enhanced Markdown Rendering**: Improved Markdown renderer with full table support, Mermaid diagram rendering with error handling, and enhanced code block visibility controls
+- ⚙️ **Model Selection Restrictions**: Enhanced model selector with intelligent restrictions for Plan Mode, file support indicators, and improved model availability based on conversation context
+- 📁 **Plan Artifact Management**: Implemented comprehensive plan artifact handling with server-side retrieval, creation, deletion by thread or ID, and real-time updates in shared conversations
+- 🎨 **Enhanced UI/UX**: Improved Plan Mode layout with better spacing, styled blockquotes for light/dark modes, and enhanced artifact viewer with zoom and pan functionality
 
 ### Version 4.0.5 - October 5, 2025
 
