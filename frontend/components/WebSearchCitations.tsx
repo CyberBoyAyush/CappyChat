@@ -100,7 +100,7 @@ export function WebSearchCitations({
       {/* Collapsible Header */}
       <div
         className={cn(
-          "flex items-center gap-3 pb-3 px-4 md:px-4 rounded-xl border border-border bg-card/60 cursor-pointer",
+          "flex items-center gap-3  px-4 md:px-4 rounded-xl border border-border bg-card/60 cursor-pointer",
           "hover:bg-card/80 hover:border-border/80 hover:shadow-lg transition-all duration-300 ease-in-out",
           "focus:outline-none ",
           "shadow-sm min-h-[60px] sm:min-h-[56px]", // Add minimum height for mobile
@@ -122,7 +122,7 @@ export function WebSearchCitations({
         </div>
 
         <div className="flex-1 md:flex justify-between min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 ">
             <h3 className="text-base sm:text-base font-semibold text-foreground">
               Web Sources
             </h3>
@@ -134,7 +134,7 @@ export function WebSearchCitations({
           {/* Favicons Preview */}
           <div className="flex items-center gap-1 sm:gap-1 mr-2 sm:mr-3">
             {citations.slice(0, 6).map((citation, index) => (
-              <div key={index} className="relative">
+              <div key={index} className="relative pb-3 md:pb-0">
                 {citation.favicon ? (
                   <img
                     src={citation.favicon}
