@@ -266,7 +266,16 @@ function PureMessage({
       ? (modelToUse as AIModel)
       : selectedModel;
   const modelConfig = getModelConfig(validModelToUse);
-  const modelIcon = getModelIcon(modelConfig.iconType, 16, "text-primary");
+  const modelIcon = (() => {
+    try {
+      const icon = getModelIcon(modelConfig.iconType, 16, "text-primary");
+      // Ensure icon is a valid React element or null
+      return icon && typeof icon === 'object' && 'type' in icon ? icon : null;
+    } catch (e) {
+      devWarn("Error rendering model icon:", e);
+      return null;
+    }
+  })();
 
   // Image preview state for web search images
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
@@ -342,7 +351,9 @@ function PureMessage({
       ((message as any).webSearchImgs as string[] | undefined) ||
       (isStreaming ? (streamingWebImgs as string[] | undefined) : undefined) ||
       [];
-    if (imgs.length > 0 && currentImageIndex >= imgs.length) {
+    // Only update if images are valid strings
+    const validImages = imgs.filter((img): img is string => typeof img === "string");
+    if (validImages.length > 0 && currentImageIndex >= validImages.length) {
       setCurrentImageIndex(0);
     }
   }, [(message as any).webSearchImgs, streamingWebImgs, isStreaming]);
@@ -354,7 +365,9 @@ function PureMessage({
       ((message as any).webSearchImgs as string[] | undefined) ||
       (isStreaming ? (streamingWebImgs as string[] | undefined) : undefined) ||
       [];
-    const total = overlayImgs.length;
+    // Filter to ensure all are valid strings
+    const validImgs = overlayImgs.filter((img): img is string => typeof img === "string");
+    const total = validImgs.length;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setPreviewIdx(null);
       if (e.key === "ArrowLeft" && total > 1)
@@ -595,10 +608,15 @@ function PureMessage({
                   const fromStream = isStreaming
                     ? (streamingWebImgs as string[] | undefined) || undefined
                     : undefined;
+                  // Ensure all images are valid strings before rendering
                   const imgs =
-                    (fromDb && fromDb.length > 0 ? fromDb : fromStream) || [];
+                    (fromDb && fromDb.length > 0 && fromDb.every((img) => typeof img === "string")
+                      ? fromDb
+                      : fromStream && fromStream.every((img) => typeof img === "string")
+                      ? fromStream
+                      : []) || [];
                   const showImages =
-                    message.role === "assistant" && imgs.length > 0;
+                    message.role === "assistant" && imgs.length > 0 && imgs.every((img) => typeof img === "string");
                   if (!showImages) return null;
 
                   const showCount = Math.min(visibleCount, imgs.length);
@@ -640,6 +658,7 @@ function PureMessage({
                       {/* Desktop grid layout */}
                       <div className="hidden md:grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         {imgs.slice(0, showCount).map((src, i) => {
+                          if (typeof src !== "string") return null;
                           const isLastVisible =
                             i === showCount - 1 && remaining > 0;
                           return (
@@ -702,7 +721,9 @@ function PureMessage({
                               }%)`,
                             }}
                           >
-                            {imgs.map((src, i) => (
+                            {imgs.map((src, i) => {
+                              if (typeof src !== "string") return null;
+                              return (
                               <div
                                 key={i}
                                 className="relative flex-shrink-0 w-full bg-muted/20"
@@ -755,7 +776,8 @@ function PureMessage({
                                   </div>
                                 </div>
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
 
@@ -958,15 +980,18 @@ function PureMessage({
                               ? (streamingWebImgs as string[] | undefined)
                               : undefined) ||
                             [];
-                          const total = overlayImgs.length;
+                          // Filter to ensure all are valid strings
+                          const validImgs = overlayImgs.filter((img): img is string => typeof img === "string");
+                          const total = validImgs.length;
                           if (total === 0) return null;
                           const idx = Math.min(
                             Math.max(previewIdx as number, 0),
                             total - 1
                           );
-                          const src = overlayImgs[idx];
+                          const src = validImgs[idx];
                           const host = (() => {
                             try {
+                              if (!src || typeof src !== "string") return "";
                               return new URL(src).hostname.replace(
                                 /^www\./,
                                 ""
@@ -1022,12 +1047,14 @@ function PureMessage({
                                   <ChevronLeft className="h-6 w-6" />
                                 </button>
                               )}
-                              <img
-                                src={src}
-                                alt=""
-                                className="max-h-[80vh] max-w-[90vw] object-contain rounded-lg shadow-2xl border"
-                                onClick={(e) => e.stopPropagation()}
-                              />
+                              {src && typeof src === "string" && (
+                                <img
+                                  src={src}
+                                  alt=""
+                                  className="max-h-[80vh] max-w-[90vw] object-contain rounded-lg shadow-2xl border"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              )}
                               {total > 1 && (
                                 <button
                                   type="button"
