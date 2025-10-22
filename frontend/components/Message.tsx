@@ -117,13 +117,13 @@ function SuggestedQuestions({
       </Button>
 
       {open && (
-        <div className="mt-2 p-2 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm animate-in fade-in-50">
+        <div className="mt-2 px-2 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm animate-in fade-in-50">
           {loading ? (
             <div className="text-sm text-muted-foreground px-2 py-3">
               Generating suggestions…
             </div>
           ) : suggestions && suggestions.length > 0 ? (
-            <ul className="flex flex-col divide-y divide-border/40">
+            <ul className="flex flex-col mt-0 mb-0 divide-y divide-border/40">
               {suggestions.slice(0, 3).map((q, i) => (
                 <li key={i}>
                   <button
@@ -396,19 +396,28 @@ function PureMessage({
           return message.role === "user" ? (
             <div
               key={key}
-              className="flex gap-2 max-w-[95%] sm:max-w-[85%] md:max-w-[75%]  pl-4"
+              className="flex items-end gap-2 group max-w-[95%] sm:max-w-[85%] md:max-w-[75%]  pl-4"
               ref={(el) => registerRef?.(message.id, el)}
             >
               {/* User Avatar */}
-              <div className="flex-shrink-0 mt-1">
-                <div className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
-                  <User className="w-3.5 h-3.5 text-primary" />
+              {mode === "view" && (
+                <div className="md:opacity-0 md:group-hover:opacity-100 transition-all duration-200">
+                  <ChatMessageControls
+                    threadId={threadId}
+                    content={(part as any).text || ""}
+                    message={message}
+                    setMode={setMode}
+                    setMessages={setMessages}
+                    reload={reload}
+                    stop={stop}
+                    onRetryWithModel={onRetryWithModel}
+                  />
                 </div>
-              </div>
+              )}
 
               {/* User Message Content */}
               <div className="relative group flex-1 min-w-0 overflow-hidden">
-                <div className="px-3 py-2 mb-2 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50 shadow-sm hover:border-border/70 transition-all duration-200">
+                <div className="px-3 py-2 mb-2 rounded-xl bg-accent backdrop-blur-sm border border-border/50 shadow-sm hover:border-border/70 transition-all duration-200">
                   {mode === "edit" && (
                     <ChatMessageEditor
                       threadId={threadId}
@@ -437,20 +446,6 @@ function PureMessage({
                     </>
                   )}
                 </div>
-                {mode === "view" && (
-                  <div className="mt-1">
-                    <ChatMessageControls
-                      threadId={threadId}
-                      content={(part as any).text || ""}
-                      message={message}
-                      setMode={setMode}
-                      setMessages={setMessages}
-                      reload={reload}
-                      stop={stop}
-                      onRetryWithModel={onRetryWithModel}
-                    />
-                  </div>
-                )}
               </div>
             </div>
           ) : (
@@ -467,7 +462,7 @@ function PureMessage({
               </div>
 
               {/* Assistant Message Content */}
-              <div className="group flex-1 flex flex-col gap-3 min-w-0 overflow-hidden max-w-full chat-message-container no-scrollbar">
+              <div className="assistant-message group flex-1 flex flex-col gap-3 min-w-0 overflow-hidden max-w-full chat-message-container no-scrollbar">
                 {/* Check if this is an image generation loading message */}
                 {(() => {
                   const messageText = cleanMessageContent(
@@ -1099,7 +1094,7 @@ function PureMessage({
 
                 {/* Controls - placed after citations and suggestions */}
                 {!isStreaming && (
-                  <div className="flex-shrink-0 mt-1">
+                  <div className="flex-shrink-0 mt-1 flex items-center gap-2">
                     <ChatMessageControls
                       threadId={threadId}
                       content={(part as any).text || ""}
@@ -1109,6 +1104,12 @@ function PureMessage({
                       stop={stop}
                       onRetryWithModel={onRetryWithModel}
                     />
+                    {message.role === "assistant" && (
+                      <div className="opacity-60 group-hover:opacity-100 transition-all pb-3 duration-200 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                        {modelIcon}
+                        <span className="ml-1">{modelConfig.displayName}</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
