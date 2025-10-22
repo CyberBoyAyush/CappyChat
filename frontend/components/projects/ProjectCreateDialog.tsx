@@ -6,23 +6,25 @@
  */
 
 import React, { useState } from "react";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from "@/frontend/components/ui/dialog";
 import { Button } from "@/frontend/components/ui/button";
 import { Input } from "@/frontend/components/ui/input";
 import { Textarea } from "@/frontend/components/ui/textarea";
-import { Label } from "@/frontend/components/ui/label";
 
 interface ProjectCreateDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateProject: (name: string, description?: string, prompt?: string) => Promise<string>;
+  onCreateProject: (
+    name: string,
+    description?: string,
+    prompt?: string
+  ) => Promise<string>;
 }
 
 export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({
@@ -54,7 +56,6 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({
         prompt.trim() || undefined
       );
 
-      // Reset form and close dialog
       setName("");
       setDescription("");
       setPrompt("");
@@ -77,83 +78,93 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[625px] p-5 max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create New Project</DialogTitle>
-          <DialogDescription>
-            Create a new project to organize your conversations.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-md gap-0 bg-card border-border max-h-[85vh] overflow-y-auto">
+        <VisuallyHidden>
+          <DialogTitle>Create project</DialogTitle>
+        </VisuallyHidden>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="project-name">Project Name</Label>
-            <Input
-              id="project-name"
-              placeholder="Enter project name..."
-              className="bg-border/20 rounded-md py-1 w-full"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={isCreating}
-              autoFocus
-            />
-          </div>
+        <div className="p-3 md:p-5">
+          <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2">
+            Create project
+          </h2>
 
-          <div className="space-y-2">
-            <Label htmlFor="project-description">Description (Optional)</Label>
-            <Textarea
-              id="project-description"
-              placeholder="Enter project description..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              disabled={isCreating}
-              rows={3}
-              className="min-h-[100px] max-h-[180px] bg-border/50 resize-none w-full"
-            />
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Project name
+              </label>
+              <Input
+                id="project-name"
+                placeholder="My awesome project"
+                className="h-12 !rounded-lg !border-1 !border-primary/40 bg-background focus:ring-primary/50 focus:ring-1 text-base"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={isCreating}
+                autoFocus
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="project-prompt">Custom Prompt (Optional)</Label>
-            <Textarea
-              id="project-prompt"
-              placeholder="Enter custom instructions for AI when working on this project..."
-              value={prompt}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value.length <= 500) {
-                  setPrompt(value);
-                }
-              }}
-              disabled={isCreating}
-              rows={3}
-              className="min-h-[100px] max-h-[180px] bg-border/50 resize-none w-full"
-            />
-            <p className="text-xs text-muted-foreground">
-              Custom instructions for AI responses in this project ({prompt.length}/500 characters)
-            </p>
-          </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Description
+              </label>
+              <Textarea
+                id="project-description"
+                placeholder="What is this project about?"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={isCreating}
+                rows={2}
+                variant="field"
+                className="min-h-[80px] max-h-[150px] resize-none"
+              />
+            </div>
 
-          {error && <div className="text-sm text-destructive">{error}</div>}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Custom prompt
+              </label>
+              <Textarea
+                id="project-prompt"
+                placeholder="Custom instructions for AI when working on this project..."
+                value={prompt}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value.length <= 500) {
+                    setPrompt(value);
+                  }
+                }}
+                disabled={isCreating}
+                rows={2}
+                variant="field"
+                className="min-h-[80px] max-h-[150px] resize-none"
+              />
+              <div className="text-xs text-muted-foreground">
+                {prompt.length}/500
+              </div>
+            </div>
 
-          <DialogFooter>
-            <Button
-              size="default"
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-              disabled={isCreating}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="default"
-              type="submit"
-              disabled={isCreating || !name.trim()}
-            >
-              {isCreating ? "Creating..." : "Create Project"}
-            </Button>
-          </DialogFooter>
-        </form>
+            {error && <div className="text-sm text-destructive">{error}</div>}
+
+            <DialogFooter className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                onClick={handleCancel}
+                disabled={isCreating}
+                className="flex-1 h-9 md:h-11 font-medium bg-border/45 border-border/30 text-foreground hover:bg-border/60"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isCreating || !name.trim()}
+                className="flex-1 h-9 md:h-11 bg-primary hover:bg-primary/80 text-black font-medium"
+              >
+                {isCreating ? "Creating..." : "Create"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -137,7 +137,6 @@ export default function MessageEditor({
         <div className="mt-1 flex items-center justify-end gap-2">
           <Button
             type="button"
-            variant="ghost"
             className="rounded-full bg-background/60 text-foreground hover:bg-background/80 px-4 h-8"
             onClick={() => setMode("view")}
           >
