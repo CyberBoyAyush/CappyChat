@@ -462,16 +462,26 @@ export default function ChatInterface({
       }
 
       // Extract image URLs from hidden marker and persist
-      const extractImagesFromContent = (c: string): string[] =>
-        c.match(/<!-- SEARCH_IMAGES: (.*?) -->/)
-          ? (c.match(/<!-- SEARCH_IMAGES: (.*?) -->/) as RegExpMatchArray)[1]
-              .split("|")
-              .filter(Boolean)
-              .slice(0, 15)
-          : [];
+      const extractImagesFromContent = (c: string): string[] => {
+        try {
+          const match = c.match(/<!-- SEARCH_IMAGES: (.*?) -->/);
+          if (!match || !match[1]) return [];
+          const images = match[1]
+            .split("|")
+            .filter((img): img is string => {
+              // Filter out empty strings and only keep valid HTTP(S) URLs
+              return typeof img === "string" && img.trim().length > 0 && /^https?:\/\//.test(img.trim());
+            })
+            .slice(0, 15);
+          return images;
+        } catch (e) {
+          devWarn("Error extracting images from content:", e);
+          return [];
+        }
+      };
 
       const extractedImgs = extractImagesFromContent(aiMessage.content);
-      if (extractedImgs.length > 0) {
+      if (extractedImgs.length > 0 && extractedImgs.every((img) => typeof img === "string")) {
         aiMessage.webSearchImgs = extractedImgs;
         setMessages((prev) => {
           const updated = prev.map((m) =>
