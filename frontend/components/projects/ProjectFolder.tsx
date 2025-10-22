@@ -233,7 +233,7 @@ export const ProjectFolder: React.FC<ProjectFolderProps> = ({
       <div
         className={cn(
           "flex items-center relative justify-between px-2 py-1.5 rounded-lg cursor-pointer group/project",
-          "hover:bg-sidebar-accent/50 transition-colors",
+          "hover:bg-sidebar-accent/50 has-[button[data-state=open]]:bg-sidebar-accent/50 transition-colors",
           projectColor
         )}
         onClick={handleToggleExpanded}
@@ -268,7 +268,7 @@ export const ProjectFolder: React.FC<ProjectFolderProps> = ({
           </span>
         </div>
 
-        <div className="flex md:absolute overflow-hidden md:right-0 h-full md:rounded-r-md items-center md:opacity-0 group-hover/project:opacity-100 transition-opacity">
+        <div className="flex md:absolute overflow-hidden md:right-0 h-full md:rounded-r-md items-center md:opacity-0 group-hover/project:opacity-100 md:has-[button[data-state=open]]:opacity-100 transition-opacity">
           {/* New Chat Button */}
           <div className="hidden md:block h-full w-5 bg-gradient-to-r from-transparent to-sidebar-accent"></div>
           <div className="md:bg-sidebar-accent h-full flex justify-center items-center pr-1.5">
@@ -291,7 +291,7 @@ export const ProjectFolder: React.FC<ProjectFolderProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0"
+                  className="h-6 w-6 p-0 data-[state=open]:opacity-100 md:data-[state=open]:opacity-100"
                   onClick={handleMenuClick}
                 >
                   <MoreHorizontal className="h-3 w-3" />

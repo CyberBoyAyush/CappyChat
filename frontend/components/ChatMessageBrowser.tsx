@@ -6,15 +6,15 @@
  * Shows message summaries and allows quick navigation to any message in the conversation.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { HybridDB, dbEvents } from '@/lib/hybridDB';
-import { AppwriteDB } from '@/lib/appwriteDB';
-import { memo } from 'react';
-import { X, MessageCircle, Bot, User, Search, Clock } from 'lucide-react';
-import { Button } from './ui/button';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/frontend/contexts/AuthContext';
-import { devWarn, devError } from '@/lib/logger';
+import { useState, useEffect, useCallback } from "react";
+import { HybridDB, dbEvents } from "@/lib/hybridDB";
+import { AppwriteDB } from "@/lib/appwriteDB";
+import { memo } from "react";
+import { X, MessageCircle, Bot, User, Search, Clock } from "lucide-react";
+import { Button } from "./ui/button";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/frontend/contexts/AuthContext";
+import { devWarn, devError } from "@/lib/logger";
 
 interface MessageBrowserProps {
   threadId: string;
@@ -29,7 +29,7 @@ interface MessageSummaryWithRole {
   messageId: string;
   content: string;
   createdAt: Date;
-  role: 'user' | 'assistant' | 'system' | 'data';
+  role: "user" | "assistant" | "system" | "data";
 }
 
 function PureMessageBrowser({
@@ -38,35 +38,48 @@ function PureMessageBrowser({
   isVisible,
   onClose,
 }: MessageBrowserProps) {
-  const [messageSummaries, setMessageSummaries] = useState<MessageSummaryWithRole[]>([]);
+  const [messageSummaries, setMessageSummaries] = useState<
+    MessageSummaryWithRole[]
+  >([]);
   const { isGuest } = useAuth();
 
   // Handle message summary updates from the hybrid database
-  const handleSummariesUpdated = useCallback(async (updatedThreadId: string) => {
-    if (updatedThreadId === threadId) {
-      try {
-        // For guest users, only load from local storage
-        if (isGuest) {
-          const summaries = await HybridDB.getMessageSummariesWithRole(threadId);
-          setMessageSummaries(summaries || []);
-          return;
-        }
-
-        // For authenticated users, try to get the latest from remote first
+  const handleSummariesUpdated = useCallback(
+    async (updatedThreadId: string) => {
+      if (updatedThreadId === threadId) {
         try {
-          const remoteSummaries = await AppwriteDB.getMessageSummariesWithRole(threadId);
-          setMessageSummaries(remoteSummaries || []);
-        } catch (remoteError) {
-          // Fallback to local if remote fails
-          devWarn('Failed to load remote summaries, using local:', remoteError);
-          const localSummaries = await HybridDB.getMessageSummariesWithRole(threadId);
-          setMessageSummaries(localSummaries || []);
+          // For guest users, only load from local storage
+          if (isGuest) {
+            const summaries = await HybridDB.getMessageSummariesWithRole(
+              threadId
+            );
+            setMessageSummaries(summaries || []);
+            return;
+          }
+
+          // For authenticated users, try to get the latest from remote first
+          try {
+            const remoteSummaries =
+              await AppwriteDB.getMessageSummariesWithRole(threadId);
+            setMessageSummaries(remoteSummaries || []);
+          } catch (remoteError) {
+            // Fallback to local if remote fails
+            devWarn(
+              "Failed to load remote summaries, using local:",
+              remoteError
+            );
+            const localSummaries = await HybridDB.getMessageSummariesWithRole(
+              threadId
+            );
+            setMessageSummaries(localSummaries || []);
+          }
+        } catch (error) {
+          devError("Error loading updated summaries:", error);
         }
-      } catch (error) {
-        devError('Error loading updated summaries:', error);
       }
-    }
-  }, [threadId, isGuest]);
+    },
+    [threadId, isGuest]
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -75,7 +88,9 @@ function PureMessageBrowser({
       try {
         // For guest users, only load from local storage
         if (isGuest) {
-          const summaries = await HybridDB.getMessageSummariesWithRole(threadId);
+          const summaries = await HybridDB.getMessageSummariesWithRole(
+            threadId
+          );
           if (isMounted) {
             setMessageSummaries(summaries || []);
           }
@@ -83,27 +98,34 @@ function PureMessageBrowser({
         }
 
         // For authenticated users, first load from local storage for instant display
-        const localSummaries = await HybridDB.getMessageSummariesWithRole(threadId);
+        const localSummaries = await HybridDB.getMessageSummariesWithRole(
+          threadId
+        );
         if (isMounted) {
           setMessageSummaries(localSummaries || []);
         }
 
         // Then sync with Appwrite to get the latest summaries
         try {
-          const remoteSummaries = await AppwriteDB.getMessageSummariesWithRole(threadId);
+          const remoteSummaries = await AppwriteDB.getMessageSummariesWithRole(
+            threadId
+          );
           if (isMounted && remoteSummaries.length > 0) {
             // Replace with remote summaries
             setMessageSummaries(remoteSummaries);
 
             // Emit update event for other components
-            dbEvents.emit('summaries_updated', threadId);
+            dbEvents.emit("summaries_updated", threadId);
           }
         } catch (remoteError) {
-          devWarn('Failed to sync summaries from remote, using local:', remoteError);
+          devWarn(
+            "Failed to sync summaries from remote, using local:",
+            remoteError
+          );
           // Keep using local summaries if remote fails
         }
       } catch (error) {
-        devError('Error loading message summaries:', error);
+        devError("Error loading message summaries:", error);
         if (isMounted) {
           setMessageSummaries([]);
         }
@@ -112,23 +134,25 @@ function PureMessageBrowser({
 
     if (threadId) {
       loadMessageSummaries();
-      
+
       // Listen for real-time summary updates
-      dbEvents.on('summaries_updated', handleSummariesUpdated);
+      dbEvents.on("summaries_updated", handleSummariesUpdated);
     }
 
     return () => {
       isMounted = false;
-      dbEvents.off('summaries_updated', handleSummariesUpdated);
+      dbEvents.off("summaries_updated", handleSummariesUpdated);
     };
   }, [threadId, handleSummariesUpdated, isGuest]);
 
   const formatTimeAgo = (createdAt: Date | string) => {
     const date = new Date(createdAt);
     const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return 'Just now';
+    const diffInMinutes = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60)
+    );
+
+    if (diffInMinutes < 1) return "Just now";
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
@@ -149,21 +173,20 @@ function PureMessageBrowser({
           "transform transition-all duration-300 ease-out shadow-2xl",
           "before:absolute before:inset-0 before:bg-gradient-to-b before:from-background/10 before:to-transparent before:pointer-events-none",
           "max-w-[90vw] lg:max-w-none", // Responsive width limits
-          isVisible ? 'translate-x-0' : 'translate-x-full'
+          isVisible ? "translate-x-0" : "translate-x-full"
         )}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border/50 bg-gradient-to-r from-card/50 to-card/20 backdrop-blur-sm">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/20">
-                <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-              </div>
               <div>
                 <h3 className="text-sm sm:text-base font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
                   Message Browser
                 </h3>
-                <p className="text-xs text-muted-foreground hidden sm:block">Navigate your conversation</p>
+                <p className="text-xs text-muted-foreground hidden sm:block">
+                  Navigate your conversation
+                </p>
               </div>
             </div>
             <Button
@@ -181,15 +204,19 @@ function PureMessageBrowser({
           <div className="p-3 sm:p-4 border-b border-border/20 bg-gradient-to-r from-muted/10 to-muted/5 backdrop-blur-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                {/* <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Search className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-                </div>
-                <span className="font-medium">{messageSummaries?.length || 0} messages</span>
+                </div> */}
+                <span className="font-medium">
+                  {messageSummaries?.length || 0} messages
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
                   <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse shadow-sm"></div>
-                  <span className="text-xs text-muted-foreground font-medium">Live</span>
+                  <span className="text-xs text-muted-foreground font-medium">
+                    Live
+                  </span>
                 </div>
               </div>
             </div>
@@ -218,73 +245,86 @@ function PureMessageBrowser({
             ) : messageSummaries.length > 0 ? (
               <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-border/30 scrollbar-track-transparent">
                 <div className="p-2 sm:p-3 space-y-2">
-                  {messageSummaries.map((summary: MessageSummaryWithRole, index: number) => (
-                    <div
-                      key={summary.id}
-                      onClick={() => {
-                        scrollToMessage(summary.messageId);
-                        onClose(); // Close on mobile after navigation
-                      }}
-                      className={cn(
-                        "group relative p-3 sm:p-4 rounded-xl cursor-pointer transition-all duration-200",
-                        "bg-card/30 backdrop-blur-sm border border-border/30 hover:border-primary/30",
-                        "hover:bg-card/50 hover:shadow-lg hover:shadow-primary/5 active:scale-[0.98]",
-                        "hover:translate-x-[-2px]"
-                      )}
-                    >
-                      {/* Message indicator */}
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 mt-0.5">
-                          {summary.role === 'assistant' ? (
-                            <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/20 shadow-sm">
-                              <Bot className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                            </div>
-                          ) : (
-                            <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-sm">
-                              <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          {/* Message preview */}
-                          <p className="text-sm sm:text-base text-foreground/90 line-clamp-3 leading-relaxed mb-3 font-medium">
-                            {summary.content.slice(0, window.innerWidth < 640 ? 100 : 140)}
-                            {summary.content.length > (window.innerWidth < 640 ? 100 : 140) && (
-                              <span className="text-muted-foreground">...</span>
+                  {messageSummaries.map(
+                    (summary: MessageSummaryWithRole, index: number) => (
+                      <div
+                        key={summary.id}
+                        onClick={() => {
+                          scrollToMessage(summary.messageId);
+                          onClose(); // Close on mobile after navigation
+                        }}
+                        className={cn(
+                          "group relative p-3 rounded-xl cursor-pointer transition-all duration-200",
+                          "bg-card/30 backdrop-blur-sm border border-border/30 hover:border-primary/30",
+                          "hover:bg-card/50 hover:shadow-lg hover:shadow-primary/5 active:scale-[0.98]"
+                        )}
+                      >
+                        {/* Message indicator */}
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 mt-0.5">
+                            {summary.role === "assistant" ? (
+                              <div className="h-8 w-8  rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/20 shadow-sm">
+                                <Bot className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                              </div>
+                            ) : (
+                              <div className="h-8 w-8  rounded-lg bg-gradient-to-br from-muted/20 to-muted/10 flex items-center justify-center border border-primary/20 shadow-sm">
+                                <User className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                              </div>
                             )}
-                          </p>
+                          </div>
 
-                          {/* Metadata */}
-                          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground flex-wrap">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              <span className="font-medium">{formatTimeAgo(summary.createdAt)}</span>
-                            </div>
-                            <span className="text-muted-foreground/40 hidden sm:inline">•</span>
-                            <div className="flex items-center gap-1">
-                              <span className="capitalize font-medium text-primary">{summary.role}</span>
-                              {summary.role === 'assistant' && (
-                                <div className="h-2 w-2 rounded-full bg-primary/60 shadow-sm"></div>
+                          <div className="flex-1 min-w-0">
+                            {/* Message preview */}
+                            <span className="text-sm  text-foreground/90 line-clamp-3 leading-relaxed mb-1 font-medium">
+                              {summary.content.slice(
+                                0,
+                                window.innerWidth < 640 ? 100 : 140
                               )}
+                              {summary.content.length >
+                                (window.innerWidth < 640 ? 100 : 140) && (
+                                <span className="text-muted-foreground">
+                                  ...
+                                </span>
+                              )}
+                            </span>
+
+                            {/* Metadata */}
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground flex-wrap">
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                <span className="font-medium text-xs">
+                                  {formatTimeAgo(summary.createdAt)}
+                                </span>
+                              </div>
+                              <span className="text-muted-foreground/40 hidden sm:inline">
+                                •
+                              </span>
+                              <div className="flex items-center text-xs gap-1">
+                                <span className="capitalize font-medium text-primary">
+                                  {summary.role}
+                                </span>
+                                {summary.role === "assistant" && (
+                                  <div className="md:h-2 md:w-2 w-1 h-1 rounded-full bg-primary/60 shadow-sm"></div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Hover indicator */}
-                      <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-x-2 group-hover:translate-x-0">
-                        <div className="h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-gradient-to-r from-primary to-primary/60 shadow-lg"></div>
-                      </div>
+                        {/* Hover indicator */}
+                        {/* <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-x-2 group-hover:translate-x-0">
+                          <div className="h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-gradient-to-r from-primary to-primary/60 shadow-lg"></div>
+                        </div> */}
 
-                      {/* Message number */}
-                      <div className="absolute top-2 sm:top-3 right-2 sm:right-3 opacity-0 group-hover:opacity-70 transition-opacity duration-200">
-                        <div className="px-2 py-1 bg-muted/90 rounded-lg text-xs text-muted-foreground/90 font-mono backdrop-blur-sm border border-border/30">
-                          #{index + 1}
+                        {/* Message number */}
+                        <div className="absolute top-2 sm:top-3 right-2 sm:right-3 opacity-0 group-hover:opacity-70 transition-opacity duration-200">
+                          <div className="px-2 py-1 bg-muted/90 rounded-lg text-xs text-muted-foreground/90 font-mono backdrop-blur-sm border border-border/30">
+                            #{index + 1}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
               </div>
             ) : (
@@ -297,9 +337,12 @@ function PureMessageBrowser({
                     <Search className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground/60" />
                   </div>
                 </div>
-                <h4 className="text-sm sm:text-base font-bold text-foreground mb-2">No messages yet</h4>
+                <h4 className="text-sm sm:text-base font-bold text-foreground mb-2">
+                  No messages yet
+                </h4>
                 <p className="text-xs sm:text-sm text-muted-foreground/70 max-w-[250px] leading-relaxed">
-                  Start a conversation to see your message history here. Each message will be summarized for easy navigation.
+                  Start a conversation to see your message history here. Each
+                  message will be summarized for easy navigation.
                 </p>
               </div>
             )}
@@ -317,9 +360,15 @@ function PureMessageBrowser({
                   <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
                     <MessageCircle className="h-3 w-3 text-primary" />
                   </div>
-                  <span className="font-bold text-foreground">{messageSummaries.length}</span>
-                  <span className="hidden sm:inline">message{messageSummaries.length !== 1 ? 's' : ''}</span>
-                  <span className="sm:hidden">msg{messageSummaries.length !== 1 ? 's' : ''}</span>
+                  <span className="font-bold text-foreground">
+                    {messageSummaries.length}
+                  </span>
+                  <span className="hidden sm:inline">
+                    message{messageSummaries.length !== 1 ? "s" : ""}
+                  </span>
+                  <span className="sm:hidden">
+                    msg{messageSummaries.length !== 1 ? "s" : ""}
+                  </span>
                 </div>
               </div>
             </div>

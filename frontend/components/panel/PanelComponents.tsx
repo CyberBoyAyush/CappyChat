@@ -399,8 +399,8 @@ const ThreadListItem = ({
 
   const containerStyles = cn(
     "cursor-pointer group/thread relative flex items-center px-3 py-2 sm:px-2 text-base sm:py-1 rounded-md overflow-hidden w-full transition-colors",
-    "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-    "border border-transparent hover:border-border/50",
+    "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground has-[button[data-state=open]]:bg-sidebar-accent has-[button[data-state=open]]:text-sidebar-accent-foreground",
+    "border border-transparent hover:border-border/50 has-[button[data-state=open]]:border-border",
     isActive && "bg-sidebar-accent text-sidebar-accent-foreground border-border"
   );
 
@@ -448,8 +448,8 @@ const ThreadListItem = ({
         </div>
 
         <div
-          className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 items-center  
-                       opacity-0 group-hover/thread:opacity-100 scale-90 group-hover/thread:scale-100
+          className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 items-center
+                       opacity-0 group-hover/thread:opacity-100 scale-90 group-hover/thread:scale-100 md:has-[button[data-state=open]]:opacity-100 md:has-[button[data-state=open]]:scale-100
                        transition-all duration-200 transform-gpu"
         >
           <div className="bg-gradient-to-r from-transparent w-8 to-sidebar-accent h-6 "></div>

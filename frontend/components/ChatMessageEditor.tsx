@@ -6,18 +6,18 @@
  * Allows users to edit their messages and regenerate AI responses from that point.
  */
 
-import { AppwriteDB } from '@/lib/appwriteDB';
-import { HybridDB } from '@/lib/hybridDB';
-import { UseChatHelpers, useCompletion } from '@ai-sdk/react';
-import { useBYOKStore } from '@/frontend/stores/BYOKStore';
-import { useAuth } from '@/frontend/contexts/AuthContext';
-import { useState } from 'react';
-import { UIMessage } from 'ai';
-import { Dispatch, SetStateAction } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { Textarea } from './ui/textarea';
-import { Button } from './ui/button';
-import { toast } from '@/frontend/components/ui/Toast';
+import { AppwriteDB } from "@/lib/appwriteDB";
+import { HybridDB } from "@/lib/hybridDB";
+import { UseChatHelpers, useCompletion } from "@ai-sdk/react";
+import { useBYOKStore } from "@/frontend/stores/BYOKStore";
+import { useAuth } from "@/frontend/contexts/AuthContext";
+import { useState } from "react";
+import { UIMessage } from "ai";
+import { Dispatch, SetStateAction } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { Textarea } from "./ui/textarea";
+import { Button } from "./ui/button";
+import { toast } from "@/frontend/components/ui/Toast";
 
 export default function MessageEditor({
   threadId,
@@ -31,17 +31,17 @@ export default function MessageEditor({
   threadId: string;
   message: UIMessage;
   content: string;
-  setMessages: UseChatHelpers['setMessages'];
-  setMode: Dispatch<SetStateAction<'view' | 'edit'>>;
-  reload: UseChatHelpers['reload'];
-  stop: UseChatHelpers['stop'];
+  setMessages: UseChatHelpers["setMessages"];
+  setMode: Dispatch<SetStateAction<"view" | "edit">>;
+  reload: UseChatHelpers["reload"];
+  stop: UseChatHelpers["stop"];
 }) {
   const [draftContent, setDraftContent] = useState(content);
   const { openRouterApiKey } = useBYOKStore();
   const { user, isGuest } = useAuth();
 
   const { complete } = useCompletion({
-    api: '/api/ai-text-generation',
+    api: "/api/ai-text-generation",
     body: {
       userApiKey: openRouterApiKey,
       userId: user?.$id,
@@ -56,7 +56,7 @@ export default function MessageEditor({
           await HybridDB.createMessageSummary(threadId, messageId, title);
         } else {
           toast.error(
-            payload.error || 'Failed to generate a summary for the message'
+            payload.error || "Failed to generate a summary for the message"
           );
         }
       } catch (error) {
@@ -67,7 +67,10 @@ export default function MessageEditor({
 
   const handleSave = async () => {
     try {
-      await HybridDB.deleteTrailingMessages(threadId, message.createdAt as Date);
+      await HybridDB.deleteTrailingMessages(
+        threadId,
+        message.createdAt as Date
+      );
 
       const updatedMessage = {
         ...message,
@@ -75,7 +78,7 @@ export default function MessageEditor({
         content: draftContent,
         parts: [
           {
-            type: 'text' as const,
+            type: "text" as const,
             text: draftContent,
           },
         ],
@@ -102,7 +105,7 @@ export default function MessageEditor({
           threadId,
         },
       });
-      setMode('view');
+      setMode("view");
 
       // stop the current stream if any
       stop();
@@ -111,26 +114,43 @@ export default function MessageEditor({
         reload();
       }, 0);
     } catch (error) {
-      console.error('Failed to save message:', error);
-      toast.error('Failed to save message');
+      console.error("Failed to save message:", error);
+      toast.error("Failed to save message");
     }
   };
 
   return (
-    <div>
-      <Textarea
-        value={draftContent}
-        onChange={(e) => setDraftContent(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSave();
-          }
-        }}
-      />
-      <div className="flex gap-2 mt-2">
-        <Button onClick={handleSave}>Save</Button>
-        <Button onClick={() => setMode('view')}>Cancel</Button>
+    <div className="w-full">
+      <div className="rounded-2xl ">
+        <Textarea
+          value={draftContent}
+          onChange={(e) => setDraftContent(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSave();
+            }
+          }}
+          placeholder="Edit your message…"
+          className="md:w-lg h-28  field-sizing-fixed border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-transparent resize-none text-foreground placeholder:text-muted-foreground/60"
+        />
+        <div className="mt-1 flex items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            className="rounded-full bg-background/60 text-foreground hover:bg-background/80 px-4 h-8"
+            onClick={() => setMode("view")}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            className="rounded-full bg-accent-foreground/80 hover:bg-accent-foreground px-4 h-8"
+            onClick={handleSave}
+          >
+            Send
+          </Button>
+        </div>
       </div>
     </div>
   );

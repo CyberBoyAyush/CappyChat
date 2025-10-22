@@ -118,7 +118,7 @@ function PureMessageDisplay({
   }
 
   return (
-    <section className="chat-message-container flex flex-col w-full max-w-3xl space-y-6">
+    <section className="chat-message-container flex flex-col w-full max-w-3xl space-y-3">
       {deduplicatedMessages.map((message, index) => {
         const isLast = deduplicatedMessages.length - 1 === index;
 
