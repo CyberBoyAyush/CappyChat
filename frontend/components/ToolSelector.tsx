@@ -24,8 +24,7 @@ import {
   ListChecks,
   MessageCircle,
 } from "lucide-react";
-import { FaTools } from "react-icons/fa";
-import { FaRedditAlien } from "react-icons/fa6";
+import { FaTools, FaRedditAlien } from "react-icons/fa";
 import { Switch2 } from "@/frontend/components/ui/switch2";
 import {
   ASPECT_RATIOS,
@@ -34,6 +33,12 @@ import {
 import { useSearchTypeStore } from "@/frontend/stores/SearchTypeStore";
 import { useConversationStyleStore } from "@/frontend/stores/ConversationStyleStore";
 import { getAllConversationStyles } from "@/lib/conversationStyles";
+import { RiQuillPenAiFill, RiImageAiFill } from "react-icons/ri";
+import { IoGlobeOutline } from "react-icons/io5";
+import { GiNotebook } from "react-icons/gi";
+import { BsFillDiagram2Fill } from "react-icons/bs";
+import { LuBrain } from "react-icons/lu";
+
 type ModeKey = "image" | "web" | "reddit" | "study" | "plan" | "chat";
 
 const MODE_INFO: Record<
@@ -48,8 +53,7 @@ const MODE_INFO: Record<
 > = {
   image: {
     title: "Image Generation",
-    description:
-      "Generate images from your prompt. Choose an aspect ratio. Uses image models; credits may apply.",
+    description: "Generate images from your prompt. Choose an aspect ratio.",
     icon: <ImageIcon className="w-10 h-10 text-primary drop-shadow" />,
     imageSrc: "/Generate an Image.png",
     imageSrc2: "/image gen 2.png",
@@ -81,7 +85,7 @@ const MODE_INFO: Record<
   plan: {
     title: "Plan Mode",
     description:
-      "Plan complex tasks with artifacts and iterative steps. Great for multi-step projects.",
+      "Plan complex tasks with artifacts and iterative steps. Great for planning tasks.",
     icon: <ListChecks className="w-10 h-10 text-primary drop-shadow" />,
     imageSrc: "/plan mode.png",
     imageSrc2: "/plan mode 2.png",
@@ -108,8 +112,8 @@ const ModePreviewPanel = ({ mode }: { mode: ModeKey }) => {
           className="h-full w-full object-cover"
         />
       </div>
-      <h3 className="mt-3 font-semibold text-sm text-primary">{info.title}</h3>
-      <p className="text-sm text-muted-foreground/90 leading-relaxed">
+      {/* <h3 className="mt-3 font-semibold text-sm text-primary">{info.title}</h3> */}
+      <p className="text-sm mt-3 text-muted-foreground/90 leading-relaxed">
         {info.description}
       </p>
     </div>
@@ -242,8 +246,8 @@ function PureToolSelector({
           side="top"
           align="start"
           className={cn(
-            "w-[240px] md:w-[560px] max-w-[90vw] p-0",
-            "bg-transparent border-transparent overflow-hidden shadow-none"
+            "w-[200px] md:w-[560px] max-w-[90vw] p-0",
+            "bg-transparent border-transparent overflow-visible shadow-none"
           )}
           sideOffset={8}
           collisionPadding={16}
@@ -263,7 +267,8 @@ function PureToolSelector({
                     onMouseEnter={() => setHoveredMode("image")}
                     onMouseLeave={() => setHoveredMode(null)}
                   >
-                    <span className="text-xs truncate mr-2.5 md:text-sm text-primary font-medium">
+                    <span className="text-xs truncate mr-2.5 md:text-sm text-primary font-medium flex items-center gap-1">
+                      <RiImageAiFill className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                       Image Generation
                     </span>
                     <Switch2
@@ -330,7 +335,8 @@ function PureToolSelector({
                         className="w-full cursor-pointer flex items-center justify-between  rounded-lg "
                       >
                         <div className="flex items-center gap-2">
-                          <span className="text-xs md:text-sm text-primary font-medium">
+                          <span className="text-xs md:text-sm text-primary font-medium flex items-center gap-1">
+                            <RiQuillPenAiFill className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                             Style:
                           </span>
                           <span className="text-xs md:text-sm text-muted-foreground">
@@ -347,7 +353,7 @@ function PureToolSelector({
 
                       {/* Style Sub-dropdown */}
                       {showStyleSubDropdown && (
-                        <div className="absolute top-0 max-h-44 md:max-h-56 no-scrollbar overflow-y-auto left-full ml-3 md:ml-4 w-36 md:w-48 rounded-xl border border-border/50 bg-background backdrop-blur-xl shadow-xl z-[110]">
+                        <div className="absolute top-0 max-h-44 md:max-h-56 no-scrollbar overflow-y-auto left-full ml-3 md:ml-4 w-32 md:w-48 rounded-xl border border-border/50 bg-background backdrop-blur-xl shadow-xl z-[110]">
                           <div className="p-1.5 md:p-2 space-y-1">
                             {getAllConversationStyles().map((style) => {
                               const StyleIcon = style.icon;
@@ -392,7 +398,8 @@ function PureToolSelector({
                       onMouseEnter={() => setHoveredMode("image")}
                       onMouseLeave={() => setHoveredMode(null)}
                     >
-                      <span className="text-xs mr-2 py-2 truncate md:text-sm text-primary font-medium">
+                      <span className="text-[12px]  truncate mr-2 py-2 md:text-sm text-primary font-medium flex items-center gap-1">
+                        <RiImageAiFill className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                         Image Generation
                       </span>
                       <Switch2
@@ -409,7 +416,8 @@ function PureToolSelector({
                         onMouseLeave={() => setHoveredMode(null)}
                       >
                         <div className="flex items-center gap-2">
-                          <span className="text-xs md:text-sm text-primary font-medium">
+                          <span className="text-[12px] md:text-sm text-primary font-medium flex items-center gap-1">
+                            <IoGlobeOutline className="h-3.5 w-3.5 rotate-12 text-primary flex-shrink-0" />
                             Web Search
                           </span>
                         </div>
@@ -427,7 +435,8 @@ function PureToolSelector({
                         onMouseLeave={() => setHoveredMode(null)}
                       >
                         <div className="flex items-center gap-2">
-                          <span className="text-xs md:text-sm text-primary font-medium">
+                          <span className="text-[12px] md:text-sm text-primary font-medium flex items-center gap-1">
+                            <FaRedditAlien className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                             Reddit Search
                           </span>
                         </div>
@@ -445,7 +454,8 @@ function PureToolSelector({
                         onMouseLeave={() => setHoveredMode(null)}
                       >
                         <div className="flex items-center gap-2">
-                          <span className="text-xs md:text-sm text-primary font-medium">
+                          <span className="text-[12px] md:text-sm text-primary font-medium flex items-center gap-1">
+                            <GiNotebook className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                             Study Mode
                           </span>
                         </div>
@@ -459,16 +469,14 @@ function PureToolSelector({
                       </div>
 
                       <div
-                        className="flex items-center justify-between py-2"
+                        className="flex items-center justify-between pb-3 py-2"
                         onMouseEnter={() => setHoveredMode("plan")}
                         onMouseLeave={() => setHoveredMode(null)}
                       >
                         <div className="flex w-full items-center gap-3">
-                          <span className="text-xs md:text-sm text-primary font-medium">
+                          <span className="text-[12px] md:text-sm text-primary font-medium flex items-center gap-1">
+                            <BsFillDiagram2Fill className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                             Plan Mode
-                          </span>
-                          <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-primary text-background">
-                            NEW
                           </span>
                         </div>
                         <Switch2
@@ -479,12 +487,15 @@ function PureToolSelector({
                         />
                       </div>
 
+                      <div className="border-t border-border/50 pb-1" />
+
                       {/* Global Memory Toggle */}
                       <div
                         className="flex items-center justify-between pt-2"
                         onMouseEnter={() => setHoveredMode(null)}
                       >
-                        <span className="text-xs md:text-sm text-primary font-medium">
+                        <span className="text-[12px] md:text-sm text-primary font-medium flex items-center gap-1">
+                          <LuBrain className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                           Global Memory
                         </span>
                         <Switch2
