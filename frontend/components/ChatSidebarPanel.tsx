@@ -279,7 +279,7 @@ export default function ChatSidebarPanel() {
               <>
                 <div className="px-0 pt-1 flex items-center justify-between text-sm font-medium text-primary/85">
                   <div className="flex items-center gap-2 ">
-                    <Folder className="h-4 w-4" />
+                    {/* <Folder className="h-4 w-4" /> */}
                     <span>Projects</span>
                   </div>
                   <Button

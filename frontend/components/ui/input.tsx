@@ -19,7 +19,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
         // Base styles
         "flex h-7 w-full min-w-0 px-3 py-3 text-base  outline-none",
         // Background and text colors
-        " text-foreground placeholder:text-muted-foreground",
+        " text-foreground placeholder:text-muted-foreground/60",
         // Light mode specific - better separation from background
 
         // Focus states
