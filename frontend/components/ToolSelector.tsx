@@ -55,40 +55,50 @@ const MODE_INFO: Record<
     title: "Image Generation",
     description: "Generate images from your prompt. Choose an aspect ratio.",
     icon: <ImageIcon className="w-10 h-10 text-primary drop-shadow" />,
-    imageSrc: "/Generate an Image.png",
-    imageSrc2: "/image gen 2.png",
+    imageSrc:
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1761305104/Generate_an_Image_vwwmth.png",
+    imageSrc2:
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1761304974/image_gen_2_sfflgo.png",
   },
   web: {
     title: "Web Search",
     description:
       "Pull in fresh, cited information from the web to augment responses.",
     icon: <Globe className="w-10 h-10 text-primary drop-shadow" />,
-    imageSrc: "/web search.png",
-    imageSrc2: "/web mode 2.png",
+    imageSrc:
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1761304976/web_search_h3grgd.png",
+    imageSrc2:
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1761304976/web_mode_2_ykxfqm.png",
   },
   reddit: {
     title: "Reddit Search",
     description:
       "Search Reddit threads and comments for community perspectives and references.",
     icon: <FaRedditAlien className="w-10 h-10 text-primary drop-shadow" />,
-    imageSrc: "/reddit search.png",
-    imageSrc2: "/reddit mode 2.png",
+    imageSrc:
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1761304975/reddit_search_hguiha.png",
+    imageSrc2:
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1761304975/reddit_mode_2_fquocy.png",
   },
   study: {
     title: "Study Mode",
     description:
       "Structured learning and explanations with step-by-step breakdowns and sources.",
     icon: <GraduationCap className="w-10 h-10 text-primary drop-shadow" />,
-    imageSrc: "/study mode.png",
-    imageSrc2: "/study mode 2.png",
+    imageSrc:
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1761304976/study_mode_ir6rxo.png",
+    imageSrc2:
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1761304975/study_mode_2_slb3lv.png",
   },
   plan: {
     title: "Plan Mode",
     description:
       "Plan complex tasks with artifacts and iterative steps. Great for planning tasks.",
     icon: <ListChecks className="w-10 h-10 text-primary drop-shadow" />,
-    imageSrc: "/plan mode.png",
-    imageSrc2: "/plan mode 2.png",
+    imageSrc:
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1761304975/plan_mode_rkdwtg.png",
+    imageSrc2:
+      "https://res.cloudinary.com/dyetf2h9n/image/upload/v1761304975/plan_mode_2_nigkmu.png",
   },
   chat: {
     title: "Chat Mode",
