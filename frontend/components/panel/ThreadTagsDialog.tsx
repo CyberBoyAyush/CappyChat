@@ -7,24 +7,19 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { X, Plus, Tag } from "lucide-react";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { X, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from "@/frontend/components/ui/dialog";
 import { Button } from "@/frontend/components/ui/button";
 import { Input } from "@/frontend/components/ui/input";
-import { Label } from "@/frontend/components/ui/BasicComponents";
 
-// Generate consistent colors for tags based on tag name using global CSS variables
 const getTagColor = (tag: string) => {
   const colors = ["bg-primary/20 text-primary border-primary/30"];
-
-  // Simple hash function to get consistent color for same tag
   let hash = 0;
   for (let i = 0; i < tag.length; i++) {
     hash = ((hash << 5) - hash + tag.charCodeAt(i)) & 0xffffffff;
@@ -50,7 +45,6 @@ export const ThreadTagsDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Reset tags when dialog opens
   useEffect(() => {
     if (isOpen) {
       setTags([...currentTags]);
@@ -84,7 +78,6 @@ export const ThreadTagsDialog = ({
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-
       setIsSubmitting(true);
       try {
         await onConfirm(tags);
@@ -108,80 +101,55 @@ export const ThreadTagsDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0 max-h-[85vh] overflow-hidden bg-card border-border shadow-2xl">
-        <DialogHeader className="px-6 py-5 border-b border-border/50 bg-gradient-to-r from-primary/5 to-primary/10">
-          <DialogTitle className="text-center text-xl font-semibold text-foreground flex items-center justify-center gap-2">
-            <Tag className="h-5 w-5 text-primary" />
-            Manage Tags
-          </DialogTitle>
-          <DialogDescription className="text-center text-sm text-muted-foreground max-w-sm mx-auto">
-            Add tags to organize and categorize this conversation for better
-            organization.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-md gap-0 bg-card border-border">
+        <VisuallyHidden>
+          <DialogTitle>Manage tags</DialogTitle>
+        </VisuallyHidden>
 
-        <form onSubmit={handleSubmit}>
-          <div className="px-6 pb-6 space-y-6 overflow-y-auto max-h-[calc(85vh-200px)]">
-            {/* Current Tags */}
+        <div className="p-3 md:p-5">
+          <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">
+            Manage tags
+          </h2>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30">
-                  <Tag className="h-4 w-4 text-primary" />
-                </div>
-                <Label className="text-base font-semibold text-foreground">
-                  Current Tags ({tags.length})
-                </Label>
+              <div className="text-sm font-medium text-foreground">
+                Current tags ({tags.length}/10)
               </div>
-              <div className="flex flex-wrap gap-2 p-4 border border-border/50 rounded-xl bg-gradient-to-br from-card/50 to-muted/20 backdrop-blur-sm shadow-sm min-h-[60px]">
+              <div className="flex flex-wrap gap-2 p-3 border border-border/50 rounded-lg bg-background/50 min-h-12">
                 {tags.length > 0 ? (
                   tags.map((tag) => (
                     <div
                       key={tag}
-                      className={`group inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-all duration-200 hover:shadow-sm ${getTagColor(
+                      className={`group inline-flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium border transition-all ${getTagColor(
                         tag
                       )}`}
                     >
                       <span>{tag}</span>
-                      <Button
+                      <button
                         type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-4 w-4 p-0 hover:bg-black/20 dark:hover:bg-white/20 rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-200"
                         onClick={() => handleRemoveTag(tag)}
                         disabled={isSubmitting}
+                        className="p-0 hover:opacity-70 transition-opacity"
                         title="Remove tag"
                       >
                         <X className="h-3 w-3" />
-                      </Button>
+                      </button>
                     </div>
                   ))
                 ) : (
-                  <div className="flex items-center justify-center w-full py-6 text-muted-foreground">
-                    <div className="text-center space-y-2">
-                      <p className="text-sm font-medium">No tags added yet</p>
-                      <p className="text-xs">
-                        Add tags below to organize this conversation
-                      </p>
-                    </div>
+                  <div className="w-full text-center py-2 text-xs text-muted-foreground">
+                    No tags added
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Add New Tag */}
-            <div className="space-y-4 p-5 border border-border/50 rounded-xl bg-gradient-to-br from-card/50 to-muted/20 backdrop-blur-sm shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30">
-                  <Plus className="h-4 w-4 text-primary" />
-                </div>
-                <Label
-                  htmlFor="new-tag"
-                  className="text-base font-semibold text-foreground"
-                >
-                  Add New Tag
-                </Label>
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-foreground">
+                Add new tag
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <Input
                   ref={inputRef}
                   id="new-tag"
@@ -191,12 +159,10 @@ export const ThreadTagsDialog = ({
                   placeholder="Enter tag name..."
                   maxLength={20}
                   disabled={isSubmitting || tags.length >= 10}
-                  className="h-11 rounded-lg bg-background border-border/60 focus:border-primary/50 focus:ring-primary/20 transition-all duration-200"
+                  className="h-10 rounded-lg bg-background border-1 border-primary/40 focus:ring-primary/50 focus:ring-1 text-sm"
                 />
                 <Button
                   type="button"
-                  variant="outline"
-                  size="icon"
                   onClick={handleAddTag}
                   disabled={
                     !newTag.trim() ||
@@ -204,42 +170,41 @@ export const ThreadTagsDialog = ({
                     tags.length >= 10 ||
                     isSubmitting
                   }
-                  className="h-11 w-11 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-all duration-200"
+                  className="h-10 px-3 bg-primary hover:bg-primary/80  font-medium"
                   title="Add tag"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-4 w-4 bg-primary" />
                 </Button>
               </div>
               {tags.length >= 10 && (
-                <div className="flex items-center gap-2 p-3 border border-amber-500/30 rounded-lg bg-gradient-to-r from-amber-500/10 to-amber-500/5">
-                  <div className="h-2 w-2 rounded-full bg-amber-500" />
-                  <p className="text-xs font-medium text-amber-700 dark:text-amber-600">
-                    Maximum of 10 tags allowed.
-                  </p>
+                <div className="text-xs text-amber-600 dark:text-amber-500">
+                  Maximum of 10 tags allowed.
                 </div>
               )}
             </div>
-          </div>
 
-          <DialogFooter className="px-6 py-4 border-t border-border/50 bg-gradient-to-r from-muted/20 to-muted/10 gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-              disabled={isSubmitting}
-              className="flex-1 h-11 font-medium border-border hover:bg-accent hover:text-accent-foreground transition-all duration-200"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={!hasChanges || isSubmitting}
-              className="flex-1 h-11 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-sm transition-all duration-200 font-medium"
-            >
-              {isSubmitting ? "Saving..." : "Save Tags"}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                onClick={handleCancel}
+                disabled={isSubmitting}
+                className="flex-1 h-9 md:h-11 font-medium bg-border/45 border-border/30 text-foreground hover:bg-border/60"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={!hasChanges || isSubmitting}
+                className="flex-1 h-9 md:h-11 bg-primary hover:bg-primary/80  font-medium"
+              >
+                <span className="text-background">
+                  {" "}
+                  {isSubmitting ? "Saving..." : "Save"}
+                </span>
+              </Button>
+            </DialogFooter>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
