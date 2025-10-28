@@ -117,5 +117,5 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Wrap with Better Stack first, then bundle analyzer
-export default withBundleAnalyzer(withBetterStack(nextConfig));
+// Wrap with bundle analyzer only (Better Stack disabled for dev with dummy credentials)
+export default withBundleAnalyzer(nextConfig);

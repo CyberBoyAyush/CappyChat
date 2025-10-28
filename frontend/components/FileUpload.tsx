@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "./ui/Toast";
 import { devError } from "@/lib/logger";
 import { LinkIcon } from "./ui/icons/LinkIcon";
+import { ConditionalTooltip } from "./ui/conditional-tooltip";
 
 interface FileUploadProps {
   onFilesUploaded: (attachments: FileAttachment[]) => void;
@@ -231,41 +232,36 @@ export default function FileUpload({
       />
 
       {/* Upload button - Enhanced with better visual feedback */}
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={handleButtonClick}
-        disabled={disabled || uploadingFiles.length > 0}
-        className={cn(
-          "relative h-6 w-6 rounded-xl transition-all duration-200 mobile-touch",
-          uploadingFiles.length > 0
-            ? "bg-primary/10 text-primary"
-            : "hover:bg-muted/80 hover:scale-105 active:scale-95"
-        )}
-        // title={
-        //   uploadingFiles.length > 0
-        //     ? "Uploading files..."
-        //     : "Upload files (Images, PDFs, text, and Word documents)"
-        // }
+      <ConditionalTooltip
+        content="Upload files"
+        showTooltip={uploadingFiles.length === 0}
+        side="top"
+        className="p-2 text-xs"
       >
-        {uploadingFiles.length > 0 ? (
-          <div className="relative">
-            <Loader2 className="w-4 h-4 animate-spin text-primary" />
-            {/* Pulsing background effect */}
-            <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
-          </div>
-        ) : (
-          <LinkIcon className="w-4 h-4 text-primary transition-transform group-hover:rotate-12" />
-        )}
-
-        {/* Upload count indicator */}
-        {/* {uploadingFiles.length > 0 && (
-          <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium animate-pulse">
-            {uploadingFiles.length}
-          </div>
-        )} */}
-      </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={handleButtonClick}
+          disabled={disabled || uploadingFiles.length > 0}
+          className={cn(
+            "relative h-6 w-6 rounded-xl transition-all duration-200 mobile-touch",
+            uploadingFiles.length > 0
+              ? "bg-primary/10 text-primary"
+              : "hover:bg-muted/80 hover:scale-105 active:scale-95"
+          )}
+        >
+          {uploadingFiles.length > 0 ? (
+            <div className="relative">
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              {/* Pulsing background effect */}
+              <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
+            </div>
+          ) : (
+            <LinkIcon className="w-4 h-4 text-primary transition-transform group-hover:rotate-12" />
+          )}
+        </Button>
+      </ConditionalTooltip>
 
       {/* Drag and drop overlay - Enhanced responsive design */}
       {isDragOver && (

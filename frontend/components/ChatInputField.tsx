@@ -72,6 +72,7 @@ import {
   DropdownMenuTrigger,
 } from "@/frontend/components/ui/dropdown-menu";
 import { FaTools } from "react-icons/fa";
+import { ConditionalTooltip } from "./ui/conditional-tooltip";
 
 // Extended UIMessage type to include attachments
 type ExtendedUIMessage = UIMessage & {
@@ -1419,31 +1420,36 @@ function PureInputField({
             <div className="absolute right-2 top-2 flex items-center gap-2">
               {/* Enhance Button */}
               {!isImageGenMode && input.trim().length > 0 && !isGuest && (
-                <button
-                  type="button"
-                  onClick={handleEnhancePrompt}
-                  disabled={
-                    isEnhancing ||
-                    status === "streaming" ||
-                    status === "submitted" ||
-                    !input.trim()
-                  }
-                  className={cn(
-                    "p-2.5 rounded-lg flex items-center justify-center cursor-pointer transition-all",
-                    "bg-primary/10 hover:bg-primary/20 text-primary",
-                    "border border-primary/20 hover:border-primary/30",
-                    "disabled:opacity-50 disabled:cursor-not-allowed",
-                    "shadow-sm hover:shadow-md"
-                  )}
-                  aria-label="Enhance prompt"
-                  title="Enhance your prompt with AI"
+                <ConditionalTooltip
+                  content="Enhance prompt"
+                  showTooltip={!isEnhancing}
+                  side="top"
                 >
-                  {isEnhancing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <SparklesIcon />
-                  )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleEnhancePrompt}
+                    disabled={
+                      isEnhancing ||
+                      status === "streaming" ||
+                      status === "submitted" ||
+                      !input.trim()
+                    }
+                    className={cn(
+                      "p-2.5 rounded-lg flex items-center justify-center cursor-pointer transition-all",
+                      "bg-primary/10 hover:bg-primary/20 text-primary",
+                      "border border-primary/20 hover:border-primary/30",
+                      "disabled:opacity-50 disabled:cursor-not-allowed",
+                      "shadow-sm hover:shadow-md"
+                    )}
+                    aria-label="Enhance prompt"
+                  >
+                    {isEnhancing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <SparklesIcon />
+                    )}
+                  </button>
+                </ConditionalTooltip>
               )}
 
               {/* Voice Input Button */}
@@ -1524,16 +1530,23 @@ function PureInputField({
                       onOpenChange={setIsToolsDropdownOpen}
                     >
                       <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={cn(
-                            "flex items-center rounded-lg text-xs font-medium transition-all duration-200",
-                            "hover:bg-accent hover:text-primary h-8 w-8 md:h-10 md:w-10"
-                          )}
+                        <ConditionalTooltip
+                          className="text-xs p-2"
+                          content="Tools"
+                          side="top"
+                          showTooltip={!isToolsDropdownOpen}
                         >
-                          <FaTools className="h-3 w-3 md:h-4 md:w-4 text-primary" />
-                        </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                              "flex items-center rounded-lg text-xs font-medium transition-all duration-200",
+                              "hover:bg-accent hover:text-primary h-8 w-8 md:h-10 md:w-10"
+                            )}
+                          >
+                            <FaTools className="h-3 w-3 md:h-4 md:w-4 text-primary" />
+                          </Button>
+                        </ConditionalTooltip>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
                         side="top"

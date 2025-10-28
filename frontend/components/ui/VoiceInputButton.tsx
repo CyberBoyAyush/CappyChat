@@ -16,6 +16,7 @@ import {
 } from "@/lib/audioRecorder";
 import { useBYOKStore } from "@/frontend/stores/BYOKStore";
 import { cn } from "@/lib/utils";
+import { ConditionalTooltip } from "./conditional-tooltip";
 
 interface VoiceInputButtonProps {
   onResult: (text: string) => void;
@@ -458,23 +459,31 @@ export default function VoiceInputButton({
   }, [listening]);
 
   return (
-    <button
-      className={buttonProps.className}
-      onClick={handleClick}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      title={listening ? "Release to stop recording" : "Hold to record"}
-      type="button"
-      disabled={buttonProps.disabled}
-      style={buttonProps.style}
+    <ConditionalTooltip
+      content="Dictate"
+      showTooltip={!listening && !processing}
+      side="top"
     >
-      {buttonProps.icon}
-      {listening && (
-        <span className="sr-only">Recording in progress - release to stop</span>
-      )}
-    </button>
+      <button
+        className={buttonProps.className}
+        onClick={handleClick}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        title={listening ? "Release to stop recording" : ""}
+        type="button"
+        disabled={buttonProps.disabled}
+        style={buttonProps.style}
+      >
+        {buttonProps.icon}
+        {listening && (
+          <span className="sr-only">
+            Recording in progress - release to stop
+          </span>
+        )}
+      </button>
+    </ConditionalTooltip>
   );
 }

@@ -77,6 +77,7 @@ import { PanelLeft } from "@/frontend/components/ui/icons/panel-left";
 import { AnimateIcon } from "@/frontend/components/ui/icons/icon";
 import FreeTierShowcase from "./FreeTierShowcase";
 import CapybaraIcon from "./ui/CapybaraIcon";
+import { ConditionalTooltip } from "./ui/conditional-tooltip";
 
 interface ChatInterfaceProps {
   threadId: string;
@@ -470,7 +471,11 @@ export default function ChatInterface({
             .split("|")
             .filter((img): img is string => {
               // Filter out empty strings and only keep valid HTTP(S) URLs
-              return typeof img === "string" && img.trim().length > 0 && /^https?:\/\//.test(img.trim());
+              return (
+                typeof img === "string" &&
+                img.trim().length > 0 &&
+                /^https?:\/\//.test(img.trim())
+              );
             })
             .slice(0, 15);
           return images;
@@ -481,7 +486,10 @@ export default function ChatInterface({
       };
 
       const extractedImgs = extractImagesFromContent(aiMessage.content);
-      if (extractedImgs.length > 0 && extractedImgs.every((img) => typeof img === "string")) {
+      if (
+        extractedImgs.length > 0 &&
+        extractedImgs.every((img) => typeof img === "string")
+      ) {
         aiMessage.webSearchImgs = extractedImgs;
         setMessages((prev) => {
           const updated = prev.map((m) =>
@@ -2142,27 +2150,41 @@ export default function ChatInterface({
               : "border-none mr-6 rounded-md py-2"
           )}
         >
-          <ShareButton
-            threadId={threadId}
-            variant={isDarkTheme ? "outline" : "secondary"}
-            className="text-primary"
-          />
-
-          <Button
-            onClick={handleToggleNavigator}
-            variant={isDarkTheme ? "outline" : "secondary"}
-            size="icon"
-            className={cn(
-              "focus:outline-none focus:ring-0 shadow-sm rounded-md "
-            )}
-            aria-label={
-              isNavigatorVisible
-                ? "Hide message browser"
-                : "Show message browser"
-            }
+          <ConditionalTooltip
+            content="Share conversation"
+            showTooltip={true}
+            side="bottom"
+            className="p-2 text-xs"
           >
-            <MessageCircleIcon className="h-5 w-5 text-primary" />
-          </Button>
+            <ShareButton
+              threadId={threadId}
+              variant={isDarkTheme ? "outline" : "secondary"}
+              className="text-primary"
+            />
+          </ConditionalTooltip>
+
+          <ConditionalTooltip
+            content="Toggle message browser"
+            showTooltip={!isNavigatorVisible}
+            side="bottom"
+            className="p-2 text-xs"
+          >
+            <Button
+              onClick={handleToggleNavigator}
+              variant={isDarkTheme ? "outline" : "secondary"}
+              size="icon"
+              className={cn(
+                "focus:outline-none focus:ring-0 shadow-sm rounded-md "
+              )}
+              aria-label={
+                isNavigatorVisible
+                  ? "Hide message browser"
+                  : "Show message browser"
+              }
+            >
+              <MessageCircleIcon className="h-5 w-5 text-primary" />
+            </Button>
+          </ConditionalTooltip>
 
           <ThemeToggleButton variant="inline" />
         </div>
@@ -2578,25 +2600,39 @@ const AppPanelTrigger = () => {
       }`}
     >
       <AnimateIcon animateOnHover>
-        <Button
-          size="icon"
-          variant={isDarkTheme ? "outline" : "secondary"}
-          onClick={handleToggle}
-          aria-label="Toggle sidebar"
+        <ConditionalTooltip
+          content="Toggle sidebar"
+          showTooltip={state === "collapsed"}
+          side="bottom"
+          className="p-2 text-xs"
         >
-          <PanelLeft className={"text-primary"} />
-        </Button>
+          <Button
+            size="icon"
+            variant={isDarkTheme ? "outline" : "secondary"}
+            onClick={handleToggle}
+            aria-label="Toggle sidebar"
+          >
+            <PanelLeft className={"text-primary"} />
+          </Button>
+        </ConditionalTooltip>
       </AnimateIcon>
 
       <div className="rounded-md md:block">
-        <Button
-          onClick={handleOpenSearch}
-          size="icon"
-          variant={isDarkTheme ? "outline" : "secondary"}
-          className={` ${state === "collapsed" ? "ml-2" : "hidden"}`}
+        <ConditionalTooltip
+          content="Search"
+          showTooltip={state === "collapsed"}
+          side="bottom"
+          className="p-2 text-xs"
         >
-          <SearchIcon className="text-primary" />
-        </Button>
+          <Button
+            onClick={handleOpenSearch}
+            size="icon"
+            variant={isDarkTheme ? "outline" : "secondary"}
+            className={` ${state === "collapsed" ? "ml-2" : "hidden"}`}
+          >
+            <SearchIcon className="text-primary" />
+          </Button>
+        </ConditionalTooltip>
         <GlobalSearchDialog
           isOpen={isSearchDialogOpen}
           onClose={handleCloseSearch}
@@ -2604,17 +2640,24 @@ const AppPanelTrigger = () => {
       </div>
 
       <div className="rounded-md">
-        <Button
-          onClick={() => {
-            if (location.pathname !== "/chat") navigate("/chat");
-          }}
-          disabled={location.pathname === "/chat"}
-          size="icon"
-          variant={isDarkTheme ? "outline" : "secondary"}
-          className={` ${state === "collapsed" ? "ml-2" : "hidden"}`}
+        <ConditionalTooltip
+          content="New Chat"
+          showTooltip={state === "collapsed"}
+          side="bottom"
+          className="p-2 text-xs"
         >
-          <PlusIcon className="h-5 w-5 text-primary" />
-        </Button>
+          <Button
+            onClick={() => {
+              if (location.pathname !== "/chat") navigate("/chat");
+            }}
+            disabled={location.pathname === "/chat"}
+            size="icon"
+            variant={isDarkTheme ? "outline" : "secondary"}
+            className={` ${state === "collapsed" ? "ml-2" : "hidden"}`}
+          >
+            <PlusIcon className="h-5 w-5 text-primary" />
+          </Button>
+        </ConditionalTooltip>
       </div>
     </div>
   );
