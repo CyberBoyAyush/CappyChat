@@ -11,10 +11,19 @@ interface GuestUsage {
   resetTime: number;
 }
 
-// Initialize Redis client
+// Validate required environment variables
+if (!process.env.UPSTASH_REDIS_REST_URL) {
+  throw new Error('UPSTASH_REDIS_REST_URL environment variable is required');
+}
+
+if (!process.env.UPSTASH_REDIS_REST_TOKEN) {
+  throw new Error('UPSTASH_REDIS_REST_TOKEN environment variable is required');
+}
+
+// Initialize Redis client with validated credentials
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || 'https://refined-stinkbug-13936.upstash.io',
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || 'ATZwAAIncDIzZmZiNmNiMjUwYzQ0MzFlOWEzMDQwY2RlMjZkYzgwMXAyMTM5MzY',
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
 // Guest limits: 2 messages per 24 hours per IP
