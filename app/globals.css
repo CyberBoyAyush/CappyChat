@@ -7,6 +7,33 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Scoped spacing for assistant messages only */
+.assistant-message p,
+.assistant-message h1,
+.assistant-message h2,
+.assistant-message h3,
+.assistant-message h4,
+.assistant-message h5,
+.assistant-message h6,
+.assistant-message ol,
+.assistant-message ul,
+.assistant-message blockquote,
+.assistant-message figure,
+.assistant-message figcaption,
+.assistant-message pre,
+.assistant-message code,
+.assistant-message table,
+.assistant-message th,
+.assistant-message td,
+.assistant-message hr,
+.assistant-message details,
+.assistant-message summary {
+  margin-top: 6px;
+  margin-bottom: 6px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
 :root {
   /* Light mode colors - white background, black primary */
   --background: #ffffff;

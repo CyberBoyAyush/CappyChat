@@ -37,24 +37,21 @@ import { StopIcon } from "./ui/UIComponents";
 import { HybridDB } from "@/lib/hybridDB";
 import { useChatMessageSummary } from "../hooks/useChatMessageSummary";
 import { ModelSelector } from "./ModelSelector";
+import { ToolSelector } from "./ToolSelector";
 import { devLog, devError } from "@/lib/logger";
 import {
   ASPECT_RATIOS,
   AspectRatio,
   getDimensionsForModel,
 } from "./AspectRatioSelector";
-import {
-  useSearchTypeStore,
-  SearchType,
-} from "@/frontend/stores/SearchTypeStore";
+import { useSearchTypeStore } from "@/frontend/stores/SearchTypeStore";
 import { useModelStore } from "@/frontend/stores/ChatModelStore";
 import { getModelConfig } from "@/lib/models";
 import VoiceInputButton from "./ui/VoiceInputButton";
 import FileUpload, { UploadingFile } from "./FileUpload";
 import { FileAttachment } from "@/lib/appwriteDB";
 import { X, FileImage, FileText, Loader2, XCircle } from "lucide-react";
-import { RiImageAiFill } from "react-icons/ri";
-import { FaRedditAlien } from "react-icons/fa6";
+
 import { toast } from "./ui/Toast";
 import { useAuth } from "@/frontend/contexts/AuthContext";
 import { useAuthDialog } from "@/frontend/hooks/useAuthDialog";
@@ -62,16 +59,7 @@ import AuthDialog from "./auth/AuthDialog";
 import { extractMemories, shouldAddMemory } from "@/lib/memoryExtractor";
 import { AppwriteDB } from "@/lib/appwriteDB";
 import { SparklesIcon } from "./ui/icons/SparklesIcon";
-import { Switch2 } from "@/frontend/components/ui/switch2";
-import { useConversationStyleStore } from "@/frontend/stores/ConversationStyleStore";
 import { PDFThumbnail } from "./ui/PDFThumbnail";
-import { getAllConversationStyles } from "@/lib/conversationStyles";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/frontend/components/ui/dropdown-menu";
-import { FaTools } from "react-icons/fa";
 
 // Extended UIMessage type to include attachments
 type ExtendedUIMessage = UIMessage & {
@@ -220,45 +208,13 @@ function PureInputField({
   const { complete } = useChatMessageSummary();
 
   // Search state (Chat, Web Search, or Reddit Search)
-  const { selectedSearchType, setSearchType } = useSearchTypeStore();
+  const { selectedSearchType } = useSearchTypeStore();
 
   // Derived state for Plan Mode (read-only from searchType)
   const isPlanMode = selectedSearchType === "plan";
 
-  // Conversation style state
-  const { selectedStyle, setStyle, getStyleConfig } =
-    useConversationStyleStore();
-
   // Model selection state
-  const { selectedModel, setModel } = useModelStore();
-
-  // Tools dropdown state
-  const [isToolsDropdownOpen, setIsToolsDropdownOpen] = useState(false);
-  const [showStyleSubDropdown, setShowStyleSubDropdown] = useState(false);
-
-  // Ref for style dropdown to handle click outside
-  const styleDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Handle click outside for style dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        showStyleSubDropdown &&
-        styleDropdownRef.current &&
-        !styleDropdownRef.current.contains(event.target as Node)
-      ) {
-        setShowStyleSubDropdown(false);
-      }
-    };
-
-    if (showStyleSubDropdown) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showStyleSubDropdown]);
+  const { selectedModel } = useModelStore();
 
   // Sync isImageGenMode with selected model on mount and when model changes
   useEffect(() => {
@@ -1518,277 +1474,14 @@ function PureInputField({
 
                 {!isGuest && (
                   <>
-                    {/* Unified Tools Dropdown */}
-                    <DropdownMenu
-                      open={isToolsDropdownOpen}
-                      onOpenChange={setIsToolsDropdownOpen}
-                    >
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={cn(
-                            "flex items-center rounded-lg text-xs font-medium transition-all duration-200",
-                            "hover:bg-accent hover:text-primary h-8 w-8 md:h-10 md:w-10"
-                          )}
-                        >
-                          <FaTools className="h-3 w-3 md:h-4 md:w-4 text-primary" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        side="top"
-                        align="start"
-                        className={cn(
-                          "w-40 md:w-64 p-0 overflow-visible",
-                          "border border-border/50 bg-background/95 backdrop-blur-xl",
-                          "shadow-xl rounded-xl"
-                        )}
-                        sideOffset={6}
-                      >
-                        <div className="p-4 md:p-5 space-y-2 md:space-y-3 overflow-visible">
-                          {isImageGenMode ? (
-                            /* Show Aspect Ratio when image gen is ON */
-                            <div className="space-y-2 md:space-y-3">
-                              {/* Image Generation Toggle */}
-                              <div className="flex items-center  justify-between">
-                                <span className="text-xs truncate mr-2.5 md:text-sm text-primary font-medium">
-                                  Image Generation
-                                </span>
-                                <Switch2
-                                  isSelected={isImageGenMode}
-                                  onChange={(isSelected) => {
-                                    setIsImageGenMode(isSelected);
-                                    if (isSelected) {
-                                      const currentConfig =
-                                        getModelConfig(selectedModel);
-                                      if (!currentConfig.isImageGeneration) {
-                                        setModel("Gemini Nano Banana");
-                                      }
-                                    } else {
-                                      const currentConfig =
-                                        getModelConfig(selectedModel);
-                                      if (currentConfig.isImageGeneration) {
-                                        setModel("Gemini 2.5 Flash Lite");
-                                      }
-                                    }
-                                  }}
-                                />
-                              </div>
-                              <label className="text-[10px] md:text-xs text-primary font-semibold  uppercase tracking-wide">
-                                Aspect Ratio
-                              </label>
-                              <div className="space-y-1 mt-1">
-                                {ASPECT_RATIOS.map((ratio) => {
-                                  const RatioIcon = ratio.icon;
-                                  const isSelected =
-                                    selectedAspectRatio.id === ratio.id;
-                                  return (
-                                    <button
-                                      key={ratio.id}
-                                      onClick={() =>
-                                        setSelectedAspectRatio(ratio)
-                                      }
-                                      className={cn(
-                                        "w-full flex items-center gap-2 md:gap-2.5 p-1.5 md:p-2 rounded-lg text-left transition-all",
-                                        "hover:bg-accent/30",
-                                        isSelected && "bg-primary/15"
-                                      )}
-                                    >
-                                      <RatioIcon className="h-3 w-3 md:h-3.5 md:w-3.5 text-primary flex-shrink-0" />
-                                      <div className="flex-1 text-primary min-w-0">
-                                        <div className="flex items-center justify-between">
-                                          <span className="font-medium truncate text-xs md:text-sm ">
-                                            {ratio.name} ({ratio.ratio})
-                                          </span>
-                                          {isSelected && (
-                                            <Check className="h-2.5 w-2.5 md:h-3 md:w-3  flex-shrink-0" />
-                                          )}
-                                        </div>
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ) : (
-                            /* Show Conversation Style and Search Type when image gen is OFF */
-                            <>
-                              {/* Conversation Style with Sub-dropdown */}
-                              <div className="relative" ref={styleDropdownRef}>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setShowStyleSubDropdown(
-                                      !showStyleSubDropdown
-                                    )
-                                  }
-                                  className="w-full cursor-pointer flex items-center justify-between  rounded-lg "
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs md:text-sm text-primary font-medium">
-                                      Style:
-                                    </span>
-                                    <span className="text-xs md:text-sm text-muted-foreground">
-                                      {getStyleConfig().name}
-                                    </span>
-                                  </div>
-                                  <ChevronDown
-                                    className={cn(
-                                      "h-3 w-3 md:h-3.5 md:w-3.5 text-muted-foreground transition-transform duration-200",
-                                      showStyleSubDropdown && "-rotate-90"
-                                    )}
-                                  />
-                                </button>
-
-                                {/* Style Sub-dropdown */}
-                                {showStyleSubDropdown && (
-                                  <div className="absolute top-0 max-h-44 md:max-h-56 no-scrollbar overflow-y-auto left-full ml-3 md:ml-4 w-36 md:w-48 rounded-xl border border-border/50 bg-background backdrop-blur-xl shadow-xl z-[110]">
-                                    <div className="p-1.5 md:p-2 space-y-1">
-                                      {getAllConversationStyles().map(
-                                        (style) => {
-                                          const StyleIcon = style.icon;
-                                          const isSelected =
-                                            selectedStyle === style.id;
-                                          return (
-                                            <button
-                                              key={style.id}
-                                              onClick={() => {
-                                                setStyle(style.id);
-                                                setShowStyleSubDropdown(false);
-                                              }}
-                                              className={cn(
-                                                "w-full cursor-pointer flex items-center gap-2 md:gap-2.5 p-1.5 md:p-2 rounded-lg text-left transition-all",
-                                                "hover:bg-accent/30",
-                                                isSelected && "bg-primary/15"
-                                              )}
-                                            >
-                                              <StyleIcon className="h-3 w-3 md:h-3.5 md:w-3.5 text-primary flex-shrink-0" />
-                                              <div className="flex-1 min-w-0">
-                                                <div className="flex items-center justify-between">
-                                                  <span className="font-medium text-[10px] md:text-[12px] text-primary">
-                                                    {style.name}
-                                                  </span>
-                                                  {isSelected && (
-                                                    <Check className="h-2.5 w-2.5 md:h-3 md:w-3 text-primary flex-shrink-0" />
-                                                  )}
-                                                </div>
-                                              </div>
-                                            </button>
-                                          );
-                                        }
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="border-t border-border/50" />
-
-                              {/* Search Type */}
-                              <div className="space-y-2 md:space-y-3">
-                                {/* Image Generation Toggle */}
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs mr-2 truncate md:text-sm text-primary font-medium">
-                                    Image Generation
-                                  </span>
-                                  <Switch2
-                                    isSelected={isImageGenMode}
-                                    onChange={(isSelected) => {
-                                      setIsImageGenMode(isSelected);
-                                      if (isSelected) {
-                                        const currentConfig =
-                                          getModelConfig(selectedModel);
-                                        if (!currentConfig.isImageGeneration) {
-                                          setModel("Gemini Nano Banana");
-                                        }
-                                      } else {
-                                        const currentConfig =
-                                          getModelConfig(selectedModel);
-                                        if (currentConfig.isImageGeneration) {
-                                          setModel("Gemini 2.5 Flash Lite");
-                                        }
-                                      }
-                                    }}
-                                  />
-                                </div>
-                                <div className="space-y-2 md:space-y-3">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs md:text-sm text-primary font-medium">
-                                        Web Search
-                                      </span>
-                                    </div>
-                                    <Switch2
-                                      isSelected={selectedSearchType === "web"}
-                                      onChange={(isSelected) =>
-                                        setSearchType(
-                                          isSelected ? "web" : "chat"
-                                        )
-                                      }
-                                    />
-                                  </div>
-
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs md:text-sm text-primary font-medium">
-                                        Reddit Search
-                                      </span>
-                                    </div>
-                                    <Switch2
-                                      isSelected={
-                                        selectedSearchType === "reddit"
-                                      }
-                                      onChange={(isSelected) =>
-                                        setSearchType(
-                                          isSelected ? "reddit" : "chat"
-                                        )
-                                      }
-                                    />
-                                  </div>
-
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs md:text-sm text-primary font-medium">
-                                        Study Mode
-                                      </span>
-                                    </div>
-                                    <Switch2
-                                      isSelected={
-                                        selectedSearchType === "study"
-                                      }
-                                      onChange={(isSelected) =>
-                                        setSearchType(
-                                          isSelected ? "study" : "chat"
-                                        )
-                                      }
-                                    />
-                                  </div>
-
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex w-full items-center gap-3">
-                                      <span className="text-xs md:text-sm text-primary font-medium">
-                                        Plan Mode
-                                      </span>
-                                      <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-primary text-background">
-                                        NEW
-                                      </span>
-                                    </div>
-                                    <Switch2
-                                      isSelected={selectedSearchType === "plan"}
-                                      onChange={(isSelected) =>
-                                        setSearchType(
-                                          isSelected ? "plan" : "chat"
-                                        )
-                                      }
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <ToolSelector
+                      isImageGenMode={isImageGenMode}
+                      onToggleImageGenMode={(v: boolean) =>
+                        setIsImageGenMode(v)
+                      }
+                      selectedAspectRatio={selectedAspectRatio}
+                      onSelectAspectRatio={setSelectedAspectRatio}
+                    />
                     <div className="min-w-0 flex-shrink overflow-hidden">
                       <ModelSelector
                         isImageGenMode={isImageGenMode}

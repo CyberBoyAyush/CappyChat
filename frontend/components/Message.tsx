@@ -117,13 +117,13 @@ function SuggestedQuestions({
       </Button>
 
       {open && (
-        <div className="mt-2 p-2 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm animate-in fade-in-50">
+        <div className="mt-2 px-2 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm animate-in fade-in-50">
           {loading ? (
             <div className="text-sm text-muted-foreground px-2 py-3">
               Generating suggestions…
             </div>
           ) : suggestions && suggestions.length > 0 ? (
-            <ul className="flex flex-col divide-y divide-border/40">
+            <ul className="flex flex-col mt-0 mb-0 divide-y divide-border/40">
               {suggestions.slice(0, 3).map((q, i) => (
                 <li key={i}>
                   <button
@@ -266,7 +266,16 @@ function PureMessage({
       ? (modelToUse as AIModel)
       : selectedModel;
   const modelConfig = getModelConfig(validModelToUse);
-  const modelIcon = getModelIcon(modelConfig.iconType, 16, "text-primary");
+  const modelIcon = (() => {
+    try {
+      const icon = getModelIcon(modelConfig.iconType, 16, "text-primary");
+      // Ensure icon is a valid React element or null
+      return icon && typeof icon === 'object' && 'type' in icon ? icon : null;
+    } catch (e) {
+      devWarn("Error rendering model icon:", e);
+      return null;
+    }
+  })();
 
   // Image preview state for web search images
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
@@ -342,7 +351,9 @@ function PureMessage({
       ((message as any).webSearchImgs as string[] | undefined) ||
       (isStreaming ? (streamingWebImgs as string[] | undefined) : undefined) ||
       [];
-    if (imgs.length > 0 && currentImageIndex >= imgs.length) {
+    // Only update if images are valid strings
+    const validImages = imgs.filter((img): img is string => typeof img === "string");
+    if (validImages.length > 0 && currentImageIndex >= validImages.length) {
       setCurrentImageIndex(0);
     }
   }, [(message as any).webSearchImgs, streamingWebImgs, isStreaming]);
@@ -354,7 +365,9 @@ function PureMessage({
       ((message as any).webSearchImgs as string[] | undefined) ||
       (isStreaming ? (streamingWebImgs as string[] | undefined) : undefined) ||
       [];
-    const total = overlayImgs.length;
+    // Filter to ensure all are valid strings
+    const validImgs = overlayImgs.filter((img): img is string => typeof img === "string");
+    const total = validImgs.length;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setPreviewIdx(null);
       if (e.key === "ArrowLeft" && total > 1)
@@ -396,19 +409,28 @@ function PureMessage({
           return message.role === "user" ? (
             <div
               key={key}
-              className="flex gap-2 max-w-[95%] sm:max-w-[85%] md:max-w-[75%]  pl-4"
+              className="flex items-end gap-2 group max-w-[95%] sm:max-w-[85%] md:max-w-[75%]  pl-4"
               ref={(el) => registerRef?.(message.id, el)}
             >
               {/* User Avatar */}
-              <div className="flex-shrink-0 mt-1">
-                <div className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
-                  <User className="w-3.5 h-3.5 text-primary" />
+              {mode === "view" && (
+                <div className="md:opacity-0 md:group-hover:opacity-100 transition-all duration-200">
+                  <ChatMessageControls
+                    threadId={threadId}
+                    content={(part as any).text || ""}
+                    message={message}
+                    setMode={setMode}
+                    setMessages={setMessages}
+                    reload={reload}
+                    stop={stop}
+                    onRetryWithModel={onRetryWithModel}
+                  />
                 </div>
-              </div>
+              )}
 
               {/* User Message Content */}
               <div className="relative group flex-1 min-w-0 overflow-hidden">
-                <div className="px-3 py-2 mb-2 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50 shadow-sm hover:border-border/70 transition-all duration-200">
+                <div className="px-3 py-2 mb-2 rounded-xl bg-accent backdrop-blur-sm border border-border/50 shadow-sm hover:border-border/70 transition-all duration-200">
                   {mode === "edit" && (
                     <ChatMessageEditor
                       threadId={threadId}
@@ -437,20 +459,6 @@ function PureMessage({
                     </>
                   )}
                 </div>
-                {mode === "view" && (
-                  <div className="mt-1">
-                    <ChatMessageControls
-                      threadId={threadId}
-                      content={(part as any).text || ""}
-                      message={message}
-                      setMode={setMode}
-                      setMessages={setMessages}
-                      reload={reload}
-                      stop={stop}
-                      onRetryWithModel={onRetryWithModel}
-                    />
-                  </div>
-                )}
               </div>
             </div>
           ) : (
@@ -467,7 +475,7 @@ function PureMessage({
               </div>
 
               {/* Assistant Message Content */}
-              <div className="group flex-1 flex flex-col gap-3 min-w-0 overflow-hidden max-w-full chat-message-container no-scrollbar">
+              <div className="assistant-message group flex-1 flex flex-col gap-3 min-w-0 overflow-hidden max-w-full chat-message-container no-scrollbar">
                 {/* Check if this is an image generation loading message */}
                 {(() => {
                   const messageText = cleanMessageContent(
@@ -600,10 +608,15 @@ function PureMessage({
                   const fromStream = isStreaming
                     ? (streamingWebImgs as string[] | undefined) || undefined
                     : undefined;
+                  // Ensure all images are valid strings before rendering
                   const imgs =
-                    (fromDb && fromDb.length > 0 ? fromDb : fromStream) || [];
+                    (fromDb && fromDb.length > 0 && fromDb.every((img) => typeof img === "string")
+                      ? fromDb
+                      : fromStream && fromStream.every((img) => typeof img === "string")
+                      ? fromStream
+                      : []) || [];
                   const showImages =
-                    message.role === "assistant" && imgs.length > 0;
+                    message.role === "assistant" && imgs.length > 0 && imgs.every((img) => typeof img === "string");
                   if (!showImages) return null;
 
                   const showCount = Math.min(visibleCount, imgs.length);
@@ -645,6 +658,7 @@ function PureMessage({
                       {/* Desktop grid layout */}
                       <div className="hidden md:grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         {imgs.slice(0, showCount).map((src, i) => {
+                          if (typeof src !== "string") return null;
                           const isLastVisible =
                             i === showCount - 1 && remaining > 0;
                           return (
@@ -707,7 +721,9 @@ function PureMessage({
                               }%)`,
                             }}
                           >
-                            {imgs.map((src, i) => (
+                            {imgs.map((src, i) => {
+                              if (typeof src !== "string") return null;
+                              return (
                               <div
                                 key={i}
                                 className="relative flex-shrink-0 w-full bg-muted/20"
@@ -760,7 +776,8 @@ function PureMessage({
                                   </div>
                                 </div>
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
 
@@ -963,15 +980,18 @@ function PureMessage({
                               ? (streamingWebImgs as string[] | undefined)
                               : undefined) ||
                             [];
-                          const total = overlayImgs.length;
+                          // Filter to ensure all are valid strings
+                          const validImgs = overlayImgs.filter((img): img is string => typeof img === "string");
+                          const total = validImgs.length;
                           if (total === 0) return null;
                           const idx = Math.min(
                             Math.max(previewIdx as number, 0),
                             total - 1
                           );
-                          const src = overlayImgs[idx];
+                          const src = validImgs[idx];
                           const host = (() => {
                             try {
+                              if (!src || typeof src !== "string") return "";
                               return new URL(src).hostname.replace(
                                 /^www\./,
                                 ""
@@ -1027,12 +1047,14 @@ function PureMessage({
                                   <ChevronLeft className="h-6 w-6" />
                                 </button>
                               )}
-                              <img
-                                src={src}
-                                alt=""
-                                className="max-h-[80vh] max-w-[90vw] object-contain rounded-lg shadow-2xl border"
-                                onClick={(e) => e.stopPropagation()}
-                              />
+                              {src && typeof src === "string" && (
+                                <img
+                                  src={src}
+                                  alt=""
+                                  className="max-h-[80vh] max-w-[90vw] object-contain rounded-lg shadow-2xl border"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              )}
                               {total > 1 && (
                                 <button
                                   type="button"
@@ -1099,7 +1121,7 @@ function PureMessage({
 
                 {/* Controls - placed after citations and suggestions */}
                 {!isStreaming && (
-                  <div className="flex-shrink-0 mt-1">
+                  <div className="flex-shrink-0 mt-1 flex items-center gap-2">
                     <ChatMessageControls
                       threadId={threadId}
                       content={(part as any).text || ""}
@@ -1109,6 +1131,12 @@ function PureMessage({
                       stop={stop}
                       onRetryWithModel={onRetryWithModel}
                     />
+                    {message.role === "assistant" && (
+                      <div className="opacity-60 group-hover:opacity-100 transition-all pb-3 duration-200 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                        {modelIcon}
+                        <span className="ml-1">{modelConfig.displayName}</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

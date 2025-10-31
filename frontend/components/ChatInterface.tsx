@@ -462,16 +462,26 @@ export default function ChatInterface({
       }
 
       // Extract image URLs from hidden marker and persist
-      const extractImagesFromContent = (c: string): string[] =>
-        c.match(/<!-- SEARCH_IMAGES: (.*?) -->/)
-          ? (c.match(/<!-- SEARCH_IMAGES: (.*?) -->/) as RegExpMatchArray)[1]
-              .split("|")
-              .filter(Boolean)
-              .slice(0, 15)
-          : [];
+      const extractImagesFromContent = (c: string): string[] => {
+        try {
+          const match = c.match(/<!-- SEARCH_IMAGES: (.*?) -->/);
+          if (!match || !match[1]) return [];
+          const images = match[1]
+            .split("|")
+            .filter((img): img is string => {
+              // Filter out empty strings and only keep valid HTTP(S) URLs
+              return typeof img === "string" && img.trim().length > 0 && /^https?:\/\//.test(img.trim());
+            })
+            .slice(0, 15);
+          return images;
+        } catch (e) {
+          devWarn("Error extracting images from content:", e);
+          return [];
+        }
+      };
 
       const extractedImgs = extractImagesFromContent(aiMessage.content);
-      if (extractedImgs.length > 0) {
+      if (extractedImgs.length > 0 && extractedImgs.every((img) => typeof img === "string")) {
         aiMessage.webSearchImgs = extractedImgs;
         setMessages((prev) => {
           const updated = prev.map((m) =>
@@ -592,7 +602,9 @@ export default function ChatInterface({
   // Create stable signal for plan messages - includes isPlan flag to trigger rerun when it changes
   const planMessageSignal = useMemo(() => {
     const planMessages = messages.filter((msg) => (msg as any).isPlan);
-    return `${messages.length}_${planMessages.length}_${planMessages.map(m => m.id).join(',')}`;
+    return `${messages.length}_${planMessages.length}_${planMessages
+      .map((m) => m.id)
+      .join(",")}`;
   }, [messages]);
 
   // Preload Plan Mode artifacts when messages with isPlan flag are detected
@@ -649,7 +661,10 @@ export default function ChatInterface({
         // Panel is closed, but artifacts arrived - auto-open panel for the latest artifact
         const latestArtifact = updatedArtifacts[updatedArtifacts.length - 1];
         if (latestArtifact) {
-          devLog("[ChatInterface] Auto-opening plan artifacts panel for new artifacts:", latestArtifact.messageId);
+          devLog(
+            "[ChatInterface] Auto-opening plan artifacts panel for new artifacts:",
+            latestArtifact.messageId
+          );
           setPlanArtifactPanel({
             messageId: latestArtifact.messageId,
             artifacts: updatedArtifacts.filter(
@@ -2001,7 +2016,7 @@ export default function ChatInterface({
             </div>
           </div>
         ) : (
-          <div className="mx-auto flex justify-center px-4 py-6">
+          <div className="mx-auto flex justify-center px-4 pt-6 pb-12">
             <ChatMessageDisplay
               threadId={threadId}
               messages={displayMessages}

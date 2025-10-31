@@ -22,7 +22,7 @@ import ProjectCreateDialog from "./projects/ProjectCreateDialog";
 import { Button } from "./ui/button";
 import { HybridDB } from "@/lib/hybridDB";
 import { useAuth } from "@/frontend/contexts/AuthContext";
-import { devWarn, devError } from '@/lib/logger';
+import { devWarn, devError } from "@/lib/logger";
 
 // Helper functions to categorize dates
 const isToday = (date: Date) => {
@@ -252,12 +252,13 @@ export default function ChatSidebarPanel() {
             // Guest user interface - simple welcome message
             <div className="px-2 py-4 text-center space-y-3">
               <div className="text-sm text-muted-foreground">
-                Welcome to CappyChat! You can send up to 2 free messages to try our
-                AI assistant.
+                Welcome to CappyChat! You can send up to 2 free messages to try
+                our AI assistant.
               </div>
               {guestUser && (
                 <div className="text-xs font-medium text-primary/80">
-                  {guestUser.messagesUsed}/{guestUser.maxMessages} free messages used
+                  {guestUser.messagesUsed}/{guestUser.maxMessages} free messages
+                  used
                 </div>
               )}
               <div className="text-xs text-muted-foreground">
@@ -278,7 +279,7 @@ export default function ChatSidebarPanel() {
               <>
                 <div className="px-0 pt-1 flex items-center justify-between text-sm font-medium text-primary/85">
                   <div className="flex items-center gap-2 ">
-                    <Folder className="h-4 w-4" />
+                    {/* <Folder className="h-4 w-4" /> */}
                     <span>Projects</span>
                   </div>
                   <Button
@@ -320,12 +321,11 @@ export default function ChatSidebarPanel() {
                 {/* Pinned Threads */}
                 {pinnedThreads.length > 0 && (
                   <div className="space-y-1">
-                    {projects.length > 0 && (
-                      <div className="px-0 py-0.5 text-sm font-medium text-primary/70">
-                        <PinIcon className="h-4 w-4 inline-block mr-2" />
-                        Pinned Chats
-                      </div>
-                    )}
+                    <div className="px-0 py-0.5 text-sm font-medium text-primary/70">
+                      Pinned Chats
+                      <PinIcon className="h-4 w-4 rotate-45 inline-block ml-2" />
+                    </div>
+
                     {pinnedThreads
                       .filter(
                         (thread, index, arr) =>

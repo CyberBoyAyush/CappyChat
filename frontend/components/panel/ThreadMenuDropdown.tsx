@@ -6,8 +6,17 @@
  * Replaces the individual pin and delete buttons with a consolidated menu interface.
  */
 
-import { useState, useCallback } from 'react';
-import { MoreHorizontal, Pin, PinOff, Edit3, Tag, Trash2, GitBranch, FolderPlus } from 'lucide-react';
+import { useState, useCallback } from "react";
+import {
+  MoreHorizontal,
+  Pin,
+  PinOff,
+  Edit3,
+  Tag,
+  Trash2,
+  GitBranch,
+  FolderPlus,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,13 +26,13 @@ import {
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-} from '@/frontend/components/ui/dropdown-menu';
-import { Button } from '@/frontend/components/ui/button';
-import { ThreadData } from './ThreadManager';
-import { ThreadRenameDialog } from './index';
-import { ThreadTagsDialog } from './index';
-import { useProjectManager } from '@/frontend/hooks/useProjectManager';
-import { HybridDB } from '@/lib/hybridDB';
+} from "@/frontend/components/ui/dropdown-menu";
+import { Button } from "@/frontend/components/ui/button";
+import { ThreadData } from "./ThreadManager";
+import { ThreadRenameDialog } from "./index";
+import { ThreadTagsDialog } from "./index";
+import { useProjectManager } from "@/frontend/hooks/useProjectManager";
+import { HybridDB } from "@/lib/hybridDB";
 
 interface ThreadMenuDropdownProps {
   threadData: ThreadData;
@@ -48,11 +57,14 @@ export const ThreadMenuDropdown = ({
   // Get projects for the "Add to Project" functionality
   const { projects } = useProjectManager();
 
-  const handlePinClick = useCallback((event: React.MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    onTogglePin(threadData.id, event);
-  }, [onTogglePin, threadData.id]);
+  const handlePinClick = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onTogglePin(threadData.id, event);
+    },
+    [onTogglePin, threadData.id]
+  );
 
   const handleRenameClick = useCallback((event: React.MouseEvent) => {
     event.preventDefault();
@@ -66,43 +78,58 @@ export const ThreadMenuDropdown = ({
     setIsTagsDialogOpen(true);
   }, []);
 
-  const handleBranchClick = useCallback((event: React.MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    onBranch(threadData.id);
-  }, [onBranch, threadData.id]);
+  const handleBranchClick = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onBranch(threadData.id);
+    },
+    [onBranch, threadData.id]
+  );
 
-  const handleDeleteClick = useCallback((event: React.MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    onDelete(threadData.id, event);
-  }, [onDelete, threadData.id]);
+  const handleDeleteClick = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onDelete(threadData.id, event);
+    },
+    [onDelete, threadData.id]
+  );
 
-  const handleRenameConfirm = useCallback((newTitle: string) => {
-    onRename(threadData.id, newTitle);
-    setIsRenameDialogOpen(false);
-  }, [onRename, threadData.id]);
+  const handleRenameConfirm = useCallback(
+    (newTitle: string) => {
+      onRename(threadData.id, newTitle);
+      setIsRenameDialogOpen(false);
+    },
+    [onRename, threadData.id]
+  );
 
-  const handleTagsConfirm = useCallback((tags: string[]) => {
-    onUpdateTags(threadData.id, tags);
-    setIsTagsDialogOpen(false);
-  }, [onUpdateTags, threadData.id]);
+  const handleTagsConfirm = useCallback(
+    (tags: string[]) => {
+      onUpdateTags(threadData.id, tags);
+      setIsTagsDialogOpen(false);
+    },
+    [onUpdateTags, threadData.id]
+  );
 
-  const handleAddToProject = useCallback(async (projectId: string) => {
-    try {
-      // Update thread to assign it to the project
-      await HybridDB.updateThreadProject(threadData.id, projectId);
-    } catch (error) {
-      console.error('Error adding thread to project:', error);
-    }
-  }, [threadData.id]);
+  const handleAddToProject = useCallback(
+    async (projectId: string) => {
+      try {
+        // Update thread to assign it to the project
+        await HybridDB.updateThreadProject(threadData.id, projectId);
+      } catch (error) {
+        console.error("Error adding thread to project:", error);
+      }
+    },
+    [threadData.id]
+  );
 
   const handleRemoveFromProject = useCallback(async () => {
     try {
       // Update thread to remove it from the project
       await HybridDB.updateThreadProject(threadData.id, undefined);
     } catch (error) {
-      console.error('Error removing thread from project:', error);
+      console.error("Error removing thread from project:", error);
     }
   }, [threadData.id]);
 
@@ -113,7 +140,7 @@ export const ThreadMenuDropdown = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground transition-all duration-200 focus:opacity-100 active:opacity-100
+            className="h-7 w-7 text-muted-foreground hover:text-foreground transition-all duration-200 focus:opacity-100 active:opacity-100 data-[state=open]:opacity-100 md:data-[state=open]:opacity-100
               md:opacity-0 md:group-hover/thread:opacity-100
               opacity-70 group-hover/thread:opacity-100"
             onClick={(e) => {
@@ -165,7 +192,7 @@ export const ThreadMenuDropdown = ({
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   <FolderPlus className="mr-2 h-4 w-4" />
-                  {threadData.projectId ? 'Move to Project' : 'Add to Project'}
+                  {threadData.projectId ? "Move to Project" : "Add to Project"}
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
                   {threadData.projectId && (
@@ -177,7 +204,7 @@ export const ThreadMenuDropdown = ({
                     </>
                   )}
                   {projects
-                    .filter(project => project.id !== threadData.projectId)
+                    .filter((project) => project.id !== threadData.projectId)
                     .map((project) => (
                       <DropdownMenuItem
                         key={project.id}
@@ -198,10 +225,7 @@ export const ThreadMenuDropdown = ({
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuItem
-            onClick={handleDeleteClick}
-            variant="destructive"
-          >
+          <DropdownMenuItem onClick={handleDeleteClick} variant="destructive">
             <Trash2 className="mr-2 h-4 w-4" />
             Delete
           </DropdownMenuItem>
