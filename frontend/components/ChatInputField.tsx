@@ -437,7 +437,7 @@ function PureInputField({
     [handleFilesUploaded]
   );
 
-  // Handle paste events for file uploads
+  // Handle paste events for file uploads and large text conversion
   const handlePaste = useCallback(
     async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
       const clipboardData = e.clipboardData;
@@ -446,59 +446,85 @@ function PureInputField({
       const items = Array.from(clipboardData.items);
       const fileItems = items.filter((item) => item.kind === "file");
 
-      if (fileItems.length === 0) return;
+      // Check for pasted files first
+      if (fileItems.length > 0) {
+        // Prevent default paste behavior for files
+        e.preventDefault();
 
-      // Prevent default paste behavior for files
-      e.preventDefault();
+        const files: File[] = [];
+        const rejectedFiles: string[] = [];
 
-      const files: File[] = [];
-      const rejectedFiles: string[] = [];
+        for (const item of fileItems) {
+          const file = item.getAsFile();
+          if (file) {
+            // Validate file type
+            const allowedTypes = [
+              "image/jpeg",
+              "image/png",
+              "image/gif",
+              "image/webp",
+              "application/pdf",
+              "text/plain",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ];
 
-      for (const item of fileItems) {
-        const file = item.getAsFile();
-        if (file) {
-          // Validate file type
-          const allowedTypes = [
-            "image/jpeg",
-            "image/png",
-            "image/gif",
-            "image/webp",
-            "application/pdf",
-            "text/plain",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          ];
+            // Validate file size (5MB limit)
+            const maxSize = 5 * 1024 * 1024;
 
-          // Validate file size (5MB limit)
-          const maxSize = 5 * 1024 * 1024;
-
-          if (!allowedTypes.includes(file.type)) {
-            rejectedFiles.push(`${file.name} (unsupported file type)`);
-          } else if (file.size > maxSize) {
-            rejectedFiles.push(`${file.name} (file too large - max 5MB)`);
-          } else {
-            files.push(file);
+            if (!allowedTypes.includes(file.type)) {
+              rejectedFiles.push(`${file.name} (unsupported file type)`);
+            } else if (file.size > maxSize) {
+              rejectedFiles.push(`${file.name} (file too large - max 5MB)`);
+            } else {
+              files.push(file);
+            }
           }
         }
+
+        // Show feedback for rejected files
+        if (rejectedFiles.length > 0) {
+          toast.error(`Cannot upload: ${rejectedFiles.join(", ")}`);
+        }
+
+        if (files.length > 0) {
+          // Show immediate feedback with file details
+          const fileNames = files.map((f) => f.name).join(", ");
+          toast.success(
+            `📎 Pasted ${files.length} file${files.length > 1 ? "s" : ""}: ${
+              fileNames.length > 50
+                ? fileNames.substring(0, 50) + "..."
+                : fileNames
+            }`
+          );
+
+          // Upload files using the same logic as FileUpload component
+          await uploadPastedFiles(files);
+        }
+        return;
       }
 
-      // Show feedback for rejected files
-      if (rejectedFiles.length > 0) {
-        toast.error(`Cannot upload: ${rejectedFiles.join(", ")}`);
-      }
+      // Check for large text content and convert to .txt file
+      const textData = clipboardData.getData("text/plain");
+      const TEXT_SIZE_THRESHOLD = 3000; // Convert to file if text exceeds 3000 characters
 
-      if (files.length > 0) {
-        // Show immediate feedback with file details
-        const fileNames = files.map((f) => f.name).join(", ");
+      if (textData && textData.length > TEXT_SIZE_THRESHOLD) {
+        // Prevent default paste behavior
+        e.preventDefault();
+
+        // Create a .txt file from the pasted text
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const fileName = `pasted-text-${timestamp}.txt`;
+        const blob = new Blob([textData], { type: "text/plain" });
+        const file = new File([blob], fileName, { type: "text/plain" });
+
+        // Show feedback to user
+        const charCount = textData.length.toLocaleString();
         toast.success(
-          `📎 Pasted ${files.length} file${files.length > 1 ? "s" : ""}: ${
-            fileNames.length > 50
-              ? fileNames.substring(0, 50) + "..."
-              : fileNames
-          }`
+          `📎 Large text detected (${charCount} characters) - converting to file`
         );
 
-        // Upload files using the same logic as FileUpload component
-        await uploadPastedFiles(files);
+        // Upload the file
+        await uploadPastedFiles([file]);
       }
     },
     [uploadPastedFiles]
@@ -1423,20 +1449,6 @@ function PureInputField({
                 />
               </div>
             </div>
-            {/* Character counter for long text warning */}
-            {input.length > 800 && (
-              <div className="absolute bottom-2 left-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
-                {input.length > 1000 ? (
-                  <span className="text-zinc-600 dark:text-zinc-400 font-medium">
-                    {input.length} chars - Will convert to .txt file
-                  </span>
-                ) : (
-                  <span className="text-yellow-500">
-                    {input.length}/1000 chars
-                  </span>
-                )}
-              </div>
-            )}
 
             <span id="input-field-description" className="sr-only">
               Press Enter to send, Shift+Enter for new line. Paste or drag
