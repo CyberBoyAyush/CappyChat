@@ -1449,20 +1449,6 @@ function PureInputField({
                 />
               </div>
             </div>
-            {/* Character counter for long text warning */}
-            {input.length > 800 && (
-              <div className="absolute bottom-2 left-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
-                {input.length > 1000 ? (
-                  <span className="text-zinc-600 dark:text-zinc-400 font-medium">
-                    {input.length} chars - Will convert to .txt file
-                  </span>
-                ) : (
-                  <span className="text-yellow-500">
-                    {input.length}/1000 chars
-                  </span>
-                )}
-              </div>
-            )}
 
             <span id="input-field-description" className="sr-only">
               Press Enter to send, Shift+Enter for new line. Paste or drag
