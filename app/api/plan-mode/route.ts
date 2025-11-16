@@ -186,8 +186,7 @@ export async function POST(req: NextRequest) {
     const PLAN_MODE_ALLOWED_MODELS = [
       "Claude Haiku 4.5",
       "Claude Sonnet 4.5",
-      // "Gemini 2.5 Flash",
-      // "OpenAI 5 Mini",
+      "Kimi K2 Thinking",
     ];
     if (!PLAN_MODE_ALLOWED_MODELS.includes(selectedModel)) {
       return new Response(
