@@ -2,8 +2,9 @@ export const AI_MODELS = [
   "Gemini 2.5 Flash",
   "Gemini 2.5 Flash (New)",
   "Gemini 2.5 Flash Lite",
-  "OpenAI 5 Mini",
-  "OpenAI 5",
+  "OpenAI 5.1 Codex Mini",
+  "OpenAI 5.1",
+  "OpenAI 5.1 Codex",
   "OpenAI o4-mini",
   "Open AI OSS 120B",
   "Claude Haiku 4.5",
@@ -20,9 +21,10 @@ export const AI_MODELS = [
   "Grok 4",
   "Grok 4 Fast",
   "Grok Code Fast 1",
-  "Kimi K2",
+  "Kimi K2 Thinking",
   "Gemini Nano Banana",
   "OpenAI GPT-5 Image Mini",
+  "Sherlock Think Alpha"
 ] as const;
 
 export type AIModel = (typeof AI_MODELS)[number];
@@ -93,10 +95,23 @@ export const MODEL_CONFIGS = {
     isFast: true,
     description: "Fast and efficient model from Google",
   },
-  "OpenAI 5": {
-    modelId: "openai/gpt-5-chat",
+  "OpenAI 5.1 Codex": {
+    modelId: "openai/gpt-5.1-codex",
     provider: "openrouter",
-    displayName: "OpenAI 5",
+    displayName: "OpenAI 5.1 Codex",
+    iconType: "openai",
+    company: "OpenAI",
+    isPremium: true,
+    isSuperPremium: false,
+    hasReasoning: true,
+    isFileSupported: true,
+    isFast: false,
+    description: "Latest OpenAI flagship coding model",
+  },
+  "OpenAI 5.1": {
+    modelId: "openai/gpt-5.1-chat",
+    provider: "openrouter",
+    displayName: "OpenAI 5.1",
     iconType: "openai",
     company: "OpenAI",
     isPremium: true,
@@ -106,10 +121,10 @@ export const MODEL_CONFIGS = {
     isFast: false,
     description: "Latest OpenAI flagship model",
   },
-  "OpenAI 5 Mini": {
-    modelId: "openai/gpt-5-mini",
+  "OpenAI 5.1 Codex Mini": {
+    modelId: "openai/gpt-5.1-codex-mini",
     provider: "openrouter",
-    displayName: "OpenAI 5 Mini",
+    displayName: "OpenAI 5.1 Codex Mini",
     iconType: "openai",
     company: "OpenAI",
     isPremium: false,
@@ -117,7 +132,7 @@ export const MODEL_CONFIGS = {
     hasReasoning: false,
     isFileSupported: true,
     isFast: true,
-    description: "Efficient mini version of OpenAI 5",
+    description: "Efficient mini version of OpenAI 5.1 Codex",
   },
 
   "OpenAI o4-mini": {
@@ -335,18 +350,34 @@ export const MODEL_CONFIGS = {
     isFast: true,
     description: "Fastest model from XAI with advanced reasoning.",
   },
-  "Kimi K2": {
-    modelId: "moonshotai/kimi-k2-0905",
+  "Kimi K2 Thinking": {
+    modelId: "moonshotai/kimi-k2-thinking",
     provider: "openrouter",
-    displayName: "Kimi K2",
+    displayName: "Kimi K2 Thinking",
     iconType: "kimi",
     company: "Moonshot",
     isPremium: true,
     isSuperPremium: false,
-    hasReasoning: false,
+    hasReasoning: true,
     isFileSupported: false,
     isFast: true,
-    description: "Fastest model from Moonshot.",
+    description: "Fastest model from Moonshot with advanced reasoning.",
+  },
+  "Sherlock Think Alpha": {
+    modelId: "openrouter/sherlock-think-alpha",
+    provider: "openrouter",
+    displayName: "Sherlock Think Alpha",
+    iconType: "x-ai",
+    company: "OpenRouter",
+    isPremium: false,
+    isSuperPremium: false,
+    hasReasoning: true,
+    isFileSupported: true,
+    isFast: true,
+    isImageGeneration: false,
+    image2imageGen: false,
+    description:
+      "New Stealth Models from OpenRouter with advanced reasoning capabilities",
   },
   "Gemini Nano Banana": {
     modelId: "google/gemini-2.5-flash-image-preview",
