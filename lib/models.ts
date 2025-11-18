@@ -2,6 +2,7 @@ export const AI_MODELS = [
   "Gemini 2.5 Flash",
   "Gemini 2.5 Flash (New)",
   "Gemini 2.5 Flash Lite",
+  "Gemini 3 Pro Preview",
   "OpenAI 5.1 Codex Mini",
   "OpenAI 5.1",
   "OpenAI 5.1 Codex",
@@ -34,15 +35,15 @@ export type ModelConfig = {
   provider: "openrouter";
   displayName: string;
   iconType:
-    | "google"
-    | "openai"
-    | "anthropic"
-    | "deepseek"
-    | "huggingface"
-    | "qwen"
-    | "meta"
-    | "x-ai"
-    | "kimi";
+  | "google"
+  | "openai"
+  | "anthropic"
+  | "deepseek"
+  | "huggingface"
+  | "qwen"
+  | "meta"
+  | "x-ai"
+  | "kimi";
   company: string;
   isPremium: boolean;
   isSuperPremium: boolean;
@@ -94,6 +95,19 @@ export const MODEL_CONFIGS = {
     isFileSupported: true,
     isFast: true,
     description: "Fast and efficient model from Google",
+  },
+  "Gemini 3 Pro Preview": {
+    modelId: "google/gemini-3-pro-preview",
+    provider: "openrouter",
+    displayName: "Gemini 3 Pro Preview",
+    iconType: "google",
+    company: "Google",
+    isPremium: false,
+    isSuperPremium: true,
+    hasReasoning: true,
+    isFileSupported: true,
+    isFast: false,
+    description: "Latest Google flagship model",
   },
   "OpenAI 5.1 Codex": {
     modelId: "openai/gpt-5.1-codex",
