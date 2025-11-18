@@ -16,7 +16,7 @@ export const AI_MODELS = [
   "Qwen3 30B A3B Thinking 2507",
   "Claude Sonnet 4",
   "Claude Sonnet 4.5",
-  "Gemini 2.5 Pro",
+  
   "OpenAI 5 Nano",
   "Grok 3 Mini",
   "Grok 4",
@@ -102,8 +102,8 @@ export const MODEL_CONFIGS = {
     displayName: "Gemini 3 Pro Preview",
     iconType: "google",
     company: "Google",
-    isPremium: false,
-    isSuperPremium: true,
+    isPremium: true,
+    isSuperPremium: false,
     hasReasoning: true,
     isFileSupported: true,
     isFast: false,
@@ -284,20 +284,7 @@ export const MODEL_CONFIGS = {
     isFast: false,
     description: "Best in the class Anthropic model with advanced reasoning",
   },
-  "Gemini 2.5 Pro": {
-    modelId: "google/gemini-2.5-pro",
-    provider: "openrouter",
-    displayName: "Gemini 2.5 Pro",
-    iconType: "google",
-    company: "Google",
-    isPremium: false,
-    isSuperPremium: true,
-    hasReasoning: true,
-    isFileSupported: true,
-    isFast: false,
-    description:
-      "Best in the class Google model with advanced reasoning and coding capabilities",
-  },
+
   "OpenAI 5 Nano": {
     modelId: "openai/gpt-5-nano",
     provider: "openrouter",

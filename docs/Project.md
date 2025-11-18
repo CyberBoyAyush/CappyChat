@@ -731,7 +731,7 @@ The AI follows a consultative process:
 ### Model Restrictions
 
 Plan Mode has specific model requirements:
-- **Allowed Models**: High-capability models only (GPT-5, Gemini 2.5 Pro, Claude 4, etc.)
+- **Allowed Models**: High-capability models only (GPT-5, Claude 4, etc.)
 - **File Support**: Disabled for most models in Plan Mode
 - **Credit Cost**: 3-5 credits per artifact generation
 

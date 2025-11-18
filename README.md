@@ -123,7 +123,7 @@
 
 | Feature                | Description                                 | Models                                        |
 | ---------------------- | ------------------------------------------- | --------------------------------------------- |
-| **Premium Models**     | Latest AI models with advanced capabilities | GPT-5, Gemini 2.5 Pro, Claude 4, Grok 4       |
+| **Premium Models**     | Latest AI models with advanced capabilities | GPT-5, Claude 4, Grok 4                       |
 | **Fast Models**        | Optimized for speed and efficiency          | Gemini 2.5 Flash Lite, OpenAI 5 Mini, Grok 4 Fast |
 | **Specialized Models** | Task-specific AI models                     | DeepSeek R1, Qwen3 Max, Claude Sonnet 3.7     |
 | **Image Models**       | Advanced image generation                   | Gemini 2.5 Flash Image Preview (nano banana)  |
@@ -1684,7 +1684,7 @@ For power users and professionals
 
 **💡 Credit Usage:**
 - **Free Models** (1 credit): Gemini 2.5 Flash Lite, OpenAI 5 Mini
-- **Premium Models** (1 credit): GPT-5, Gemini 2.5 Pro, Claude 4, Grok 4
+- **Premium Models** (1 credit): GPT-5, Claude 4, Grok 4
 - **Super Premium Models** (1 credit): DeepSeek R1, Qwen3 Max
 - **Image Generation Models** (10 credits): Gemini Nano Banana
 
