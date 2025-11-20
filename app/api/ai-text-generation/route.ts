@@ -164,7 +164,7 @@ THE USER'S PROMPT TO ENHANCE (DO NOT ANSWER IT, ONLY REWRITE IT):
 OUTPUT THE ENHANCED PROMPT ONLY. NO EXPLANATIONS. NO ANSWERS.`,
         prompt: "",
         temperature: 0.2,
-        maxTokens: 200,
+        // maxCompletionTokens: 200,
       });
 
       // Log success
@@ -190,7 +190,7 @@ OUTPUT THE ENHANCED PROMPT ONLY. NO EXPLANATIONS. NO ANSWERS.`,
         system: `You write short, specific follow-up questions to continue a conversation based only on the provided pair of messages. Return ONLY a JSON array of strings, nothing else. Each question should be < 120 chars.`,
         prompt: `USER_QUESTION:\n${userQuestion}\n\nAI_ANSWER:\n${aiAnswer}\n\nReturn ${count} follow-up questions as a JSON array of strings.`,
         temperature: 0.4,
-        maxTokens: 200,
+        // maxCompletionTokens: 200,
       });
 
       let suggestions: string[] = [];
@@ -266,7 +266,7 @@ OUTPUT THE ENHANCED PROMPT ONLY. NO EXPLANATIONS. NO ANSWERS.`,
         model: openrouter("google/gemini-2.5-flash-lite"),
         system: `You are a search query optimizer. Extract key topics and visual concepts from the document to create a focused search query for finding relevant images. Keep it under 300 characters. Return ONLY the search query, nothing else.`,
         prompt,
-        maxTokens: 100,
+        // maxCompletionTokens: 100,
         temperature: 0.3,
       });
 
@@ -297,7 +297,7 @@ Example:
 User: "What is the latest news about AI?"
 Output: ["Latest AI news 2025", "Recent artificial intelligence developments", "AI breakthroughs this year", "Current AI technology trends"]`,
         prompt,
-        maxTokens: 300,
+        // maxCompletionTokens: 300,
         temperature: 0.4,
       });
 

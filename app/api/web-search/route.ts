@@ -39,8 +39,8 @@ const createUserTools = (webTool: 'parallels' | 'tavily', tavilyApiKey?: string)
     parameters: z.object({
       query: z.string().describe('The search query to look up on the web'),
     }),
-    execute: async ({ query }) => {
-      return executeWebsearch({ query, webTool, tavilyApiKey });
+    execute: async (params: { query: string }) => {
+      return executeWebsearch({ query: params.query, webTool, tavilyApiKey });
     },
   }),
   retrieval: tool({
@@ -50,8 +50,8 @@ const createUserTools = (webTool: 'parallels' | 'tavily', tavilyApiKey?: string)
       include_summary: z.boolean().optional().describe('Include AI-generated summary (default: true)'),
       live_crawl: z.enum(['never', 'auto', 'preferred']).optional().describe('Crawl mode (default: preferred)'),
     }),
-    execute: async ({ url, include_summary, live_crawl }) => {
-      return executeRetrieval({ url, include_summary, live_crawl });
+    execute: async (params: { url: string; include_summary?: boolean; live_crawl?: 'never' | 'auto' | 'preferred' }) => {
+      return executeRetrieval({ url: params.url, include_summary: params.include_summary, live_crawl: params.live_crawl });
     },
   }),
   weather: tool({
@@ -59,8 +59,8 @@ const createUserTools = (webTool: 'parallels' | 'tavily', tavilyApiKey?: string)
     parameters: z.object({
       location: z.string().describe('The city name or location to get weather for (e.g., "New York", "London, UK", "Tokyo")'),
     }),
-    execute: async ({ location }) => {
-      return executeWeather({ location });
+    execute: async (params: { location: string }) => {
+      return executeWeather({ location: params.location });
     },
   }),
   greeting: tool({
@@ -68,8 +68,8 @@ const createUserTools = (webTool: 'parallels' | 'tavily', tavilyApiKey?: string)
     parameters: z.object({
       greeting: z.string().describe('The greeting message from the user'),
     }),
-    execute: async ({ greeting }) => {
-      return executeGreeting({ greeting });
+    execute: async (params: { greeting: string }) => {
+      return executeGreeting({ greeting: params.greeting });
     },
   }),
 });
@@ -463,7 +463,7 @@ export async function POST(req: NextRequest) {
       model: aiModel,
       messages: processedMessages,
       tools: userTools, // Add tools for model-driven tool calling
-      maxToolRoundtrips: 5, // Allow up to 5 tool calls
+      // maxToolRoundtrips: 5, // Removed in AI SDK 5 - model handles tool calls automatically
       onError: (error) => {
         devLog("error", error);
       },
@@ -505,12 +505,7 @@ export async function POST(req: NextRequest) {
       abortSignal: req.signal,
     });
 
-    return result.toTextStreamResponse({
-      sendReasoning: true,
-      getErrorMessage: (error) => {
-        return (error as { message: string }).message;
-      },
-    });
+    return result.toTextStreamResponse();
   } catch (error) {
     devLog("error", error);
     await logApiRequestError(logger, '/api/web-search', error, {

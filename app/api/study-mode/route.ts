@@ -785,12 +785,7 @@ Return ONLY the search query.`;
       abortSignal: req.signal,
     });
 
-    return result.toTextStreamResponse({
-      sendReasoning: true,
-      getErrorMessage: (error) => {
-        return (error as { message: string }).message;
-      },
-    });
+    return result.toTextStreamResponse();
   } catch (error) {
     devLog("error", error);
     await logApiRequestError(logger, '/api/study-mode', error, {

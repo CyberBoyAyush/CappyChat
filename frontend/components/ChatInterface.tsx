@@ -429,7 +429,7 @@ export default function ChatInterface({
 
       if (aiMessage.isPlan) {
         // Clean Plan Mode message content
-        let cleanedContent = aiMessage.content;
+        let cleanedContent = getMessageContent(aiMessage);
 
         // Remove PLAN_ARTIFACT_AVAILABLE markers
         cleanedContent = cleanedContent.replace(planMarkers, "").trim();
@@ -453,11 +453,12 @@ export default function ChatInterface({
       }
 
       // Extract URLs from any assistant message content for citations
+      const messageContent = getMessageContent(message);
       devLog(
         "🔍 onFinish: Checking message content for URLs. Content length:",
-        message.content.length
+        messageContent.length
       );
-      const extractedUrls = extractUrlsFromContent(aiMessage.content);
+      const extractedUrls = extractUrlsFromContent(getMessageContent(aiMessage));
       devLog("🔍 onFinish: URLs found:", extractedUrls.length, extractedUrls);
 
       if (extractedUrls.length > 0) {
@@ -498,7 +499,7 @@ export default function ChatInterface({
         }
       };
 
-      const extractedImgs = extractImagesFromContent(aiMessage.content);
+      const extractedImgs = extractImagesFromContent(getMessageContent(aiMessage));
       if (extractedImgs.length > 0 && extractedImgs.every((img) => typeof img === "string")) {
         aiMessage.webSearchImgs = extractedImgs;
         setMessages((prev) => {
@@ -515,7 +516,7 @@ export default function ChatInterface({
 
       if (
         message.id !== persistedMessageId ||
-        aiMessage.content !== message.content
+        getMessageContent(aiMessage) !== getMessageContent(message)
       ) {
         setMessages((prev) => {
           const updated = prev.map((m) =>
@@ -576,7 +577,7 @@ export default function ChatInterface({
         nextAssistantIdRef.current = null;
 
         // Create summary for assistant message
-        createSummary(aiMessage.content, {
+        createSummary(getMessageContent(aiMessage), {
           body: {
             messageId: persistedMessageId,
             threadId: threadId,
@@ -899,11 +900,12 @@ export default function ChatInterface({
         const isNewMessage =
           !lastStreamingMessageRef.current ||
           lastStreamingMessageRef.current.id !== lastMessage.id;
+        const lastMessageContent = getMessageContent(lastMessage);
         const isContentUpdate =
           lastStreamingMessageRef.current &&
-          (lastStreamingMessageRef.current.content !== lastMessage.content ||
+          (lastStreamingMessageRef.current.content !== lastMessageContent ||
             lastStreamingMessageRef.current.lastLength !==
-              lastMessage.content.length);
+              lastMessageContent.length);
 
         if (isNewMessage) {
           // Start streaming sync for new message
@@ -928,7 +930,7 @@ export default function ChatInterface({
               streamingSync.updateStreamingContent(
                 threadId,
                 currentLastMessage.id,
-                currentLastMessage.content
+                getMessageContent(currentLastMessage)
               );
             }
           }, 100); // Update every 100ms during streaming
@@ -939,21 +941,21 @@ export default function ChatInterface({
           streamingSync.updateStreamingContent(
             threadId,
             lastMessage.id,
-            lastMessage.content
+            lastMessageContent
           );
           devLog(
             "[ChatInterface] Updated streaming content:",
-            lastMessage.content.length,
+            lastMessageContent.length,
             "chars"
           );
 
           // Extract URLs from streaming content for web search citations
           // Check for URLs in any assistant message, not just when web search is explicitly enabled
-          if (lastMessage.content) {
-            const extractedUrls = extractUrlsFromContent(lastMessage.content);
+          if (lastMessageContent) {
+            const extractedUrls = extractUrlsFromContent(lastMessageContent);
             devLog(
               "🔍 Checking for URLs in streaming content. Content length:",
-              lastMessage.content.length,
+              lastMessageContent.length,
               "URLs found:",
               extractedUrls.length
             );
@@ -984,8 +986,8 @@ export default function ChatInterface({
         // Update reference
         lastStreamingMessageRef.current = {
           id: lastMessage.id,
-          content: lastMessage.content,
-          lastLength: lastMessage.content.length,
+          content: lastMessageContent,
+          lastLength: lastMessageContent.length,
         };
       }
     } else if (status !== "streaming" && lastStreamingMessageRef.current) {
@@ -1102,15 +1104,17 @@ export default function ChatInterface({
           if (!currentMsg) return false;
 
           // Check for image generation updates (loading -> completed)
+          const currentContent = getMessageContent(currentMsg);
+          const dbContent = getMessageContent(dbMsg);
           const wasLoading =
-            currentMsg.content?.includes("Generating your image") ||
+            currentContent?.includes("Generating your image") ||
             (currentMsg as any).isImageGenerationLoading;
           const nowHasImage =
             (dbMsg as any).imgurl &&
-            !dbMsg.content?.includes("Generating your image");
+            !dbContent?.includes("Generating your image");
 
           // Check for any content or imgurl differences
-          const contentChanged = currentMsg.content !== dbMsg.content;
+          const contentChanged = currentContent !== dbContent;
           const imgUrlChanged =
             (currentMsg as any).imgurl !== (dbMsg as any).imgurl;
 
@@ -1140,12 +1144,14 @@ export default function ChatInterface({
               const dbMsg = dbMessageMap.get(uiMsg.id);
               if (dbMsg) {
                 // Check if this was an image generation update
+                const uiContent = getMessageContent(uiMsg);
+                const dbContentCheck = getMessageContent(dbMsg);
                 const wasLoading =
-                  uiMsg.content?.includes("Generating your image") ||
+                  uiContent?.includes("Generating your image") ||
                   (uiMsg as any).isImageGenerationLoading;
                 const nowHasImage =
                   (dbMsg as any).imgurl &&
-                  !dbMsg.content?.includes("Generating your image");
+                  !dbContentCheck?.includes("Generating your image");
 
                 if (wasLoading && nowHasImage) {
                   devLog(
@@ -1321,11 +1327,12 @@ export default function ChatInterface({
 
       // Check if the last message has actual content (not just empty or tool calls)
       const lastMessage = messages[messages.length - 1];
+      const lastMessageContent = lastMessage ? getMessageContent(lastMessage) : '';
       const hasContent =
         lastMessage &&
         lastMessage.role === "assistant" &&
-        lastMessage.content &&
-        lastMessage.content.trim().length > 10; // At least 10 chars to avoid empty/whitespace
+        lastMessageContent &&
+        lastMessageContent.trim().length > 10; // At least 10 chars to avoid empty/whitespace
 
       // Keep loader visible for at least 500ms to avoid flashing
       const minDisplayTime = 500;
@@ -1361,17 +1368,18 @@ export default function ChatInterface({
     if (status !== "streaming") {
       // Only reset timer if we have meaningful content or streaming is truly done
       const lastMessage = messages[messages.length - 1];
+      const lastContent = lastMessage ? getMessageContent(lastMessage) : '';
       const hasContent =
         lastMessage &&
         lastMessage.role === "assistant" &&
-        lastMessage.content &&
-        lastMessage.content.trim().length > 50;
+        lastContent &&
+        lastContent.trim().length > 50;
 
       devLog("🎨 Status changed from streaming:", {
         status,
         isPlanModeExecuting,
         hasContent,
-        contentLength: lastMessage?.content?.trim().length || 0,
+        contentLength: lastContent?.trim().length || 0,
       });
 
       // Only clean up Plan Mode if we have content OR if status is "ready" (truly done)
@@ -1408,10 +1416,11 @@ export default function ChatInterface({
 
     const lastUserMessage = [...messages]
       .reverse()
-      .find((message) => message.role === "user" && message.content?.trim());
+      .find((message) => message.role === "user" && getMessageContent(message)?.trim());
 
-    if (lastUserMessage?.content && lastUserMessage.content !== planModeQuery) {
-      setPlanModeQuery(lastUserMessage.content);
+    const lastUserContent = lastUserMessage ? getMessageContent(lastUserMessage) : '';
+    if (lastUserContent && lastUserContent !== planModeQuery) {
+      setPlanModeQuery(lastUserContent);
     }
   }, [
     selectedSearchType,
@@ -1432,7 +1441,7 @@ export default function ChatInterface({
         const lastUserMessage = messages
           .filter((msg) => msg.role === "user")
           .pop();
-        return lastUserMessage?.content || "";
+        return lastUserMessage ? getMessageContent(lastUserMessage) : "";
       })();
 
       if (selectedSearchType === "plan") {
@@ -1583,21 +1592,22 @@ export default function ChatInterface({
       setRetryModel(model || null);
 
       // Determine if this is an image generation retry
+      const messageContent = message ? getMessageContent(message) : '';
       const isImageGenerationRetry =
         message &&
         ((message as any).isImageGeneration ||
           (message as any).isImageGenerationLoading ||
           !!(message as any).imgurl ||
-          (message.content &&
-            (message.content.includes("🎨 Generating your image") ||
-              message.content.includes("Generating your image"))) ||
+          (messageContent &&
+            (messageContent.includes("🎨 Generating your image") ||
+              messageContent.includes("Generating your image"))) ||
           ((message as any).model &&
             getModelConfig((message as any).model as AIModel)
               ?.isImageGeneration));
 
       devLog("🔄 Retry context:", {
         isImageGenerationRetry,
-        message: message?.content,
+        message: messageContent,
         model: (message as any)?.model,
       });
 
@@ -1649,12 +1659,12 @@ export default function ChatInterface({
           if (messageIndex > 0) {
             const userMessage = messages[messageIndex - 1];
             if (userMessage.role === "user") {
-              userPrompt = userMessage.content;
+              userPrompt = getMessageContent(userMessage);
               userAttachments = (userMessage as any).attachments || [];
             }
           }
         } else if (message?.role === "user") {
-          userPrompt = message.content;
+          userPrompt = getMessageContent(message);
           userAttachments = (message as any).attachments || [];
         }
 
@@ -1774,7 +1784,7 @@ export default function ChatInterface({
         }
 
         // After streaming completes OR for previous messages, apply filtering
-        const content = msg.content || "";
+        const content = getMessageContent(msg) || "";
 
         // IMPORTANT: After streaming completes, prioritize showing messages with actual content
         // The AI SDK keeps tool invocation metadata even after final response is generated
