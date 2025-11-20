@@ -455,7 +455,6 @@ export default function ChatInterface({
       }
 
       // Extract URLs from any assistant message content for citations
-      const messageContent = getMessageContent(message);
       devLog(
         "🔍 onFinish: Checking message content for URLs. Content length:",
         messageContent.length

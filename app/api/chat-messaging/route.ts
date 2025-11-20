@@ -535,7 +535,7 @@ export async function POST(req: NextRequest) {
 
     const result = streamText({
       model: aiModel,
-      messages: processedMessages,
+      messages: processedMessages || [],
       onError: async (error) => {
         console.error("OpenRouter API error:", error);
         await logApiRequestError(logger, "/api/chat-messaging", error, {
