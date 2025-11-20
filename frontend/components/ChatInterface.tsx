@@ -84,8 +84,24 @@ interface ChatInterfaceProps {
   searchQuery?: string | null;
 }
 
+// Helper to get text content from UIMessage (AI SDK 5 compatible)
+const getMessageContent = (message: UIMessage | any): string => {
+  // If content property exists (backward compatibility), use it
+  if ('content' in message && typeof message.content === 'string') {
+    return message.content;
+  }
+  // Otherwise, extract from parts array
+  if (message.parts && Array.isArray(message.parts)) {
+    return message.parts
+      .filter((part: any) => part.type === 'text')
+      .map((part: any) => part.text)
+      .join('');
+  }
+  return '';
+};
+
 // Utility function to deduplicate messages at the React level
-function deduplicateMessages<T extends { id: string; content: string }>(
+function deduplicateMessages<T extends { id: string }>(
   messages: T[]
 ): T[] {
   const seen = new Map<string, T>();
@@ -98,9 +114,11 @@ function deduplicateMessages<T extends { id: string; content: string }>(
       seen.set(message.id, message);
     } else {
       // Duplicate found - keep the one with more content or later in array
+      const messageContent = getMessageContent(message as any);
+      const existingContent = getMessageContent(existing as any);
       if (
-        message.content.length > existing.content.length ||
-        (message.content.length === existing.content.length &&
+        messageContent.length > existingContent.length ||
+        (messageContent.length === existingContent.length &&
           index > messages.findIndex((m) => m.id === existing.id))
       ) {
         seen.set(message.id, message);
@@ -108,8 +126,8 @@ function deduplicateMessages<T extends { id: string; content: string }>(
           "[ChatInterface] Replaced duplicate message in deduplication:",
           {
             id: message.id,
-            existingContent: existing.content.substring(0, 50),
-            newContent: message.content.substring(0, 50),
+            existingContent: existingContent.substring(0, 50),
+            newContent: messageContent.substring(0, 50),
           }
         );
       }
@@ -330,7 +348,7 @@ export default function ChatInterface({
       devLog("🏁 onFinish callback called for message:", message.id);
 
       // End streaming synchronization
-      streamingSync.endStreaming(threadId, message.id, message.content);
+      streamingSync.endStreaming(threadId, message.id, getMessageContent(message));
 
       // Stop web search loading if it was active
       if (isWebSearching) {

@@ -985,14 +985,14 @@ REMEMBER: Be consultative first. Create production-quality, visually impressive 
         usingBYOK,
         isGuest,
       }),
-      maxSteps: 5,
+      maxToolRoundtrips: 5,
       onError: (error) => devError("Plan mode error:", error),
       system: systemPrompt,
       experimental_transform: [smoothStream({ chunking: "word" })],
       abortSignal: req.signal,
     });
 
-    return result.toDataStreamResponse({
+    return result.toTextStreamResponse({
       sendReasoning: false,
       getErrorMessage: (error) => {
         const errorMessage = (error as { message: string }).message;

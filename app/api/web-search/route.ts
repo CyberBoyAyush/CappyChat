@@ -463,7 +463,7 @@ export async function POST(req: NextRequest) {
       model: aiModel,
       messages: processedMessages,
       tools: userTools, // Add tools for model-driven tool calling
-      maxSteps: 5, // Allow up to 5 tool calls
+      maxToolRoundtrips: 5, // Allow up to 5 tool calls
       onError: (error) => {
         devLog("error", error);
       },
@@ -505,7 +505,7 @@ export async function POST(req: NextRequest) {
       abortSignal: req.signal,
     });
 
-    return result.toDataStreamResponse({
+    return result.toTextStreamResponse({
       sendReasoning: true,
       getErrorMessage: (error) => {
         return (error as { message: string }).message;

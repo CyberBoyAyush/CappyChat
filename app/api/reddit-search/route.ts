@@ -399,7 +399,7 @@ export async function POST(req: NextRequest) {
       abortSignal: req.signal,
     });
 
-    return result.toDataStreamResponse({
+    return result.toTextStreamResponse({
       sendReasoning: true,
       getErrorMessage: (error) => {
         return (error as { message: string }).message;

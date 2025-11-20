@@ -61,19 +61,36 @@ import { AppwriteDB } from "@/lib/appwriteDB";
 import { SparklesIcon } from "./ui/icons/SparklesIcon";
 import { PDFThumbnail } from "./ui/PDFThumbnail";
 
+// Helper to get text content from UIMessage (AI SDK 5 compatible)
+const getMessageContent = (message: UIMessage): string => {
+  // If content property exists (backward compatibility), use it
+  if ('content' in message && typeof message.content === 'string') {
+    return message.content;
+  }
+  // Otherwise, extract from parts array
+  if (message.parts && Array.isArray(message.parts)) {
+    return message.parts
+      .filter((part: any) => part.type === 'text')
+      .map((part: any) => part.text)
+      .join('');
+  }
+  return '';
+};
+
 // Extended UIMessage type to include attachments
 type ExtendedUIMessage = UIMessage & {
   attachments?: FileAttachment[];
+  content?: string;
 };
 
 interface InputFieldProps {
   threadId: string;
-  input: UseChatHelpers["input"];
-  status: UseChatHelpers["status"];
-  setInput: UseChatHelpers["setInput"];
-  append: UseChatHelpers["append"];
-  setMessages: UseChatHelpers["setMessages"];
-  stop: UseChatHelpers["stop"];
+  input: UseChatHelpers<UIMessage>["input"];
+  status: UseChatHelpers<UIMessage>["status"];
+  setInput: UseChatHelpers<UIMessage>["setInput"];
+  append: UseChatHelpers<UIMessage>["append"];
+  setMessages: UseChatHelpers<UIMessage>["setMessages"];
+  stop: UseChatHelpers<UIMessage>["stop"];
   pendingUserMessageRef: React.RefObject<UIMessage | null>;
   onWebSearchMessage?: (messageId: string, searchQuery?: string) => void;
   submitRef?: React.RefObject<(() => void) | null>;
@@ -85,7 +102,7 @@ interface InputFieldProps {
 }
 
 interface StopButtonProps {
-  stop: UseChatHelpers["stop"];
+  stop: UseChatHelpers<UIMessage>["stop"];
 }
 
 interface SendButtonProps {
@@ -828,7 +845,7 @@ function PureInputField({
             .filter((m) => m.role === "user" || m.role === "assistant")
             .map((m) => ({
               role: m.role,
-              content: m.content,
+              content: getMessageContent(m),
               imgurl: (m as any).imgurl, // Include previous image URL if exists
             })) || [];
 
@@ -1122,13 +1139,17 @@ function PureInputField({
       // Only include text content, limit to 100 chars per message to avoid token limits
       const contextMessages = messages
         ?.slice(-6)
-        .filter((m) => m.content && m.content.length > 0)
+        .filter((m) => {
+          const content = getMessageContent(m);
+          return content && content.length > 0;
+        })
         .map((m) => {
-          const content =
-            m.content.length > 100
-              ? m.content.substring(0, 100) + "..."
-              : m.content;
-          return `${m.role === "user" ? "User" : "Assistant"}: ${content}`;
+          const content = getMessageContent(m);
+          const truncated =
+            content.length > 100
+              ? content.substring(0, 100) + "..."
+              : content;
+          return `${m.role === "user" ? "User" : "Assistant"}: ${truncated}`;
         })
         .join("\n");
 

@@ -785,7 +785,7 @@ Return ONLY the search query.`;
       abortSignal: req.signal,
     });
 
-    return result.toDataStreamResponse({
+    return result.toTextStreamResponse({
       sendReasoning: true,
       getErrorMessage: (error) => {
         return (error as { message: string }).message;

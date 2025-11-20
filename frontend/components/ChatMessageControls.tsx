@@ -20,11 +20,11 @@ import { AIModel } from "@/lib/models";
 interface MessageControlsProps {
   threadId: string;
   message: UIMessage;
-  setMessages: UseChatHelpers["setMessages"];
+  setMessages: UseChatHelpers<UIMessage>["setMessages"];
   content: string;
   setMode?: Dispatch<SetStateAction<"view" | "edit">>;
-  reload: UseChatHelpers["reload"];
-  stop: UseChatHelpers["stop"];
+  reload: UseChatHelpers<UIMessage>["reload"];
+  stop: UseChatHelpers<UIMessage>["stop"];
   onRetryWithModel?: (model?: AIModel, message?: UIMessage) => void;
 }
 
