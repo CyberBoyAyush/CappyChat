@@ -85,12 +85,12 @@ type ExtendedUIMessage = UIMessage & {
 
 interface InputFieldProps {
   threadId: string;
-  input: UseChatHelpers<UIMessage>["input"];
-  status: UseChatHelpers<UIMessage>["status"];
-  setInput: UseChatHelpers<UIMessage>["setInput"];
-  append: UseChatHelpers<UIMessage>["append"];
-  setMessages: UseChatHelpers<UIMessage>["setMessages"];
-  stop: UseChatHelpers<UIMessage>["stop"];
+  input: string;
+  status: "idle" | "loading" | "streaming" | "error";
+  setInput: (input: string) => void;
+  append: (message: any) => void;
+  setMessages: (messages: UIMessage[] | ((messages: UIMessage[]) => UIMessage[])) => void;
+  stop: () => void;
   pendingUserMessageRef: React.RefObject<UIMessage | null>;
   onWebSearchMessage?: (messageId: string, searchQuery?: string) => void;
   submitRef?: React.RefObject<(() => void) | null>;
@@ -102,7 +102,7 @@ interface InputFieldProps {
 }
 
 interface StopButtonProps {
-  stop: UseChatHelpers<UIMessage>["stop"];
+  stop: () => void;
 }
 
 interface SendButtonProps {
@@ -119,9 +119,8 @@ const createUserMessage = (
   parts: [{ type: "text", text }],
   role: "user",
   content: text,
-  createdAt: new Date(),
   attachments,
-});
+} as ExtendedUIMessage);
 
 // Extract and store memories from user message
 const extractAndStoreMemories = async (
@@ -218,7 +217,7 @@ function PureInputField({
     () =>
       (!input.trim() && attachments.length === 0) ||
       status === "streaming" ||
-      status === "submitted",
+      status === "loading",
     [input, status, attachments]
   );
 
@@ -564,7 +563,7 @@ function PureInputField({
     if (
       (!currentInput.trim() && attachments.length === 0) ||
       status === "streaming" ||
-      status === "submitted"
+      status === "loading"
     ) {
       console.log("=== SUBMIT BLOCKED ===");
       console.log("Current input:", currentInput);
@@ -970,34 +969,29 @@ function PureInputField({
         }
       }
 
-      const appendOptions: Parameters<typeof append>[1] = {
-        experimental_attachments:
-          finalAttachments.length > 0 ? finalAttachments : undefined,
+      const appendOptions: any = {
+        data: {} as Record<string, unknown>,
       };
+
+      if (finalAttachments.length > 0) {
+        appendOptions.experimental_attachments = finalAttachments;
+      }
 
       if (selectedSearchType === "plan") {
         if (!plannedAssistantId) {
           plannedAssistantId = `ai_${uuidv4()}`;
         }
-        appendOptions.body = {
+        appendOptions.data = {
           assistantMessageId: plannedAssistantId,
           threadId,
-        } as Record<string, unknown>;
+        };
       }
 
       // First add to UI with append(), then store to database to prevent race condition
-      append(
-        {
-          id: messageId,
-          role: "user",
-          content: finalInput,
-          createdAt: new Date(),
-          // Include attachments directly in the message object for immediate UI display
-          attachments:
-            finalAttachments.length > 0 ? finalAttachments : undefined,
-        } as any,
-        appendOptions
-      );
+      append({
+        role: "user",
+        content: finalInput,
+      }, appendOptions);
 
       // Track that this message was just appended to prevent real-time sync from overwriting it
       if (onMessageAppended) {
@@ -1113,7 +1107,7 @@ function PureInputField({
   const [isEnhancing, setIsEnhancing] = useState(false);
 
   function handleVoiceInput(text: string) {
-    setInput((prev) => prev + (prev ? " " : "") + text);
+    setInput(input + (input ? " " : "") + text);
     // Focus the textarea after voice input
     if (textareaRef.current) {
       textareaRef.current.focus();
@@ -1398,7 +1392,7 @@ function PureInputField({
                 disabled={
                   isVoiceInputActive ||
                   status === "streaming" ||
-                  status === "submitted"
+                  status === "loading"
                 }
                 aria-label={
                   isVoiceInputActive
@@ -1428,7 +1422,7 @@ function PureInputField({
                   disabled={
                     isEnhancing ||
                     status === "streaming" ||
-                    status === "submitted" ||
+                    status === "loading" ||
                     !input.trim()
                   }
                   className={cn(
@@ -1466,7 +1460,7 @@ function PureInputField({
                       : "text-primary"
                   )}
                   size="md"
-                  disabled={status === "streaming" || status === "submitted"}
+                  disabled={status === "streaming" || status === "loading"}
                 />
               </div>
             </div>
@@ -1490,7 +1484,7 @@ function PureInputField({
                           onUploadStatusChange={handleUploadStatusChange}
                           disabled={
                             status === "streaming" ||
-                            status === "submitted" ||
+                            status === "loading" ||
                             (isImageGenMode &&
                               !getModelConfig(selectedModel).image2imageGen)
                           }
@@ -1531,7 +1525,7 @@ function PureInputField({
               </div>
 
               <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 flex-shrink-0">
-                {status === "submitted" || status === "streaming" ? (
+                {status === "loading" || status === "streaming" ? (
                   <StopButton stop={stop} />
                 ) : (
                   <SendButton onSubmit={handleSubmit} disabled={isDisabled} />

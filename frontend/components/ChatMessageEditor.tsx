@@ -31,10 +31,10 @@ export default function MessageEditor({
   threadId: string;
   message: UIMessage;
   content: string;
-  setMessages: UseChatHelpers<UIMessage>["setMessages"];
+  setMessages: (messages: UIMessage[] | ((messages: UIMessage[]) => UIMessage[])) => void;
   setMode: Dispatch<SetStateAction<"view" | "edit">>;
-  reload: UseChatHelpers<UIMessage>["reload"];
-  stop: UseChatHelpers<UIMessage>["stop"];
+  reload: () => void;
+  stop: () => void;
 }) {
   const [draftContent, setDraftContent] = useState(content);
   const { openRouterApiKey } = useBYOKStore();

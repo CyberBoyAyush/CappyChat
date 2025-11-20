@@ -171,11 +171,11 @@ function PureMessage({
 }: {
   threadId: string;
   message: UIMessage;
-  setMessages: UseChatHelpers<UIMessage>["setMessages"];
-  reload: UseChatHelpers<UIMessage>["reload"];
+  setMessages: (messages: UIMessage[] | ((messages: UIMessage[]) => UIMessage[])) => void;
+  reload: () => void;
   isStreaming: boolean;
   registerRef: (id: string, ref: HTMLDivElement | null) => void;
-  stop: UseChatHelpers<UIMessage>["stop"];
+  stop: () => void;
   onRetryWithModel?: (model?: AIModel, message?: UIMessage) => void;
   onSuggestedQuestionClick?: (q: string) => void;
   prevUserMessage?: string;

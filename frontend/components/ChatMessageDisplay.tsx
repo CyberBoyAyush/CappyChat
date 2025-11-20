@@ -46,11 +46,11 @@ function PureMessageDisplay({
 }: {
   threadId: string;
   messages: UIMessage[];
-  setMessages: UseChatHelpers<UIMessage>["setMessages"];
-  reload: UseChatHelpers<UIMessage>["reload"];
-  status: UseChatHelpers<UIMessage>["status"];
-  error: UseChatHelpers<UIMessage>["error"];
-  stop: UseChatHelpers<UIMessage>["stop"];
+  setMessages: (messages: UIMessage[] | ((messages: UIMessage[]) => UIMessage[])) => void;
+  reload: () => void;
+  status: "idle" | "loading" | "streaming" | "error";
+  error: Error | undefined;
+  stop: () => void;
   registerRef: (id: string, ref: HTMLDivElement | null) => void;
   onRetryWithModel?: (model?: AIModel, message?: UIMessage) => void;
   isWebSearching?: boolean;

@@ -344,7 +344,8 @@ export default function ChatInterface({
     id: threadId,
     initialMessages,
     experimental_throttle: 0, // Zero throttle for instant real-time streaming
-    onFinish: async (message) => {
+    onFinish: async (result) => {
+      const message = result.message;
       devLog("🏁 onFinish callback called for message:", message.id);
 
       // End streaming synchronization
@@ -383,6 +384,7 @@ export default function ChatInterface({
       const persistedMessageId =
         nextAssistantIdRef.current || nextAssistantId || message.id;
 
+      const messageContent = getMessageContent(message);
       const aiMessage: UIMessage & {
         webSearchResults?: string[];
         webSearchImgs?: string[];
@@ -390,10 +392,10 @@ export default function ChatInterface({
         isPlan?: boolean;
       } = {
         id: persistedMessageId,
-        parts: message.parts as UIMessage["parts"],
+        parts: message.parts || [{ type: "text", text: messageContent }],
         role: "assistant",
-        content: message.content,
-        createdAt: new Date(),
+        content: messageContent,
+        createdAt: new Date() as any,
         model: modelUsed, // Store the model used to generate this message
         // Mark assistant message for Plan Mode so artifacts can be rendered
         isPlan: selectedSearchType === "plan",
