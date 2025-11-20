@@ -96,7 +96,7 @@ export default function ChatHomePage() {
   return (
     <ChatInterface
       threadId={threadId}
-      initialMessages={[]}
+      messages={[]}
       searchQuery={null} // No search query for regular home page
     />
   );

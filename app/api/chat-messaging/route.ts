@@ -535,7 +535,7 @@ export async function POST(req: NextRequest) {
 
     const result = streamText({
       model: aiModel,
-      messages: processedMessages,
+      messages: processedMessages || [],
       onError: async (error) => {
         console.error("OpenRouter API error:", error);
         await logApiRequestError(logger, "/api/chat-messaging", error, {
@@ -553,12 +553,7 @@ export async function POST(req: NextRequest) {
     // Flush logs before returning streaming response
     await flushLogs(logger);
 
-    return result.toDataStreamResponse({
-      sendReasoning: true,
-      getErrorMessage: (error) => {
-        return (error as { message: string }).message;
-      },
-    });
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     console.log("error", error);
     await logApiRequestError(logger, "/api/chat-messaging", error, {

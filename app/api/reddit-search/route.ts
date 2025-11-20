@@ -399,12 +399,7 @@ export async function POST(req: NextRequest) {
       abortSignal: req.signal,
     });
 
-    return result.toDataStreamResponse({
-      sendReasoning: true,
-      getErrorMessage: (error) => {
-        return (error as { message: string }).message;
-      },
-    });
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     devLog("error", error);
     await logApiRequestError(logger, '/api/reddit-search', error, {

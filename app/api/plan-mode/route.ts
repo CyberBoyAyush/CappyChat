@@ -473,6 +473,17 @@ export async function POST(req: NextRequest) {
           jsCode,
           deploymentNotes,
           dependencies,
+        }: {
+          title: string;
+          description: string;
+          framework: string;
+          theme: string;
+          features: string[];
+          htmlCode: string;
+          cssCode: string;
+          jsCode: string;
+          deploymentNotes: string;
+          dependencies?: string[];
         }) => {
           await ensureToolCredits(ctx, 5);
           const persisted = await persistPlanArtifact(ctx, {
@@ -567,6 +578,13 @@ export async function POST(req: NextRequest) {
           diagramCode,
           sqlSchema,
           prismaSchema,
+        }: {
+          type: string;
+          title: string;
+          description: string;
+          diagramCode: string;
+          sqlSchema?: string;
+          prismaSchema?: string;
         }) => {
           await ensureToolCredits(ctx, 3);
           const persisted = await persistPlanArtifact(ctx, {
@@ -615,7 +633,11 @@ export async function POST(req: NextRequest) {
               .describe("Crawl mode (default: preferred)"),
           })
           .strict(),
-        execute: async ({ url, include_summary, live_crawl }) => {
+        execute: async ({ url, include_summary, live_crawl }: {
+          url: string;
+          include_summary?: boolean;
+          live_crawl?: 'never' | 'auto' | 'preferred';
+        }) => {
           await ensureToolCredits(ctx, 1);
           return executeRetrieval({ url, include_summary, live_crawl });
         },
@@ -641,7 +663,10 @@ export async function POST(req: NextRequest) {
           .refine((p) => p.fileName || p.fileIndex !== undefined, {
             message: "Provide either fileName or fileIndex",
           }),
-        execute: async ({ fileName, fileIndex }) => {
+        execute: async ({ fileName, fileIndex }: {
+          fileName: string;
+          fileIndex: number;
+        }) => {
           await ensureToolCredits(ctx, 1);
           const fileIndex_map = buildFileIndex();
           const key =
@@ -976,7 +1001,7 @@ REMEMBER: Be consultative first. Create production-quality, visually impressive 
 
     const result = streamText({
       model: aiModel,
-      messages: processedMessages,
+      messages: processedMessages || [],
       tools: buildPlanTools({
         userId,
         threadId,
@@ -985,37 +1010,13 @@ REMEMBER: Be consultative first. Create production-quality, visually impressive 
         usingBYOK,
         isGuest,
       }),
-      maxSteps: 5,
       onError: (error) => devError("Plan mode error:", error),
       system: systemPrompt,
       experimental_transform: [smoothStream({ chunking: "word" })],
       abortSignal: req.signal,
     });
 
-    return result.toDataStreamResponse({
-      sendReasoning: false,
-      getErrorMessage: (error) => {
-        const errorMessage = (error as { message: string }).message;
-        // Log the detailed error for debugging
-        devError("Plan mode stream error:", error);
-
-        // Check for specific error codes and return user-friendly messages
-        if ((error as any).code === "INSUFFICIENT_TOOL_CREDITS") {
-          return "Insufficient tool credits to complete this operation. Please check your plan mode credits.";
-        }
-
-        if ((error as any).code === "MODEL_NOT_ALLOWED_IN_PLAN_MODE") {
-          return "This model is not available in Plan Mode.";
-        }
-
-        if ((error as any).code === "TIER_LIMIT_EXCEEDED") {
-          return "Plan mode access denied. Please check your tier limits.";
-        }
-
-        // Return generic message for all other errors to avoid information disclosure
-        return "An error occurred while processing your request. Please try again.";
-      },
-    });
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     devError("/api/plan-mode error:", error);
     await logApiRequestError(logger, '/api/plan-mode', error, {

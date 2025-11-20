@@ -36,7 +36,7 @@ import {
 const createUserTools = (webTool: 'parallels' | 'tavily', tavilyApiKey?: string) => ({
   websearch: tool({
     description: 'Search the web for current information, news, articles, and general queries. Use this for broad web searches when the user asks about current events, news, or general information.',
-    parameters: z.object({
+    inputSchema: z.object({
       query: z.string().describe('The search query to look up on the web'),
     }),
     execute: async ({ query }) => {
@@ -45,7 +45,7 @@ const createUserTools = (webTool: 'parallels' | 'tavily', tavilyApiKey?: string)
   }),
   retrieval: tool({
     description: 'Retrieve full content from a URL. Returns text, title, summary, and images. Use this when the user asks "what is [domain]", "tell me about [website]", or wants detailed information about a specific URL.',
-    parameters: z.object({
+    inputSchema: z.object({
       url: z.string().describe('The URL to retrieve content from (e.g., "https://github.com", "openai.com")'),
       include_summary: z.boolean().optional().describe('Include AI-generated summary (default: true)'),
       live_crawl: z.enum(['never', 'auto', 'preferred']).optional().describe('Crawl mode (default: preferred)'),
@@ -56,7 +56,7 @@ const createUserTools = (webTool: 'parallels' | 'tavily', tavilyApiKey?: string)
   }),
   weather: tool({
     description: 'Get current weather information for a specific location. Use this when the user asks about weather conditions, temperature, forecast, or climate in a specific place.',
-    parameters: z.object({
+    inputSchema: z.object({
       location: z.string().describe('The city name or location to get weather for (e.g., "New York", "London, UK", "Tokyo")'),
     }),
     execute: async ({ location }) => {
@@ -65,7 +65,7 @@ const createUserTools = (webTool: 'parallels' | 'tavily', tavilyApiKey?: string)
   }),
   greeting: tool({
     description: 'Respond to simple greetings like "hello", "hi", "hey", "good morning", etc. Use this ONLY for casual greetings that don\'t require web search or other tools.',
-    parameters: z.object({
+    inputSchema: z.object({
       greeting: z.string().describe('The greeting message from the user'),
     }),
     execute: async ({ greeting }) => {
@@ -461,9 +461,8 @@ export async function POST(req: NextRequest) {
 
     const result = streamText({
       model: aiModel,
-      messages: processedMessages,
+      messages: processedMessages || [],
       tools: userTools, // Add tools for model-driven tool calling
-      maxSteps: 5, // Allow up to 5 tool calls
       onError: (error) => {
         devLog("error", error);
       },
@@ -505,12 +504,7 @@ export async function POST(req: NextRequest) {
       abortSignal: req.signal,
     });
 
-    return result.toDataStreamResponse({
-      sendReasoning: true,
-      getErrorMessage: (error) => {
-        return (error as { message: string }).message;
-      },
-    });
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     devLog("error", error);
     await logApiRequestError(logger, '/api/web-search', error, {

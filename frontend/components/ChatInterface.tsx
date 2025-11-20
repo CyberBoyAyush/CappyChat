@@ -80,7 +80,7 @@ import CapybaraIcon from "./ui/CapybaraIcon";
 
 interface ChatInterfaceProps {
   threadId: string;
-  initialMessages: UIMessage[];
+  messages: UIMessage[];
   searchQuery?: string | null;
 }
 
@@ -133,7 +133,7 @@ function deduplicateMessages<T extends { id: string; content: string }>(
 
 export default function ChatInterface({
   threadId,
-  initialMessages,
+  messages: initialMessages,
   searchQuery,
 }: ChatInterfaceProps) {
   const selectedModel = useModelStore((state) => state.selectedModel);
@@ -324,7 +324,7 @@ export default function ChatInterface({
           : "/api/web-search"
         : "/api/chat-messaging",
     id: threadId,
-    initialMessages,
+    messages: initialMessages,
     experimental_throttle: 0, // Zero throttle for instant real-time streaming
     onFinish: async (message) => {
       devLog("🏁 onFinish callback called for message:", message.id);

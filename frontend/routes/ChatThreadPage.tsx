@@ -168,7 +168,7 @@ export default function ChatThreadPage() {
     <ChatInterface
       key={id}
       threadId={id}
-      initialMessages={convertToUIMessages(messages) || []}
+      messages={convertToUIMessages(messages) || []}
       searchQuery={searchQuery}
     />
   );

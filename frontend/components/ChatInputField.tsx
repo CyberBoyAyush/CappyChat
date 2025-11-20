@@ -68,12 +68,12 @@ type ExtendedUIMessage = UIMessage & {
 
 interface InputFieldProps {
   threadId: string;
-  input: UseChatHelpers["input"];
-  status: UseChatHelpers["status"];
-  setInput: UseChatHelpers["setInput"];
-  append: UseChatHelpers["append"];
-  setMessages: UseChatHelpers["setMessages"];
-  stop: UseChatHelpers["stop"];
+  input: UseChatHelpers<UIMessage>["input"];
+  status: UseChatHelpers<UIMessage>["status"];
+  setInput: UseChatHelpers<UIMessage>["setInput"];
+  append: UseChatHelpers<UIMessage>["append"];
+  setMessages: UseChatHelpers<UIMessage>["setMessages"];
+  stop: UseChatHelpers<UIMessage>["stop"];
   pendingUserMessageRef: React.RefObject<UIMessage | null>;
   onWebSearchMessage?: (messageId: string, searchQuery?: string) => void;
   submitRef?: React.RefObject<(() => void) | null>;
@@ -85,7 +85,7 @@ interface InputFieldProps {
 }
 
 interface StopButtonProps {
-  stop: UseChatHelpers["stop"];
+  stop: UseChatHelpers<UIMessage>["stop"];
 }
 
 interface SendButtonProps {

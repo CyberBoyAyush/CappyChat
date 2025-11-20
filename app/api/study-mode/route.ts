@@ -762,7 +762,7 @@ Return ONLY the search query.`;
 
     const result = streamText({
       model: aiModel,
-      messages: processedMessages,
+      messages: processedMessages || [],
       onError: (error) => {
         devLog("error", error);
       },
@@ -785,12 +785,7 @@ Return ONLY the search query.`;
       abortSignal: req.signal,
     });
 
-    return result.toDataStreamResponse({
-      sendReasoning: true,
-      getErrorMessage: (error) => {
-        return (error as { message: string }).message;
-      },
-    });
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     devLog("error", error);
     await logApiRequestError(logger, '/api/study-mode', error, {
