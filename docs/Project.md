@@ -76,7 +76,7 @@ Welcome to the comprehensive documentation for CappyChat (also referred to as At
 ## 3) Technology Stack
 
 ### Frontend
-- Next.js 15 with React 19
+- Next.js 16 with React 19
 - TypeScript
 - TailwindCSS + PostCSS
 - Shadcn UI, Radix UI
@@ -105,7 +105,7 @@ Welcome to the comprehensive documentation for CappyChat (also referred to as At
 ## 4) Getting Started
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 20.9+
 - pnpm
 - Appwrite instance (cloud or self‑hosted)
 - API keys (OpenRouter, OpenAI, Runware, Tavily as needed)

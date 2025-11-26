@@ -6,7 +6,7 @@
 
 [![Version](https://img.shields.io/badge/version-4.1.0-2563eb?style=for-the-badge&logo=semver&logoColor=white)](https://github.com/CyberBoyAyush/CappyChat)
 [![License](https://img.shields.io/badge/license-GPL%20v3-10b981?style=for-the-badge&logo=gnu&logoColor=white)](LICENSE)
-[![Next.js](https://img.shields.io/badge/Next.js-15.3.4-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.0.4-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-3178c6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Appwrite](https://img.shields.io/badge/Appwrite-18.1.1-f02e65?style=for-the-badge&logo=appwrite&logoColor=white)](https://appwrite.io/)
 
@@ -81,7 +81,7 @@
 
 **🔧 Developer Experience**
 
-- **Modern Stack** - Next.js 15, React 19, TypeScript, TailwindCSS
+- **Modern Stack** - Next.js 16, React 19, TypeScript, TailwindCSS
 - **Real-time Features** - WebSocket connections with Appwrite
 - **Observability** - Better Stack logging for enhanced monitoring
 - **Production Ready** - Deployed at [cappychat.com](https://cappychat.com)
@@ -204,7 +204,7 @@ graph LR
 
 ```typescript
 const techStack = {
-  frontend: ["Next.js 15", "React 19", "TypeScript 5.8", "TailwindCSS 4.1"],
+  frontend: ["Next.js 16", "React 19", "TypeScript 5.8", "TailwindCSS 4.1"],
   backend: ["Node.js", "Appwrite", "API Routes"],
   database: ["IndexedDB", "Appwrite Cloud", "Real-time Sync", "Upstash Redis"],
   deployment: ["Vercel", "Docker", "CDN"],
@@ -240,7 +240,7 @@ const techStack = {
 
 ```typescript
 {
-  "framework": "Next.js 15.3",
+  "framework": "Next.js 16",
   "runtime": "React 19",
   "language": "TypeScript 5.8",
   "styling": "TailwindCSS 4.1",
@@ -304,7 +304,7 @@ const techStack = {
 ```mermaid
 graph TB
     subgraph "Frontend Layer"
-        A[Next.js 15 + React 19]
+        A[Next.js 16 + React 19]
         B[TypeScript + TailwindCSS]
         C[Zustand State Management]
     end
@@ -345,7 +345,7 @@ graph TB
 
 <table>
 <tr>
-<td width="25%"><strong>🟢 Node.js 18+</strong></td>
+<td width="25%"><strong>🟢 Node.js 20.9+</strong></td>
 <td width="75%">Download from <a href="https://nodejs.org/">nodejs.org</a></td>
 </tr>
 <tr>
@@ -635,10 +635,10 @@ The application will be available at [http://localhost:3000](http://localhost:30
 
 ```bash
 # Development
-pnpm dev              # Start development server with Turbopack
+pnpm dev              # Start development server (Turbopack enabled by default)
 pnpm build            # Build for production
 pnpm start            # Start production server
-pnpm lint             # Run ESLint
+pnpm lint             # Run TypeScript type checking
 
 # Database
 pnpm setup-appwrite   # Automated database setup
@@ -1023,7 +1023,7 @@ CappyChat is optimized for deployment on Vercel with automatic builds and deploy
 Create a `Dockerfile` in the project root:
 
 ```dockerfile
-FROM node:18-alpine AS base
+FROM node:22-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -1137,7 +1137,7 @@ For advanced users who prefer manual setup:
 
 ```bash
 # Install Node.js and pnpm
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs
 npm install -g pnpm pm2
 
@@ -1519,7 +1519,7 @@ test: add unit tests for chat message component
 
 ```bash
 # Check Node.js version
-node --version  # Should be 18+
+node --version  # Should be 20.9+
 
 # Clear and reinstall dependencies
 rm -rf node_modules .next
