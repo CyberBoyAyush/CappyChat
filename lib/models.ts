@@ -1,12 +1,10 @@
 export const AI_MODELS = [
-  "Gemini 2.5 Flash",
-  "Gemini 2.5 Flash (New)",
+  "Gemini 3 Flash Preview",
   "Gemini 2.5 Flash Lite",
   "Gemini 3 Pro Preview",
   "OpenAI 5.1 Codex Mini",
-  "OpenAI 5.1",
+  "OpenAI 5.2",
   "OpenAI 5.1 Codex",
-  "OpenAI o4-mini",
   "Open AI OSS 120B",
   "Claude Haiku 4.5",
   "DeepSeek R1 Fast",
@@ -14,18 +12,15 @@ export const AI_MODELS = [
   "Qwen3 Max",
   "Qwen3 235B A22B",
   "Qwen3 30B A3B Thinking 2507",
-  "Claude Sonnet 4",
   "Claude Sonnet 4.5",
-  
   "OpenAI 5 Nano",
   "Grok 3 Mini",
   "Grok 4",
-  "Grok 4 Fast",
+  "Grok 4.1 Fast",
   "Grok Code Fast 1",
   "Kimi K2 Thinking",
   "Gemini Nano Banana",
   "OpenAI GPT-5 Image Mini",
-  "Sherlock Think Alpha"
 ] as const;
 
 export type AIModel = (typeof AI_MODELS)[number];
@@ -57,30 +52,17 @@ export type ModelConfig = {
 };
 
 export const MODEL_CONFIGS = {
-  "Gemini 2.5 Flash": {
-    modelId: "google/gemini-2.5-flash",
+  "Gemini 3 Flash Preview": {
+    modelId: "google/gemini-3-flash-preview",
     provider: "openrouter",
-    displayName: "Gemini 2.5 Flash",
-    iconType: "google",
-    company: "Google",
-    isPremium: false,
-    isSuperPremium: false,
-    hasReasoning: false,
-    isFileSupported: true,
-    isFast: true,
-    description: "Fast and efficient model from Google",
-  },
-  "Gemini 2.5 Flash (New)": {
-    modelId: "google/gemini-2.5-flash-preview-09-2025",
-    provider: "openrouter",
-    displayName: "Gemini 2.5 Flash (New)",
+    displayName: "Gemini 3 Flash Preview",
     iconType: "google",
     company: "Google",
     isPremium: true,
     isSuperPremium: false,
     hasReasoning: false,
     isFileSupported: true,
-    isFast: true,
+    isFast: false,
     description: "Fast and efficient model from Google (New Flash Model)",
   },
   "Gemini 2.5 Flash Lite": {
@@ -122,10 +104,10 @@ export const MODEL_CONFIGS = {
     isFast: false,
     description: "Latest OpenAI flagship coding model",
   },
-  "OpenAI 5.1": {
-    modelId: "openai/gpt-5.1-chat",
+  "OpenAI 5.2": {
+    modelId: "openai/gpt-5.2-chat",
     provider: "openrouter",
-    displayName: "OpenAI 5.1",
+    displayName: "OpenAI 5.2",
     iconType: "openai",
     company: "OpenAI",
     isPremium: true,
@@ -148,21 +130,6 @@ export const MODEL_CONFIGS = {
     isFast: true,
     description: "Efficient mini version of OpenAI 5.1 Codex",
   },
-
-  "OpenAI o4-mini": {
-    modelId: "openai/o4-mini",
-    provider: "openrouter",
-    displayName: "OpenAI o4-mini",
-    iconType: "openai",
-    company: "OpenAI",
-    isPremium: true,
-    isSuperPremium: false,
-    hasReasoning: true,
-    isFileSupported: true,
-    isFast: true,
-    description:
-      "OpenAI's latest mini model with advanced reasoning capabilities and coding capabilities",
-  },
   "Claude Haiku 4.5": {
     modelId: "anthropic/claude-haiku-4.5",
     provider: "openrouter",
@@ -176,19 +143,6 @@ export const MODEL_CONFIGS = {
     isFast: true,
     description:
       "Anthropic's fastest and most efficient model with frontier-level intelligence, extended thinking, and exceptional coding capabilities (200K context)",
-  },
-  "Claude Sonnet 4": {
-    modelId: "anthropic/claude-4-sonnet",
-    provider: "openrouter",
-    displayName: "Claude Sonnet 4",
-    iconType: "anthropic",
-    company: "Anthropic",
-    isPremium: false,
-    isSuperPremium: true,
-    hasReasoning: false,
-    isFileSupported: true,
-    isFast: false,
-    description: "Anthropic's top of the line last gen model.",
   },
   "Open AI OSS 120B": {
     modelId: "openai/gpt-oss-120b",
@@ -325,10 +279,10 @@ export const MODEL_CONFIGS = {
     description:
       "Last Gen model from XAI with advanced reasoning and coding capabilities.",
   },
-  "Grok 4 Fast": {
-    modelId: "x-ai/grok-4-fast",
+  "Grok 4.1 Fast": {
+    modelId: "x-ai/grok-4.1-fast",
     provider: "openrouter",
-    displayName: "Grok 4 Fast",
+    displayName: "Grok 4.1 Fast",
     iconType: "x-ai",
     company: "XAI",
     isPremium: false,
@@ -363,22 +317,6 @@ export const MODEL_CONFIGS = {
     isFileSupported: false,
     isFast: true,
     description: "Fastest model from Moonshot with advanced reasoning.",
-  },
-  "Sherlock Think Alpha": {
-    modelId: "openrouter/sherlock-think-alpha",
-    provider: "openrouter",
-    displayName: "Sherlock Think Alpha",
-    iconType: "x-ai",
-    company: "OpenRouter",
-    isPremium: false,
-    isSuperPremium: false,
-    hasReasoning: true,
-    isFileSupported: true,
-    isFast: true,
-    isImageGeneration: false,
-    image2imageGen: false,
-    description:
-      "New Stealth Models from OpenRouter with advanced reasoning capabilities",
   },
   "Gemini Nano Banana": {
     modelId: "google/gemini-2.5-flash-image-preview",
