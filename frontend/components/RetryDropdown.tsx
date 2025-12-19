@@ -116,8 +116,8 @@ export default function RetryDropdown({
       // Recommended text generation models
       return [
         "Gemini 2.5 Flash Lite",
-        "Gemini 2.5 Flash",
-        "OpenAI o4-mini",
+        "Gemini 3 Flash Preview",
+        "OpenAI 5.1 Codex Mini",
         "DeepSeek R1 Fast",
       ];
     }
