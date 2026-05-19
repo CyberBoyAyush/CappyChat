@@ -223,7 +223,7 @@ function PureToolSelector({
       const currentConfig = getModelConfig(selectedModel);
       if (isSelected) {
         if (!currentConfig.isImageGeneration) {
-          setModel("Gemini Nano Banana");
+          setModel("Gemini Nano Banana 2");
         }
       } else {
         if (currentConfig.isImageGeneration) {

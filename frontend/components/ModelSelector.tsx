@@ -287,8 +287,8 @@ const PureModelSelector = ({
   // Plan Mode allowed models constant
   const PLAN_MODE_ALLOWED_MODELS: AIModel[] = [
     "Claude Haiku 4.5",
-    "Claude Sonnet 4.5",
-    "Kimi K2 Thinking",
+    "Claude Sonnet 4.6",
+    "Kimi K2.6",
   ];
 
   // Force guest users to use Gemini 2.5 Flash Lite
@@ -320,9 +320,9 @@ const PureModelSelector = ({
     // Only switch models if there's a mode mismatch
     if (isImageGenMode && !currentConfig.isImageGeneration) {
       console.log(
-        "[ModelSelector] Image generation mode detected, switching to Gemini Nano Banana"
+        "[ModelSelector] Image generation mode detected, switching to Gemini Nano Banana 2"
       );
-      setModel("Gemini Nano Banana");
+      setModel("Gemini Nano Banana 2");
     } else if (!isImageGenMode && currentConfig.isImageGeneration) {
       console.log(
         "[ModelSelector] Not in image generation mode, switching to Gemini 2.5 Flash Lite"
@@ -334,7 +334,7 @@ const PureModelSelector = ({
     previousModeRef.current = isImageGenMode;
   }, [isImageGenMode, selectedModel, setModel]);
 
-  // Force Plan Mode to use only Claude Haiku 4.5 and Claude Sonnet 4.5
+  // Force Plan Mode to use only Claude Haiku 4.5 and Claude Sonnet 4.6
   useEffect(() => {
     // Skip on initial mount
     if (isInitialMount.current) {

@@ -110,15 +110,15 @@ export default function RetryDropdown({
     if (isImageGenerationContext) {
       // Recommended image generation models
       return [
-        "Gemini Nano Banana",
+        "Gemini Nano Banana 2",
       ];
     } else {
       // Recommended text generation models
       return [
         "Gemini 2.5 Flash Lite",
-        "Gemini 3 Flash Preview",
-        "OpenAI 5.1 Codex Mini",
-        "DeepSeek R1 Fast",
+        "Gemini 3.1 Flash Lite",
+        "OpenAI 5.4 Mini",
+        "DeepSeek V4 Flash",
       ];
     }
   }, [isImageGenerationContext]);

@@ -348,7 +348,7 @@ Output: ["Latest AI news 2025", "Recent artificial intelligence developments", "
     } else {
       // Title generation (existing functionality) - handles both isTitle=true and undefined
       const { text: title } = await generateText({
-        model: openrouter("openai/gpt-5-nano"),
+        model: openrouter("openai/gpt-5.4-nano"),
         system: `\n
       - you will generate a short title based on the first message a user begins a conversation with
       - ensure it is not more than 80 characters long
