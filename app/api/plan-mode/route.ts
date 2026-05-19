@@ -185,8 +185,8 @@ export async function POST(req: NextRequest) {
     // Plan Mode allowed models whitelist
     const PLAN_MODE_ALLOWED_MODELS = [
       "Claude Haiku 4.5",
-      "Claude Sonnet 4.5",
-      "Kimi K2 Thinking",
+      "Claude Sonnet 4.6",
+      "Kimi K2.6",
     ];
     if (!PLAN_MODE_ALLOWED_MODELS.includes(selectedModel)) {
       return new Response(
